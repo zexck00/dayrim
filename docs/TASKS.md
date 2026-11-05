@@ -36,10 +36,12 @@ The split below assumes these strengths. I don't know each person's skills, so s
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
 | Z-01 | Z | S | Add C and D to the GitHub repository and protect `main` so changes go through pull requests | Both can open pull requests, and direct pushes to `main` are blocked | |
-| Z-02 | Z | S | Answer the questions in GAME_DESIGN section 19 | Answers written in that section | |
+| Z-02 | Z | S | Answer the questions in GAME_DESIGN section 20 | Answers written in that section | |
 | Z-03 | Z | M | Decide the art style and resolution, using the Necromancer as the reference | One approved reference sheet in `ASSETS/` | |
 | Z-04 | Z | S | Decide whether the repository stays public, given it holds original art | Decision made and repository set | |
-| Z-50 | Z | S | Decide how sound and music are sourced, and the budget | Answer to GAME_DESIGN section 19, question 6 | |
+| D-07 | D | S | **Show the difficulty:** "Difficulty ×4" on the party panel and lobby, with a message when it changes as someone joins or leaves | Everyone sees the current value | C-05 |
+| D-08 | D | M | **Fullscreen** (section 19): button and L key, hidden cursor with a drawn crosshair during play, cursor back in menus and after Esc. Solo pauses on leaving fullscreen, and online keeps running. | Tested in Chrome, Firefox and Safari, alone and in a room, with no pause or cursor stuck | |
+| Z-50 | Z | S | Decide how sound and music are sourced, and the budget | Answer to GAME_DESIGN section 20, question 6 | |
 | D-01 | D | M | Deploy to a real server with HTTPS using `game/docker-compose.yml`. This has never been run, so fix what breaks. | A public address where two people on different networks can play | Z-01 |
 | D-02 | D | S | GitHub Actions: run `npm test` on every pull request and check `dayrim.html` matches its sources | A failing test blocks a merge | Z-01 |
 | D-03 | D | M | **Asset loading.** Inlining everything won't scale: 3 villains already take 2.5 MB, so 40 characters and 10 monsters would make a huge page. Load each character's sheet when needed. Keep solo able to run from the server without logging in. | Page under 2 MB; characters load on demand with a loading state | |
@@ -47,8 +49,10 @@ The split below assumes these strengths. I don't know each person's skills, so s
 | D-05 | D | S | Remove the old plan text from `src/page.html`, and delete unused sprite folders listed in HANDOFF.md | Public page shows only the game and a short intro | |
 | D-06 | D | M | Make a headless party bot for the server, that joins real rooms and plays by itself | 4 bots can clear stage 1, and report time, wipes and damage | |
 | C-01 | C | S | Fix the ultimate exploit: divide boss percent damage by party size | 4 ultimates deal the same percent as 1 solo | |
+| C-05 | C | M | **Party difficulty** (section 9): heroes, villains and bosses get ×1, ×2, ×4 or ×8 life and damage by party size. Replaces `partyToughen`. All living enemies rescale when someone joins or leaves, and keep their percentage of life. | Unit tests for 1 to 4 players, and for joining and leaving during a boss fight. Solo is unchanged. | C-01 |
+| C-06 | C | M | **Check the new difficulty is playable:** run ×2, ×4 and ×8 on stages 1 to 3 and report downs, wipes and clear time | Results shared with Z, with a recommendation on damage. Any change gets Z's approval. | C-05, D-06 |
 | C-02 | C | S | Scale the kill quota with party size, using the section 9 table in one place | Unit tests for 1 to 4 players | |
-| C-03 | C | M | Turn scaling into one data table (life, count, quota, boss life, Hope) | All scaling reads from the table | C-02 |
+| C-03 | C | M | Turn scaling into one data table (difficulty, minion life, count, quota, Hope) | All scaling reads from the table | C-02, C-05 |
 | C-04 | C | S | Make citizen fear per player, so that one player's NPC kill doesn't affect everyone | Test added | |
 
 ## M1 Co-op core
@@ -278,7 +282,7 @@ Idle, walk, attack with wind-up, defeated. Needed for: the 3 existing villain mi
 | Person | M0 | M1 | M2 | M3 | M4 | Total |
 |---|---|---|---|---|---|---|
 | **Z** | 5 | 5 | 11 | 7 | 6 | 34 |
-| **C** | 4 | 27 | 12 | 12 | 2 | 57 |
-| **D** | 6 | 20 | 6 | 5 | 3 | 40 |
+| **C** | 6 | 27 | 12 | 12 | 2 | 59 |
+| **D** | 8 | 20 | 6 | 5 | 3 | 42 |
 
 C carries the most large tasks. If C becomes a bottleneck, D can take the stage objectives once the frameworks (C-17, C-18) are done, and Z can write boss numbers directly into the data tables.

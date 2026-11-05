@@ -23,7 +23,7 @@ Status: proposal for Z, C and D to review. Every number is a starting value to t
 | Heal only affects yourself | No support role | Ally heals and shields (section 4) |
 | Combo and rage are personal | Players race each other | Party chain and linked ultimates (section 6) |
 | Attacks don't interact | No teamwork in damage | Status reactions (section 5) |
-| Party size only adds enemy life and numbers | Fights get longer, not smarter | Mechanics scale with players (section 9) |
+| Party size adds only 70% enemy life per player and more enemies | Heroes, villains and bosses barely get harder | They double in difficulty per extra player, and mechanics scale too (section 9) |
 | Ultimates deal a fixed 4% of boss life per hit, per player | 4 players deal about 48% per round of ultimates | Boss percent damage divided by party size |
 | Stage goal is always "kill X, then open the gate" | Stages feel alike | A different objective per stage (section 8) |
 | Kill quota doesn't grow with party size | Large parties clear it too quickly | Quota scales (section 9) |
@@ -164,14 +164,22 @@ Each stage keeps its current name, time of day and boss. Maps stay procedural, w
 
 ## 9. Party-size scaling
 
-| Players | Enemy life | Enemy count | Quota | Boss life | Hope | Boss mechanics |
+**Heroes, villains and bosses double in difficulty with each extra player.** This is the owner's rule, including ×8 at 4 players, and it applies to both their life and their damage.
+
+| Players | Heroes, villains and bosses: life and damage | Minion life | Enemy count | Quota | Hope | Boss mechanics |
 |---|---|---|---|---|---|---|
 | 1 | ×1 | ×1 | ×1 | ×1 | Second Wind | Solo version |
-| 2 | ×1.6 | ×1.3 | ×1.4 | ×1.8 | 4 | Basic pair version |
-| 3 | ×2.2 | ×1.6 | ×1.8 | ×2.6 | 5 | Full version |
-| 4 | ×2.8 | ×1.9 | ×2.2 | ×3.4 | 6 | Full version, plus one extra target |
+| 2 | **×2** | ×1.6 | ×1.3 | ×1.4 | 4 | Basic pair version |
+| 3 | **×4** | ×2.2 | ×1.6 | ×1.8 | 5 | Full version |
+| 4 | **×8** | ×2.8 | ×1.9 | ×2.2 | 6 | Full version, plus one extra target |
 
-- **When someone joins or leaves mid-stage:** the scale changes at the next spawn. An active boss keeps its percentage of life.
+The rule also scales past 4 players: difficulty is `2 ^ (players - 1)`, so a room limit above 4 would give ×16 and beyond. Minions aren't part of this rule, and they use the milder scale above. Today's solo game doesn't change.
+
+**What ×8 means in practice.** A stage 1 boss slam deals about 43 today. At ×8 that's about 345, while a level 3 player has around 150 life. So at 4 players, any boss hit can down a player at once, which makes dodging, Taunt, revive and shields essential. C-06 checks that this is still fun, using bots and a real playtest.
+
+- **Ultimates:** a boss's percent damage per hit is divided by party size (section 6), so that the ultimates don't skip this rule.
+- **Difficulty tiers multiply on top:** Nightmare damage with 4 players would be ×16.
+- **When someone joins or leaves mid-stage:** all living enemies rescale at once and keep their percentage of life. Otherwise a party could fight a boss with fewer players and invite friends afterward, or lower its difficulty by having someone leave.
 - **Objective helpers:** a party too small for a split objective gets a timed version instead. For example, one plate stays down for 8 seconds.
 - **Level gaps:** players below the stage's recommended level are raised to it while in the room, and those above are lowered to +3 levels, for fairness. Rewards still use their real level. C and Z decide this after the first playtest.
 
@@ -524,7 +532,23 @@ Hero parties and villain parties hear the same stage themes, with a different in
 
 **Online:** each player's music depends on what's near them. Sound events come from the existing server event system, and the browser picks the right file.
 
-## 19. Questions for Z
+## 19. Fullscreen and cursor
+
+| Action | What happens |
+|---|---|
+| **Fullscreen button, or L** | The game fills the screen. The stats side panel is hidden, and those details stay in the HUD and the menu. |
+| **While playing in fullscreen** | The system cursor is hidden, and the game draws its own crosshair where you aim. |
+| **Menus, pause and overlays** | The cursor comes back, so that buttons can be clicked. |
+| **Esc in fullscreen** | Leaves fullscreen and brings the cursor back. |
+| **Esc when not in fullscreen** | Same as today: pause when alone, and the room menu online. |
+| **After leaving fullscreen with Esc** | Alone, the game pauses so that the player isn't hit while the cursor is out. Online, the game keeps running, because the world can't pause. |
+| **Button again** | Leaves fullscreen as well. |
+
+**Browser limit:** browsers keep Esc for leaving fullscreen themselves, and usually don't tell the game about the key press. So the game has to react to the fullscreen change itself instead of the key.
+
+**Phones:** the button only shows if the device supports it, as iPhones don't allow it in a normal browser page. Touch players never see a crosshair.
+
+## 20. Questions for Z
 
 1. Keep the "protect or terrorize NPCs" difference between sides?
 2. Keep Hope and wipes, or use something softer?
