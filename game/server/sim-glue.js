@@ -52,10 +52,10 @@ return{
     return p;
   },
   addPlayer(room,char,save,pname){
-    G=room.G;EV=room.ev;CUR=room;const id=nextId++,p=makePlayer(char,save,pname,id);G.players.push(p);freshHealth(p);p.x=G.safe.x+60-(G.players.length-1)*30;p.y=G.safe.y+30;
+    G=room.G;EV=room.ev;CUR=room;const id=nextId++,p=makePlayer(char,save,pname,id);G.players.push(p);rescaleParty();freshHealth(p);p.x=G.safe.x+60-(G.players.length-1)*30;p.y=G.safe.y+30;
     return p;
   },
-  removePlayer(room,p){G=room.G;const i=G.players.indexOf(p);if(i>=0)G.players.splice(i,1);G.p=G.players[0]||null},
+  removePlayer(room,p){G=room.G;const i=G.players.indexOf(p);if(i>=0){G.players.splice(i,1);rescaleParty()}G.p=G.players[0]||null},
   step(room,dt){
     G=room.G;EV=room.ev;CUR=room;
     for(const p of G.players)p.ack=p.input.s;
@@ -72,5 +72,5 @@ return{
   },
   saveOf(p){const o={};for(const k of SAVE_KEYS)o[k]=p[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota}
+  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage}
 };

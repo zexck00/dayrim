@@ -33,6 +33,10 @@ The split below assumes these strengths. I don't know each person's skills, so s
 
 ## M0 Foundations
 
+C-01, C-02, C-03 and C-05 have a provisional implementation in the scaling slice. C-06 and Z review remain open; D-06 is needed for party measurements. Once opened, a boss gate stays open if party size grows. Quotas round up.
+
+Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged damage, enemy count ×1/×1.35/×1.7/×2.05, and a fixed quota. Existing solo observations in HANDOFF.md are Firefighter clearing 10 stages with no deaths in about 18 game minutes, and Necromancer dying 45 times without clearing in 90 minutes; these are historical observations, not controlled comparisons. Fresh representative bot measurements remain to be recorded.
+
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
 | Z-01 | Z | S | Add C and D to the GitHub repository and protect `main` so changes go through pull requests | Both can open pull requests, and direct pushes to `main` are blocked | |

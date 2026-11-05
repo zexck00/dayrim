@@ -4,6 +4,9 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Changed
+- Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
+
 ### Added
 - Return to menu button on the pause screen.
 - Fullscreen mode with a button and the L key. The cursor is replaced by a crosshair during play, and Esc brings it back.
