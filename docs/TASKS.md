@@ -63,7 +63,7 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 
 ## M1 Co-op core
 
-C-10 is a provisional recovery implementation. Hope and wipes remain for C-11 and Z’s decision; until then, a bleed-out costs gold and respawns the player at the safehouse. Revive feedback uses placeholder UI and needs D and Z review.
+C-10 and C-11 are provisional recovery implementations pending Z’s decision and D’s UI review. An online party starts with 3/4/5/6 Hope for 1/2/3/4 players; the one-player room uses 3 as a prototype alongside Second Wind. Membership changes adjust capacity while preserving Hope spent. A bleed-out at zero Hope wipes only if nobody is standing; retry refills Hope and returns to the safehouse or opened boss gate. The current boss restarts from full life because phase checkpoints and stage objectives do not exist yet. Solo offline keeps its existing death flow.
 
 ### Core mechanics
 

@@ -11,6 +11,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 
 ### Added
+- Online parties share Hope. When Hope is empty and nobody is standing, the next bleed-out restarts the party at the latest checkpoint.
 - Downed players can crawl and be revived by allies. Medics revive faster and from farther away; Scouts can drag allies. Solo players get one Second Wind per stage.
 - Return to menu button on the pause screen.
 - Fullscreen mode with a button and the L key. The cursor is replaced by a crosshair during play, and Esc brings it back.
