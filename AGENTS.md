@@ -1,6 +1,6 @@
 # Agent guide
 
-Dayrim is a browser action RPG with an optional multiplayer server. Read [HANDOFF.md](HANDOFF.md) before changing game rules or networking.
+Dayrim is a browser action RPG with an optional multiplayer server. Read [HANDOFF.md](HANDOFF.md) before changing game rules or networking. Planned work and who owns it are in [docs/TASKS.md](docs/TASKS.md), and the target design is in [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
 
 ## Commands
 

@@ -80,7 +80,7 @@ Run the tests:
 cd game/server && npm test
 ```
 
-Working on the game, human or agent? Read [AGENTS.md](AGENTS.md) for the rules and [HANDOFF.md](HANDOFF.md) for how it all fits together.
+Working on the game, human or agent? Read [AGENTS.md](AGENTS.md) for the rules and [HANDOFF.md](HANDOFF.md) for how it all fits together. Planned work is in [docs/TASKS.md](docs/TASKS.md) and [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
 
 ## Before a public or commercial release
 

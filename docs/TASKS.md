@@ -1,0 +1,284 @@
+# Dayrim task list
+
+Design details are in [GAME_DESIGN.md](GAME_DESIGN.md). Current code is explained in [HANDOFF.md](../HANDOFF.md).
+
+## Who does what
+
+The split below assumes these strengths. I don't know each person's skills, so swap owners freely if it's wrong.
+
+| Person | Name | Owns |
+|---|---|---|
+| **Z** | Z (owner) | Vision, all art and animation for heroes, villains and monsters, sound and music, final decisions, playtests |
+| **C** | c4lyp50 | Gameplay: combat rules, co-op mechanics, enemies and minions, day and night, power-ups, stages, bosses, balance |
+| **D** | Dvachini | Technology: server, networking, asset loading, sound and music engine, HUD and menus, accounts, deployment, testing tools |
+
+**How we work**
+- One owner per task. Others help, but the owner gets it finished.
+- Each task is a branch and a pull request, reviewed by another person. C and D review each other. Z approves anything players see or feel.
+- Placeholder art is fine. **No code task waits for final art**, and no art task waits for code.
+- Follow the rules in [AGENTS.md](../AGENTS.md). Rules go in `game/src/game.js`, and anything a player does online must be checked on the server.
+- Sizes are rough effort: **S** is up to a day, **M** is 2 to 4 days, **L** is a week or more. Dates depend on how many hours each person has.
+
+## Milestones
+
+| Milestone | Goal | Done when |
+|---|---|---|
+| **M0 Foundations** | The team can work and test together | Game is online on a real server, with automatic tests and an asset plan |
+| **M1 Co-op core** | Stages 1 to 3 are fun with friends | Revive, threat, roles, reactions and chain work; 3 boss fights done; first outside playtest |
+| **M2 Middle game** | Stages 4 to 7 | Four more stages and bosses; villain side works; first assets in |
+| **M3 Final act** | Stages 8 to 10 | Full game can be finished by a party; difficulty tiers |
+| **M4 Launch** | Ready for the public | All assets in, accounts, balance pass, licensed audio, launch checklist |
+
+---
+
+## M0 Foundations
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| Z-01 | Z | S | Add C and D to the GitHub repository and protect `main` so changes go through pull requests | Both can open pull requests, and direct pushes to `main` are blocked | |
+| Z-02 | Z | S | Answer the questions in GAME_DESIGN section 19 | Answers written in that section | |
+| Z-03 | Z | M | Decide the art style and resolution, using the Necromancer as the reference | One approved reference sheet in `ASSETS/` | |
+| Z-04 | Z | S | Decide whether the repository stays public, given it holds original art | Decision made and repository set | |
+| Z-50 | Z | S | Decide how sound and music are sourced, and the budget | Answer to GAME_DESIGN section 19, question 6 | |
+| D-01 | D | M | Deploy to a real server with HTTPS using `game/docker-compose.yml`. This has never been run, so fix what breaks. | A public address where two people on different networks can play | Z-01 |
+| D-02 | D | S | GitHub Actions: run `npm test` on every pull request and check `dayrim.html` matches its sources | A failing test blocks a merge | Z-01 |
+| D-03 | D | M | **Asset loading.** Inlining everything won't scale: 3 villains already take 2.5 MB, so 40 characters and 10 monsters would make a huge page. Load each character's sheet when needed. Keep solo able to run from the server without logging in. | Page under 2 MB; characters load on demand with a loading state | |
+| D-04 | D | S | Set up Git LFS for art and video, before the large assets arrive | New art files go through LFS, documented in AGENTS.md | Z-01 |
+| D-05 | D | S | Remove the old plan text from `src/page.html`, and delete unused sprite folders listed in HANDOFF.md | Public page shows only the game and a short intro | |
+| D-06 | D | M | Make a headless party bot for the server, that joins real rooms and plays by itself | 4 bots can clear stage 1, and report time, wipes and damage | |
+| C-01 | C | S | Fix the ultimate exploit: divide boss percent damage by party size | 4 ultimates deal the same percent as 1 solo | |
+| C-02 | C | S | Scale the kill quota with party size, using the section 9 table in one place | Unit tests for 1 to 4 players | |
+| C-03 | C | M | Turn scaling into one data table (life, count, quota, boss life, Hope) | All scaling reads from the table | C-02 |
+| C-04 | C | S | Make citizen fear per player, so that one player's NPC kill doesn't affect everyone | Test added | |
+
+## M1 Co-op core
+
+### Core mechanics
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-10 | C | L | **Downed and revive** (section 2): crawl, bleed-out, hold to revive, repeat penalty, Medic and Scout bonuses | Rule tests pass; solo Second Wind works | |
+| C-11 | C | M | **Hope** and wipe, with restart at checkpoint | A party can wipe and retry with no stuck state | C-10 |
+| C-12 | C | L | **Threat** (section 3): replaces nearest-player targeting in `updateEnemy` | Tests show Taunt pulling an enemy from a closer ally | |
+| C-13 | C | L | **Team abilities** on G (section 4): Taunt, Break, Mark, Mend Link, Rescue Dash | Each works solo-safe, online and in tests | C-12 |
+| C-14 | C | L | **Status and reactions** (section 5), with a script to check every pair of characters has a reaction available | All 8 reactions work; only cross-player triggers count online | |
+| C-15 | C | M | **Party chain** and shared rage (section 6) | One counter for the party; personal best still saved | |
+| C-16 | C | M | **Linked ultimates**, plus the shorter effect for allies | 2, 3 and 4 links work and are tested | C-15 |
+| C-17 | C | M | **Boss framework:** guard bar, stagger, enrage, arena doors, phases, telegraph helper. Used by all 10 bosses. | Stage 1 boss runs on it | |
+| C-18 | C | M | **Objective framework:** progress, checkpoints, carry, hold, escort | Used by stages 1 to 3 | |
+| C-19 | C | M | **Enemy targeting markers and roles** (section 11) | Rusher, Brute, Shooter, Caster, Guard and Healer behave as described | C-12 |
+
+### Stages and bosses
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-20 | C | M | Stage 1 Sunrise Hollow, with its objective | Teaches revive and Mark, with no text wall | C-10, C-18 |
+| C-21 | C | M | Boss: Crystal Scurrier (Pillar Break) | Solo and party versions pass bot and human tests | C-17 |
+| C-22 | C | M | Stage 2 Noonshade Thicket: thicket, beacons, Stalker | Objective done | C-18 |
+| C-23 | C | M | Boss: Gloom Eye (Look Away) | As above | C-17 |
+| C-24 | C | L | Stage 3 Duskwater Fen: rising water, escort boat, Lurker | Objective done | C-18 |
+| C-25 | C | M | Boss: Banshee Phantasm (Lantern Anchor) | As above | C-17 |
+
+### Minions, day and night, power-ups
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-70 | C | L | **Minion squads** (section 15): Swarm, Pack, Siege, Escort, leaders and panic | Squads spawn as groups and behave as described | C-19 |
+| C-71 | C | M | **Minion family traits:** Skeleton rises, Voidling blinks, Toxin puddles | Each tested, with a way to counter it | C-70 |
+| C-72 | C | S | Villain recruit rule, and speed bonus for minions near a villain | Limit of 6 is enforced | C-70 |
+| C-73 | C | M | **Day and night rules** (section 16): four periods, element bonuses, elite odds, shop prices, dusk warning | Rules read from one data table, with tests | |
+| C-74 | C | M | **Clock rules:** clock pauses during boss fights, boss arena uses the stage's starting hour, stage 10 stays at midnight | Tests pass | C-17 |
+| C-75 | C | M | **Lamps:** breakable by enemies, relight with F, removes the night vision penalty | Works online | C-73, D-51 |
+| C-76 | C | M | **Pickups** (section 17): Rage Shard, Iron Skin, Quick Hands, Echo, Mana Surge, Ghost Step | No stacking, timer resets on repeat, tests pass | |
+| C-77 | C | M | **Team power-ups:** War Drum, Life Bloom, Revive Flare, Hope Stone | Range and activation work with 4 players | C-10, C-11, C-76 |
+| C-78 | C | M | **Give items to allies:** throw a potion, gift a pill | Server checks range and that the item is owned | D-52 |
+| D-50 | D | M | **Sync and show power-ups:** icons, timers on the party panel, pickup labels | Readable with several running at once | C-76 |
+| D-51 | D | M | **Night vision rendering:** dark edge with light from lamps and players, cheap enough for phones | Passes performance check on a real phone | C-73 |
+| D-52 | D | S | **Target an ally** for potion and pill gifts. Settle the key with C, as T opens the menu today. | Works on mouse and touch | |
+
+### Sound engine
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| D-60 | D | L | **Audio engine** (section 18): volume groups, distance and direction, 24-sound limit with priority, random version and pitch | Settings saved, and heavy fights don't crackle | |
+| D-61 | D | M | **Sound loading:** load per character and stage, with a fallback to today's synth while files are missing | Page stays under the D-03 limit | D-03 |
+| D-62 | D | M | **Sound data table:** one file mapping each game event to its sounds, so that Z can add sounds without touching code | Adding a sound needs no code change | D-60 |
+| D-63 | D | M | **Footsteps:** ground type from map tiles, body type per character, synced to walk frames | Each ground type and body type audible | D-62, C-80 |
+| D-64 | D | M | **Attack sound layers:** weapon, impact, element, character signature | Each character can sound different, with placeholders | D-62 |
+| D-65 | D | L | **Music system:** cross-fade between day, night, calm and combat layers, safehouse, boss phases, and side themes | Changes fade with no gaps or restarts | D-60 |
+| D-66 | D | S | **Online sound rules:** other players' sounds are quieter, downed alerts are always heard | Tested with 4 players | D-60 |
+| C-80 | C | S | Give each stage tile a ground type, and each character a body type and material | Data used by D-63 | |
+| C-81 | C | M | **Fire sound events from rules:** telegraphs, reactions, revive, objectives, power-ups | Every event in section 18 has a name in the data table | D-62 |
+
+### Networking, HUD and menus
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| D-10 | D | M | Sync new fields: downed, threat target, statuses, guard, objectives (`sync.js`) | Bandwidth stays under 25 KB/s per player before compression | C-10 |
+| D-11 | D | M | **Party panel:** life, downed timer, status, rage, ultimate ready | Readable at phone size | C-10 |
+| D-12 | D | M | **Revive and ally UI:** ring around downed ally, progress bar, screen-edge arrows | Tested with 4 players | C-10 |
+| D-13 | D | M | **Pings and quick phrases** (section 14), with server rate limits | Spam can't flood others | |
+| D-14 | D | M | **Lobby:** role of each player, ready check, host starts, difficulty and stage choice | Party can choose before starting | |
+| D-15 | D | M | **Rejoin in place:** a reconnecting player returns to the same spot and state, not the safehouse | Disconnect test passes | |
+| D-16 | D | S | Boss bar with guard meter and phase marks. Objective tracker. | Matches design | C-17, C-18 |
+| D-17 | D | M | Keep own-character prediction in step with new states such as crawl, root and drag | No snapping at 200 ms lag | C-10 |
+| D-18 | D | M | Touch controls for G, F, ping and revive. Test on real phones. Touch has never been tested. | One full stage played on a phone | C-13 |
+
+### Art and playtest
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| Z-10 | Z | L | **First art batch:** one of each job, 5 heroes (Guardian, Detective, Prodigy, Exorcist, Vigilante) | Delivered to the Asset specification below | Z-03 |
+| Z-11 | Z | L | Boss art: Crystal Scurrier, Gloom Eye, Banshee Phantasm | Delivered to spec | Z-03 |
+| Z-12 | Z | M | New enemy art: Stalker, Lurker | Delivered to spec | Z-03 |
+| Z-13 | Z | M | First sounds: revive, ping, reactions and links (section 18) | Delivered as licensed files | Z-50 |
+| Z-14 | Z | M | **Run the first playtest** with 4 outside players, using a simple form: what was fun, confusing or unfair | Results shared in `docs/playtests/` | D-01, C-25 |
+| D-19 | D | M | Import tool: turns delivered art into game sheets automatically and reports what's missing | One command imports a character | D-03 |
+
+## M2 Middle game
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-30 | C | L | Stage 4 Webbed Barrow: webs, egg clusters, Webber | Done, with party-size helpers | C-18 |
+| C-31 | C | M | Boss: Chitin Horror (Crack the Shell) | Solo and party versions tested | C-17 |
+| C-32 | C | L | Stage 5 Sporefall Marsh: Toxin meter, canisters, Bloater | Done | C-18 |
+| C-33 | C | M | Boss: Spore Brute (Share the Poison) | As above | C-17 |
+| C-34 | C | L | Stage 6 Ruined Vale: collapse, two-plate gates, Shieldbearer | Done | C-18 |
+| C-35 | C | L | Boss: Flesh Amalgam (Keep Them Apart). Hardest so far, as it needs two bodies. | As above | C-17 |
+| C-36 | C | L | Stage 7 Rustleaf Woods: rust, generator, Scrap Golem | Done | C-18 |
+| C-37 | C | M | Boss: Rusted Ghoul (Generator Shock) | As above | C-17 |
+| C-38 | C | L | **Villain side** (section 7): Hero Recruit minions, NPC Dread, patrols, ending text | Villain party has the same quality of fight | C-19 |
+| C-39 | C | M | **Director:** pressure-based spawning (section 11) | Fights come in waves, with breaks | C-19 |
+| C-40 | C | M | Balance pass on stages 1 to 7 using D-06 bots and playtests | Solo and party clear rates recorded | D-06 |
+| D-20 | D | M | Replace JSON file saves with a database, with a migration | Old saves still load | |
+| D-21 | D | M | **Optional accounts:** sign in so that progress isn't tied to a browser. Link existing token saves. | A player can move device | D-20 |
+| D-22 | D | S | Quick Join: joins a public room of the right side and stage | Works with no code | D-14 |
+| D-23 | D | M | Server dashboard: rooms, players, errors, slow frames | Team can see problems | D-01 |
+| D-24 | D | S | Room moderation: host can remove a player; protection from griefing | Tested | D-14 |
+| D-25 | D | M | Performance: draw test with 4 players, 50 enemies and all effects on a mid-range phone and laptop | Holds 30 FPS or better, or issues listed for fixing | D-18 |
+| Z-20 | Z | L | **Second art batch:** remaining heroes (15) | Delivered to spec | Z-10 |
+| Z-21 | Z | L | Boss art: Chitin Horror, Spore Brute, Flesh Amalgam, Rusted Ghoul | Delivered to spec | Z-11 |
+| Z-22 | Z | M | Art for Hero Recruit minions, Webber, Bloater, Shieldbearer, Scrap Golem | Delivered to spec | Z-12 |
+| Z-23 | Z | M | Stage set pieces and tiles for stages 4 to 7 | Delivered | Z-03 |
+| Z-24 | Z | S | Second playtest and decision on level sync | Results and decision recorded | C-40 |
+
+### Sound and music content (Z)
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| Z-51 | Z | M | **Footsteps:** 7 ground types × 5 body types, 3 versions each. Boss steps. | Delivered in the Sound specification format | Z-50 |
+| Z-52 | Z | L | **Weapon, impact and element sets** for all weapons, 6 enemy materials and 8 elements | Delivered, with licenses saved | Z-50 |
+| Z-53 | Z | L | **Character sets:** 20 heroes: spell, special, ultimate, grunt, hurt, downed | Each hero is recognizable by ear | Z-50 |
+| Z-54 | Z | L | **Music for stages 1 to 7:** day and night, calm and combat layers | Loops cleanly, with licenses saved | Z-50 |
+| Z-55 | Z | M | Boss themes for bosses 1 to 7 | Delivered, with phase changes marked | Z-50 |
+| Z-56 | Z | M | Minion and stage enemy sounds: spot, attack, hurt, die | Delivered | Z-50 |
+| C-82 | C | S | Tune sound timing so every boss telegraph can be heard before it hits | Checked in a playtest | C-81 |
+
+## M3 Final act
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-50 | C | L | Stage 8 Midnight Warrens: darkness, lanterns, Lightbreaker | Done | C-18 |
+| C-51 | C | L | Boss: Cyber Dread (Hack Terminals) | Solo and party versions tested | C-17 |
+| C-52 | C | L | Stage 9 Blightmoor: corruption, shrines, Corruptor | Done | C-18 |
+| C-53 | C | L | Boss: Void Weaver (Tethered Pairs) | As above | C-17 |
+| C-54 | C | L | Stage 10 The Last Night: 3 trials | Done | C-30 to C-52 |
+| C-55 | C | L | Boss: Nameless King, 4 phases, boss echoes and Final Toll | Beaten by a real party, and by one solo tester | C-16, C-35 to C-53 |
+| C-56 | C | M | **Difficulty tiers** and elite modifiers (section 9) | Veteran and Nightmare work on every stage | C-39 |
+| C-57 | C | M | **Team skills** (section 13) and stage scoring (section 8) | Saved and shown at stage end | |
+| C-58 | C | L | **Signature passives** for 40 characters. Design with Z. | Each one tested | Z-30 |
+| D-30 | D | M | Stage results screen, team scoreboard, and best records per room | Works online and solo | C-57 |
+| D-31 | D | M | Darkness and light rendering that works on phones | Passes D-25 test | C-50 |
+| D-32 | D | S | Version check: tells players to reload when the server updates | No mismatch errors | |
+| D-33 | D | M | Load test with bot parties on the real server | Maximum rooms known and documented | D-06 |
+| Z-30 | Z | M | Signature passive ideas for all 40 characters, matching their art | List approved | |
+| Z-31 | Z | L | **Third art batch:** remaining villains (17). The Necromancer, Void Empress and Toxin Alchemist need extra poses only. | Delivered to spec | Z-10 |
+| Z-32 | Z | L | Boss art: Cyber Dread, Void Weaver, Nameless King | Delivered to spec | Z-11 |
+| Z-33 | Z | M | Art for Lightbreaker, Corruptor, and set pieces for stages 8 to 10 | Delivered | Z-12 |
+
+### More systems and audio
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-83 | C | M | **Night events:** Blood Moon, Rift, Hunted | One per night, each works solo and in a party | C-73 |
+| C-84 | C | S | **Day or night affinity** for 40 characters | Bonus shows in the character sheet | C-73, Z-30 |
+| C-85 | C | M | Bosses drop team power-ups at phase changes, and chests in stages | Part of the balance sheet | C-77 |
+| Z-60 | Z | L | **Character sets:** 20 villains, same as Z-53 | Delivered | Z-53 |
+| Z-61 | Z | L | **Music for stages 8 to 10**, the 3 remaining boss themes and 4 final boss phases | Delivered | Z-54 |
+| Z-62 | Z | M | Ambience: each stage by day and night, NPC voices and objectives | Delivered | Z-50 |
+| D-67 | D | S | Sound test page, for listening to every sound and setting levels | Z can hear and adjust every sound in one place | D-62 |
+
+## M4 Launch
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| Z-40 | Z | M | **Replace voice lines** with licensed or hired ones. The current macOS voice isn't cleared for commercial use. | New files in `sprites/voice`, with licenses saved | |
+| Z-41 | Z | M | Remaining music: title themes, lobby, safehouse and short stings, all licensed | Delivered, with licenses saved | Z-50 |
+| Z-45 | Z | M | Final sound mix for all stages, using D-67 | Z approves | D-67 |
+| Z-42 | Z | S | Check every asset's license, including anything AI-generated. Decide public or private repository. | Written record in `docs/` | |
+| Z-43 | Z | M | Open beta and final balance sign-off | Z approves | C-60 |
+| Z-44 | Z | S | Privacy notice and terms | Linked from the game | D-21 |
+| C-60 | C | L | Full balance pass: 10 stages × 3 tiers × 1 to 4 players | Targets met: Normal is clearable, Nightmare is hard but fair | D-33 |
+| C-61 | C | M | First-time player guide inside stage 1, for each job | New players learn by playing | |
+| D-40 | D | M | Security review, backups with a restore test, and error alerts | Restore tested on a real backup | D-20 |
+| D-41 | D | S | Accessibility: reduced motion, color-blind telegraph colors, remappable keys | Options saved | |
+| D-42 | D | S | Launch checklist and rollback plan | Rollback rehearsed | D-01 |
+
+---
+
+## Asset specification (Z)
+
+Z provides these. C and D use placeholders until they arrive. D-19 imports them.
+
+The three villain videos show only standing, small attack, moderate attack, special attack and defeated. **Everything else below is missing for them as well.**
+
+### Each hero and villain (40)
+
+| Item | Detail |
+|---|---|
+| Menu card | Full body, same format as the current update sheets |
+| Idle | Facing camera; a loop |
+| Walk | Up, down, left, right; a loop in each direction |
+| Attacks | Small, moderate, special |
+| Dodge | At least left and right |
+| Guard, heal, taking a pill | One each |
+| **New for co-op** | Team ability, ultimate pose, downed and crawling, reviving an ally, being revived, carrying an object |
+| Defeated | One sequence |
+
+### Each monster and boss (10)
+
+| Item | Detail |
+|---|---|
+| Moves | Spawn, idle, walk, each named attack from GAME_DESIGN section 10, stagger, phase change, defeated |
+| Telegraph frames | A clear wind-up before every big attack, so that players can read it |
+| Extras | Stage 1 pillars; stage 3 lanterns; stage 4 eggs; stage 5 mushrooms; stage 6 second body; stage 7 coil; stage 8 drones and terminals; stage 9 threads; stage 10 crowns |
+
+### Each minion and stage enemy
+
+Idle, walk, attack with wind-up, defeated. Needed for: the 3 existing villain minion families, Hero Recruit weak and strong, and Stalker, Lurker, Webber, Bloater, Shieldbearer, Scrap Golem, Lightbreaker and Corruptor.
+
+### Format
+
+- Video on a plain, flat background, or PNG frames with transparency. A flat background makes cut-outs much cleaner than the room backgrounds used so far.
+- One action per file, named `character_action_direction`, for example `guardian_walk_left`.
+- Same camera angle, distance and character scale across all files.
+- Keep originals in `ASSETS/`. Never overwrite one, and add a new version instead.
+
+### Sound specification (Z)
+
+- **Effects:** WAV at 44.1 kHz for originals, mono unless the sound needs width. Name them `group_name_version`, for example `step_grass_heavy_1`.
+- **Music:** loop points marked, with layers the same length and tempo, so that they can fade into each other.
+- **Levels:** leave some headroom, and don't apply heavy limiting. D-67 sets the final level.
+- **Licenses:** keep proof for every file in `docs/licenses/`. Don't use a sound that can't be cleared for commercial release.
+
+---
+
+## Open task count
+
+| Person | M0 | M1 | M2 | M3 | M4 | Total |
+|---|---|---|---|---|---|---|
+| **Z** | 5 | 5 | 11 | 7 | 6 | 34 |
+| **C** | 4 | 27 | 12 | 12 | 2 | 57 |
+| **D** | 6 | 20 | 6 | 5 | 3 | 40 |
+
+C carries the most large tasks. If C becomes a bottleneck, D can take the stage objectives once the frameworks (C-17, C-18) are done, and Z can write boss numbers directly into the data tables.
