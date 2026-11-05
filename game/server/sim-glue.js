@@ -19,7 +19,7 @@ trail=()=>{};tickFx=()=>{};dirty=()=>{};audioOn=()=>{};writeSave=()=>{};
 function setMode(m){if(m==='clear'&&CUR){CUR.cleared=true;ev(['clear',G.stage])}}
 
 const roundDeep=o=>{for(const k in o){const v=o[k];if(typeof v==='number')o[k]=Math.round(v*100)/100}return o};
-const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','skills','train','sp','kills','rage','bestCombo','maxStage','beaten'];
+const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','weaponUpgrades','skills','train','sp','kills','rage','bestCombo','maxStage','beaten'];
 
 /* Input and actions from the network take effect at the start of that player's own turn */
 applyInput=p=>{const i=p.input;joy.on=true;joy.dx=i.x;joy.dy=i.y;mouse.x=i.ax;mouse.y=i.ay;mouse.left=i.l;mouse.right=i.r;
@@ -28,6 +28,7 @@ const ACTIONS={
   revive:(p,v)=>{if(typeof v==='boolean')p.reviveHold=v?.45:0},
   dash:()=>doDash(),ult:()=>doUlt(),special:()=>doMove('special'),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),
   cycle:(p,v)=>cycleWeapon(v>0?1:-1),
+  upgrade:(p,v)=>{upgradeWeapon(v)},
   weapon:(p,v)=>{if(typeof v==='string'&&Object.prototype.hasOwnProperty.call(WEAPONS,v))equipWeapon(v)},
   skill:(p,v)=>{const s=SKILLS.find(x=>x.id===v);if(!s||p.sp<=0||(p.skills[v]||0)>=s.max)return;p.sp--;p.skills[v]=(p.skills[v]||0)+1;recalc()},
   gym:(p,v)=>{if(!p.nearSafe||!GYM.some(x=>x.id===v))return;const c=gymCost(p.train[v]||0);if(p.gold<c)return;p.gold-=c;p.train[v]=(p.train[v]||0)+1;recalc()},
@@ -38,6 +39,7 @@ function makePlayer(char,save,pname,id){
   p.char=char;p.id=id;p.pname=pname;p.gear=Object.assign({armor:null,clothes:null,tool:null},p.gear);delete p.gear.weapon;
   p.bag=(p.bag||[]).filter(i=>i.slot!=='weapon');
   if(!Array.isArray(p.weapons)||!p.weapons.includes('fists'))p.weapons=['fists'].concat(p.weapons||[]);if(!p.weapons.includes(p.weapon))p.weapon='fists';
+  if(!p.weaponUpgrades||typeof p.weaponUpgrades!=='object'||Array.isArray(p.weaponUpgrades))p.weaponUpgrades={};
   p.input={s:0,x:0,y:0,ax:0,ay:0,l:false,r:false};p.actions=[];p.ack=0;p.stats=STATS[char];
   return p;
 }
@@ -73,5 +75,5 @@ return{
   },
   saveOf(p){const o={};for(const k of SAVE_KEYS)o[k]=p[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked}
+  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul}
 };

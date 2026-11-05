@@ -13,7 +13,8 @@ mv=root/'sprites'/'moves'
 data+='const MOVES='+(mv/'moves.json').read_text()+';\nconst MOVE_URLS={'+','.join(k+':"data:image/webp;base64,'+base64.b64encode((mv/f'{k}.webp').read_bytes()).decode()+'"' for k in ['necro','toxic','void'])+'};\n'
 vo=root/'sprites'/'voice'
 data+='const VOICE_CLIPS={'+','.join('"'+f.stem+'":"'+base64.b64encode(f.read_bytes()).decode()+'"' for f in sorted(vo.glob('*.wav')))+'};\n'
-js=data+''.join((root/'src'/f).read_text()+'\n' for f in ['rig.js','game.js','render.js','net.js','ui.js'])
+data+='const THREE_LAYER_B64="'+base64.b64encode((root/'vendor'/'three-layer.js').read_bytes()).decode()+'";\n'
+js=data+''.join((root/'src'/f).read_text()+'\n' for f in ['rig.js','game.js','render.js','net.js','effects3d.js','ui.js'])
 page=(root/'src/page.html').read_text()
 assert '/*GAME*/' in page
 out=page.replace('/*GAME*/','(()=>{\n"use strict";\n'+js+'})();')

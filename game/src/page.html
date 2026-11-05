@@ -32,6 +32,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .ov.pick{background:rgba(7,12,24,.88);align-items:flex-start}
 .card.sel{max-width:1200px}
 .weapon-icon{position:static;width:44px;height:44px;flex:none;image-rendering:pixelated;cursor:default;background:#111b30;border:1px solid var(--line)}
+.mrow.weapon-row{grid-template-columns:minmax(0,1fr) auto auto auto}
 .weapon-choice{display:flex;align-items:center;gap:12px}.weapon-choice div{flex:1}
 .sel-top{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .card .sel-top h2{margin:0;font-size:clamp(22px,2.6vw,32px)}
@@ -89,6 +90,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .touch{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:8px;display:grid;grid-template-columns:repeat(3,54px);gap:6px;z-index:2}
 .touch button{height:54px;border-radius:50%;border:1px solid var(--foam);background:rgba(18,48,58,.72);font:500 11px var(--body);padding:0;touch-action:none}
 .touch .big{background:rgba(240,128,92,.55);border-color:var(--coral)}
+.fx3{z-index:1;pointer-events:none}
+.fx3b{top:calc(216px*var(--k,1))!important}
 .menub{top:calc(160px*var(--k,1))!important}
 .fsb{top:calc(188px*var(--k,1))!important}
 .ov:not(.pick) .card{zoom:var(--k,1)}
@@ -176,7 +179,10 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
 }
 @media(max-width:640px){
   .screen{aspect-ratio:auto}
-  .sound{top:102px}.menub{top:130px!important}.fsb{top:158px!important}
+  .mrow.weapon-row{grid-template-columns:minmax(0,1fr) auto}.weapon-row .weapon-choice{grid-column:1/-1}
+  .sound{top:102px}.fx3{z-index:1;pointer-events:none}
+.fx3b{top:calc(216px*var(--k,1))!important}
+.menub{top:130px!important}.fsb{top:158px!important}
   .phase{grid-template-columns:38px minmax(0,1fr)}
   .exit{grid-column:2}
   .call{grid-template-columns:minmax(0,1fr)}
@@ -201,8 +207,8 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
   </header>
   <section class="stage" aria-label="Playable prototype">
     <div class="screen" id="screen">
-      <canvas id="c" aria-label="Game view"></canvas>
-      <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button>
+      <canvas id="c" aria-label="Game view"></canvas><canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas>
+      <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button>
       <div class="touch" id="touch" hidden>
         <button type="button" data-a="potion">Potion</button>
         <button type="button" data-a="revive">Hold to revive</button>
