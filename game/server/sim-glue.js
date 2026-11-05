@@ -23,8 +23,9 @@ const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag',
 
 /* Input and actions from the network take effect at the start of that player's own turn */
 applyInput=p=>{const i=p.input;joy.on=true;joy.dx=i.x;joy.dy=i.y;mouse.x=i.ax;mouse.y=i.ay;mouse.left=i.l;mouse.right=i.r;
-  const q=p.actions;p.actions=[];for(const a of q){if(Object.prototype.hasOwnProperty.call(ACTIONS,a.n))ACTIONS[a.n](p,a.v)}};
+  const q=p.actions;p.actions=[];for(const a of q){if(!(p.deadT>0||p.respawnT>0)&&Object.prototype.hasOwnProperty.call(ACTIONS,a.n))ACTIONS[a.n](p,a.v)}};
 const ACTIONS={
+  revive:(p,v)=>{if(typeof v==='boolean')p.reviveHold=v?.45:0},
   dash:()=>doDash(),ult:()=>doUlt(),special:()=>doMove('special'),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),
   cycle:(p,v)=>cycleWeapon(v>0?1:-1),
   weapon:(p,v)=>{if(typeof v==='string'&&Object.prototype.hasOwnProperty.call(WEAPONS,v))equipWeapon(v)},
@@ -41,7 +42,7 @@ function makePlayer(char,save,pname,id){
   return p;
 }
 function freshHealth(p){G.p=p;recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana}
-function afterStage(room){for(const q of G.players){freshHealth(q);q.deadT=0;q.fastT=0;q.magicT=0}G.p=G.players[0];room.cleared=false;room.stageChanged=true}
+function afterStage(room){for(const q of G.players){freshHealth(q);q.deadT=0;q.respawnT=0;q.fastT=0;q.magicT=0}G.p=G.players[0];room.cleared=false;room.stageChanged=true}
 
 return{
   charExists:n=>typeof n==='string'&&Object.prototype.hasOwnProperty.call(STATS,n)&&!!archKey(n),factionOf,SAVE_KEYS,

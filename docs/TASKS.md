@@ -35,7 +35,7 @@ The split below assumes these strengths. I don't know each person's skills, so s
 
 C-01, C-02, C-03 and C-05 have a provisional implementation in the scaling slice. C-06 and Z review remain open; D-06 is needed for party measurements. Once opened, a boss gate stays open if party size grows. Quotas round up.
 
-Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged damage, enemy count ×1/×1.35/×1.7/×2.05, and a fixed quota. Existing solo observations in HANDOFF.md are Firefighter clearing 10 stages with no deaths in about 18 game minutes, and Necromancer dying 45 times without clearing in 90 minutes; these are historical observations, not controlled comparisons. Fresh representative bot measurements remain to be recorded.
+Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged damage, enemy count ×1/×1.35/×1.7/×2.05, and a fixed quota. Existing solo observations in HANDOFF.md are Firefighter clearing 10 stages with no deaths in about 18 game minutes, and Necromancer dying 45 times without clearing in 90 minutes; these are historical observations, not controlled comparisons. A later solo bot run after the Second Wind prototype cleared all 10 stages in 18 game minutes with Firefighter and 17 with Detective, both with zero deaths; Necromancer cleared 7 stages in 25 minutes with zero deaths. These are single random runs, and the bot counts final deaths rather than uses of Second Wind.
 
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
@@ -62,6 +62,8 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 | C-04 | C | S | Make citizen fear per player, so that one player's NPC kill doesn't affect everyone | Test added | |
 
 ## M1 Co-op core
+
+C-10 is a provisional recovery implementation. Hope and wipes remain for C-11 and Z’s decision; until then, a bleed-out costs gold and respawns the player at the safehouse. Revive feedback uses placeholder UI and needs D and Z review.
 
 ### Core mechanics
 

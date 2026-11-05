@@ -17,7 +17,7 @@ $('rack').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b
 $('wearbest').addEventListener('click',()=>wearBest());
 function returnToMenu(){writeSave();demoScene();setMode('title')}
 function setMode(m){
-  G.mode=m;mouse.left=mouse.right=false;touchHold.slash=false;touchHold.guard=false;keys.clear();const ov=$('ov'),c=$('card');
+  G.mode=m;mouse.left=mouse.right=false;touchHold.slash=false;touchHold.guard=false;touchHold.revive=false;keys.clear();const ov=$('ov'),c=$('card');
   $('touch').hidden=!(touchMode&&m==='play');
   if(m==='play'){ov.hidden=true;return}
   ov.hidden=false;ov.classList.toggle('pick',m==='title'||m==='menu');c.classList.toggle('sel',m==='title'||m==='menu');
@@ -34,7 +34,7 @@ function setMode(m){
 const cardStyle=n=>{const a=CAST[n];return 'width:100%;aspect-ratio:'+a.w+'/'+a.h+';background-size:'+(AW/a.w*100)+'% '+(AH/a.h*100)+'%;background-position:'+(a.x/(AW-a.w)*100)+'% '+(a.y/(AH-a.h)*100)+'%'};
 function renderSelect(){
   const c=$('card'),names=Object.keys(ROSTER[selTab]),a=archOf(chosen),sv=readSave(),foe=factionOf(chosen)==='hero'?'villains':'heroes';
-  const controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s) · V ultimate · Hold right click shield · E heal · Space dodge · 1 potion · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack · Hold right click shield · Q spell · E heal · Space dodge · V ultimate · Tab change weapon · 1 potion · 2 fast pill · 3 magic pill · T skills · L fullscreen';
+  const controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s) · V ultimate · Hold right click shield · E heal · Space dodge · 1 potion · Hold F revive · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack · Hold right click shield · Q spell · E heal · Space dodge · V ultimate · Tab change weapon · 1 potion · Hold F revive · 2 fast pill · 3 magic pill · T skills · L fullscreen';
   const w0=weaponOf(chosen);
   c.innerHTML='<div class="sel-top"><h2>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
   (sv?'<div class="cont"><span>Saved: The '+esc(label(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
@@ -65,7 +65,7 @@ function renderMenu(){
 
 /* Input. Online, actions go to the server. Alone, they run here. */
 const LOCAL_ACT={dash:()=>doDash(),ult:()=>doUlt(),special:()=>doMove('special'),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
-function doAct(n,v){if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
+function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
 function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}
 function setTouch(on){if(touchMode===on)return;touchMode=on;$('touch').hidden=!(on&&G.mode==='play')}
@@ -84,11 +84,11 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyM')toggleSound();
   if(ev.code==='Space'||ev.code==='ShiftLeft')doAct('dash');
   if(ev.code==='KeyV')doAct('ult');if(ev.code==='KeyX')doAct('special');if(ev.code==='KeyQ')doAct('spell');if(ev.code==='KeyE')doAct('heal');if(ev.code==='Tab'){ev.preventDefault();doAct('cycle',ev.shiftKey?-1:1)}
-  if(ev.code==='Digit1'||ev.code==='KeyF')doAct('potion');if(ev.code==='Digit2')doAct('fast');if(ev.code==='Digit3')doAct('magic');
+  if(ev.code==='Digit1')doAct('potion');if(ev.code==='KeyF'&&netOn())netAct('revive',true);if(ev.code==='Digit2')doAct('fast');if(ev.code==='Digit3')doAct('magic');
   if(ev.code==='KeyT'){menuTab='skills';setMode('menu')}
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
-addEventListener('keyup',ev=>keys.delete(ev.code));
-addEventListener('blur',()=>{keys.clear();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
+addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
+addEventListener('blur',()=>{keys.clear();touchHold.revive=false;mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
 function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on'}
 $('sound').onclick=ev=>{audioOn();toggleSound();ev.currentTarget.blur()};
 /* Fullscreen. Browsers keep Esc for themselves, so the game reacts to the change, not the key. */
@@ -102,8 +102,8 @@ $('fsbtn').hidden=!canFullscreen;$('fsbtn').onclick=ev=>{ev.currentTarget.blur()
 $('menubtn').onclick=ev=>{ev.currentTarget.blur();if(G.mode==='play'){menuTab='skills';setMode('menu')}};
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
   if(a==='slash'){touchHold.slash=true;b.setPointerCapture(ev.pointerId)}
-  if(a==='guard'){touchHold.guard=true;b.setPointerCapture(ev.pointerId)}if(a==='swap')doAct('cycle',1);if(['ult','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
-['pointerup','pointercancel'].forEach(n=>$('touch').addEventListener(n,ev=>{const b=ev.target.closest('button');if(b&&b.dataset.a==='slash')touchHold.slash=false;if(b&&b.dataset.a==='guard')touchHold.guard=false}));
+  if(a==='guard'){touchHold.guard=true;b.setPointerCapture(ev.pointerId)}if(a==='revive'){touchHold.revive=true;b.setPointerCapture(ev.pointerId);if(netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
+['pointerup','pointercancel'].forEach(n=>$('touch').addEventListener(n,ev=>{const b=ev.target.closest('button');if(b&&b.dataset.a==='slash')touchHold.slash=false;if(b&&b.dataset.a==='guard')touchHold.guard=false;if(b&&b.dataset.a==='revive'){touchHold.revive=false;if(netOn())netAct('revive',false)}}));
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.previousElementSibling,done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected';setTimeout(()=>b.textContent='Copy',1400)};try{navigator.clipboard.writeText(pre.textContent).then(done,sel)}catch(e){sel()}}));
 if('IntersectionObserver'in window)new IntersectionObserver(es=>{es.forEach(e=>{if(e.intersectionRatio<.35&&G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')})},{threshold:[.35]}).observe($('screen'));
 /* Select-screen preview cycles through every animation */

@@ -106,7 +106,7 @@ const keys=new Set(),mouse={x:0,y:0,left:false,right:false},joy={on:false,id:nul
 const mini=document.createElement('canvas');mini.width=MW;mini.height=MH;const mctx=mini.getContext('2d');
 try{const c=localStorage.getItem('dayrim-char');if(c&&archKey(c)){chosen=c;selTab=factionOf(c)}}catch(e){}
 function readSave(){try{const r=JSON.parse(localStorage.getItem('dayrim-save')||'null');return r&&archKey(r.char)?r:null}catch(e){return null}}
-function writeSave(){if(!G||G.demo||G.mp)return;const p=G.p;try{localStorage.setItem('dayrim-save',JSON.stringify({char:p.char,lvl:p.lvl,xp:p.xp,gold:p.gold,potions:p.potions,fast:p.fast,magic:p.magic,gear:p.gear,bag:p.bag,weapons:p.weapons,weapon:p.weapon,skills:p.skills,train:p.train,sp:p.sp,kills:p.kills,rage:p.rage,bestCombo:p.bestCombo,stage:G.stage,maxStage:p.maxStage,beaten:p.beaten}))}catch(e){}}
+function writeSave(){if(!G||G.demo||G.mp)return;const p=G.p;try{localStorage.setItem('dayrim-save',JSON.stringify({char:p.char,lvl:p.lvl,xp:p.xp,gold:p.gold,potions:p.potions,fast:p.fast,magic:p.magic,gear:p.gear,bag:p.bag,weapons:p.weapons,weapon:p.weapon,skills:p.skills,train:p.train,sp:p.sp,kills:p.kills,rage:p.rage,bestCombo:p.bestCombo,stage:G.stage,secondWind:!!p.secondWind,maxStage:p.maxStage,beaten:p.beaten}))}catch(e){}}
 function clearSave(){try{localStorage.removeItem('dayrim-save')}catch(e){}}
 
 /* ---------- Audio ---------- */
@@ -184,7 +184,7 @@ function tintOf(h,n){h=(h%24+24)%24;const warm=(h>=5&&h<8)||(h>=16&&h<20);return
 const clock=h=>{h=(h%24+24)%24;const hh=h|0,m=(h-hh)*60|0;return String(hh).padStart(2,'0')+':'+String(m-(m%5)).padStart(2,'0')};
 
 /* ---------- Stage flow ---------- */
-function freshPlayer(name){return{char:name,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,killerT:0,deadT:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
+function freshPlayer(name){return{char:name,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,killerT:0,deadT:0,respawnT:0,downCount:0,lastDown:-100,secondWind:false,reviveHold:0,reviveTarget:0,reviveProgress:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
 function recalc(){
   const p=G.p,sk=id=>p.skills[id]||0,s={dmg:11+p.lvl*2.6+p.train.str*2,maxHp:95+p.lvl*18+p.train.end*15,maxMana:60+p.lvl*4,armor:p.lvl*1.6,crit:.05,speed:165+p.train.agi*2,leech:0,regen:3,blast:64,dashCd:2.4,mana:0,hp:0,spellCost:16,cdMul:1,guardMul:1,mendMul:1};
   Object.values(p.gear).forEach(it=>{if(!it)return;for(const k in it.aff)s[k]=(s[k]||0)+it.aff[k]});
@@ -200,7 +200,7 @@ function enterStage(n,keepKills){
   const kept=keepKills?G.killsStage:0;
   G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.boss=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;
   const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
-  G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0});
+  G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0;q.deadT=0;q.respawnT=0;q.reviveHold=0;q.reviveTarget=0;q.reviveProgress=0;if(!keepKills){q.secondWind=false;q.downCount=0;q.lastDown=-100}});
   G.cam={x:G.p.x,y:G.p.y};
   for(let i=0;i<12;i++)spawnNpc();
   G.villT=60;G.decals=[];G.hazards=[];
@@ -214,20 +214,22 @@ const partySize=()=>Math.max(1,Math.min(4,G.players.length)),partyScale=()=>PART
 function enemyScale(e){const s=partyScale();return e.mob?s.minion:s.difficulty}
 function partyToughen(e){const k=enemyScale(e);e.hp*=k;e.maxHp*=k;if(!e.mob)e.dmg*=partyScale().difficulty;e.partyLife=k;e.partyDamage=e.mob?1:partyScale().difficulty;return e}
 function rescaleParty(){for(const e of G.enemies){if(e.dead)continue;const life=enemyScale(e),damage=e.mob?1:partyScale().difficulty;e.hp*=life/(e.partyLife||1);e.maxHp*=life/(e.partyLife||1);e.dmg*=damage/(e.partyDamage||1);e.partyLife=life;e.partyDamage=damage}if(G.gate&&!G.gate.open&&G.killsStage>=quota(G.stage)){G.gate.open=true;G.banner={t:3,a:'Boss gate open',b:'Follow the arrow, or keep training first'};sfx('level');addLog('The boss gate is open.')}}
-const alivePlayers=()=>{const a=G.players.filter(q=>!(q.deadT>0));return a.length?a:G.players};
+const alivePlayers=()=>{const a=G.players.filter(q=>!(q.deadT>0)&&!(q.respawnT>0));return a.length?a:G.players};
 function nearestPlayer(o){let b=null,bd=Infinity;for(const q of alivePlayers()){const d=dist(q,o);if(d<bd){bd=d;b=q}}return b}
 const ownerOf=s=>G.players.find(q=>q.id===s.pid)||G.players[0];
 function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=me}
-const RESPAWN_TIME=6;
-function playerDown(p){p.deadT=RESPAWN_TIME;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.moving=false;burst(p.x,p.y-20,'#f0805c',24,200);addLog('You went down. You lost 20% of your gold.');writeSave()}
-function respawn(p){p.deadT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
+function playerDown(p,wind=false){p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.moving=false;burst(p.x,p.y-20,'#f0805c',24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
+function revive(p){p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
+function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
+function bleedOut(p){p.deadT=0;p.respawnT=8;p.gold=Math.floor(p.gold*.8);p.moving=false;addLog('You bled out and lost 20% of your gold.');writeSave()}
+function updateRevive(p,dt){const holding=G.mp?p.reviveHold>0:(keys.has('KeyF')||touchHold.revive);p.reviveHold=Math.max(0,p.reviveHold-dt);const range=archKey(p.char)==='medic'?120:60;let q=G.players.find(x=>x.id===p.reviveTarget&&x!==p&&x.deadT>0&&dist(p,x)<=range);if(!holding||!q){p.reviveTarget=0;p.reviveProgress=0;if(!holding)return;q=G.players.filter(x=>x!==p&&x.deadT>0&&dist(p,x)<=range).sort((a,b)=>dist(p,a)-dist(p,b))[0];if(!q)return;p.reviveTarget=q.id}p.reviveProgress+=dt/(archKey(p.char)==='medic'?1.5:3);if(p.reviveProgress>=1){revive(q);p.reviveTarget=0;p.reviveProgress=0}}
 function applyInput(p){}
 const foeWord=()=>factionOf(G.p.char)==='hero'?'villains':'heroes';
 function newRun(name){
   G=baseState(false);G.p=freshPlayer(name);G.players=[G.p];recalc();enterStage(1);G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;
 }
 function loadRun(sv){
-  G=baseState(false);G.p=Object.assign(freshPlayer(sv.char),sv);G.players=[G.p];{const p=G.p;delete p.gear.weapon;p.bag=p.bag.filter(i=>i.slot!=='weapon');if(!p.weapons.includes('fists'))p.weapons.unshift('fists');if(!p.weapons.includes(p.weapon))p.weapon='fists'}recalc();enterStage(sv.stage);G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;
+  G=baseState(false);G.p=Object.assign(freshPlayer(sv.char),sv);G.players=[G.p];{const p=G.p;delete p.gear.weapon;p.bag=p.bag.filter(i=>i.slot!=='weapon');if(!p.weapons.includes('fists'))p.weapons.unshift('fists');if(!p.weapons.includes(p.weapon))p.weapon='fists'}recalc();enterStage(sv.stage);G.p.secondWind=!!sv.secondWind;G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;writeSave();
 }
 function demoScene(){
   G=baseState(true);G.p=freshPlayer(chosen);G.players=[G.p];recalc();enterStage(1);G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;G.hour=11;G.banner=null;
@@ -308,9 +310,9 @@ function gainXp(x){const p=G.p;p.xp+=x;let up=false;
   while(p.xp>=xpNeed(p.lvl)){p.xp-=xpNeed(p.lvl);p.lvl++;p.sp++;up=true}
   if(up){recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana;sfx('level');burst(p.x,p.y-20,'#e8c95c',28,220);text(p.x,p.y-74,'Level '+p.lvl,'#e8c95c',true);addLog('Level '+p.lvl+'. Skill point earned (press T).');writeSave()}}
 function hurtPlayer(d){
-  const p=G.p;if(p.inv>0||p.deadT>0||G.mode!=='play')return;const ar=p.s.armor+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;p.hitT=.18;shake(5);sfx('hurt');
+  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;p.hitT=.18;shake(5);sfx('hurt');
   text(p.x,p.y-72,'-'+Math.round(v),'#ff6a5f');burst(p.x,p.y-20,'#f0805c',8);
-  if(p.hp<=0){p.hp=0;p.gold=Math.floor(p.gold*.8);if(G.mp)playerDown(p);else{writeSave();setMode('dead')}}
+  if(p.hp<=0){p.hp=0;if(G.players.length===1&&!p.secondWind){p.secondWind=true;playerDown(p,true);writeSave()}else if(G.mp)playerDown(p);else{p.gold=Math.floor(p.gold*.8);writeSave();setMode('dead')}}
 }
 function doAttack(){
   if(kitOf(G.p)){doMove('small');return}
@@ -361,7 +363,7 @@ function killNpc(c,a,byPlayer){
   if(byPlayer){G.p.killerT=45;addLog('You killed a '+esc(c.name.toLowerCase())+'. Witnesses scatter.')}
 }
 function addDecal(x,y,r,pool){const d=G.decals||(G.decals=[]);d.push({x,y,r,pool,seed:Math.random()*99|0});if(d.length>160)d.shift()}
-function tickHazards(dt){(G.hazards||[]).forEach(h=>{h.t-=dt;h.tk=(h.tk||0)-dt;if(h.tk<=0){h.tk=.45;if(h.from==='e'){for(const q of alivePlayers()){G.p=q;if(dist(q,h)<h.r+q.r)hurtPlayer(h.dps)}}else{G.p=ownerOf(h);for(const e of G.enemies)if(!e.dead&&dist(e,h)<h.r+e.r)hitEnemy(e,h.dps,0,0)}for(const c of G.npcs)if(!c.dead&&dist(c,h)<h.r)hitNpc(c,h.dps,rnd(TAU),h.from!=='e')}});if(G.hazards)G.hazards=G.hazards.filter(h=>h.t>0)}
+function tickHazards(dt){(G.hazards||[]).forEach(h=>{h.t-=dt;h.tk=(h.tk||0)-dt;if(h.tk<=0){h.tk=.45;if(h.from==='e'){for(const q of G.players){G.p=q;if(dist(q,h)<h.r+q.r)hurtPlayer(h.dps)}}else{G.p=ownerOf(h);for(const e of G.enemies)if(!e.dead&&dist(e,h)<h.r+e.r)hitEnemy(e,h.dps,0,0)}for(const c of G.npcs)if(!c.dead&&dist(c,h)<h.r)hitNpc(c,h.dps,rnd(TAU),h.from!=='e')}});if(G.hazards)G.hazards=G.hazards.filter(h=>h.t>0)}
 /* ---------- Asset-driven villains: Necromancer, Void Empress, Toxin Alchemist ---------- */
 const KIT_OF={Necromancer:'necro','Void Empress':'void','Toxin Alchemist':'toxic'};
 const MOVE_IMG={};Object.keys(MOVE_URLS).forEach(k=>{const im=new Image();im.src=MOVE_URLS[k];MOVE_IMG[k]=im});
@@ -469,15 +471,16 @@ function stageCleared(){const n=G.stage;for(const p of G.players){if(n>=p.maxSta
 /* ---------- Update ---------- */
 function nearestEnemy(){let b=null,bd=380;for(const e of G.enemies){if(e.dead)continue;const d=dist(e,G.p);if(d<bd&&los(e,G.p)){bd=d;b=e}}return b}
 function updatePlayer(p,dt){
-  G.p=p;if(p.deadT>0){p.deadT-=dt;p.moving=false;if(p.deadT<=0)respawn(p);return}
-  applyInput(p);
+  G.p=p;applyInput(p);if(p.respawnT>0){p.respawnT-=dt;p.moving=false;if(p.respawnT<=0)respawn(p);return}if(p.deadT>0){p.inv=Math.max(0,p.inv-dt);p.deadT-=dt;if(p.deadT<=0){if(p.windDown){p.windDown=false;revive(p)}else bleedOut(p);return}const v=moveVec();move(p,v.x*p.s.speed*.25*dt,v.y*p.s.speed*.25*dt);p.moving=!!(v.x||v.y);if(p.moving){p.walk+=dt*5;p.moveA=Math.atan2(v.y,v.x)}return}
+  updateRevive(p,dt);
   for(const k in p.cd)p.cd[k]=Math.max(0,p.cd[k]-dt);
   p.inv=Math.max(0,p.inv-dt);p.swing=Math.max(0,p.swing-dt);p.atkT=Math.max(0,p.atkT-dt);p.pickT=Math.max(0,p.pickT-dt);p.hitT=Math.max(0,p.hitT-dt);p.castT=Math.max(0,p.castT-dt);p.guard=(mouse.right||touchHold.guard)&&p.dashT<=0;
   if(p.fastT>0)p.fastT-=dt;if(p.magicT>0)p.magicT-=dt;
   p.mana=Math.min(p.s.maxMana,p.mana+p.s.regen*dt);
-  p.specT=Math.max(0,(p.specT||0)-dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec(),sp=p.s.speed*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1);p.moving=!!(v.x||v.y);
+  p.specT=Math.max(0,(p.specT||0)-dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec(),drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=p.s.speed*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1);p.moving=!!(v.x||v.y);
   if(p.dashT>0){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
   else{move(p,v.x*sp*dt,v.y*sp*dt);if(p.moving){p.walk+=dt*11;p.moveA=Math.atan2(v.y,v.x)}}
+  if(drag)move(drag,p.x-ox,p.y-oy);
   if(touchMode){const n=nearestEnemy();if(n)p.face=Math.atan2(n.y-p.y,n.x-p.x);else if(p.moving)p.face=Math.atan2(v.y,v.x)}else p.face=Math.atan2(mouse.y-(p.y-22),mouse.x-p.x);
   if(mouse.left||touchHold.slash)doAttack();
   tagOwned(p);
@@ -508,10 +511,10 @@ function update(dt){
     s.x=nx;s.y=ny;trail(s,dt);
     if(s.from==='e'||s.from==='p'){for(const c of G.npcs){if(!c.dead&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+3){s.life=0;if(s.from==='p'&&!s.small)explode(s);else{impact(s);hitNpc(c,s.dmg,Math.atan2(s.vy,s.vx),s.from==='p')}break}}if(s.life<=0)continue}
     if(s.from==='p'){for(const e of G.enemies){if(!e.dead&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){s.life=0;if(s.small){impact(s);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),90)}else explode(s);break}}}
-    else for(const q of alivePlayers()){if(!(q.deadT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;hurtPlayer(s.dmg);impact(s);break}}}
+    else for(const q of G.players){if(!(q.respawnT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;hurtPlayer(s.dmg);impact(s);break}}}
   G.shots=G.shots.filter(s=>s.life>0);G.enemies=G.enemies.filter(e=>!e.dead);
   G.loot=G.loot.filter(l=>{l.t+=dt;const p=nearestPlayer(l);G.p=p;const d=dist(l,p),mag=(l.kind==='item'||(l.kind==='weapon'&&!p.weapons.includes(l.w)))?0:96;if(mag&&d<mag){const a=Math.atan2(p.y-l.y,p.x-l.x);l.x+=Math.cos(a)*300*dt;l.y+=Math.sin(a)*300*dt}if(d<(l.kind==='item'||l.kind==='weapon'?30:18)){pickup(l);return false}return true});
-  for(const q of alivePlayers()){if(G.gate.open&&!G.boss&&!G.clearPending&&!(q.deadT>0)&&dist(q,G.gate)<46){G.p=q;summonBoss()}}
+  for(const q of alivePlayers()){if(G.gate.open&&!G.boss&&!G.clearPending&&!(q.deadT>0||q.respawnT>0)&&dist(q,G.gate)<46){G.p=q;summonBoss()}}
   if(G.boss&&dist(G.boss,nearestPlayer(G.boss))>1100){G.boss.hp=Math.min(G.boss.maxHp,G.boss.hp+G.boss.maxHp*.1*dt)}
   if(G.clearPending){G.clearPending-=dt;if(G.clearPending<=0){G.clearPending=0;if(G.mode==='play')setMode('clear')}}
   G.p=G.players[0];tickFx(dt);

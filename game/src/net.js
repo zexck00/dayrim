@@ -1,5 +1,5 @@
 /* ---------- Online play. The server runs the world. This file sends what you press and draws what it reports. ---------- */
-const net={avail:false,ws:null,ready:false,inRoom:false,lobby:false,you:0,host:0,code:'',token:null,name:'',rooms:[],err:'',seq:0,sendT:0,idleT:0,last:'',pending:[],dash:0,dx:0,dy:0,rtt:0,pingT:0,retry:0,down:false,wantRoom:null,ents:null,bossId:0,bytes:0,onReady:null};
+const net={avail:false,ws:null,ready:false,inRoom:false,lobby:false,you:0,host:0,code:'',token:null,name:'',rooms:[],err:'',seq:0,sendT:0,idleT:0,last:'',pending:[],dash:0,dx:0,dy:0,rtt:0,pingT:0,retry:0,down:false,wantRoom:null,ents:null,bossId:0,bytes:0,onReady:null,reviveT:0};
 const mkEnts=()=>({p:new Map(),e:new Map(),n:new Map(),h:new Map(),z:new Map(),l:new Map()});
 function netAvailable(){return net.avail}
 function netOn(){return net.inRoom}
@@ -99,18 +99,18 @@ function netUpdate(dt){
   if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null}
   if(me.ult)me.ult.t+=dt;
   // Your character answers at once. The server corrects it if it disagrees.
-  const playing=G.mode==='play'&&!(me.deadT>0),v=playing?moveVec():{x:0,y:0},guard=playing&&(mouse.right||touchHold.guard);
+  const playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0),v=G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0},guard=playing&&(mouse.right||touchHold.guard);
   if(touchMode){const n=nearestEnemy();if(n)me.face=Math.atan2(n.y-me.y,n.x-me.x);else if(v.x||v.y)me.face=Math.atan2(v.y,v.x)}else if(playing)me.face=Math.atan2(mouse.y-(me.y-22),mouse.x-me.x);
-  const bx=me.x,by=me.y;
+  const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
-  else if(v.x||v.y){const sp=me.s.speed*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
+  else if(v.x||v.y){const sp=me.s.speed*(me.deadT>0?.25:(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1));move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
   if(me.x!==bx||me.y!==by)net.pending.push({s:net.seq+1,dx:me.x-bx,dy:me.y-by});if(net.pending.length>240)net.pending.shift();
-  net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}
+  net.reviveT-=dt;if(net.reviveT<=0&&G.mode==='play'&&(keys.has('KeyF')||touchHold.revive)){net.reviveT=.2;netSend({t:'a',n:'revive',v:true})}net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}
   tickFx(dt);
 }
 function netSendInput(force,v,playing){
-  const me=G.p;if(playing===undefined)playing=G.mode==='play'&&!(me.deadT>0);v=v||(playing?moveVec():{x:0,y:0});const aim=touchMode?{x:me.x+Math.cos(me.face)*120,y:me.y-22+Math.sin(me.face)*120}:mouse;
+  const me=G.p;if(playing===undefined)playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0);v=v||(G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0});const aim=touchMode?{x:me.x+Math.cos(me.face)*120,y:me.y-22+Math.sin(me.face)*120}:mouse;
   const l=playing&&!!(mouse.left||touchHold.slash),r=playing&&!!(mouse.right||touchHold.guard);
   const body={x:+v.x.toFixed(3),y:+v.y.toFixed(3),ax:Math.round(aim.x||0),ay:Math.round(aim.y||0),l,r},str=JSON.stringify(body),same=str===net.last;
   if(same&&!force&&!(v.x||v.y)&&net.dash<=0&&net.idleT<.25)return;
@@ -156,8 +156,8 @@ function netHud(small){
   const me=G.p,x=12;let y=small?116:70;ctx.textAlign='left';
   ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?150:190,18+G.players.length*17);
   ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+(net.rtt?' · '+net.rtt+' ms':''),x,y);y+=16;
-  for(const q of G.players){const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player'),x+(small?55:76),y);y+=17}
+  for(const q of G.players){const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';const rev=G.players.find(z=>z.reviveTarget===q.id&&z.reviveProgress>0),status=q.respawnT>0?' · '+Math.ceil(q.respawnT)+'s':q.deadT>0?(rev?' · '+Math.round(rev.reviveProgress*100)+'%':' · down '+Math.ceil(q.deadT)+'s'):'';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player')+status,x+(small?55:76),y);y+=17}
   const big=(a,b)=>{ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.font='700 '+(small?26:42)+'px "Pixelify Sans",monospace';ctx.strokeText(a,W/2,H*.45);ctx.fillStyle='#ff8f80';ctx.fillText(a,W/2,H*.45);ctx.font='600 15px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(b,W/2,H*.45+26);ctx.fillStyle='#f2ecd8';ctx.fillText(b,W/2,H*.45+26)};
   if(net.down)big('Reconnecting','Trying to get back to room '+net.code);
-  else if(me.deadT>0)big('You are down','Waking at the safehouse in '+Math.ceil(me.deadT));
+  else if(me.respawnT>0)big('You bled out','Waking at the safehouse in '+Math.ceil(me.respawnT));else if(me.deadT>0)big('You are down',me.windDown?'Second Wind in '+Math.ceil(me.deadT):'Crawl to an ally · Bleeding out in '+Math.ceil(me.deadT));
 }
