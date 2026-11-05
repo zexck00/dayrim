@@ -90,6 +90,47 @@ Fisher:C({hat:'ranger',hc:'#7a7a4a',o:'vest',t:'#4a6a4a',t2:'#7a7a50',b:'#5a5a48
 };
 const NPC_NAMES=['Clerk','Busker','Sweeper','Mail','Tourist','Patron','Gardener','Builder','Shopper','Plumber','Commuter','Barista','Elder','Janitor','Chef','Guard','Carpenter','Singer','Fisher','Oldman'];
 const RANGED_W=new Set(['pistol','tommy','blaster','camera','book','flask','orb','candle','torch','medkit','money','bow','cards','herb','censer','staff']);
+function drawWeaponSprite(g,id,hx,hy,a,wc,skin){
+  const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h)};
+  const L=(x,y,a,len,w,c)=>{g.fillStyle=c;for(let i=0;i<=len;i++)g.fillRect(Math.round(x+Math.cos(a)*i-w/2),Math.round(y+Math.sin(a)*i-w/2),w,w);return[x+Math.cos(a)*len,y+Math.sin(a)*len]};
+    switch(id){
+
+     case'baton':L(hx,hy,a,12,2,'#15161e');break;
+     case'bat':L(hx,hy,a,8,2,'#b08850');{const e=[hx+Math.cos(a)*8,hy+Math.sin(a)*8];L(e[0],e[1],a,7,3,'#c8a060')}break;
+     case'axe':{const e=L(hx,hy,a,13,2,'#7a5230');L(e[0],e[1],a+Math.PI/2,4,4,'#c8282a');L(e[0],e[1],a-Math.PI/2,1,3,'#d8d8d8')}break;
+     case'wrench':{const e=L(hx,hy,a,10,2,'#b8c0c8');L(e[0],e[1],a+.7,3,2,'#b8c0c8');L(e[0],e[1],a-.7,3,2,'#b8c0c8')}break;
+     case'pistol':L(hx,hy-1,a,6,2,'#30323c');P(hx-1,hy,2,3,'#5a4020');break;
+     case'tommy':L(hx,hy,a,12,3,'#30323c');L(hx,hy,a+Math.PI,5,3,'#7a5230');P(hx+Math.cos(a)*5-1,hy+2,3,4,'#20222c');break;
+     case'blaster':L(hx,hy,a,10,4,'#9aa4ae');{const e=[hx+Math.cos(a)*11,hy+Math.sin(a)*11];P(e[0]-1,e[1]-1,3,3,'#6fd6ff')}break;
+     case'knife':L(hx,hy,a,8,2,'#d8e0e8');P(hx-1,hy-1,3,3,'#c8a030');break;
+     case'gavel':{const e=L(hx,hy,a,8,2,'#7a5230');L(e[0],e[1],a+Math.PI/2,3,4,'#6a4220');L(e[0],e[1],a-Math.PI/2,3,4,'#6a4220')}break;
+     case'book':P(hx-1,hy-3,6,7,'#6a3a20');P(hx,hy-2,4,5,'#e8e0c8');if(wc)P(hx,hy-7,4,4,wc);break;
+     case'shield':P(hx-1,hy-11,7,17,'#3a4250');P(hx,hy-8,5,4,'#8fb0c8');break;
+     case'flask':P(hx,hy-6,2,3,'#c8d8e8');P(hx-2,hy-3,6,6,wc||'#3ac85a');break;
+     case'pin':L(hx,hy,a,7,3,'#c89860');L(hx,hy,a+Math.PI,7,3,'#c89860');break;
+     case'cane':{const e=L(hx,hy,a,13,1,'#7a5230');P(e[0]-1,e[1]-1,3,3,'#e8b82a')}break;
+     case'shovel':{const e=L(hx,hy,a,13,2,'#7a5230');L(e[0],e[1],a,4,5,'#8a8f98')}break;
+     case'cleaver':L(hx,hy,a,3,2,'#5a4020');{const e=[hx+Math.cos(a)*3,hy+Math.sin(a)*3];L(e[0],e[1],a,7,6,'#c8d0d8')}break;
+     case'fist':P(hx-2,hy-2,5,5,wc||skin);break;
+     case'medkit':P(hx-3,hy,8,6,WHT);P(hx,hy+1,2,4,'#c8282a');P(hx-1,hy+2,4,2,'#c8282a');break;
+     case'torch':L(hx,hy,a,6,3,'#20222c');{const e=[hx+Math.cos(a)*7,hy+Math.sin(a)*7];P(e[0]-1,e[1]-1,3,3,'#fff0a0')}break;
+     case'orb':P(hx-2,hy-6,6,6,wc||'#a050d8');P(hx-1,hy-5,2,2,WHT);break;
+     case'hook':{const e=L(hx,hy,a,10,2,'#8a8f98');L(e[0],e[1],a+1.4,4,2,'#8a8f98')}break;
+     case'camera':P(hx-2,hy-3,7,5,'#20222c');P(hx,hy-2,3,3,'#6f8fb0');break;
+     case'candle':P(hx-1,hy-5,3,6,'#f0ead0');P(hx-1,hy-8,3,3,'#ffb030');break;
+     case'scythe':{const e=L(hx,hy,a,17,1,'#6a4a2a');L(hx,hy,a+Math.PI,4,1,'#6a4a2a');L(e[0],e[1],a+1.9,7,2,'#c8ccd4');L(e[0]+Math.cos(a+1.9)*7,e[1]+Math.sin(a+1.9)*7,a+2.5,4,1,'#c8ccd4')}break;
+     case'sword':{L(hx,hy,a,3,2,'#c8a030');const e=[hx+Math.cos(a)*3,hy+Math.sin(a)*3];L(e[0],e[1],a,12,2,wc||'#d8e0e8');L(e[0],e[1],a+Math.PI/2,2,2,'#c8a030');L(e[0],e[1],a-Math.PI/2,2,2,'#c8a030')}break;
+     case'hammer':{const e=L(hx,hy,a,12,2,'#5a4028');L(e[0],e[1],a+Math.PI/2,4,6,'#50525c');L(e[0],e[1],a-Math.PI/2,4,6,'#50525c')}break;
+     case'trident':{const e=L(hx,hy,a,17,1,'#a8c0c8');L(e[0],e[1],a+.5,5,1,'#a8c0c8');L(e[0],e[1],a-.5,5,1,'#a8c0c8');L(e[0],e[1],a,5,1,'#d8e8f0')}break;
+     case'staff':{L(hx,hy+5,-Math.PI/2,16,1,'#6a4a2a');P(hx-2,hy-14,5,5,wc||'#6fe0a0');P(hx-1,hy-13,2,2,WHT)}break;
+     case'bow':{const c='#8a5a30';L(hx,hy-1,a-1.1,8,1,c);L(hx,hy+1,a+1.1,8,1,c);const u=[hx+Math.cos(a-1.1)*8,hy+Math.sin(a-1.1)*8],d=[hx+Math.cos(a+1.1)*8,hy+Math.sin(a+1.1)*8];L(u[0],u[1],Math.atan2(d[1]-u[1],d[0]-u[0]),Math.hypot(d[0]-u[0],d[1]-u[1]),1,'#e8e4d8');break}
+     case'spear':{const e=L(hx,hy,a,16,1,'#7a5230');L(hx,hy,a+Math.PI,5,1,'#7a5230');L(e[0],e[1],a,5,3,'#c8d0d8')}break;
+     case'censer':{L(hx,hy,Math.PI/2,6,1,'#c8a030');P(hx-2,hy+6,5,5,'#e8b82a');P(hx-1,hy+4,3,1,'#fff0a0')}break;
+     case'herb':P(hx-2,hy-6,5,6,'#6fe05a');P(hx-1,hy-5,2,2,'#d8ffb8');break;
+     case'cards':P(hx-1,hy-6,5,7,WHT);P(hx,hy-5,2,2,'#c8282a');P(hx+3,hy-5,4,7,'#eeeae0');break;
+     case'money':P(hx-3,hy-1,7,7,'#9a7a4a');P(hx-1,hy-2,3,2,'#6a4a2a');break;
+    }
+}
 function buildFrame(sp,dir,anim,f){
   const cv=document.createElement('canvas');cv.width=cv.height=48;const g=cv.getContext('2d');
   const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h)};
@@ -182,47 +223,11 @@ function buildFrame(sp,dir,anim,f){
      case'antler':P(hx-3,y-5,2,5,'#6a4a2a');P(hx+12,y-5,2,5,'#6a4a2a');P(hx-5,y-4,3,1,'#6a4a2a');P(hx+13,y-4,3,1,'#6a4a2a');P(hx-1,y-1,13,dir===1?13:4,hc);if(dir!==1){P(hx-1,y+3,3,9,hc);P(hx+9,y+3,3,9,hc)}break;
      case'hood':P(hx-1,y-1,13,dir===1?13:4,hc);if(dir!==1){P(hx-1,y+3,dir===2?5:3,9,hc);if(dir===0)P(hx+9,y+3,3,9,hc);else P(hx+10,y+2,2,2,hc)}break;
     }};
-  const weapon=(hx,hy,a)=>{const wc=sp.wc;
-    switch(sp.w){
-     case'baton':L(hx,hy,a,12,2,'#15161e');break;
-     case'bat':L(hx,hy,a,8,2,'#b08850');{const e=[hx+Math.cos(a)*8,hy+Math.sin(a)*8];L(e[0],e[1],a,7,3,'#c8a060')}break;
-     case'axe':{const e=L(hx,hy,a,13,2,'#7a5230');L(e[0],e[1],a+Math.PI/2,4,4,'#c8282a');L(e[0],e[1],a-Math.PI/2,1,3,'#d8d8d8')}break;
-     case'wrench':{const e=L(hx,hy,a,10,2,'#b8c0c8');L(e[0],e[1],a+.7,3,2,'#b8c0c8');L(e[0],e[1],a-.7,3,2,'#b8c0c8')}break;
-     case'pistol':L(hx,hy-1,a,6,2,'#30323c');P(hx-1,hy,2,3,'#5a4020');break;
-     case'tommy':L(hx,hy,a,12,3,'#30323c');L(hx,hy,a+Math.PI,5,3,'#7a5230');P(hx+Math.cos(a)*5-1,hy+2,3,4,'#20222c');break;
-     case'blaster':L(hx,hy,a,10,4,'#9aa4ae');{const e=[hx+Math.cos(a)*11,hy+Math.sin(a)*11];P(e[0]-1,e[1]-1,3,3,'#6fd6ff')}break;
-     case'knife':L(hx,hy,a,8,2,'#d8e0e8');P(hx-1,hy-1,3,3,'#c8a030');break;
-     case'gavel':{const e=L(hx,hy,a,8,2,'#7a5230');L(e[0],e[1],a+Math.PI/2,3,4,'#6a4220');L(e[0],e[1],a-Math.PI/2,3,4,'#6a4220')}break;
-     case'book':P(hx-1,hy-3,6,7,'#6a3a20');P(hx,hy-2,4,5,'#e8e0c8');if(wc)P(hx,hy-7,4,4,wc);break;
-     case'shield':P(hx-1,hy-11,7,17,'#3a4250');P(hx,hy-8,5,4,'#8fb0c8');break;
-     case'flask':P(hx,hy-6,2,3,'#c8d8e8');P(hx-2,hy-3,6,6,wc||'#3ac85a');break;
-     case'pin':L(hx,hy,a,7,3,'#c89860');L(hx,hy,a+Math.PI,7,3,'#c89860');break;
-     case'cane':{const e=L(hx,hy,a,13,1,'#7a5230');P(e[0]-1,e[1]-1,3,3,'#e8b82a')}break;
-     case'shovel':{const e=L(hx,hy,a,13,2,'#7a5230');L(e[0],e[1],a,4,5,'#8a8f98')}break;
-     case'cleaver':L(hx,hy,a,3,2,'#5a4020');{const e=[hx+Math.cos(a)*3,hy+Math.sin(a)*3];L(e[0],e[1],a,7,6,'#c8d0d8')}break;
-     case'fist':P(hx-2,hy-2,5,5,wc||skin);break;
-     case'medkit':P(hx-3,hy,8,6,WHT);P(hx,hy+1,2,4,'#c8282a');P(hx-1,hy+2,4,2,'#c8282a');break;
-     case'torch':L(hx,hy,a,6,3,'#20222c');{const e=[hx+Math.cos(a)*7,hy+Math.sin(a)*7];P(e[0]-1,e[1]-1,3,3,'#fff0a0')}break;
-     case'orb':P(hx-2,hy-6,6,6,wc||'#a050d8');P(hx-1,hy-5,2,2,WHT);break;
-     case'hook':{const e=L(hx,hy,a,10,2,'#8a8f98');L(e[0],e[1],a+1.4,4,2,'#8a8f98')}break;
-     case'camera':P(hx-2,hy-3,7,5,'#20222c');P(hx,hy-2,3,3,'#6f8fb0');break;
-     case'candle':P(hx-1,hy-5,3,6,'#f0ead0');P(hx-1,hy-8,3,3,'#ffb030');break;
-     case'scythe':{const e=L(hx,hy,a,17,1,'#6a4a2a');L(hx,hy,a+Math.PI,4,1,'#6a4a2a');L(e[0],e[1],a+1.9,7,2,'#c8ccd4');L(e[0]+Math.cos(a+1.9)*7,e[1]+Math.sin(a+1.9)*7,a+2.5,4,1,'#c8ccd4')}break;
-     case'sword':{L(hx,hy,a,3,2,'#c8a030');const e=[hx+Math.cos(a)*3,hy+Math.sin(a)*3];L(e[0],e[1],a,12,2,wc||'#d8e0e8');L(e[0],e[1],a+Math.PI/2,2,2,'#c8a030');L(e[0],e[1],a-Math.PI/2,2,2,'#c8a030')}break;
-     case'hammer':{const e=L(hx,hy,a,12,2,'#5a4028');L(e[0],e[1],a+Math.PI/2,4,6,'#50525c');L(e[0],e[1],a-Math.PI/2,4,6,'#50525c')}break;
-     case'trident':{const e=L(hx,hy,a,17,1,'#a8c0c8');L(e[0],e[1],a+.5,5,1,'#a8c0c8');L(e[0],e[1],a-.5,5,1,'#a8c0c8');L(e[0],e[1],a,5,1,'#d8e8f0')}break;
-     case'staff':{L(hx,hy+5,-Math.PI/2,16,1,'#6a4a2a');P(hx-2,hy-14,5,5,wc||'#6fe0a0');P(hx-1,hy-13,2,2,WHT)}break;
-     case'bow':{const c='#8a5a30';L(hx,hy-1,a-1.1,8,1,c);L(hx,hy+1,a+1.1,8,1,c);const u=[hx+Math.cos(a-1.1)*8,hy+Math.sin(a-1.1)*8],d=[hx+Math.cos(a+1.1)*8,hy+Math.sin(a+1.1)*8];L(u[0],u[1],Math.atan2(d[1]-u[1],d[0]-u[0]),Math.hypot(d[0]-u[0],d[1]-u[1]),1,'#e8e4d8');break}
-     case'spear':{const e=L(hx,hy,a,16,1,'#7a5230');L(hx,hy,a+Math.PI,5,1,'#7a5230');L(e[0],e[1],a,5,3,'#c8d0d8')}break;
-     case'censer':{L(hx,hy,Math.PI/2,6,1,'#c8a030');P(hx-2,hy+6,5,5,'#e8b82a');P(hx-1,hy+4,3,1,'#fff0a0')}break;
-     case'herb':P(hx-2,hy-6,5,6,'#6fe05a');P(hx-1,hy-5,2,2,'#d8ffb8');break;
-     case'cards':P(hx-1,hy-6,5,7,WHT);P(hx,hy-5,2,2,'#c8282a');P(hx+3,hy-5,4,7,'#eeeae0');break;
-     case'money':P(hx-3,hy-1,7,7,'#9a7a4a');P(hx-1,hy-2,3,2,'#6a4a2a');break;
-    }};
+
   const sh=dir===2?[bx+1,18+by]:[bx+8,18+by],sh2=dir===2?[bx-1,18+by]:[bx-8,18+by];
   const sleeve=sp.o==='shirt'&&(sp.t==='#d8d4c8')?sp.t:(sp.o==='open'?sp.t:(['vest','overalls'].includes(sp.o)&&sp.t)||sp.t);
   const armFar=()=>{const e=L(sh2[0],sh2[1],aB,8,4,sleeve);P(e[0]-1,e[1]-1,3,3,skin);if(sp.w==='fist')P(e[0]-2,e[1]-2,5,5,sp.wc||skin)};
-  const armNear=()=>{const e=L(sh[0],sh[1],aF,9,4,sleeve);P(e[0]-1,e[1]-1,3,3,skin);if(sp.w)weapon(e[0],e[1],aF);if(glint){P(e[0]-3,e[1]-7,6,6,'#fff6c0');P(e[0]-1,e[1]-10,2,12,'#ffffff');P(e[0]-5,e[1]-5,10,2,'#ffffff')}};
+  const armNear=()=>{const e=L(sh[0],sh[1],aF,9,4,sleeve);P(e[0]-1,e[1]-1,3,3,skin);if(sp.w)drawWeaponSprite(g,sp.w,e[0],e[1],aF,sp.wc,skin);if(glint){P(e[0]-3,e[1]-7,6,6,'#fff6c0');P(e[0]-1,e[1]-10,2,12,'#ffffff');P(e[0]-5,e[1]-5,10,2,'#ffffff')}};
   const cape=()=>{if(!sp.cp)return;if(dir===0)P(bx-7,17+by,15,20,sp.cp);else if(dir===2)P(bx-8,17+by,6,22,sp.cp)};
   if(dir===1){ if(sp.w&&false);armNear();armFar();legs();torso();if(sp.cp)P(bx-7,17+by,15,22,sp.cp);head() }
   else if(dir===2){cape();armFar();legs();torso();head();armNear()}
