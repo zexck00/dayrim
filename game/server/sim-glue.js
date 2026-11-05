@@ -72,5 +72,5 @@ return{
   },
   saveOf(p){const o={};for(const k of SAVE_KEYS)o[k]=p[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage}
+  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer}
 };

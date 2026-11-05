@@ -75,7 +75,7 @@ function netSnapshot(m){
   if(applyList(m.h,E.h,'h'))G.shots=[...E.h.values()];
   if(applyList(m.z,E.z,'z'))G.hazards=[...E.z.values()];
   if(applyList(m.l,E.l,'l'))G.loot=[...E.l.values()];
-  const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;if(g.killer!==undefined)G.killerT=g.killer?1:0;
+  const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;
     if(g.ban!==undefined){if(g.ban){const b=JSON.parse(g.ban);G.banner={a:b.a,b:b.b,t:b.t}}else G.banner=null}
     if(g.boss!==undefined)net.bossId=g.boss}
   G.boss=net.bossId?E.e.get(net.bossId)||null:null;

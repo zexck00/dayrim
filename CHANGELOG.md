@@ -4,6 +4,9 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Fixed
+- Citizens now fear the player responsible for a civilian death, rather than every party member.
+
 ### Changed
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 

@@ -184,7 +184,7 @@ function tintOf(h,n){h=(h%24+24)%24;const warm=(h>=5&&h<8)||(h>=16&&h<20);return
 const clock=h=>{h=(h%24+24)%24;const hh=h|0,m=(h-hh)*60|0;return String(hh).padStart(2,'0')+':'+String(m-(m%5)).padStart(2,'0')};
 
 /* ---------- Stage flow ---------- */
-function freshPlayer(name){return{char:name,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,deadT:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
+function freshPlayer(name){return{char:name,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,killerT:0,deadT:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
 function recalc(){
   const p=G.p,sk=id=>p.skills[id]||0,s={dmg:11+p.lvl*2.6+p.train.str*2,maxHp:95+p.lvl*18+p.train.end*15,maxMana:60+p.lvl*4,armor:p.lvl*1.6,crit:.05,speed:165+p.train.agi*2,leech:0,regen:3,blast:64,dashCd:2.4,mana:0,hp:0,spellCost:16,cdMul:1,guardMul:1,mendMul:1};
   Object.values(p.gear).forEach(it=>{if(!it)return;for(const k in it.aff)s[k]=(s[k]||0)+it.aff[k]});
@@ -200,10 +200,10 @@ function enterStage(n,keepKills){
   const kept=keepKills?G.killsStage:0;
   G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.boss=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;
   const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
-  G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null});
+  G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0});
   G.cam={x:G.p.x,y:G.p.y};
   for(let i=0;i<12;i++)spawnNpc();
-  G.villT=60;G.decals=[];G.hazards=[];G.killerT=0;
+  G.villT=60;G.decals=[];G.hazards=[];
   const start=Math.round((8+n)*partyCrowd());for(let i=0;i<start;i++)useMobs()?spawnMob(380):spawnRival(380);
   G.banner={t:3.4,a:'Stage '+n+': '+st.n,b:'Defeat '+quota(n)+' '+foeWord()+' to open the boss gate'};
   updateFlow();dirty();writeSave();
@@ -358,7 +358,7 @@ function killNpc(c,a,byPlayer){
   const sp=SPECS[c.name];[[sp.s,7,'head'],[sp.t,8,'torso'],[sp.t,4,'arm'],[sp.t,4,'arm'],[sp.b,4,'leg'],[sp.b,4,'leg'],['#8c1820',3,'bit'],['#a8202c',3,'bit'],['#6c1018',3,'bit'],['#e8dcc0',2,'bone']].forEach(([col,s,kind])=>{const an=a+rnd(-1.7,1.7),v=rnd(70,250);G.fx.push({k:'gib',x:c.x,y:c.y-rnd(14,40),z:0,vx:Math.cos(an)*v,vy:Math.sin(an)*v*.6,vz:rnd(-300,-100),spin:rnd(-14,14),rot:0,t:rnd(.7,1.1),m:1.1,s,col,kind,hair:sp.h})});
   addDecal(c.x,c.y,rnd(20,30),true);G.fx.push({k:'corpse',name:c.name,x:c.x,y:c.y,t:9,m:9});
   G.npcs.forEach(o=>{if(o!==c&&!o.dead&&dist(o,c)<300){o.scare=7;say(o,byPlayer?'witness':'witnessEnemy',.8)}});
-  if(byPlayer){G.killerT=45;addLog('You killed a '+esc(c.name.toLowerCase())+'. Witnesses scatter.')}
+  if(byPlayer){G.p.killerT=45;addLog('You killed a '+esc(c.name.toLowerCase())+'. Witnesses scatter.')}
 }
 function addDecal(x,y,r,pool){const d=G.decals||(G.decals=[]);d.push({x,y,r,pool,seed:Math.random()*99|0});if(d.length>160)d.shift()}
 function tickHazards(dt){(G.hazards||[]).forEach(h=>{h.t-=dt;h.tk=(h.tk||0)-dt;if(h.tk<=0){h.tk=.45;if(h.from==='e'){for(const q of alivePlayers()){G.p=q;if(dist(q,h)<h.r+q.r)hurtPlayer(h.dps)}}else{G.p=ownerOf(h);for(const e of G.enemies)if(!e.dead&&dist(e,h)<h.r+e.r)hitEnemy(e,h.dps,0,0)}for(const c of G.npcs)if(!c.dead&&dist(c,h)<h.r)hitNpc(c,h.dps,rnd(TAU),h.from!=='e')}});if(G.hazards)G.hazards=G.hazards.filter(h=>h.t>0)}
@@ -517,15 +517,16 @@ function update(dt){
   G.p=G.players[0];tickFx(dt);
   if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null}
 }
-function updateNpcs(dt){const boss=!!G.boss;G.quipT-=dt;G.killerT=Math.max(0,(G.killerT||0)-dt);
+function fearedPlayer(c){let found=null,bd=170;for(const p of alivePlayers()){const d=dist(p,c);if((p.killerT||0)>0&&d<bd){found=p;bd=d}}return found}
+function updateNpcs(dt){const boss=!!G.boss;G.quipT-=dt;for(const p of G.players)p.killerT=Math.max(0,(p.killerT||0)-dt);
   for(const c of G.npcs){if(c.dead)continue;const p=nearestPlayer(c);G.p=p;c.t-=dt;c.qt=Math.max(0,c.qt-dt);c.scare=Math.max(0,c.scare-dt);c.flash=Math.max(0,c.flash-dt);
     if(c.kx||c.ky){move(c,c.kx*dt,c.ky*dt);const de=Math.pow(.01,dt);c.kx*=de;c.ky*=de}
     let threat=null,td=230;for(const e of G.enemies){if(e.dead)continue;const d=dist(e,c);if(d<td){td=d;threat=e}}
-    if(!threat&&G.killerT>0&&dist(p,c)<170)threat=p;
+    if(!threat)threat=fearedPlayer(c);
     if(threat||c.scare>0){const from=threat||p,a=Math.atan2(c.y-from.y,c.x-from.x)+Math.sin(G.t*3+c.walk)*.5,sp=c.sp*2.4;const hit=move(c,Math.cos(a)*sp*dt,Math.sin(a)*sp*dt);c.dx=Math.cos(a);c.dy=Math.sin(a);c.walk+=dt*14;if(hit){c.kx+=rnd(-90,90);c.ky+=rnd(-90,90)}if(threat&&threat!==p&&Math.random()<.008)say(c,'danger');continue}
     if(c.t<=0){c.t=rnd(2,6);const a=pick([[1,0],[-1,0],[0,1],[0,-1],[0,0]]);c.dx=a[0];c.dy=a[1]}
     if(c.dx||c.dy){const before=[c.x,c.y];const hit=move(c,c.dx*c.sp*dt,c.dy*c.sp*dt);c.walk+=dt*8;if(hit&&before[0]===c.x&&before[1]===c.y)c.t=0}
-    if(G.quipT<=0&&dist(c,p)<120&&c.qt<=0){const hero=factionOf(p.char)==='hero',n=nightness(G.hour);const kind=G.killerT>0?'killer':boss?'boss':p.hp<p.s.maxHp*.35?'lowHp':G.gate.open&&Math.random()<.3?'gate':Math.random()<.4?(hero?'hero':'villain'):(n>.5?'idleNight':'idleDay');say(c,kind);G.quipT=rnd(4,8)}
+    if(G.quipT<=0&&dist(c,p)<120&&c.qt<=0){const hero=factionOf(p.char)==='hero',n=nightness(G.hour);const kind=(p.killerT||0)>0?'killer':boss?'boss':p.hp<p.s.maxHp*.35?'lowHp':G.gate.open&&Math.random()<.3?'gate':Math.random()<.4?(hero?'hero':'villain'):(n>.5?'idleNight':'idleDay');say(c,kind);G.quipT=rnd(4,8)}
   }
   G.npcs=G.npcs.filter(c=>!c.dead);
 }
