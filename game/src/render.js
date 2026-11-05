@@ -247,7 +247,10 @@ function render(){
   ctx.textAlign='center';G.texts.forEach(x=>{ctx.globalAlpha=clamp(x.t/.35,0,1);ctx.font=(x.big?'700 18px':'700 14px')+' Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(x.s,x.x,x.y);ctx.fillStyle=x.c;ctx.fillText(x.s,x.x,x.y)});ctx.globalAlpha=1;
   hud();
   if(G.p.ult)drawUlt(G.p.ult);
+  if(aimHidden()&&mouse.sx!==undefined)drawCrosshair();
 }
+/* In fullscreen play the system cursor is hidden, so the game draws where you aim */
+function drawCrosshair(){const r=canvas.getBoundingClientRect(),x=mouse.sx-r.left,y=mouse.sy-r.top;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';const arms=c=>{ctx.strokeStyle=c;ctx.beginPath();for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){ctx.moveTo(x+a*5,y+b*5);ctx.lineTo(x+a*13,y+b*13)}ctx.stroke()};ctx.lineWidth=4;arms('rgba(5,10,20,.85)');ctx.lineWidth=2;arms('#f0c23c');ctx.fillStyle='#f0c23c';ctx.fillRect(x-1,y-1,2,2)}
 /* Fullscreen ultimate: world dims and nearly stops, a character banner slashes across, then flash and shockwaves */
 function drawUlt(u){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;
@@ -271,8 +274,11 @@ function drawUlt(u){
   ULT_HITS.forEach((h,i)=>{const q=(T-h)/.2;if(q>=0&&q<1){ctx.fillStyle='rgba(255,255,255,'+((reduced?.25:(i?.45:.95))*(1-q))+')';ctx.fillRect(0,0,W,H)}});
 }
 function bar(x,y,w,h,v,c,label){ctx.fillStyle='rgba(5,10,20,.82)';ctx.fillRect(x,y,w,h);ctx.fillStyle=c;ctx.fillRect(x+2,y+2,(w-4)*clamp(v,0,1),h-4);if(label){ctx.font='500 11px "IBM Plex Mono",monospace';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';ctx.fillText(label,x+7,y+h-5)}}
-function hud(){
-  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;
+/* The HUD is laid out for about 640 tall and grows on larger screens, so it stays readable at Full HD and above */
+let hudK=1;
+function hud(){const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
+function hudBody(){
+  ctx.setTransform(dpr*hudK,0,0,dpr*hudK,0,0);ctx.imageSmoothingEnabled=false;
   const p=G.p,small=W<560,bw=small?150:210,st=STAGES[G.stage-1],q=quota(G.stage),n=nightness(G.hour);
   const pad=(x,y,w,h)=>{ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(x,y,w,h)};pad(6,6,small?210:300,48);
   ctx.textAlign='left';ctx.font='700 '+(small?15:19)+'px "Pixelify Sans",monospace';ctx.fillStyle='#f2ecd8';ctx.fillText('Stage '+G.stage+': '+st.n,12,25);

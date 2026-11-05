@@ -40,8 +40,10 @@ The split below assumes these strengths. I don't know each person's skills, so s
 | Z-03 | Z | M | Decide the art style and resolution, using the Necromancer as the reference | One approved reference sheet in `ASSETS/` | |
 | Z-04 | Z | S | Decide whether the repository stays public, given it holds original art | Decision made and repository set | |
 | D-07 | D | S | **Show the difficulty:** "Difficulty ×4" on the party panel and lobby, with a message when it changes as someone joins or leaves | Everyone sees the current value | C-05 |
-| D-08 | D | M | **Fullscreen** (section 19): button and L key, hidden cursor with a drawn crosshair during play, cursor back in menus and after Esc. Solo pauses on leaving fullscreen, and online keeps running. | Tested in Chrome, Firefox and Safari, alone and in a room, with no pause or cursor stuck | |
-| Z-50 | Z | S | Decide how sound and music are sourced, and the budget | Answer to GAME_DESIGN section 20, question 6 | |
+| D-08 | D | S | **Finish fullscreen** (section 19). Already built: button, L key, hidden cursor with a crosshair, cursor back in menus and after Esc, pause on exit when alone, HUD scaling. Automated browsers refuse real fullscreen, so test it by hand, and fix what breaks. | Tested by hand in Chrome, Firefox and Safari, alone and in a room | |
+| D-09 | D | M | **HD drawing** (section 19): smooth scaling for HD art, a Full, Medium or Low graphics setting, and measure whether 4 players with HD art hold 60 FPS on canvas or need WebGL | Test results shared, with a recommendation | D-03 |
+| Z-06 | Z | S | Approve the HD art sizes in GAME_DESIGN section 19, before producing art | Sizes confirmed in the Asset specification | |
+| Z-50 | Z | S | Plan your sound delivery. Z provides all sound and music, so list what comes first and when, using the Sound specification. | Delivery order shared with D | |
 | D-01 | D | M | Deploy to a real server with HTTPS using `game/docker-compose.yml`. This has never been run, so fix what breaks. | A public address where two people on different networks can play | Z-01 |
 | D-02 | D | S | GitHub Actions: run `npm test` on every pull request and check `dayrim.html` matches its sources | A failing test blocks a merge | Z-01 |
 | D-03 | D | M | **Asset loading.** Inlining everything won't scale: 3 villains already take 2.5 MB, so 40 characters and 10 monsters would make a huge page. Load each character's sheet when needed. Keep solo able to run from the server without logging in. | Page under 2 MB; characters load on demand with a loading state | |
@@ -263,7 +265,8 @@ Idle, walk, attack with wind-up, defeated. Needed for: the 3 existing villain mi
 
 ### Format
 
-- Video on a plain, flat background, or PNG frames with transparency. A flat background makes cut-outs much cleaner than the room backgrounds used so far.
+- **Size:** heroes, villains, NPCs, strong minions and stage enemies at least 512 px tall per frame. Weak minions 300 px. Bosses 768 px. Menu cards 600 × 800 px. Map tiles 128 px. See GAME_DESIGN section 19.
+- Video at 1080p or higher, on a plain, flat background, or PNG frames with transparency. A flat background makes cut-outs much cleaner than the room backgrounds used so far.
 - One action per file, named `character_action_direction`, for example `guardian_walk_left`.
 - Same camera angle, distance and character scale across all files.
 - Keep originals in `ASSETS/`. Never overwrite one, and add a new version instead.
@@ -281,8 +284,8 @@ Idle, walk, attack with wind-up, defeated. Needed for: the 3 existing villain mi
 
 | Person | M0 | M1 | M2 | M3 | M4 | Total |
 |---|---|---|---|---|---|---|
-| **Z** | 5 | 5 | 11 | 7 | 6 | 34 |
+| **Z** | 6 | 5 | 11 | 7 | 6 | 35 |
 | **C** | 6 | 27 | 12 | 12 | 2 | 59 |
-| **D** | 8 | 20 | 6 | 5 | 3 | 42 |
+| **D** | 9 | 20 | 6 | 5 | 3 | 43 |
 
 C carries the most large tasks. If C becomes a bottleneck, D can take the stage objectives once the frameworks (C-17, C-18) are done, and Z can write boss numbers directly into the data tables.

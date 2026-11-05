@@ -2,6 +2,13 @@
 
 Versions follow [Semantic Versioning](https://semver.org). The version lives in `VERSION` and `game/server/package.json`. Keep both the same.
 
+## [Unreleased]
+
+### Added
+- Return to menu button on the pause screen.
+- Fullscreen mode with a button and the L key. The cursor is replaced by a crosshair during play, and Esc brings it back.
+- HUD and on-screen buttons grow on taller screens, so they stay readable at Full HD and above.
+
 ## [0.1.0] - 2026-11-05
 
 First commit. Everything built so far.

@@ -125,7 +125,7 @@ function netAct(n,v){
 
 /* Screens */
 function netOverlay(m,c){
-  if(m==='pause'){c.innerHTML='<h2>Room '+esc(net.code)+'</h2><p>The game keeps running while this is open. Give friends this code so they can join.</p><div class="btnrow"><button class="go" id="go" type="button">Back to the game</button><button class="ghost" id="leave" type="button">Leave room</button></div>';$('go').onclick=()=>setMode('play');$('leave').onclick=netLeave;return true}
+  if(m==='pause'){c.innerHTML='<h2>Room '+esc(net.code)+'</h2><p>The game keeps running while this is open. Give friends this code so they can join. Returning to the menu leaves the room.</p><div class="btnrow"><button class="go" id="go" type="button">Back to the game</button><button class="ghost" id="leave" type="button">Return to menu</button></div>';$('go').onclick=()=>setMode('play');$('leave').onclick=netLeave;return true}
   if(m==='clear'){const n=G.stage,last=n>=10,host=netIsHost(),next=last?'':' Next is stage '+(n+1)+': '+esc(STAGES[n].n)+'.';
     c.innerHTML='<h2>'+(last?'All 10 stages clear':'Stage '+n+' cleared')+'</h2><p>Your party defeated the boss and everyone earned 2 skill points.'+next+(host||last?'':' The room host chooses when to move on.')+'</p><div class="btnrow">'+(host&&!last?'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>':'<button class="go" id="stay" type="button">Keep fighting</button>')+'</div>';
     const g=$('go');if(g)g.onclick=()=>{netAct('next');setMode('play')};$('stay').onclick=()=>{if(host)netAct('stay');setMode('play')};return true}

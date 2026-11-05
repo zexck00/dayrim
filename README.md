@@ -38,7 +38,8 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 | T | Skills and menu |
 | R | Shop, gym and travel, at the safehouse |
 | M | Sound on or off |
-| Esc or P | Pause alone, room menu online |
+| L | Fullscreen. Esc leaves it. |
+| Esc or P | Pause alone, room menu online. Both have Return to menu. |
 
 Touch controls appear on phones and tablets.
 

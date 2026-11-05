@@ -474,6 +474,8 @@ Today, 24 game hours take 8 minutes. At night, enemies deal 15% more damage, gol
 
 **Today:** short synth effects, 18 voice lines made with a temporary macOS voice, no music, and no footsteps. Sounds don't get quieter with distance.
 
+**Z provides all sound and music files.** C and D build the systems that play them, using placeholders until the files arrive.
+
 ### Sound rules
 
 - **Everything has its own volume:** master, music, effects, voice and interface, saved per player.
@@ -548,6 +550,37 @@ Hero parties and villain parties hear the same stage themes, with a different in
 
 **Phones:** the button only shows if the device supports it, as iPhones don't allow it in a normal browser page. Touch players never see a crosshair.
 
+### Full HD and clarity
+
+**What's already true:** the game draws at the screen's real resolution, so at 1920×1080 the canvas has 1920×1080 pixels, and double that on a high-density screen. Text, the HUD and code-drawn effects are therefore sharp. **The remaining limit is the art.**
+
+| What's on screen | Size at 1080p | Art today | Result |
+|---|---|---|---|
+| Video villains | About 204 px tall | About 180 to 300 px frames | Enlarged about 1.2×, so slightly soft |
+| Heroes, other villains, NPCs | About 150 px tall | Code-drawn pixel frames, 48 px wide | Crisp but blocky, enlarged about 3× |
+| Bosses | Up to 345 px tall | About 260 to 300 px cut-outs | Soft on the largest bosses |
+| Map tiles and plants | One tile is about 78 px | Code-drawn 40 px pixel tiles | Crisp but blocky |
+
+**Art targets for Z.** Characters are about 104 units tall, and the game draws 1.96× at 1080p. Art this size stays sharp up to 4K:
+
+| Art | Minimum height per frame | Why |
+|---|---|---|
+| Heroes, villains, NPCs | **512 px** | About 408 px on a 4K screen, plus room for weapons and effects |
+| Strong minions, stage enemies | 512 px | Same scale |
+| Weak minions | 300 px | They're smaller on screen |
+| Bosses | **768 px** | The largest are about 690 px on a 4K screen |
+| Map tiles | 128 px per tile, as a set | About 156 px on 4K when enlarged a little |
+| Menu cards | 600 × 800 px | Today's are 222 × 296 px |
+
+**Keep source art clean:** video at 1080p or higher, on a flat background, with no heavy compression, as artifacts become visible when the cut-outs are made. A consistent look matters more than any number: mixing detailed art with blocky code-drawn pixels looks worse than either alone.
+
+**Cost:** 40 characters at this size is far too large to put inside one page, so HD depends on loading art when it's needed (D-03).
+
+**Rendering options:**
+- **Smooth scaling for HD art,** kept separate from the sharp scaling used on pixel art.
+- **A graphics setting:** Full, Medium or Low, to keep weaker laptops and phones smooth.
+- **GPU drawing (WebGL)** if many HD sprites slow the canvas down. D-09 measures this first, since it's a larger change.
+
 ## 20. Questions for Z
 
 1. Keep the "protect or terrorize NPCs" difference between sides?
@@ -555,4 +588,3 @@ Hero parties and villain parties hear the same stage themes, with a different in
 3. Is level sync acceptable, or should high-level players keep their full power?
 4. Which voice or actors replace the macOS voice lines?
 5. Does gear return later, or is the game skill-and-training only?
-6. Will sound and music be bought, commissioned, or made in-house? This sets the budget for 40 character sets and more than 30 music tracks.
