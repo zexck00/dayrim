@@ -91,6 +91,7 @@ function drawMob(e){
   drawBossSprite(ctx,e,G.t,P);
   if(e.hp<e.maxHp||e.aware){const w=e.r*2.8,y=e.y-e.ah-6;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(e.x-w/2,y,w,4);ctx.fillStyle=e.mob==='strong'?'#e8c95c':'#e8463f';ctx.fillRect(e.x-w/2,y,w*Math.max(0,e.hp/e.maxHp),4)}
 }
+function drawCombatMarker(e){const status=e.healWind>0?'HEALING · Q TO INTERRUPT':e.exposedT>0?'OPEN':e.brokenT>0?'BROKEN':e.markT>0?'MARKED':e.role==='healer'?'HEALER':e.role==='brute'?'BRUTE':e.role==='rusher'?'RUSHER':'';if(!status)return;ctx.textAlign='center';ctx.font='700 12px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(status,e.x,e.y-(e.ah||74)-20);ctx.fillStyle=e.healWind>0?'#80e5aa':e.exposedT>0?'#ffe27a':'#bcd9ee';ctx.fillText(status,e.x,e.y-(e.ah||74)-20)}
 function drawRival(e){
   if(e.art)return drawMob(e);
   if(e.vill){drawKitActor(e,e.moving,e.walk,e.ang,{key:KIT_OF[e.name]});const w=56,y=e.y-112;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(e.x-w/2,y,w,5);ctx.fillStyle='#ff4a6a';ctx.fillRect(e.x-w/2,y,w*Math.max(0,e.hp/e.maxHp),5);return}
@@ -232,7 +233,7 @@ function render(){
   G.fx.forEach(f=>{if(f.k!=='p')return;ctx.globalAlpha=clamp(f.t/f.m,0,1);ctx.fillStyle=f.c;ctx.fillRect(f.x-f.s/2,f.y-f.s/2,f.s,f.s)});ctx.globalAlpha=1;
   G.fx.forEach(f=>{if(f.k==='ko')blit(ctx,f.name,f.x,f.y,2,'ko',0,false,Math.PI/2,clamp(f.t/f.m,0,1))});
   const list=[...G.enemies,...G.players.filter(q=>!(q.respawnT>0)),...G.loot,...G.npcs,...G.w.props.filter(inView)].filter(inView).sort((a,b)=>a.y-b.y);
-  list.forEach(o=>{if(o.stats){drawPlayer(o);if(G.mp&&o!==G.p)drawTag(o);if(o.deadT>0)drawDowned(o)}else if(typeof o.t==='string')drawProp(o);else if(o.kind==='boss')drawBoss(o);else if(o.kind==='rival')drawRival(o);else if(o.name&&o.quip!==undefined)drawNpc(o);else drawLoot(o)});
+  list.forEach(o=>{if(o.stats){drawPlayer(o);if(G.mp&&o!==G.p)drawTag(o);if(o.deadT>0)drawDowned(o)}else if(typeof o.t==='string')drawProp(o);else if(o.kind==='boss')drawBoss(o);else if(o.kind==='rival'){drawRival(o);drawCombatMarker(o)}else if(o.name&&o.quip!==undefined)drawNpc(o);else drawLoot(o)});
   G.shots.forEach(drawShot);
   drawFxTop();
   (G.hazards||[]).forEach(h=>{if(inView(h))drawHazard(h)});
@@ -295,6 +296,7 @@ function hudBody(){
   if(G.p.combo>=2){const t=comboTier(G.p.combo)||COMBO_TIERS[0],sc=1+G.p.comboPop*.45,xr=W-16,yc=small?190:Math.max(205,H*.4),q=clamp(G.p.comboT/COMBO_WINDOW,0,1);ctx.save();ctx.translate(xr,yc);ctx.scale(sc,sc);ctx.textAlign='right';ctx.font='700 '+(small?44:62)+'px "Pixelify Sans",monospace';ctx.lineWidth=7;ctx.strokeStyle='rgba(5,5,15,.9)';ctx.strokeText(G.p.combo,0,0);ctx.fillStyle=t[2];ctx.fillText(G.p.combo,0,0);ctx.restore();ctx.textAlign='right';ctx.font='700 12px "IBM Plex Mono",monospace';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,5,15,.9)';ctx.strokeText('KILL COMBO',xr,yc+18);ctx.fillStyle='#f2ecd8';ctx.fillText('KILL COMBO',xr,yc+18);ctx.font='700 '+(small?16:21)+'px "Pixelify Sans",monospace';ctx.strokeText(t[1],xr,yc+40);ctx.fillStyle=t[2];ctx.fillText(t[1],xr,yc+40);ctx.fillStyle='rgba(5,5,15,.8)';ctx.fillRect(xr-110,yc+47,110,5);ctx.fillStyle=t[2];ctx.fillRect(xr-110*q,yc+47,110*q,5)}
   // current weapon
   ctx.fillStyle='rgba(5,10,20,.75)';ctx.fillRect(12,barY-20,bw,18);ctx.font='700 12px Barlow,sans-serif';ctx.textAlign='left';ctx.fillStyle='#f0c23c';ctx.fillText(kitOf(p)?'Special attack: '+((p.specT||0)>0?'ready in '+Math.ceil(p.specT)+'s':'READY (X)'):(touchMode?'':'Tab: ')+WEAPONS[p.weapon].n+' · power '+WEAPONS[p.weapon].p,18,barY-7);
+  {const team=TEAM_ABILITY[archKey(p.char)],t=team.n+(p.teamCd>0?' '+Math.ceil(p.teamCd)+'s':' ready')+(p.boonPending?' · boon ready':'');ctx.textAlign='left';ctx.font='600 11px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText((touchMode?'Team: ':'G: ')+t,12,touchMode?barY+91:barY-61);ctx.fillStyle='#d8e9ff';ctx.fillText((touchMode?'Team: ':'G: ')+t,12,touchMode?barY+91:barY-61)}
   // buffs
   let bx=12+bw+6;[[p.fastT,'FAST','#6fb4ff'],[p.magicT,'POWER','#c88cff']].forEach(([v,l,c])=>{if(v>0){ctx.fillStyle='rgba(5,10,20,.82)';ctx.fillRect(bx,barY,54,22);ctx.font='500 10px "IBM Plex Mono",monospace';ctx.textAlign='center';ctx.fillStyle=c;ctx.fillText(l+' '+Math.ceil(v),bx+27,barY+15);bx+=58}});
   if(!touchMode&&W>=660){

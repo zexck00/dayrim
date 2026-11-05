@@ -63,6 +63,8 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 
 ## M1 Co-op core
 
+A Stage 1 combat-depth prototype adds rusher, brute and interruptible healer behavior, all five G-key role actions, Overload and Break Strike reactions, and a personal boon choice at the boss gate. These are initial mechanics rather than completion of the full C-12–C-19 designs: full threat, the complete reaction matrix, later enemy roles and full checkpoint objectives remain open. Boons persist with the current character run. Balance, readability and multiplayer behavior need human playtests and Z review; final music and SFX remain Z-owned. One solo bot run after this prototype cleared 10 stages with Firefighter and Detective in 16 game minutes each; Necromancer cleared 3 in 25 minutes with one death. The bot does not use team abilities or checkpoint boons, and these single random runs do not establish balance.
+
 C-10 and C-11 are provisional recovery implementations pending Z’s decision and D’s UI review. An online party starts with 3/4/5/6 Hope for 1/2/3/4 players; the one-player room uses 3 as a prototype alongside Second Wind. Membership changes adjust capacity while preserving Hope spent. A bleed-out at zero Hope wipes only if nobody is standing; retry refills Hope and returns to the safehouse or opened boss gate. The current boss restarts from full life because phase checkpoints and stage objectives do not exist yet. Solo offline keeps its existing death flow.
 
 ### Core mechanics

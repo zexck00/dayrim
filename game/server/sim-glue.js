@@ -19,12 +19,13 @@ trail=()=>{};tickFx=()=>{};dirty=()=>{};audioOn=()=>{};writeSave=()=>{};
 function setMode(m){if(m==='clear'&&CUR){CUR.cleared=true;ev(['clear',G.stage])}}
 
 const roundDeep=o=>{for(const k in o){const v=o[k];if(typeof v==='number')o[k]=Math.round(v*100)/100}return o};
-const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','weaponUpgrades','skills','train','sp','kills','rage','bestCombo','maxStage','beaten'];
+const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','weaponUpgrades','runBoons','skills','train','sp','kills','rage','bestCombo','maxStage','beaten'];
 
 /* Input and actions from the network take effect at the start of that player's own turn */
 applyInput=p=>{const i=p.input;joy.on=true;joy.dx=i.x;joy.dy=i.y;mouse.x=i.ax;mouse.y=i.ay;mouse.left=i.l;mouse.right=i.r;
   const q=p.actions;p.actions=[];for(const a of q){if(!(p.deadT>0||p.respawnT>0)&&Object.prototype.hasOwnProperty.call(ACTIONS,a.n))ACTIONS[a.n](p,a.v)}};
 const ACTIONS={
+  team:()=>doTeam(),boon:(p,v)=>{if(typeof v==='string')chooseBoon(v)},
   revive:(p,v)=>{if(typeof v==='boolean')p.reviveHold=v?.45:0},
   dash:()=>doDash(),ult:()=>doUlt(),special:()=>doMove('special'),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),
   cycle:(p,v)=>cycleWeapon(v>0?1:-1),
@@ -39,6 +40,7 @@ function makePlayer(char,save,pname,id){
   p.char=char;p.id=id;p.pname=pname;p.gear=Object.assign({armor:null,clothes:null,tool:null},p.gear);delete p.gear.weapon;
   p.bag=(p.bag||[]).filter(i=>i.slot!=='weapon');
   if(!Array.isArray(p.weapons)||!p.weapons.includes('fists'))p.weapons=['fists'].concat(p.weapons||[]);if(!p.weapons.includes(p.weapon))p.weapon='fists';
+  if(!p.runBoons||typeof p.runBoons!=='object'||Array.isArray(p.runBoons))p.runBoons={wide:0,opening:0};
   if(!p.weaponUpgrades||typeof p.weaponUpgrades!=='object'||Array.isArray(p.weaponUpgrades))p.weaponUpgrades={};
   p.input={s:0,x:0,y:0,ax:0,ay:0,l:false,r:false};p.actions=[];p.ack=0;p.stats=STATS[char];
   return p;
@@ -75,5 +77,5 @@ return{
   },
   saveOf(p){const o={};for(const k of SAVE_KEYS)o[k]=p[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul}
+  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,doTeam,chooseBoon,offerBoons,spawnMob,hitEnemy,updateEnemy,doDash,rusherTarget}
 };

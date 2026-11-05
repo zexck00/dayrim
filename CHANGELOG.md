@@ -12,6 +12,8 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 
 ### Added
+- Prototype combat roles: use G for Taunt, Break, Mark, Mend Link or Rescue Dash. Brute dodges and interrupts create openings, and healers can be interrupted.
+- Soak and Shock trigger Overload; a heavy attack can follow an ally’s Break. Boss-gate checkpoints offer a dodge boon.
 - Optional Three.js r187 ambient effects, with an off switch and an offline fallback.
 - Every hero and villain now projects a passive role aura to nearby allies.
 - Spend gold at the safehouse to upgrade weapons twice, widening melee arcs and ranged attack patterns.
