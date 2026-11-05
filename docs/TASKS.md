@@ -8,7 +8,7 @@ The split below assumes these strengths. I don't know each person's skills, so s
 
 | Person | Name | Owns |
 |---|---|---|
-| **Z** | Z (owner) | Vision, all art and animation for heroes, villains and monsters, sound and music, final decisions, playtests |
+| **Z** | zexcko | Vision, all art and animation for heroes, villains and monsters, sound and music, final decisions, playtests |
 | **C** | c4lyp50 | Gameplay: combat rules, co-op mechanics, enemies and minions, day and night, power-ups, stages, bosses, balance |
 | **D** | Dvachini | Technology: server, networking, asset loading, sound and music engine, HUD and menus, accounts, deployment, testing tools |
 
