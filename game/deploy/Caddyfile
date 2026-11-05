@@ -1,0 +1,4 @@
+# Caddy gets the HTTPS certificate on its own and passes WebSockets through.
+play.example.com {
+    reverse_proxy 127.0.0.1:8080
+}

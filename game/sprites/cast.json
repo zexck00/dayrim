@@ -1,0 +1,394 @@
+{
+ "Detective": {
+  "c": "hero-cards",
+  "x": 0,
+  "y": 0,
+  "w": 222,
+  "h": 296
+ },
+ "Vigilante": {
+  "c": "hero-cards",
+  "x": 224,
+  "y": 0,
+  "w": 222,
+  "h": 295
+ },
+ "Guardian": {
+  "c": "hero-cards",
+  "x": 448,
+  "y": 0,
+  "w": 222,
+  "h": 295
+ },
+ "Ranger": {
+  "c": "hero-cards",
+  "x": 672,
+  "y": 0,
+  "w": 222,
+  "h": 295
+ },
+ "Inventor": {
+  "c": "hero-cards",
+  "x": 896,
+  "y": 0,
+  "w": 222,
+  "h": 295
+ },
+ "Firefighter": {
+  "c": "hero-cards",
+  "x": 1120,
+  "y": 0,
+  "w": 222,
+  "h": 296
+ },
+ "Hero Shadow": {
+  "c": "hero-cards",
+  "x": 1344,
+  "y": 0,
+  "w": 222,
+  "h": 295
+ },
+ "Prodigy": {
+  "c": "hero-cards",
+  "x": 1568,
+  "y": 0,
+  "w": 222,
+  "h": 295
+ },
+ "Sage": {
+  "c": "hero-cards",
+  "x": 0,
+  "y": 298,
+  "w": 222,
+  "h": 295
+ },
+ "Patriot": {
+  "c": "hero-cards",
+  "x": 224,
+  "y": 298,
+  "w": 222,
+  "h": 295
+ },
+ "Phantom": {
+  "c": "hero-cards",
+  "x": 448,
+  "y": 298,
+  "w": 222,
+  "h": 296
+ },
+ "Pyromancer": {
+  "c": "hero-cards",
+  "x": 672,
+  "y": 298,
+  "w": 222,
+  "h": 295
+ },
+ "Chronomancer": {
+  "c": "hero-cards",
+  "x": 896,
+  "y": 298,
+  "w": 222,
+  "h": 295
+ },
+ "Beastmaster": {
+  "c": "hero-cards",
+  "x": 1120,
+  "y": 298,
+  "w": 222,
+  "h": 295
+ },
+ "Voidwalker": {
+  "c": "hero-cards",
+  "x": 1344,
+  "y": 298,
+  "w": 222,
+  "h": 295
+ },
+ "Exorcist": {
+  "c": "hero-cards",
+  "x": 1568,
+  "y": 298,
+  "w": 222,
+  "h": 296
+ },
+ "Gravity Mage": {
+  "c": "hero-cards",
+  "x": 0,
+  "y": 596,
+  "w": 222,
+  "h": 295
+ },
+ "Druid": {
+  "c": "hero-cards",
+  "x": 224,
+  "y": 596,
+  "w": 222,
+  "h": 295
+ },
+ "Cyborg": {
+  "c": "hero-cards",
+  "x": 448,
+  "y": 596,
+  "w": 222,
+  "h": 295
+ },
+ "Illusionist": {
+  "c": "hero-cards",
+  "x": 672,
+  "y": 596,
+  "w": 222,
+  "h": 295
+ },
+ "Necromancer": {
+  "c": "villain-cards",
+  "x": 896,
+  "y": 596,
+  "w": 222,
+  "h": 296
+ },
+ "Blood Reaper": {
+  "c": "villain-cards",
+  "x": 1120,
+  "y": 596,
+  "w": 222,
+  "h": 295
+ },
+ "Toxin Alchemist": {
+  "c": "villain-cards",
+  "x": 1344,
+  "y": 596,
+  "w": 222,
+  "h": 295
+ },
+ "Soul Stealer": {
+  "c": "villain-cards",
+  "x": 1568,
+  "y": 596,
+  "w": 222,
+  "h": 295
+ },
+ "Shadow Monarch": {
+  "c": "villain-cards",
+  "x": 0,
+  "y": 894,
+  "w": 222,
+  "h": 295
+ },
+ "Puppeteer": {
+  "c": "villain-cards",
+  "x": 224,
+  "y": 894,
+  "w": 222,
+  "h": 296
+ },
+ "Void Empress": {
+  "c": "villain-cards",
+  "x": 448,
+  "y": 894,
+  "w": 222,
+  "h": 295
+ },
+ "Plague Doctor": {
+  "c": "villain-cards",
+  "x": 672,
+  "y": 894,
+  "w": 222,
+  "h": 295
+ },
+ "Mad Scientist": {
+  "c": "villain-cards",
+  "x": 896,
+  "y": 894,
+  "w": 222,
+  "h": 295
+ },
+ "Demon Knight": {
+  "c": "villain-cards",
+  "x": 1120,
+  "y": 894,
+  "w": 222,
+  "h": 295
+ },
+ "Gravity Weaver": {
+  "c": "villain-cards",
+  "x": 1344,
+  "y": 894,
+  "w": 222,
+  "h": 296
+ },
+ "Mecha Tyrant": {
+  "c": "villain-cards",
+  "x": 1568,
+  "y": 894,
+  "w": 222,
+  "h": 295
+ },
+ "Chrono Thief": {
+  "c": "villain-cards",
+  "x": 0,
+  "y": 1192,
+  "w": 222,
+  "h": 295
+ },
+ "Swarm Queen": {
+  "c": "villain-cards",
+  "x": 224,
+  "y": 1192,
+  "w": 222,
+  "h": 295
+ },
+ "Ice Archmage": {
+  "c": "villain-cards",
+  "x": 448,
+  "y": 1192,
+  "w": 222,
+  "h": 295
+ },
+ "Deep Siren": {
+  "c": "villain-cards",
+  "x": 672,
+  "y": 1192,
+  "w": 222,
+  "h": 296
+ },
+ "Ash Shaman": {
+  "c": "villain-cards",
+  "x": 896,
+  "y": 1192,
+  "w": 222,
+  "h": 295
+ },
+ "Soul Forger": {
+  "c": "villain-cards",
+  "x": 1120,
+  "y": 1192,
+  "w": 222,
+  "h": 295
+ },
+ "Mirror Jester": {
+  "c": "villain-cards",
+  "x": 1344,
+  "y": 1192,
+  "w": 222,
+  "h": 295
+ },
+ "Cyber Priest": {
+  "c": "villain-cards",
+  "x": 1568,
+  "y": 1192,
+  "w": 222,
+  "h": 295
+ },
+ "Crystal Scurrier": {
+  "c": "monster",
+  "x": 0,
+  "y": 1490,
+  "w": 229,
+  "h": 260
+ },
+ "Gloom Eye": {
+  "c": "monster",
+  "x": 231,
+  "y": 1490,
+  "w": 253,
+  "h": 260
+ },
+ "Banshee Phantasm": {
+  "c": "monster",
+  "x": 486,
+  "y": 1490,
+  "w": 216,
+  "h": 260
+ },
+ "Chitin Horror": {
+  "c": "monster",
+  "x": 704,
+  "y": 1490,
+  "w": 305,
+  "h": 260
+ },
+ "Spore Brute": {
+  "c": "monster",
+  "x": 1011,
+  "y": 1490,
+  "w": 228,
+  "h": 260
+ },
+ "Flesh Amalgam": {
+  "c": "monster",
+  "x": 1241,
+  "y": 1490,
+  "w": 257,
+  "h": 260
+ },
+ "Rusted Ghoul": {
+  "c": "monster",
+  "x": 1500,
+  "y": 1490,
+  "w": 228,
+  "h": 260
+ },
+ "Cyber Dread": {
+  "c": "monster",
+  "x": 1730,
+  "y": 1490,
+  "w": 241,
+  "h": 260
+ },
+ "Void Weaver": {
+  "c": "monster",
+  "x": 0,
+  "y": 1752,
+  "w": 187,
+  "h": 260
+ },
+ "Nameless King": {
+  "c": "monster",
+  "x": 189,
+  "y": 1752,
+  "w": 303,
+  "h": 260
+ },
+ "Skeleton": {
+  "c": "minion",
+  "x": 494,
+  "y": 1752,
+  "w": 176,
+  "h": 300
+ },
+ "Bone Goliath": {
+  "c": "minion",
+  "x": 672,
+  "y": 1752,
+  "w": 149,
+  "h": 300
+ },
+ "Toxin Grunt": {
+  "c": "minion",
+  "x": 823,
+  "y": 1752,
+  "w": 167,
+  "h": 300
+ },
+ "Toxin Enforcer": {
+  "c": "minion",
+  "x": 992,
+  "y": 1752,
+  "w": 143,
+  "h": 300
+ },
+ "Voidling": {
+  "c": "minion",
+  "x": 1137,
+  "y": 1752,
+  "w": 158,
+  "h": 300
+ },
+ "Void Goliath": {
+  "c": "minion",
+  "x": 1297,
+  "y": 1752,
+  "w": 148,
+  "h": 300
+ }
+}

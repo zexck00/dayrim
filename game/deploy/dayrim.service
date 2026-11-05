@@ -1,0 +1,26 @@
+# Copy to /etc/systemd/system/dayrim.service and change the paths and user to match your server.
+[Unit]
+Description=Dayrim game server
+After=network.target
+
+[Service]
+Type=simple
+User=dayrim
+WorkingDirectory=/opt/dayrim/server
+ExecStart=/usr/bin/node index.js
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=8080
+Environment=DATA_DIR=/var/lib/dayrim
+Environment=TRUST_PROXY=1
+Environment=ALLOWED_ORIGINS=https://play.example.com
+StateDirectory=dayrim
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

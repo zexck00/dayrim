@@ -1,0 +1,17 @@
+{
+  "name": "dayrim-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multiplayer server for Dayrim",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test-rules.js && node test.js"
+  },
+  "dependencies": {
+    "ws": "8.18.0"
+  }
+}

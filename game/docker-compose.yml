@@ -1,0 +1,19 @@
+# Settings come from a .env file next to this one. Start from .env.example.
+services:
+  dayrim:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${PUBLISH_PORT:-8080}:8080"
+    environment:
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      MAX_ROOMS: ${MAX_ROOMS:-50}
+      MAX_PLAYERS_PER_ROOM: ${MAX_PLAYERS_PER_ROOM:-4}
+      MAX_CONNECTIONS: ${MAX_CONNECTIONS:-400}
+      MAX_CONNECTIONS_PER_IP: ${MAX_CONNECTIONS_PER_IP:-12}
+    volumes:
+      - dayrim-data:/data   # Player saves. Back this up.
+
+volumes:
+  dayrim-data:
