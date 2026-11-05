@@ -19,6 +19,26 @@ The split below assumes these strengths. I don't know each person's skills, so s
 - Follow the rules in [AGENTS.md](../AGENTS.md). Rules go in `game/src/game.js`, and anything a player does online must be checked on the server.
 - Sizes are rough effort: **S** is up to a day, **M** is 2 to 4 days, **L** is a week or more. Dates depend on how many hours each person has.
 
+## Progress snapshot — 2026-11-06
+
+**Status meanings:** implemented means code and the stated automated checks exist; **prototype** means usable but incomplete or awaiting balance, UI and Z review; open means the task’s full acceptance criteria have not been met. A prototype does not imply a merged pull request or a completed human playtest. The work below is committed on the local `combat-depth-stage1` branch; review and merge status are not recorded here.
+
+| Work | Current status | Remaining work |
+|---|---|---|
+| C-01, C-02, C-03, C-05 | Prototype: party scaling table, quota, ultimate adjustment and live enemy rescaling are implemented. | C-06 party balance with D-06; Z review. ×1/×2/×4/×8 are candidates, not final values. |
+| C-04 | Implemented: citizen fear is per player, with rule coverage. | Review; witnessed nearby deaths still frighten nearby citizens. |
+| C-10 | Prototype: crawl, revive, Medic/Scout bonuses and Second Wind work in rules. | D’s 4-player and phone UI checks; Z review and human playtesting. |
+| C-11 | Prototype: Hope, wipe and stage-start/boss-gate retries work online. | Z decides final Hope and wipe rules; C-17/C-18 are needed for boss-phase and objective checkpoints. |
+| C-12, C-13 | Partial: five G-key role abilities and a temporary taunt target exist. | Full damage/healing threat, threat-based targeting, target feedback, validation and balance are open. |
+| C-14 | Partial: Soak + Shock Overload and Break + heavy-hit Break Strike work. | Other reactions, full element coverage, a pair-coverage check and balance remain open. |
+| C-19, C-20 | Partial: Stage 1 has back-line-seeking rushers, telegraphed brutes, interruptible healers and openings, including a healer for both factions. | Remaining roles and targeting markers, the Stage 1 objective, teaching and human tests are open. |
+| C-26–C-28, D-26 | Prototype: role auras, weapon upgrades, checkpoint boons and optional Three.js effects are present. | Balance, readability, asset-character coverage and performance work listed below. |
+| D-10–D-12, D-17–D-18 | Partial: recovery and prototype combat fields sync, revive/team touch buttons and placeholder party feedback exist. | Four-player, lag, bandwidth, accessibility and real-phone checks remain open. |
+
+**Latest verification:** after the combat-depth commit, the full server suite passed **104 rule checks and 39 networking checks**. Chromium checked a solo boon and G action and an online G action; these are automated checks, not a four-person playtest. One 25-minute solo bot sample cleared ten stages with Firefighter and Detective in about 16 game minutes each; Necromancer cleared three stages with one death. The bot does not use team abilities or checkpoint boons, and single random runs are not a balance verdict. The party bot and human balance results remain outstanding.
+
+**Next work:** (1) record a human Stage 1 solo/co-op session, including readability of brute warnings, healer interrupts, rescue, reactions and boon discovery; (2) build D-06 and measure one to four players; (3) complete threat and reaction coverage before expanding enemy roles and stages; (4) get Z’s decisions on Hope, wipes, combat feel and balance. Final music and SFX remain Z-owned, with D responsible for the audio engine.
+
 ## Milestones
 
 | Milestone | Goal | Done when |
@@ -43,7 +63,7 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 | Z-02 | Z | S | Answer the questions in GAME_DESIGN section 20 | Answers written in that section | |
 | Z-03 | Z | M | Decide the art style and resolution, using the Necromancer as the reference | One approved reference sheet in `ASSETS/` | |
 | Z-04 | Z | S | Decide whether the repository stays public, given it holds original art | Decision made and repository set | |
-| D-07 | D | S | **Show the difficulty:** "Difficulty ×4" on the party panel and lobby, with a message when it changes as someone joins or leaves | Everyone sees the current value | C-05 |
+| D-07 | D | S | **Open — show the difficulty:** "Difficulty ×4" on the party panel and lobby, with a message when it changes as someone joins or leaves | Everyone sees the current value | C-05 |
 | D-08 | D | S | **Finish fullscreen** (section 19). Already built: button, L key, hidden cursor with a crosshair, cursor back in menus and after Esc, pause on exit when alone, HUD scaling. Automated browsers refuse real fullscreen, so test it by hand, and fix what breaks. | Tested by hand in Chrome, Firefox and Safari, alone and in a room | |
 | D-09 | D | M | **HD drawing** (section 19): smooth scaling for HD art, a Full, Medium or Low graphics setting, and measure whether 4 players with HD art hold 60 FPS on canvas or need WebGL | Test results shared, with a recommendation | D-03 |
 | Z-06 | Z | S | Approve the HD art sizes in GAME_DESIGN section 19, before producing art | Sizes confirmed in the Asset specification | |
@@ -52,7 +72,7 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 | D-02 | D | S | GitHub Actions: run `npm test` on every pull request and check `dayrim.html` matches its sources | A failing test blocks a merge | Z-01 |
 | D-03 | D | M | **Asset loading.** Inlining everything won't scale: 3 villains already take 2.5 MB, so 40 characters and 10 monsters would make a huge page. Load each character's sheet when needed. Keep solo able to run from the server without logging in. | Page under 2 MB; characters load on demand with a loading state | |
 | D-04 | D | S | Set up Git LFS for art and video, before the large assets arrive | New art files go through LFS, documented in AGENTS.md | Z-01 |
-| D-05 | D | S | Remove the old plan text from `src/page.html`, and delete unused sprite folders listed in HANDOFF.md | Public page shows only the game and a short intro | |
+| D-05 | D | S | Remove the old plan text from `src/page.html` (currently hidden by the full-window layout), and delete unused sprite folders listed in HANDOFF.md | Public page shows only the game and a short intro | |
 | D-06 | D | M | Make a headless party bot for the server, that joins real rooms and plays by itself | 4 bots can clear stage 1, and report time, wipes and damage | |
 | C-01 | C | S | Fix the ultimate exploit: divide boss percent damage by party size | 4 ultimates deal the same percent as 1 solo | |
 | C-05 | C | M | **Party difficulty** (section 9): heroes, villains and bosses get ×1, ×2, ×4 or ×8 life and damage by party size. Replaces `partyToughen`. All living enemies rescale when someone joins or leaves, and keep their percentage of life. | Unit tests for 1 to 4 players, and for joining and leaving during a boss fight. Solo is unchanged. | C-01 |
@@ -92,6 +112,15 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | C-23 | C | M | Boss: Gloom Eye (Look Away) | As above | C-17 |
 | C-24 | C | L | Stage 3 Duskwater Fen: rising water, escort boat, Lurker | Objective done | C-18 |
 | C-25 | C | M | Boss: Banshee Phantasm (Lantern Anchor) | As above | C-17 |
+
+### Prototype follow-up
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-26 | C | M | Balance the five passive role auras in solo and parties; review stacking, range, recovery and clarity | All 40 characters covered; tests and human balance notes reviewed by Z | D-06 |
+| C-27 | C | M | Playtest the two safehouse weapon upgrades, including melee arcs, ranged cones and spell blasts | Upgrade balance and progression reviewed by Z; decide how signature-move characters participate | D-06 |
+| C-28 | C | M | Review boss-gate boon choices and their run/save lifecycle | Choices are discoverable, meaningful and reset at the agreed end of a run; tested solo and online | C-18 |
+| D-26 | D | M | Measure and polish the optional bundled Three.js r187 effects layer | Offline fallback, context loss, reduced motion and performance tested on target devices | D-09 |
 
 ### Minions, day and night, power-ups
 
@@ -136,7 +165,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | D-15 | D | M | **Rejoin in place:** a reconnecting player returns to the same spot and state, not the safehouse | Disconnect test passes | |
 | D-16 | D | S | Boss bar with guard meter and phase marks. Objective tracker. | Matches design | C-17, C-18 |
 | D-17 | D | M | Keep own-character prediction in step with new states such as crawl, root and drag | No snapping at 200 ms lag | C-10 |
-| D-18 | D | M | Touch controls for G, F, ping and revive. Test on real phones. Touch has never been tested. | One full stage played on a phone | C-13 |
+| D-18 | D | M | Touch controls for G and hold-to-revive are prototyped; add ping and test all controls on real phones. | One full stage played on a phone | C-13 |
 
 ### Art and playtest
 
@@ -288,12 +317,6 @@ Idle, walk, attack with wind-up, defeated. Needed for: the 3 existing villain mi
 
 ---
 
-## Open task count
+## Task counts
 
-| Person | M0 | M1 | M2 | M3 | M4 | Total |
-|---|---|---|---|---|---|---|
-| **Z** | 6 | 5 | 11 | 7 | 6 | 35 |
-| **C** | 6 | 27 | 12 | 12 | 2 | 59 |
-| **D** | 9 | 20 | 6 | 5 | 3 | 43 |
-
-C carries the most large tasks. If C becomes a bottleneck, D can take the stage objectives once the frameworks (C-17, C-18) are done, and Z can write boss numbers directly into the data tables.
+The former owner and milestone totals predate the current prototypes and follow-up tasks. Recount after the team agrees which acceptance criteria are complete; do not treat prototype rows as closed. C still owns most of the combat work, so D can take objective work once C-17 and C-18 are ready if the team agrees.
