@@ -1,0 +1,89 @@
+name: Release
+
+# Build one image per branch and push it to GHCR. The home box pulls it:
+#   dev  -> ghcr.io/<owner>/dayrim:dev   -> https://dayrim-dev.calypso.dedyn.io
+#   main -> ghcr.io/<owner>/dayrim:latest -> https://dayrim.calypso.dedyn.io
+# No SSH, no deploy secrets: the box only ever pulls.
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests before the image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: game/server/package-lock.json
+      - working-directory: game/server
+        run: npm ci
+      - working-directory: game/server
+        run: npm test
+      - name: The page must match its sources
+        run: |
+          python3 game/tools/build.py
+          git diff --quiet -- game/dayrim.html || {
+            echo "::error::dayrim.html is stale; rebuild and commit it."
+            exit 1
+          }
+
+  image:
+    name: Build and push
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Work out the tags
+        id: tags
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          sha="$(git rev-parse --short=7 HEAD)"
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "tags=ghcr.io/${owner}/dayrim:latest,ghcr.io/${owner}/dayrim:sha-${sha}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tags=ghcr.io/${owner}/dayrim:dev,ghcr.io/${owner}/dayrim:dev-${sha}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "branch=${GITHUB_REF_NAME} sha=${sha}"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: game
+          file: game/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.ref.name=${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Summary
+        run: |
+          {
+            echo "### Image pushed"
+            echo ""
+            echo "- branch: \`${{ github.ref_name }}\`"
+            echo "- commit: \`${{ github.sha }}\`"
+            echo "- tags: \`${{ steps.tags.outputs.tags }}\`"
+            echo ""
+            echo "The box picks it up within a minute (dayrim-watch.timer)."
+          } >> "$GITHUB_STEP_SUMMARY"
