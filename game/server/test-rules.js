@@ -102,4 +102,15 @@ ru.th={[tp.id]:40};ok(T.threatTarget(ru)===tp,'a rusher switches to whoever out-
 // Bosses keep to the nearest player for now.
 T.enter(tr);G().enemies=[];G().gate.open=true;G().killsStage=15;T.summonBoss();const bz=G().boss;
 if(bz){bz.tauntT=0;tp.x=bz.x-30;tp.y=bz.y;tq.x=bz.x+600;tq.y=bz.y;bz.th={[tq.id]:200};ok(T.threatTarget(bz)===tp,'bosses keep to the nearest player')}
+// Haste: levels and Agility shorten every cooldown, with a floor at 60% of the base timer.
+const hzr=mk(),hz=s.createRoom(hzr,'Guardian',null,'Haste');T.enter(hzr);
+ok(Math.abs(hz.s.cdMul-1)<1e-9,'a level one character has no haste');
+hz.lvl=10;T.recalc();const c10=hz.s.cdMul;ok(c10<1&&Math.abs(c10-.892)<1e-6,'ten levels give 10.8 percent haste: '+c10.toFixed(3));
+hz.train.agi=4;T.recalc();ok(hz.s.cdMul<c10,'agility adds haste');
+hz.lvl=99;hz.train.agi=20;T.recalc();ok(Math.abs(hz.s.cdMul-.6)<1e-9,'haste stops at 60 percent of the base timer');
+const mkr=mk(),mkd=s.createRoom(mkr,'Detective',null,'Marksman');T.enter(mkr);ok(Math.abs(mkd.s.cdMul-.85)<1e-9,'the Marksman still starts 15 percent faster');mkd.lvl=99;mkd.train.agi=20;T.recalc();ok(Math.abs(mkd.s.cdMul-.6)<1e-9,'the Marksman cannot pass the floor either');
+T.enter(hzr);hz.lvl=20;hz.train.agi=0;T.recalc();G().p=hz;hz.cd.dash=0;T.doDash();
+ok(hz.cd.dash<hz.s.dashCd&&Math.abs(hz.cd.dash-hz.s.dashCd*hz.s.cdMul)<1e-9,'dash uses the haste timer');
+hz.cd.dash=0;hz.teamCd=0;hz.x=G().safe.x;hz.y=G().safe.y;G().enemies=[];
+ok(T.doTeam()&&hz.teamCd<14&&Math.abs(hz.teamCd-14*hz.s.cdMul)<1e-9,'team ability cooldowns shrink with haste');
 console.log('\n'+n+' checks passed');

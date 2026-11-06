@@ -1,7 +1,7 @@
 /* ---------- Sheet, menus, input and main loop ---------- */
 function renderStats(){const p=G.p,s=p.s;
   $('whoname').textContent='The '+label(p.char);$('who').textContent='Level '+p.lvl+' · '+Math.floor(p.gold)+' gold'+(p.sp?' · '+p.sp+' skill pts':'');
-  const rows=[['Hit damage',Math.round(weaponDamage(p.weapon))],['Life',Math.ceil(p.hp)+' / '+Math.round(s.maxHp)],['Mana',Math.floor(p.mana)+' / '+Math.round(s.maxMana)],['Armor',Math.round(s.armor)],['Critical',Math.round(s.crit*100)+'%'],['Speed',Math.round(s.speed)],['Items','P'+p.potions+' F'+p.fast+' M'+p.magic],['Rage',Math.floor(p.rage)+'%'],['Best combo',p.bestCombo]];
+  const rows=[['Hit damage',Math.round(weaponDamage(p.weapon))],['Life',Math.ceil(p.hp)+' / '+Math.round(s.maxHp)],['Mana',Math.floor(p.mana)+' / '+Math.round(s.maxMana)],['Armor',Math.round(s.armor)],['Critical',Math.round(s.crit*100)+'%'],['Speed',Math.round(s.speed)],['Haste',Math.round((1-s.cdMul)*100)+'%'],['Items','P'+p.potions+' F'+p.fast+' M'+p.magic],['Rage',Math.floor(p.rage)+'%'],['Best combo',p.bestCombo]];
   $('stats').innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')}
 const statBars=st=>Object.keys(STAT_NAMES).map(k=>'<div class="sb"><span>'+STAT_NAMES[k]+'</span><i>'+'<b></b>'.repeat(st[k])+'<u></u>'.repeat(5-st[k])+'</i></div>').join('');
 function renderPanel(){const p=G.p;renderStats();$('whoart').style.cssText=artStyle(p.char,52,62);

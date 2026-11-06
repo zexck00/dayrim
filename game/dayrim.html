@@ -822,10 +822,12 @@ const clock=h=>{h=(h%24+24)%24;const hh=h|0,m=(h-hh)*60|0;return String(hh).padS
 /* ---------- Stage flow ---------- */
 function freshPlayer(name){return{char:name,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),weaponUpgrades:{},runBoons:{wide:0,opening:0},boonPending:false,teamCd:0,breakReady:0,tauntGuard:0,mendT:0,mendRate:0,stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,killerT:0,deadT:0,respawnT:0,downCount:0,lastDown:-100,secondWind:false,reviveHold:0,reviveTarget:0,reviveProgress:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
 function recalc(){
-  const p=G.p,sk=id=>p.skills[id]||0,s={dmg:11+p.lvl*2.6+p.train.str*2,maxHp:95+p.lvl*18+p.train.end*15,maxMana:60+p.lvl*4,armor:p.lvl*1.6,crit:.05,speed:165+p.train.agi*2,leech:0,regen:3,blast:64,dashCd:2.4,mana:0,hp:0,spellCost:16,cdMul:1,guardMul:1,mendMul:1};
+  const p=G.p,sk=id=>p.skills[id]||0,s={dmg:11+p.lvl*2.6+p.train.str*2,maxHp:95+p.lvl*18+p.train.end*15,maxMana:60+p.lvl*4,armor:p.lvl*1.6,crit:.05,speed:165+p.train.agi*2,leech:0,regen:3,blast:64,dashCd:2.4,mana:0,hp:0,spellCost:16,cdMul:1-.012*(p.lvl-1)-.03*p.train.agi,guardMul:1,mendMul:1};
   Object.values(p.gear).forEach(it=>{if(!it)return;for(const k in it.aff)s[k]=(s[k]||0)+it.aff[k]});
   s.maxHp+=s.hp;s.maxMana+=s.mana;archOf(p.char).f(s);
   s.maxHp*=1+sk('tough')*.06;s.speed=Math.min(290,s.speed*(1+sk('foot')*.02));s.regen+=sk('focus');s.crit+=sk('crit')*.015;s.leech+=sk('leech')*.5;s.guardMul+=sk('guard')*.12;s.mendMul+=sk('mend')*.1;
+  /* Haste: levels and Agility shorten every ability cooldown, but never past 60% of the base timer. Character quirks apply first, so the floor holds for them too. */
+  s.cdMul=Math.max(.6,Math.min(1,s.cdMul));
   p.s=s;p.hp=Math.min(p.hp,s.maxHp);p.mana=Math.min(p.mana,s.maxMana);dirty();
 }
 function baseState(demo){return{mode:'title',demo,mp:false,players:[],t:0,hour:6,p:null,enemies:[],npcs:[],shots:[],loot:[],fx:[],texts:[],log:[],shake:0,flowT:0,banner:null,boss:null,spawnT:0,killsStage:0,stage:1,w:null,quipT:3}}
@@ -972,7 +974,7 @@ function doAttack(){
   if(n&&W.m==='heal'){const h=p.s.maxHp*.01*p.stats.hea*p.s.mendMul;p.hp=Math.min(p.s.maxHp,p.hp+h);burst(p.x,p.y-24,'#6fdca0',3)}
   if(n>2)shake(1.5);
 }
-function doSpell(){if(kitOf(G.p)){doMove('moderate');return}const p=G.p;if(p.guard||p.cd.bolt>0||p.mana<p.s.spellCost)return;p.mana-=p.s.spellCost;p.cd.bolt=.7;p.castT=.3;sfx('bolt');const sk=1+(p.skills.spell||0)*.1;G.shots.push({x:p.x+Math.cos(p.face)*20,y:p.y-22+Math.sin(p.face)*20,vx:Math.cos(p.face)*410,vy:Math.sin(p.face)*410,r:7,from:'p',life:1.1,heavy:true,dmg:p.s.dmg*1.7*statMul(p,'mag')*sk*dmgMul(),fx:'comet',col:spellCol(p.char,'comet'),a:p.face})}
+function doSpell(){if(kitOf(G.p)){doMove('moderate');return}const p=G.p;if(p.guard||p.cd.bolt>0||p.mana<p.s.spellCost)return;p.mana-=p.s.spellCost;p.cd.bolt=.7*p.s.cdMul;p.castT=.3;sfx('bolt');const sk=1+(p.skills.spell||0)*.1;G.shots.push({x:p.x+Math.cos(p.face)*20,y:p.y-22+Math.sin(p.face)*20,vx:Math.cos(p.face)*410,vy:Math.sin(p.face)*410,r:7,from:'p',life:1.1,heavy:true,dmg:p.s.dmg*1.7*statMul(p,'mag')*sk*dmgMul(),fx:'comet',col:spellCol(p.char,'comet'),a:p.face})}
 function explode(s){const p=G.p,R=s.blast||p.s.blast;impact(s,R);sfx('boom');shake(s.blast?.8:2);for(const c of G.npcs){if(!c.dead&&Math.hypot(c.x-s.x,c.y-22-s.y)<R)hitNpc(c,s.dmg,Math.atan2(c.y-s.y,c.x-s.x),true)}for(const e of G.enemies){if(!e.dead&&Math.hypot(e.x-s.x,e.y-22-s.y)<R+e.r)hitEnemy(e,s.dmg,Math.atan2(e.y-s.y,e.x-s.x),210,!!s.heavy)}}
 const TEAM_ABILITY={bruiser:{n:'Taunt',cd:14,d:'Draw nearby enemies and reduce damage taken.'},striker:{n:'Break',cd:12,d:'Your next hit breaks a target and can interrupt a cast.'},shooter:{n:'Mark',cd:10,d:'Mark an aimed enemy so the party deals more damage.'},medic:{n:'Mend Link',cd:8,d:'Heal the lowest-life nearby ally over time.'},scout:{n:'Rescue Dash',cd:12,d:'Dash to an ally and shield you both.'}};
 function chooseBoon(id){const p=G.p;if(!p.boonPending||(id!=='wide'&&id!=='opening'))return false;const b=p.runBoons||(p.runBoons={wide:0,opening:0});if((b[id]||0)>=3)return false;b[id]=(b[id]||0)+1;p.boonPending=false;addLog(id==='wide'?'Dodge protection increased.':'Dodge openings last longer.');writeSave();return true}
@@ -982,8 +984,8 @@ function doTeam(){const p=G.p,k=archKey(p.char),ability=TEAM_ABILITY[k];if(!abil
   else if(k==='shooter'){const candidates=G.enemies.filter(e=>!e.dead&&dist(e,p)<450&&los(p,e));if(!candidates.length)return false;const target=candidates.sort((a,b)=>Math.hypot(a.x-mouse.x,a.y-mouse.y)-Math.hypot(b.x-mouse.x,b.y-mouse.y))[0];target.markT=6;target.aware=true;text(target.x,target.y-100,'MARKED','#ffd860',true)}
   else if(k==='medic'){const q=G.players.filter(a=>!a.deadT&&!a.respawnT&&dist(a,p)<400).sort((a,b)=>a.hp/a.s.maxHp-b.hp/b.s.maxHp)[0];if(!q)return false;q.mendT=4;q.mendRate=q.s.maxHp*.3/4;text(q.x,q.y-80,'MEND LINK','#80e5aa',true)}
   else{const q=G.players.filter(a=>a!==p&&!a.respawnT&&dist(a,p)<350).sort((a,b)=>(a.hp/a.s.maxHp)-(b.hp/b.s.maxHp))[0];if(q){const dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy),steps=Math.max(1,Math.ceil(Math.max(0,d-35)/12));for(let i=0;i<steps;i++)if(move(p,dx/d*Math.min(12,Math.max(0,d-35)),dy/d*Math.min(12,Math.max(0,d-35))))break;p.inv=Math.max(p.inv,1);if(dist(p,q)<70)q.inv=Math.max(q.inv,1)}else{doDash();p.inv=Math.max(p.inv,1)}text(p.x,p.y-80,'RESCUE DASH','#b9a4ff',true)}
-  p.teamCd=ability.cd;return true}
-function doHeal(){const p=G.p;if(p.guard||p.cd.pull>0||p.mana<22||p.hp>=p.s.maxHp)return;p.mana-=22;p.cd.pull=5;p.castT=.45;p.healFx=.8;const h=p.s.maxHp*(.05+.045*p.stats.hea)*p.s.mendMul;p.hp=Math.min(p.s.maxHp,p.hp+h);threatHeal(p,h);text(p.x,p.y-72,'+'+Math.round(h),'#6fdca0',true);burst(p.x,p.y-24,'#6fdca0',18,120);G.fx.push({k:'ring',x:p.x,y:p.y-20,r:40,to:10,t:.4,m:.4,c:'#6fdca0'});sfx('pull')}
+  p.teamCd=ability.cd*p.s.cdMul;return true}
+function doHeal(){const p=G.p;if(p.guard||p.cd.pull>0||p.mana<22||p.hp>=p.s.maxHp)return;p.mana-=22;p.cd.pull=5*p.s.cdMul;p.castT=.45;p.healFx=.8;const h=p.s.maxHp*(.05+.045*p.stats.hea)*p.s.mendMul;p.hp=Math.min(p.s.maxHp,p.hp+h);threatHeal(p,h);text(p.x,p.y-72,'+'+Math.round(h),'#6fdca0',true);burst(p.x,p.y-24,'#6fdca0',18,120);G.fx.push({k:'ring',x:p.x,y:p.y-20,r:40,to:10,t:.4,m:.4,c:'#6fdca0'});sfx('pull')}
 /* ---------- Style helpers ---------- */
 function spellCol(ch,sty){const w=SPECS[ch]&&SPECS[ch].wc;if(sty==='flask')return'90,240,110';if(sty==='ember')return'255,150,60';if(sty==='card')return'255,90,200';if(w&&w[0]==='#'&&w.length===7)return parseInt(w.slice(1,3),16)+','+parseInt(w.slice(3,5),16)+','+parseInt(w.slice(5,7),16);return'190,120,255'}
 function glowP(x,y,c,n=1,sp=60,t=.4,s=3){for(let i=0;i<n;i++){const a=rnd(TAU),v=rnd(sp*.2,sp);G.fx.push({k:'g',x:x+rnd(-3,3),y:y+rnd(-3,3),vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:rnd(t*.5,t),m:t,c,s:rnd(s*.5,s)})}}
@@ -1054,7 +1056,7 @@ function fireMove(a,mv,hitN){
   }
 }
 function updateMove(a,dt){const mv=a.mv;if(!mv)return;mv.t+=dt;const M=KIT[mv.key][mv.id];while(mv.hit<M.hits.length&&mv.t>=M.hits[mv.hit]*mv.dur){fireMove(a,mv,mv.hit);mv.hit++}if(mv.t>=mv.dur)a.mv=null}
-function doMove(id){const p=G.p;if(!kitOf(p)||p.guard||p.mv)return;if(id==='special'){if((p.specT||0)>0)return;p.specT=SPECIAL_CD;G.banner=null}startMove(p,id,mouseAimX());if(id==='special')addLog('Special attack used. Ready again in 60 seconds.')}
+function doMove(id){const p=G.p;if(!kitOf(p)||p.guard||p.mv)return;if(id==='special'){if((p.specT||0)>0)return;p.specT=SPECIAL_CD*p.s.cdMul;G.banner=null}startMove(p,id,mouseAimX());if(id==='special')addLog('Special attack used. Ready again in '+Math.round(SPECIAL_CD*p.s.cdMul)+' seconds.')}
 const mouseAimX=()=>{const p=G.p;return touchMode?p.x+Math.cos(p.face):mouse.x};
 /* ---------- Voice-over: the browser's built-in speech, plus a synth stinger that always plays ---------- */
 let VOICE=null;
@@ -1106,7 +1108,7 @@ const gymCost=r=>Math.round(40*Math.pow(1.3,r));
 const shopCost=s=>Math.round(s.base*(1+(G.stage-1)*.35));
 const guardArmor=p=>(8+p.stats.grd*10+p.lvl*1.4)*(p.weapon==='shield'?1.6:1)*p.s.guardMul;
 function moveVec(){let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;if(joy.on){x=joy.dx;y=joy.dy}const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return{x,y}}
-function doDash(){const p=G.p;if(p.cd.dash>0)return;const v=moveVec(),a=(v.x||v.y)?Math.atan2(v.y,v.x):p.face;p.cd.dash=p.s.dashCd;p.dashT=.26;p.dashX=Math.cos(a);p.dashY=Math.sin(a);p.inv=Math.max(p.inv,.32+Math.min(3,(p.runBoons||{}).wide||0)*.12);sfx('dash')}
+function doDash(){const p=G.p;if(p.cd.dash>0)return;const v=moveVec(),a=(v.x||v.y)?Math.atan2(v.y,v.x):p.face;p.cd.dash=p.s.dashCd*p.s.cdMul;p.dashT=.26;p.dashX=Math.cos(a);p.dashY=Math.sin(a);p.inv=Math.max(p.inv,.32+Math.min(3,(p.runBoons||{}).wide||0)*.12);sfx('dash')}
 function usePotion(){const p=G.p;if(p.cd.potion>0||p.potions<=0||p.hp>=p.s.maxHp)return;p.potions--;p.cd.potion=1;p.pickT=.4;p.healFx=.8;const h=p.s.maxHp*.45;p.hp=Math.min(p.s.maxHp,p.hp+h);threatHeal(p,h);text(p.x,p.y-72,'+'+Math.round(h),'#86dccb',true);burst(p.x,p.y-20,'#86dccb',16);sfx('loot');dirty()}
 function useFast(){const p=G.p;if(p.fast<=0||p.fastT>0)return;p.fast--;p.fastT=20;p.pickT=.4;p.pillT=.8;p.pillC='111,180,255';text(p.x,p.y-72,'Fast Pill','#6fb4ff',true);sfx('loot');dirty()}
 function useMagic(){const p=G.p;if(p.magic<=0||p.magicT>0)return;p.magic--;p.magicT=20;p.pickT=.4;p.pillT=.8;p.pillC='200,140,255';text(p.x,p.y-72,'Magic Pill','#c88cff',true);sfx('loot');dirty()}
@@ -1747,7 +1749,7 @@ if(store.get('dayrim-fx3')==='on')setFx3(true);
 /* ---------- Sheet, menus, input and main loop ---------- */
 function renderStats(){const p=G.p,s=p.s;
   $('whoname').textContent='The '+label(p.char);$('who').textContent='Level '+p.lvl+' · '+Math.floor(p.gold)+' gold'+(p.sp?' · '+p.sp+' skill pts':'');
-  const rows=[['Hit damage',Math.round(weaponDamage(p.weapon))],['Life',Math.ceil(p.hp)+' / '+Math.round(s.maxHp)],['Mana',Math.floor(p.mana)+' / '+Math.round(s.maxMana)],['Armor',Math.round(s.armor)],['Critical',Math.round(s.crit*100)+'%'],['Speed',Math.round(s.speed)],['Items','P'+p.potions+' F'+p.fast+' M'+p.magic],['Rage',Math.floor(p.rage)+'%'],['Best combo',p.bestCombo]];
+  const rows=[['Hit damage',Math.round(weaponDamage(p.weapon))],['Life',Math.ceil(p.hp)+' / '+Math.round(s.maxHp)],['Mana',Math.floor(p.mana)+' / '+Math.round(s.maxMana)],['Armor',Math.round(s.armor)],['Critical',Math.round(s.crit*100)+'%'],['Speed',Math.round(s.speed)],['Haste',Math.round((1-s.cdMul)*100)+'%'],['Items','P'+p.potions+' F'+p.fast+' M'+p.magic],['Rage',Math.floor(p.rage)+'%'],['Best combo',p.bestCombo]];
   $('stats').innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')}
 const statBars=st=>Object.keys(STAT_NAMES).map(k=>'<div class="sb"><span>'+STAT_NAMES[k]+'</span><i>'+'<b></b>'.repeat(st[k])+'<u></u>'.repeat(5-st[k])+'</i></div>').join('');
 function renderPanel(){const p=G.p;renderStats();$('whoart').style.cssText=artStyle(p.char,52,62);
