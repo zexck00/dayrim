@@ -9,10 +9,10 @@ function start(){srv=spawn(process.execPath,['index.js'],{cwd:__dirname,env:{...
 const stop=()=>new Promise(res=>{srv.once('exit',res);srv.kill('SIGTERM')});
 const get=(p,h={})=>new Promise((res,rej)=>http.get({port:PORT,host:'127.0.0.1',path:p,headers:h},r=>{const b=[];r.on('data',d=>b.push(d));r.on('end',()=>res({status:r.statusCode,headers:r.headers,body:Buffer.concat(b)}))}).on('error',rej));
 class Bot{
-  constructor(){this.msgs=[];this.waiters=[];this.bytes=0;this.snaps=0;this.me={};this.ents={e:new Map(),p:new Map()};this.events=[]}
+  constructor(){this.msgs=[];this.waiters=[];this.bytes=0;this.snaps=0;this.me={};this.world={};this.ents={e:new Map(),p:new Map()};this.events=[]}
   open(h){return new Promise((res,rej)=>{this.ws=new WebSocket('ws://127.0.0.1:'+PORT+'/ws',{headers:h});this.ws.on('open',res);this.ws.on('error',rej);this.ws.on('close',c=>{this.closed=c});
     this.ws.on('message',d=>{this.bytes+=d.length;const m=JSON.parse(d);if(m.t==='s'){this.snap(m);return}const w=this.waiters.find(x=>x.t===m.t);if(w){this.waiters.splice(this.waiters.indexOf(w),1);w.r(m)}else this.msgs.push(m)})})}
-  snap(m){this.snaps++;this.ack=m.a;if(m.v)this.events.push(...m.v);if(m.p)for(const d of m.p[0]){if(d.id===this.id)Object.assign(this.me,d);else{const o=this.ents.p.get(d.id)||{};Object.assign(o,d);this.ents.p.set(d.id,o)}}if(m.p)for(const i of m.p[1])this.ents.p.delete(i);if(m.e){for(const d of m.e[0])this.ents.e.set(d.id,Object.assign(this.ents.e.get(d.id)||{},d));for(const i of m.e[1])this.ents.e.delete(i)}}
+  snap(m){this.snaps++;this.ack=m.a;if(m.g)Object.assign(this.world,m.g);if(m.v)this.events.push(...m.v);if(m.p)for(const d of m.p[0]){if(d.id===this.id)Object.assign(this.me,d);else{const o=this.ents.p.get(d.id)||{};Object.assign(o,d);this.ents.p.set(d.id,o)}}if(m.p)for(const i of m.p[1])this.ents.p.delete(i);if(m.e){for(const d of m.e[0])this.ents.e.set(d.id,Object.assign(this.ents.e.get(d.id)||{},d));for(const i of m.e[1])this.ents.e.delete(i)}}
   send(o){this.ws.send(JSON.stringify(o))}
   wait(t){const i=this.msgs.findIndex(m=>m.t===t);if(i>=0)return Promise.resolve(this.msgs.splice(i,1)[0]);return new Promise((r,j)=>{const w={t,r};this.waiters.push(w);setTimeout(()=>j(new Error('timed out waiting for '+t)),4000)})}
   async hello(name,token){this.send({t:'hello',name,token});const w=await this.wait('welcome');this.token=w.token;this.name=w.name;return w}
@@ -39,7 +39,7 @@ class Bot{
   ok((await c.join('ZZZZZ','Detective')).msg.includes('No room'),'unknown code is refused');
   ok((await c.join(ja.code,'__proto__')).t==='error','a made-up character is refused');
   const jb=await b.join(ja.code.toLowerCase(),'Firefighter');ok(jb.t==='joined'&&jb.seed===ja.seed,'second player joins with the same map seed');
-  await sleep(400);ok(a.ents.p.size===1&&b.ents.p.size===1,'each player sees the other');ok(a.me.char==='Detective'&&a.me.s&&a.me.gold!==undefined,'own snapshot holds full character data');
+  await sleep(400);ok(a.ents.p.size===1&&b.ents.p.size===1,'each player sees the other');ok(a.me.char==='Detective'&&a.me.s&&a.me.gold!==undefined,'own snapshot holds full character data');ok(a.world.hope===4&&a.world.maxHope===4&&b.world.hope===4&&b.world.maxHope===4,'both players receive shared Hope');
   const other=[...a.ents.p.values()][0];ok(other.gold===undefined&&other.bag===undefined,'other players do not receive your gold or bag');
 
   console.log('Input is checked by the server');
@@ -53,10 +53,13 @@ class Bot{
 
   console.log('Fighting together');
   await sleep(1500);const bb=a.bytes;const sn=a.snaps;const t0=Date.now();
-  const atk=setInterval(()=>{for(const p of[a,b]){const e=[...p.ents.e.values()][0];p.send({t:'i',s:Date.now()%1e9,x:0,y:0,ax:(e?e.x:0),ay:(e?e.y:0),l:true,r:false})}},100);
+  const atk=setInterval(()=>{for(const p of[a,b]){const es=[...p.ents.e.values()].filter(e=>!e.dead);const e=es.sort((x,y)=>Math.hypot(x.x-p.me.x,x.y-p.me.y)-Math.hypot(y.x-p.me.x,y.y-p.me.y))[0];
+    p.send({t:'i',s:Date.now()%1e9,x:e?Math.sign(e.x-p.me.x):0,y:e?Math.sign(e.y-p.me.y):0,ax:(e?e.x:0),ay:(e?e.y:0),l:true,r:false})}},100);
   await sleep(5000);clearInterval(atk);const sec=(Date.now()-t0)/1000;
   console.log('      '+Math.round((a.bytes-bb)/sec/1024*10)/10+' KB/s before compression per player, '+Math.round((a.snaps-sn)/sec)+' snapshots/s, '+a.ents.e.size+' enemies in view');
   ok(a.ents.e.size>=0&&a.snaps>sn+50,'snapshots keep flowing during a fight');
+  ok(a.world.ch!==undefined&&a.world.ch===b.world.ch,'both players see the same party chain: '+(a.world.ch||0));
+  ok(a.world.lk!==undefined&&a.world.lk===b.world.lk,'the link window is on the wire and empty when nobody links');
 
   console.log('Host and leaving');
   const host=b.wait('host');a.close();const hm=await host;ok(hm.host===b.id,'host moves to the next player when the host leaves');

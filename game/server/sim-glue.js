@@ -14,19 +14,22 @@ text=(x,y,s,c,big)=>ev(['x',Math.round(x),Math.round(y),s,c,big?1:0],x,y);
 burst=(x,y,c,n,sp=120)=>ev(['b',Math.round(x),Math.round(y),c,n,sp],x,y);
 glowP=(x,y,c,n=1,sp=60,t=.4,s=3)=>ev(['w',Math.round(x),Math.round(y),c,n,sp,t,s],x,y);
 bleed=(x,y,dx,dy,n)=>ev(['e',Math.round(x),Math.round(y),+dx.toFixed(2),+dy.toFixed(2),n],x,y);
-addDecal=(x,y,r,pool)=>ev(['d',Math.round(x),Math.round(y),+r.toFixed(1),pool?1:0],x,y);
+addDecal=(x,y,r,pool,col)=>ev(['d',Math.round(x),Math.round(y),+r.toFixed(1),pool?1:0,typeof col==='string'?col.slice(0,7):''],x,y);
 trail=()=>{};tickFx=()=>{};dirty=()=>{};audioOn=()=>{};writeSave=()=>{};
 function setMode(m){if(m==='clear'&&CUR){CUR.cleared=true;ev(['clear',G.stage])}}
 
 const roundDeep=o=>{for(const k in o){const v=o[k];if(typeof v==='number')o[k]=Math.round(v*100)/100}return o};
-const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','skills','train','sp','kills','rage','bestCombo','maxStage','beaten'];
+const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','weaponUpgrades','runBoons','skills','train','sp','kills','rage','bestCombo','maxStage','beaten'];
 
 /* Input and actions from the network take effect at the start of that player's own turn */
 applyInput=p=>{const i=p.input;joy.on=true;joy.dx=i.x;joy.dy=i.y;mouse.x=i.ax;mouse.y=i.ay;mouse.left=i.l;mouse.right=i.r;
-  const q=p.actions;p.actions=[];for(const a of q){if(Object.prototype.hasOwnProperty.call(ACTIONS,a.n))ACTIONS[a.n](p,a.v)}};
+  const q=p.actions;p.actions=[];for(const a of q){if(!(p.deadT>0||p.respawnT>0)&&Object.prototype.hasOwnProperty.call(ACTIONS,a.n))ACTIONS[a.n](p,a.v)}};
 const ACTIONS={
+  team:()=>doTeam(),boon:(p,v)=>{if(typeof v==='string')chooseBoon(v)},
+  revive:(p,v)=>{if(typeof v==='boolean')p.reviveHold=v?.45:0},
   dash:()=>doDash(),ult:()=>doUlt(),special:()=>doMove('special'),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),
   cycle:(p,v)=>cycleWeapon(v>0?1:-1),
+  upgrade:(p,v)=>{upgradeWeapon(v)},
   weapon:(p,v)=>{if(typeof v==='string'&&Object.prototype.hasOwnProperty.call(WEAPONS,v))equipWeapon(v)},
   skill:(p,v)=>{const s=SKILLS.find(x=>x.id===v);if(!s||p.sp<=0||(p.skills[v]||0)>=s.max)return;p.sp--;p.skills[v]=(p.skills[v]||0)+1;recalc()},
   gym:(p,v)=>{if(!p.nearSafe||!GYM.some(x=>x.id===v))return;const c=gymCost(p.train[v]||0);if(p.gold<c)return;p.gold-=c;p.train[v]=(p.train[v]||0)+1;recalc()},
@@ -37,11 +40,13 @@ function makePlayer(char,save,pname,id){
   p.char=char;p.id=id;p.pname=pname;p.gear=Object.assign({armor:null,clothes:null,tool:null},p.gear);delete p.gear.weapon;
   p.bag=(p.bag||[]).filter(i=>i.slot!=='weapon');
   if(!Array.isArray(p.weapons)||!p.weapons.includes('fists'))p.weapons=['fists'].concat(p.weapons||[]);if(!p.weapons.includes(p.weapon))p.weapon='fists';
+  if(!p.runBoons||typeof p.runBoons!=='object'||Array.isArray(p.runBoons))p.runBoons={wide:0,opening:0};
+  if(!p.weaponUpgrades||typeof p.weaponUpgrades!=='object'||Array.isArray(p.weaponUpgrades))p.weaponUpgrades={};
   p.input={s:0,x:0,y:0,ax:0,ay:0,l:false,r:false};p.actions=[];p.ack=0;p.stats=STATS[char];
   return p;
 }
 function freshHealth(p){G.p=p;recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana}
-function afterStage(room){for(const q of G.players){freshHealth(q);q.deadT=0;q.fastT=0;q.magicT=0}G.p=G.players[0];room.cleared=false;room.stageChanged=true}
+function afterStage(room){for(const q of G.players){freshHealth(q);q.deadT=0;q.respawnT=0;q.fastT=0;q.magicT=0}G.p=G.players[0];room.cleared=false;room.stageChanged=true}
 
 return{
   charExists:n=>typeof n==='string'&&Object.prototype.hasOwnProperty.call(STATS,n)&&!!archKey(n),factionOf,SAVE_KEYS,
@@ -52,10 +57,10 @@ return{
     return p;
   },
   addPlayer(room,char,save,pname){
-    G=room.G;EV=room.ev;CUR=room;const id=nextId++,p=makePlayer(char,save,pname,id);G.players.push(p);freshHealth(p);p.x=G.safe.x+60-(G.players.length-1)*30;p.y=G.safe.y+30;
+    G=room.G;EV=room.ev;CUR=room;const id=nextId++,p=makePlayer(char,save,pname,id);G.players.push(p);rescaleParty();freshHealth(p);p.x=G.safe.x+60-(G.players.length-1)*30;p.y=G.safe.y+30;
     return p;
   },
-  removePlayer(room,p){G=room.G;const i=G.players.indexOf(p);if(i>=0)G.players.splice(i,1);G.p=G.players[0]||null},
+  removePlayer(room,p){G=room.G;const i=G.players.indexOf(p);if(i>=0){G.players.splice(i,1);rescaleParty()}G.p=G.players[0]||null},
   step(room,dt){
     G=room.G;EV=room.ev;CUR=room;
     for(const p of G.players)p.ack=p.input.s;
@@ -72,5 +77,5 @@ return{
   },
   saveOf(p){const o={};for(const k of SAVE_KEYS)o[k]=p[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota}
+  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,doTeam,chooseBoon,offerBoons,spawnMob,spawnRival,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc,addDecal,GORE,goreTrail,goreSpray,goreChunks,gorePool,ELEMENT,REACTIONS,REACT_NAME,REACT_FX,reactionOf,reactionCoverage,objStep,resetStepState,objectiveSteps,updateBoss,bossGuard,bossTelegraph,bossPhaseCheck,BOSS_TELEGRAPH,BOSS_STAGGER,ultHit,ultDmgFor,ULT_LEN,openLink,linkBonus,linkTier,tickLink,LINK_TIERS,LINK_WINDOW,chainAdd,chainBonus,chainReset,chainTick,cdMulOf,CHAIN_BONUS,CHAIN_WINDOW,rageShare,RAGE_SHARE_RANGE,pillarHit,spawnPillars,pillarsUp,breakPillar,startBurrow,startSpray,bossPick}
 };

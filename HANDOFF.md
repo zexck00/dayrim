@@ -1,36 +1,36 @@
 # Handoff
 
-For the next person or agent working on Dayrim. State as of version 0.1.0, 2026-11-05.
+For the next person or agent working on Dayrim. State as of 2026-11-06: unreleased work on top of version 0.1.0, local branch `combat-depth-stage1` at gameplay commit `b0792f8`. The task and design documents distinguish prototypes from the target design.
 
 ## Where things stand
 
-Solo play is playable. Multiplayer works locally and passes its tests, but it has not been deployed or played by people over the internet.
+Solo play and local-network multiplayer are playable prototypes. The server has not been verified on a public internet deployment. A human was given the local-network address for a playtest; no results have been recorded yet.
 
 | Area | Status |
 |---|---|
-| Rules with several players | Tested (`game/server/test-rules.js`) |
+| Latest rules and networking suite | 104 rule checks and 39 networking checks passed after `b0792f8` |
 | Server, rooms, saves, abuse limits | Tested over real WebSockets (`game/server/test.js`) |
-| Two browser tabs in one room | Tested by script |
+| Browser checks | Automated checks cover two tabs, solo/online G actions, a checkpoint boon, viewport layout, weapon icons and the optional 3D layer; not a substitute for human playtests |
 | Full stage to boss kill and next stage online | Tested by a bot, one player |
 | Movement with 184 ms of added lag | Tested by script, smooth |
-| Solo Firefighter bot | 10 stages, 0 deaths, about 18 game minutes |
+| Latest solo bot sample | Firefighter and Detective cleared 10 stages in about 16 game minutes each; Necromancer cleared 3 in 25 minutes with 1 death. The bot does not use team abilities or boons. |
 | 50 rooms of 4 | Simulated at about 12 ms of a 33 ms budget, on the dev Mac, with no networking |
 | Docker image, Compose | **Never run.** Docker wasn't available. The server was run from the same file list. |
 | systemd, Caddy, nginx samples | **Never run** |
 | Touch controls, phones | **Never tested** |
 | Voice lines | Decoded and triggered by code. **Nobody has listened to them.** |
-| Hand play | **No person has played** the multiplayer version |
+| Human playtest results | No results recorded; ask players about danger, role abilities, reactions, recovery and boon discovery |
 
 ## Open work
 
 Nothing here is promised, and the owner sets priorities.
 
-- **Co-op balance:** the numbers are `partyCrowd` and `partyToughen` in `game.js`, and they are guesses.
-- **Solo balance:** heroes may be too easy. In an earlier run, the Necromancer bot died 45 times without finishing in 90 game minutes.
+- **Co-op balance:** `PARTY_SCALE` in `game.js` holds provisional scaling; no one-to-four-player party-bot or human balance results are recorded. The ×8 four-player damage candidate can be punishing.
+- **Solo balance:** the latest single bot sample suggests Necromancer may struggle; random results vary, and the bot does not use team abilities, checkpoint boons or weapon upgrades.
 - **Asset villains:** walking, dodge, pill and heal poses need video from the owner. They are built from idle frames for now.
 - **Only 3 villains use videos:** the owner said "for now". The others still use the code-drawn rig.
 - **Accounts:** none yet. Losing the browser token loses the character.
-- **Stale page text:** the plan section in `src/page.html` ("How to execute it") still describes a single-player Phaser plan. Visitors to a public server will see it, so remove or rewrite it.
+- **Stale page text:** the old Phaser plan remains in `src/page.html`, but the full-window layout currently hides it. Remove or rewrite it as part of D-05.
 - **Leftovers:** `sprites/hero/`, `sprites/hero-cutout/`, `sprites/villain/` and `tools/heroes_fullbody.py` are unused and safe to delete.
 - **Test hooks in the page:** `window.__dayrim` and `window.__botOn` ship in the page. They only affect that player's own browser, and online rules run on the server.
 - **Licensing:** see "Before a public or commercial release" in `README.md`.
@@ -38,7 +38,7 @@ Nothing here is promised, and the owner sets priorities.
 ## How it fits together
 
 ```
-          page.html + rig.js + game.js + render.js + net.js + ui.js
+    page.html + rig.js + game.js + render.js + net.js + effects3d.js + ui.js
                               | tools/build.py, with all art inlined
                               v
                         game/dayrim.html ---------- works alone from a file
@@ -58,6 +58,8 @@ Nothing here is promised, and the owner sets priorities.
 | `src/game.js` | All rules: data, maps, combat, enemies, rage, combo, `update(dt)` |
 | `src/render.js` | Canvas drawing and HUD. Reads state and never changes the rules. |
 | `src/net.js` | Online client: lobby, snapshots, prediction, party HUD |
+| `src/effects3d.js` | Optional visual-only Three.js layer; off by default, with Canvas fallback |
+| `vendor/three-layer.js` | Bundled Three.js r187 effects module, embedded by the build; source and MIT license are in `vendor/` |
 | `src/ui.js` | Menus, input and the main loop. Starts the game, so it comes last in the build. |
 | `server/index.js` | HTTP, WebSocket, rooms, message checks, game loop, saving |
 | `server/sim.js` | Runs rules in a vm with stubbed browser objects |
@@ -72,7 +74,7 @@ Nothing here is promised, and the owner sets priorities.
 **`G` is the whole game state, and `G.p` is a pointer that moves.** The rules were written for one player, using `G.p` everywhere. Rather than rewrite them, the loop points `G.p` at whichever player matters right now, then runs the same code:
 
 - In a player's turn, `G.p` is that player.
-- Before each enemy's update, `G.p` is the nearest living player, so the enemy targets them.
+- Before each enemy's update, `G.p` is its living taunt target if present, otherwise the player with the highest threat score. Threat comes from damage and from active healing, measured as a percentage of the enemy's own life so it means the same thing at every level, plus a small proximity term; it decays 4 points a second and a challenger needs 15% more to take over, so enemies do not flip-flop. Rushers still prefer a nearby back-line ally until someone out-threatens them. Bosses keep to the nearest player until the boss framework defines their targeting. The tuning lives in one `THREAT` table.
 - For a shot or hazard from a player, `G.p` is its owner (`ownerOf`, using `pid`), so kills and leech credit the right player.
 
 So anything belonging to one player goes on the player object (`p.combo`, `p.ult`, `p.nearSafe`, `p.deadT`). Anything shared goes on `G`. Never add a loop that calls a rule function for several players without setting `G.p` each time. In the browser, online, `G.p` is always the local player.
@@ -87,7 +89,24 @@ So anything belonging to one player goes on the player object (`p.combo`, `p.ult
 
 **Maps come from a seed.** `genCitySeeded` swaps `Math.random` during `genCity`, so server and browsers build the same map. The server also sends the collision map, so a floating-point difference between browsers can only change decoration. Any new random call inside `genCity` still matches, because both sides run the same code, but server and page must be the same build.
 
-**Your own movement is predicted.** The browser moves your character at once and records each move in `net.pending`. On each snapshot it takes the server's position, adds the moves not yet acknowledged, and eases toward the result. It snaps if the gap passes 110 units. Other players and enemies glide toward their last reported position. The speed formula in `netUpdate` must match `updatePlayer`.
+**Your own movement is predicted.** The browser moves your character at once and records each move in `net.pending`. On each snapshot it takes the server's position, adds the moves not yet acknowledged, and eases toward the result. It snaps if the gap passes 110 units. Other players and enemies glide toward their last reported position. The speed formula in `netUpdate` must match `updatePlayer`, including the Scout aura and crawl/drag modifiers.
+
+## Current prototypes
+
+- Party-size scaling, recovery, shared Hope and wipe retries are provisional. A retry uses the stage start or open boss gate; bosses restart at full health until phase checkpoints exist.
+- Linked ultimates live in `G.link` (`{t,ids,dmg,name}`): `openLink` on each cast, `linkEffect` for the tier effects, `linkBonus(p)` read at hit time so an ultimate already running still upgrades, `tickLink` in `update`, and `ultDmgFor(e,p,lb)` so the link multiplies exactly once - after `bossUltDamage`'s party share, never twice. Solo casts do not open a window because there is nobody to link with. The window is synced as `lk` (`{n,t,in}` per client) and the HUD shows "LINKED n · +X%" or "LINK NOW: press V" with a countdown bar. There is no per-ally screen takeover: `drawUlt` only ever runs for the local caster, and allies get the ground nova from the fx events.
+- Party chain lives in `G.chain` (`{n,t,tier}`): `chainAdd` on every kill by anyone, `chainTick` in `update` for the shared six second window, `chainBonus()` for the four tiers (`CHAIN_BONUS`), `cdMulOf(p)` so every ability timer reads haste and chain through one function, and `rageShare` for the 500-unit rage split. The counter crosses the wire as `ch` in the room-wide block. Linked ultimates (C-16) are not built yet.
+- Stage 1 (Crystal Scurrier) has its own kit, wired through `bossPick`: `aim` for Skitter Rush, a `spray` act for the cone, and `burrow`/`erupt` at half life, which hides the boss (`e.buried`, immune to damage) and then erupts under `topThreatPlayer`. Pillars are ordinary props (`kind:'pillar'`) spawned by `BOSS_PHASE_FX[1]`; they are not solid, and while any stand the boss heals at `PILLAR_REGEN` per pillar per second. `pillarHit` is the timing rule: solo needs `charged` (a kit move that is not the small one), a party needs two different players inside `PILLAR_WINDOW`. Pillars are hit from the melee arc in `doAttack` and from kit moves in `doMove`.
+- Bosses run on one framework. The numbers sit together at the top of the boss section: `BOSS_GUARD_MAX`, `BOSS_STAGGER`, `BOSS_TELEGRAPH` (minimum wind-up), `BOSS_ENRAGE_BASE/STEP/RATE` and `BOSS_STAGGER_DMG`. `bossGuard` is fed by Break, reactions and specials; a full bar staggers the boss for 5s, during which it does not act and takes 1.5x damage. `bossTelegraph` is the only way to start a big attack and refuses anything shorter than 0.6s, which the renderer draws as a filling marked area (circle or line). `bossEnrage` runs a clock of 240s + 30s per stage and shortens follow-up cooldowns once it fires. `bossPhaseCheck` reads `BOSS_PHASES[stage]`; crossing a threshold clears enemy shots, gives the boss a 2s breather and bumps the phase. The arena is `G.arena`, opened in `summonBoss` and cleared on death: it clamps the party inside and a respawn lands at its edge, which replaced the old trick of healing a boss that players ran away from.
+- Stage objectives live on `G.obj` as ordered steps: `{i, done, steps:[{kind, need, have, label}]}`, built by `objectiveSteps(stage)` from `STAGE_STEPS`. `objStep()` runs every frame; the kill step reads `G.killsStage`, and the last step calls `openGate()`, which is now the only thing that opens the boss gate. Stages with no steps yet fall back to the kill quota, so no stage can dead-end. The wounded scout is a normal NPC with `wounded:true`: `updateRevive` prefers a downed ally and falls back to a wounded NPC in reach, so one hold-F input serves both. Online, only the current step crosses the wire (`obj` in the room snapshot) and the client renders it from `objNow()`. Steps come in four more kinds: `revive`, `hold` (each zone lit in turn, or `simul` for zones held at once), `carry` (walk over an item to lift it, walk into the drop ring to deliver it; a carrier cannot attack, cast or use the team ability) and `escort` (moves only while a player is within 220). Every prop lives in one synced list, `G.props`, with a `kind`, and one renderer, `drawProp2`, so a new objective kind is a spawner plus a branch. `resetStepState` runs on a wipe: finished steps stay, the step in progress starts over.
+- Enemy roles come from the weapon through `METHOD_ROLE`: heal to healer, shield to guard, spell to caster, shoot to shooter, everything else rusher, and strong minions stay brutes. Casters drop a `G.hazards` zone on their target every 6 to 9 seconds. A guard's block only applies when the hit arrives from the front (`facing < 1.05`), so flanking ignores it. The marker is drawn from the synced `targetId`, which the enemy loop writes every frame; solo players carry `id:1` so that field is never 0 in single-player.
+- Reactions are a data table: `ELEMENT` (the design's element per character, keyed by roster name), `REACTIONS` (ten rows), and `REACT_FX` (one effect per id, each returning its damage multiplier). An id with no effect cannot fire. `reactionCoverage()` reports 351 of 780 character pairs: 259 by element and 92 by same-element resonance. The other 429 are neutral on purpose, because section 5 says not every pair reacts. New enemy fields: `shatterT` (armour off, takes 25% more), `frozenT`, `slowT` (40% slower, applied in `steer`), and `rotT`/`rotRate`/`rotBy`. A reaction consumes `statusT`. Splash damage goes through `reactHit`, which cannot trigger another reaction. Both players who build a reaction gain `REACTION_RAGE`.
+- Every character has a role aura. G activates Taunt, Break, Mark, Mend Link or Rescue Dash. Rushers, brutes and healers have initial behavior; brutes can be exposed after a dodge and healer casts can be interrupted. Only Overload (Soak + Shock) and Break Strike are implemented reactions, not the complete design matrix.
+- Gore (C-30) is code-only and needs Z's review: blood volume scales with damage as a share of the target's life, heavy hits and criticals add chunks, kills leave a pool, wounded enemies under 35% life leave a trail, and minion blood takes its family colour. Decals carry their own colour and the client caps them at `GORE.cap`; the cap matters because unbounded spray used to evict pools within seconds. Wound trails are throttled by `GORE.trailT`. Drop marks are probabilistic (`GORE.mark`) so spray does not carpet the ground.
+- Haste (C-29) shortens cooldowns. Levels and trained Agility shorten weapon, spell, heal, dash, team-ability and kit-special cooldowns through one `cdMul`, floored at 60% of base; passive regeneration and potion timers are deliberately excluded. Needs Z review and a balance pass.
+- Boss-gate checkpoints offer one personal dodge boon. Boons persist with the current character run and saves; the team still needs to decide and test the exact end-of-run reset. Safehouse weapon upgrades widen melee and ranged areas; video-based signature-move villains cannot upgrade those moves yet.
+- The game fills the browser window. Menu → Skills describes the G ability and offers any pending boon; Menu → Weapons handles upgrades; Return to main menu leaves an online room. The optional 3D effects toggle is visual only. No background music is implemented, and final music and SFX are Z’s responsibility.
+- A local-network playtest server was verified at `http://192.168.1.10:8080` on 2026-11-06. It is a temporary process on this machine, not a public deployment or a stable address. The server caches the built page at startup; after changes, rebuild and restart it only when players will not be interrupted. Progress uses `game/data/` by default and must not be committed.
 
 ## Recipes
 

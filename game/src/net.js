@@ -1,6 +1,6 @@
 /* ---------- Online play. The server runs the world. This file sends what you press and draws what it reports. ---------- */
-const net={avail:false,ws:null,ready:false,inRoom:false,lobby:false,you:0,host:0,code:'',token:null,name:'',rooms:[],err:'',seq:0,sendT:0,idleT:0,last:'',pending:[],dash:0,dx:0,dy:0,rtt:0,pingT:0,retry:0,down:false,wantRoom:null,ents:null,bossId:0,bytes:0,onReady:null};
-const mkEnts=()=>({p:new Map(),e:new Map(),n:new Map(),h:new Map(),z:new Map(),l:new Map()});
+const net={avail:false,ws:null,ready:false,inRoom:false,lobby:false,you:0,host:0,code:'',token:null,name:'',rooms:[],err:'',seq:0,sendT:0,idleT:0,last:'',pending:[],dash:0,dx:0,dy:0,rtt:0,pingT:0,retry:0,down:false,wantRoom:null,ents:null,bossId:0,bytes:0,onReady:null,reviveT:0};
+const mkEnts=()=>({p:new Map(),e:new Map(),n:new Map(),h:new Map(),z:new Map(),l:new Map(),pr:new Map()});
 function netAvailable(){return net.avail}
 function netOn(){return net.inRoom}
 function netIsHost(){return net.you===net.host}
@@ -75,7 +75,8 @@ function netSnapshot(m){
   if(applyList(m.h,E.h,'h'))G.shots=[...E.h.values()];
   if(applyList(m.z,E.z,'z'))G.hazards=[...E.z.values()];
   if(applyList(m.l,E.l,'l'))G.loot=[...E.l.values()];
-  const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;if(g.killer!==undefined)G.killerT=g.killer?1:0;
+  if(applyList(m.pr,E.pr,'pr'))G.props=[...E.pr.values()];
+  const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.hope!==undefined)G.hope=g.hope;if(g.obj!==undefined){try{const o=JSON.parse(g.obj);G.obj={i:o.i,done:!!o.d,steps:[],cur:{have:o.h,need:o.n,label:o.l}}}catch(e){}}if(g.maxHope!==undefined)G.hopeMax=g.maxHope;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;if(g.ch!==undefined&&(!G.chain||G.chain.n!==g.ch))G.chain={n:g.ch,t:6,tier:null};if(g.lk!==undefined){try{const L=g.lk?JSON.parse(g.lk):null;G.link=L?{n:L.n,t:L.t,dmg:0,name:'',ids:L.in?[G.p.id]:[]}:null}catch(e){}}
     if(g.ban!==undefined){if(g.ban){const b=JSON.parse(g.ban);G.banner={a:b.a,b:b.b,t:b.t}}else G.banner=null}
     if(g.boss!==undefined)net.bossId=g.boss}
   G.boss=net.bossId?E.e.get(net.bossId)||null:null;
@@ -86,7 +87,7 @@ function netSnapshot(m){
 function netEvent(v){switch(v[0]){
   case's':sfx(v[1]);break;case'v':voice(v[1]);break;case't':tone(v[1],v[2],v[3],v[4],v[5],v[6]);break;case'o':noiseHit(v[1],v[2]);break;case'g':stinger(v[1]);break;case'k':shake(v[1]);break;
   case'l':addLog(v[1]);break;case'x':text(v[1],v[2],v[3],v[4],!!v[5]);break;case'b':burst(v[1],v[2],v[3],v[4],v[5]);break;case'w':glowP(v[1],v[2],v[3],v[4],v[5],v[6],v[7]);break;
-  case'e':bleed(v[1],v[2],v[3],v[4],v[5]);break;case'd':addDecal(v[1],v[2],v[3],!!v[4]);break;case'f':G.fx.push(v[1]);break;
+  case'e':bleed(v[1],v[2],v[3],v[4],v[5]);break;case'd':addDecal(v[1],v[2],v[3],!!v[4],v[5]||undefined);break;case'f':G.fx.push(v[1]);break;
   case'clear':if(G.mode==='play'||G.mode==='menu'||G.mode==='pause')setMode('clear');break;case'clearDone':if(G.mode==='clear')setMode('play');break}}
 
 /* Runs every frame in a room, in place of update() */
@@ -99,18 +100,18 @@ function netUpdate(dt){
   if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null}
   if(me.ult)me.ult.t+=dt;
   // Your character answers at once. The server corrects it if it disagrees.
-  const playing=G.mode==='play'&&!(me.deadT>0),v=playing?moveVec():{x:0,y:0},guard=playing&&(mouse.right||touchHold.guard);
+  const playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0),v=G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0},guard=playing&&(mouse.right||touchHold.guard);
   if(touchMode){const n=nearestEnemy();if(n)me.face=Math.atan2(n.y-me.y,n.x-me.x);else if(v.x||v.y)me.face=Math.atan2(v.y,v.x)}else if(playing)me.face=Math.atan2(mouse.y-(me.y-22),mouse.x-me.x);
-  const bx=me.x,by=me.y;
+  const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
-  else if(v.x||v.y){const sp=me.s.speed*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
+  else if(v.x||v.y){const sp=me.s.speed*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
   if(me.x!==bx||me.y!==by)net.pending.push({s:net.seq+1,dx:me.x-bx,dy:me.y-by});if(net.pending.length>240)net.pending.shift();
-  net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}
+  net.reviveT-=dt;if(net.reviveT<=0&&G.mode==='play'&&(keys.has('KeyF')||touchHold.revive)){net.reviveT=.2;netSend({t:'a',n:'revive',v:true})}net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}
   tickFx(dt);
 }
 function netSendInput(force,v,playing){
-  const me=G.p;if(playing===undefined)playing=G.mode==='play'&&!(me.deadT>0);v=v||(playing?moveVec():{x:0,y:0});const aim=touchMode?{x:me.x+Math.cos(me.face)*120,y:me.y-22+Math.sin(me.face)*120}:mouse;
+  const me=G.p;if(playing===undefined)playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0);v=v||(G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0});const aim=touchMode?{x:me.x+Math.cos(me.face)*120,y:me.y-22+Math.sin(me.face)*120}:mouse;
   const l=playing&&!!(mouse.left||touchHold.slash),r=playing&&!!(mouse.right||touchHold.guard);
   const body={x:+v.x.toFixed(3),y:+v.y.toFixed(3),ax:Math.round(aim.x||0),ay:Math.round(aim.y||0),l,r},str=JSON.stringify(body),same=str===net.last;
   if(same&&!force&&!(v.x||v.y)&&net.dash<=0&&net.idleT<.25)return;
@@ -128,7 +129,7 @@ function netOverlay(m,c){
   if(m==='pause'){c.innerHTML='<h2>Room '+esc(net.code)+'</h2><p>The game keeps running while this is open. Give friends this code so they can join. Returning to the menu leaves the room.</p><div class="btnrow"><button class="go" id="go" type="button">Back to the game</button><button class="ghost" id="leave" type="button">Return to menu</button></div>';$('go').onclick=()=>setMode('play');$('leave').onclick=netLeave;return true}
   if(m==='clear'){const n=G.stage,last=n>=10,host=netIsHost(),next=last?'':' Next is stage '+(n+1)+': '+esc(STAGES[n].n)+'.';
     c.innerHTML='<h2>'+(last?'All 10 stages clear':'Stage '+n+' cleared')+'</h2><p>Your party defeated the boss and everyone earned 2 skill points.'+next+(host||last?'':' The room host chooses when to move on.')+'</p><div class="btnrow">'+(host&&!last?'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>':'<button class="go" id="stay" type="button">Keep fighting</button>')+'</div>';
-    const g=$('go');if(g)g.onclick=()=>{netAct('next');setMode('play')};$('stay').onclick=()=>{if(host)netAct('stay');setMode('play')};return true}
+    c.querySelector('.btnrow').insertAdjacentHTML('beforeend','<button class="ghost" id="tomenu" type="button">Return to main menu</button>');$('tomenu').onclick=netLeave;const g=$('go');if(g)g.onclick=()=>{netAct('next');setMode('play')};$('stay').onclick=()=>{if(host)netAct('stay');setMode('play')};return true}
   return false;
 }
 let lobbyPoll=null;
@@ -155,9 +156,9 @@ function paintRooms(){const el=$('rl');if(!el)return;
 function netHud(small){
   const me=G.p,x=12;let y=small?116:70;ctx.textAlign='left';
   ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?150:190,18+G.players.length*17);
-  ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+(net.rtt?' · '+net.rtt+' ms':''),x,y);y+=16;
-  for(const q of G.players){const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player'),x+(small?55:76),y);y+=17}
+  ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+' · Hope '+(G.hope??0)+'/'+(G.hopeMax??0),x,y);y+=16;
+  for(const q of G.players){const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';const rev=G.players.find(z=>z.reviveTarget===q.id&&z.reviveProgress>0),status=q.respawnT>0?' · '+Math.ceil(q.respawnT)+'s':q.deadT>0?(rev?' · '+Math.round(rev.reviveProgress*100)+'%':' · down '+Math.ceil(q.deadT)+'s'):'';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player')+status,x+(small?55:76),y);y+=17}
   const big=(a,b)=>{ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.font='700 '+(small?26:42)+'px "Pixelify Sans",monospace';ctx.strokeText(a,W/2,H*.45);ctx.fillStyle='#ff8f80';ctx.fillText(a,W/2,H*.45);ctx.font='600 15px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(b,W/2,H*.45+26);ctx.fillStyle='#f2ecd8';ctx.fillText(b,W/2,H*.45+26)};
   if(net.down)big('Reconnecting','Trying to get back to room '+net.code);
-  else if(me.deadT>0)big('You are down','Waking at the safehouse in '+Math.ceil(me.deadT));
+  else if(me.respawnT>0)big('You bled out','Waking at the safehouse in '+Math.ceil(me.respawnT));else if(me.deadT>0)big('You are down',me.windDown?'Second Wind in '+Math.ceil(me.deadT):'Crawl to an ally · Bleeding out in '+Math.ceil(me.deadT));
 }
