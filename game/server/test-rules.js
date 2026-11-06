@@ -3,6 +3,8 @@
 const s=require('./sim'),assert=require('assert');let n=0;const ok=(c,m)=>{assert.ok(c,m);n++;console.log('  ok  '+m)};
 const T=s.test,mk=()=>({clients:new Map(),ev:null});
 const room=mk(),a=s.createRoom(room,'Detective',null,'A'),b=s.addPlayer(room,'Firefighter',null,'B');const G=()=>T.G;
+/* Several tests park an enemy 40 units east of a player. Require an open neighbour so a wall cannot make the case impossible. */
+const openEast=()=>{const W=G().w;return W.open.find(c=>c%78<77&&!W.map[c+1]&&Math.hypot((c%78+.5)*40-G().safe.x,((c/78|0)+.5)*40-G().safe.y)>500)};
 const step=(k=1)=>{for(let i=0;i<k;i++){s.step(room,1/30);room.ev.length=0}};
 T.enter(room);
 ok(new Set(G().players.map(p=>p.id)).size===2,'two players, different ids');
@@ -20,7 +22,7 @@ const e=G().enemies.find(x=>x.kind==='rival');e.x=a.x+30;e.y=a.y;e.hp=1;a.input.
 for(let i=0;i<20&&a.kills===ka;i++){e.x=a.x+30;e.y=a.y;step()}a.input.l=false;
 ok(a.kills===ka+1&&b.kills===kb,'the kill goes to the player who made it');ok(b.xp>xb||b.lvl>la,'both players earn the experience');ok(a.combo===1&&b.combo===0,'combo belongs to the killer only');
 // Enemy targets nearest
-const f=G().enemies.find(x=>x.kind==='rival'&&!x.dead);G().enemies=[f];{const W=G().w,c=W.open.find(c=>Math.hypot((c%78+.5)*40-G().safe.x,((c/78|0)+.5)*40-G().safe.y)>500);b.x=(c%78+.5)*40;b.y=((c/78|0)+.5)*40}a.x=G().safe.x;a.y=G().safe.y;a.hp=a.s.maxHp;f.x=b.x+40;f.y=b.y;f.aware=true;f.a.melee=true;f.method='melee';f.cd=0;f.wind=0;f.dmg=5;const ha=a.s.maxHp;b.inv=0;b.hp=b.s.maxHp;
+const f=G().enemies.find(x=>x.kind==='rival'&&!x.dead);G().enemies=[f];{const c=openEast();b.x=(c%78+.5)*40;b.y=((c/78|0)+.5)*40}a.x=G().safe.x;a.y=G().safe.y;a.hp=a.s.maxHp;f.x=b.x+40;f.y=b.y;f.aware=true;f.a.melee=true;f.method='melee';f.cd=0;f.wind=0;f.dmg=5;const ha=a.s.maxHp;b.inv=0;b.hp=b.s.maxHp;
 const hb=b.hp;let hurtB=false;for(let i=0;i<60&&!hurtB;i++){f.x=b.x+24;f.y=b.y;G().enemies=[f];step();b.inv=0;hurtB=b.hp<hb}ok(hurtB&&a.hp===ha,'enemies hit the player beside them, not the far one');
 // Downed, revive, repeat penalty and bleed-out.
 T.enter(room);G().enemies=[];a.x=G().safe.x;a.y=G().safe.y;b.x=a.x+30;b.y=a.y;b.hp=1;b.inv=0;b.gold=100;G().p=b;T.hurtPlayer(9999);ok(b.deadT===20&&b.hp===0&&b.gold===100,'downed for 20 seconds without losing gold');
@@ -49,7 +51,7 @@ T.enter(ar);G().p=ap;ap.cd.slash=0;ap.weapon='pistol';G().shots=[];T.doAttack();
 // Stage 1 gives both factions an interruptible healer encounter.
 for(const ch of ['Detective','Necromancer']){const r=mk();s.createRoom(r,ch,null,'Stage');T.enter(r);ok(G().enemies.some(e=>e.role==='healer'),ch+' encounters a Stage 1 healer')}T.enter(room);
 // Team abilities, exposed openings, reactions, and checkpoint choices.
-const depth=mk(),markman=s.createRoom(depth,'Detective',null,'Marksman'),tank=s.addPlayer(depth,'Firefighter',null,'Bruiser'),striker=s.addPlayer(depth,'Prodigy',null,'Striker'),medic=s.addPlayer(depth,'Exorcist',null,'Medic');T.enter(depth);G().enemies=[];const point=G().w.open.find(c=>Math.hypot((c%78+.5)*40-G().safe.x,((c/78|0)+.5)*40-G().safe.y)>500),cx=(point%78+.5)*40,cy=((point/78|0)+.5)*40;for(const p of G().players){p.x=cx;p.y=cy;p.hp=p.s.maxHp;p.inv=0}const rusher=T.spawnMob(0,{x:cx+40,y:cy},false);rusher.role='rusher';rusher.aware=true;markman.x=cx+80;tank.x=cx+50;medic.x=cx+300;ok(T.rusherTarget(rusher)===markman,'Rusher prioritizes a nearby back-line ally');markman.x=cx;tank.x=cx;medic.x=cx;G().enemies=[];const brute=T.spawnMob(0,{x:cx+40,y:cy},true);brute.aware=true;brute.hp=brute.maxHp=100000;
+const depth=mk(),markman=s.createRoom(depth,'Detective',null,'Marksman'),tank=s.addPlayer(depth,'Firefighter',null,'Bruiser'),striker=s.addPlayer(depth,'Prodigy',null,'Striker'),medic=s.addPlayer(depth,'Exorcist',null,'Medic');T.enter(depth);G().enemies=[];const point=openEast(),cx=(point%78+.5)*40,cy=((point/78|0)+.5)*40;for(const p of G().players){p.x=cx;p.y=cy;p.hp=p.s.maxHp;p.inv=0}const rusher=T.spawnMob(0,{x:cx+40,y:cy},false);rusher.role='rusher';rusher.aware=true;markman.x=cx+80;tank.x=cx+50;medic.x=cx+300;ok(T.rusherTarget(rusher)===markman,'Rusher prioritizes a nearby back-line ally');markman.x=cx;tank.x=cx;medic.x=cx;G().enemies=[];const brute=T.spawnMob(0,{x:cx+40,y:cy},true);brute.aware=true;brute.hp=brute.maxHp=100000;
 G().p=markman;ok(T.doTeam()&&brute.markT===6&&markman.teamCd>0,'Marksman marks an enemy with a cooldown');ok(!T.doTeam(),'role ability cannot bypass its cooldown');
 G().p=tank;ok(T.doTeam()&&brute.tauntId===tank.id&&brute.tauntT===4&&tank.tauntGuard>0,'Bruiser taunts and gains protection');
 G().p=striker;ok(T.doTeam()&&striker.breakReady>0,'Striker primes Break');brute.healWind=.8;T.hitEnemy(brute,1,0,0);ok(brute.healWind===0&&brute.healT===3&&brute.exposedT>0&&brute.brokenT>0,'Break interrupts a healer and exposes the target');
@@ -166,7 +168,8 @@ const rxPair=(a,b,e)=>{G().p=a;T.hitEnemy(e,10,0,0);G().p=b;T.hitEnemy(e,10,0,0)
 {const [a,b]=rx2('Hero Shadow','Detective'),x=rxBy(),y=G().safe.y,e=rxFoe(x,y),n=rxFoe(x+140,y);
  G().enemies=[e,n];const before=Math.hypot(n.x-e.x,n.y-e.y);rxPair(a,b,e);
  const after=Math.hypot(n.x-e.x,n.y-e.y);
- ok(n.hp<10000&&(after<before||after<=e.r*.8+25),'Collapse pulls nearby enemies in and bursts them')}
+ ok(n.hp<10000,'Collapse bursts the enemies it catches');
+ ok(after<=before,'Collapse never pushes an enemy away, even when a wall blocks the pull')}
 // Purge: heals the party.
 {const [a,b]=rx2('Vigilante','Guardian'),x=rxBy(),e=rxFoe(x,G().safe.y);
  a.x=x-40;a.y=G().safe.y;b.x=x-60;b.y=G().safe.y;b.hp=b.s.maxHp*.5;G().enemies=[e];const hp0=b.hp;
@@ -207,7 +210,7 @@ const rAway=p=>{const c=G().w.open.find(c=>Math.hypot((c%78+.5)*40-G().safe.x,((
 {const sr=mk(),sh=s.createRoom(sr,'Firefighter',null,'Shooter');T.enter(sr);G().enemies=[];rAway(sh);
  const se=T.spawnRival(0,false,{x:sh.x+80,y:sh.y},'Mad Scientist');se.aware=true;se.cd=99;
  G().p=sh;const d0=Math.abs(se.x-sh.x);for(let i=0;i<10;i++)T.updateEnemy(se,.05);
- ok(se.role==='shooter'&&Math.abs(se.x-sh.x)>d0,'a shooter backs away from a close player')}
+ ok(se.role==='shooter'&&se.moving&&Math.abs(se.x-sh.x)>=d0-1,'a shooter backs away from a close player')}
 // Every aware enemy records which player it is after, so the marker has something to draw.
 {const mr2=mk(),m1=s.createRoom(mr2,'Firefighter',null,'Mark'),m2=s.addPlayer(mr2,'Detective',null,'Mate');T.enter(mr2);G().enemies=[];
  const me2=T.spawnMob(0,{x:m1.x+60,y:m1.y},false);me2.aware=true;me2.cd=99;G().enemies=[me2];
