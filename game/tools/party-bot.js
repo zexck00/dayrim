@@ -22,7 +22,7 @@ class Bot{
  action(n,v){this.send({t:'a',n,v})}
  ready(n,ms){const now=Date.now();if(now<(this.cool[n]||0))return false;this.cool[n]=now+ms;return true}
  target(){const p=this.me,live=[...this.enemies.values()].filter(e=>Number.isFinite(e.x)&&e.hp>0);const close=live.sort((a,b)=>dist(a,p)-dist(b,p))[0];const obj=this.g.obj||{},label=String(obj.l||'');if(this.g.boss){const boss=this.enemies.get(this.g.boss);if(boss)return {o:boss,combat:true}}
- if(close&&dist(close,p)<360)return {o:close,combat:true};if(this.g.gate&&this.gate)return {o:this.gate,combat:false};if(/revive/i.test(label)){const n=[...this.npcs.values()].find(n=>n.wounded);if(n)return {o:n,revive:true}}
+ if(this.g.gate&&this.gate)return {o:this.gate,combat:false};if(/revive/i.test(label)){const n=[...this.npcs.values()].find(n=>n.wounded);if(n)return {o:n,revive:true}}
  if(/beacon|hold|plate|shrine/i.test(label)){const z=[...this.props.values()].filter(z=>z.k==='zone'&&!z.d).sort((a,b)=>dist(a,p)-dist(b,p))[0];if(z)return {o:z}}
  if(/escort/i.test(label)){const z=[...this.props.values()].find(z=>z.k==='escort');if(z)return {o:z}}
  return close?{o:close,combat:true}:null}
