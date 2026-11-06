@@ -1263,7 +1263,7 @@ function goreTrail(e,dt){if(e.dead||!e.moving||e.hp>=e.maxHp*.35)return;e.goreT=
 function bleed(x,y,dx,dy,n){for(let i=0;i<n;i++){const a=Math.atan2(dy,dx)+rnd(-.9,.9),v=rnd(40,260);G.fx.push({k:'blood',x,y,z:0,vx:Math.cos(a)*v,vy:Math.sin(a)*v*.5,vz:rnd(-180,-30),t:rnd(.35,.8),m:.8,s:rnd(1.5,4)})}}
 function killNpc(c,a,byPlayer){
   c.dead=true;sfx('hurt');shake(2.5);bleed(c.x,c.y-26,Math.cos(a),Math.sin(a),46);bleed(c.x,c.y-34,0,-1,18);
-  const sp=SPECS[c.name];[[sp.s,7,'head'],[sp.t,8,'torso'],[sp.t,4,'arm'],[sp.t,4,'arm'],[sp.b,4,'leg'],[sp.b,4,'leg'],['#8c1820',3,'bit'],['#a8202c',3,'bit'],['#6c1018',3,'bit'],['#e8dcc0',2,'bone']].forEach(([col,s,kind])=>{const an=a+rnd(-1.7,1.7),v=rnd(70,250);G.fx.push({k:'gib',x:c.x,y:c.y-rnd(14,40),z:0,vx:Math.cos(an)*v,vy:Math.sin(an)*v*.6,vz:rnd(-300,-100),spin:rnd(-14,14),rot:0,t:rnd(.7,1.1),m:1.1,s,col,kind,hair:sp.h})});
+  const sp=SPECS[c.art]||SPECS[c.name]||SPECS.Tourist;[[sp.s,7,'head'],[sp.t,8,'torso'],[sp.t,4,'arm'],[sp.t,4,'arm'],[sp.b,4,'leg'],[sp.b,4,'leg'],['#8c1820',3,'bit'],['#a8202c',3,'bit'],['#6c1018',3,'bit'],['#e8dcc0',2,'bone']].forEach(([col,s,kind])=>{const an=a+rnd(-1.7,1.7),v=rnd(70,250);G.fx.push({k:'gib',x:c.x,y:c.y-rnd(14,40),z:0,vx:Math.cos(an)*v,vy:Math.sin(an)*v*.6,vz:rnd(-300,-100),spin:rnd(-14,14),rot:0,t:rnd(.7,1.1),m:1.1,s,col,kind,hair:sp.h})});
   addDecal(c.x,c.y,rnd(20,30),true);G.fx.push({k:'corpse',name:c.name,x:c.x,y:c.y,t:9,m:9});
   G.npcs.forEach(o=>{if(o!==c&&!o.dead&&dist(o,c)<300){o.scare=7;say(o,byPlayer?'witness':'witnessEnemy',.8)}});
   if(byPlayer){G.p.killerT=45;addLog('You killed a '+esc(c.name.toLowerCase())+'. Witnesses scatter.')}

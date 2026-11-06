@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- Killing the wounded scout no longer closes an online room.
 - Online enemy target markers now receive the awareness state they need to appear.
 - Full Party healing no longer gives life to downed or respawning players without reviving them.
 - Healing generates enemy attention only for life actually restored, credited to the healer.

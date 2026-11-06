@@ -17,6 +17,8 @@ for(let i=3;i>0;i--){s.removePlayer(scaleRoom,scalePlayers[i]);T.enter(scaleRoom
 ok(T.quota(1)===8,'solo quota unchanged');T.enter(solo);ok(G().players.length===1&&G().enemies[0].maxHp/(G().enemies[0].mob==='strong'?3.2:.6)===soloHp,'another room is untouched');T.enter(room);
 // Citizen fear belongs to the player responsible, including when another ally is closer.
 T.enter(room);const witness={x:a.x+70,y:a.y},victim=G().npcs[0];G().p=a;T.hitNpc(victim,1e9,0,true);b.x=witness.x+10;b.y=witness.y;ok(a.killerT===45&&!b.killerT,'civilian kill marks only its owner');ok(T.fearedPlayer(witness)===a,'citizen fears the killer even when an ally is closer');a.x=witness.x+200;ok(!T.fearedPlayer(witness),'citizen does not fear an innocent nearby ally');a.killerT=b.killerT=0;
+// Objective NPCs can use a display name without a matching art spec.
+{const c={name:'Scout',art:'Tourist',x:a.x+20,y:a.y,r:9,hp:1,maxHp:40,wounded:true};G().npcs=[c];G().p=a;T.hitNpc(c,10,0,true);ok(c.dead&&a.killerT===45,'killing the wounded scout uses fallback art and credits the player');a.killerT=0}
 // Attack credit
 a.x=G().safe.x;a.y=G().safe.y;
 const e=G().enemies.find(x=>x.kind==='rival');e.x=a.x+30;e.y=a.y;e.hp=1;a.input.ax=a.x+30;a.input.ay=a.y-22;a.input.l=true;const ka=a.kills,kb=b.kills,xb=b.xp,la=b.lvl;
