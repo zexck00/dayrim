@@ -48,7 +48,7 @@ function snapshot(room,me,known,tick){
   const pr=diff((G.props||[]).filter(o=>near(me,o,AOI)||o.kind==='drop'||o.kind==='escort'),known.pr,prop);if(pr)out.pr=pr;
   /* Room-wide values. The banner is only sent when a new one appears, and the client counts it down. */
   const b=G.banner;if(b&&!b.t0){b.t0=b.t;b.bid=entId({})}
-  const g={hour:Math.round(G.hour*20)/20,kills:G.killsStage,hope:G.hope,maxHope:G.hopeMax,obj:G.obj?JSON.stringify({i:G.obj.i,d:G.obj.done?1:0,h:(G.obj.steps[G.obj.i]||{}).have||0,n:(G.obj.steps[G.obj.i]||{}).need||0,l:(G.obj.steps[G.obj.i]||{}).label||''}):'',gate:G.gate.open?1:0,boss:G.boss?entId(G.boss):0,ban:b?JSON.stringify({a:b.a,b:b.b,t:b.t0,i:b.bid}):'',time:Math.floor(G.t/3)*3,ch:G.chain?G.chain.n:0};
+  const g={hour:Math.round(G.hour*20)/20,kills:G.killsStage,hope:G.hope,maxHope:G.hopeMax,obj:G.obj?JSON.stringify({i:G.obj.i,d:G.obj.done?1:0,h:(G.obj.steps[G.obj.i]||{}).have||0,n:(G.obj.steps[G.obj.i]||{}).need||0,l:(G.obj.steps[G.obj.i]||{}).label||''}):'',gate:G.gate.open?1:0,boss:G.boss?entId(G.boss):0,ban:b?JSON.stringify({a:b.a,b:b.b,t:b.t0,i:b.bid}):'',time:Math.floor(G.t/3)*3,ch:G.chain?G.chain.n:0,lk:G.link?JSON.stringify({n:G.link.ids.length,t:Math.round(G.link.t*10)/10,in:G.link.ids.indexOf(me.id)>=0?1:0}):''};
   let gd=null;for(const k in g)if(g[k]!==known.g[k]){(gd=gd||{})[k]=g[k];known.g[k]=g[k]}
   if(gd)out.g=gd;
   const evs=[];for(const v of room.ev){if(v.to!==undefined?v.to===me.id:(v.x===undefined||Math.hypot(v.x-me.x,v.y-me.y)<EVENT_AOI))evs.push(v.e)}

@@ -220,7 +220,7 @@ function recalc(){
   s.cdMul=Math.max(.6,Math.min(1,s.cdMul));
   p.s=s;p.hp=Math.min(p.hp,s.maxHp);p.mana=Math.min(p.mana,s.maxMana);dirty();
 }
-function baseState(demo){return{mode:'title',demo,mp:false,players:[],t:0,hour:6,p:null,enemies:[],npcs:[],shots:[],loot:[],fx:[],texts:[],log:[],shake:0,flowT:0,banner:null,boss:null,spawnT:0,killsStage:0,stage:1,w:null,quipT:3,props:[],chain:{n:0,t:0,tier:null}}}
+function baseState(demo){return{mode:'title',demo,mp:false,players:[],t:0,hour:6,p:null,enemies:[],npcs:[],shots:[],loot:[],fx:[],texts:[],log:[],shake:0,flowT:0,banner:null,boss:null,spawnT:0,killsStage:0,stage:1,w:null,quipT:3,props:[],chain:{n:0,t:0,tier:null},link:null}}
 /* Same seed gives the same map, so the server only has to send a number to draw the whole stage */
 function genCitySeeded(seed){const real=Math.random;let a=seed|0;Math.random=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};try{return genCity()}finally{Math.random=real}}
 function placeInStage(n){const w=G.w;G.safe={x:(w.start.x+6)*T,y:(w.start.y+5)*T};G.gate={x:(w.boss.x+6)*T,y:(w.boss.y+5)*T,open:G.killsStage>=quota(n)}}
@@ -284,7 +284,7 @@ function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if
 function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
 function enterStage(n,keepKills){
   const kept=keepKills?G.killsStage:0;
-  G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.chain={n:0,t:0,tier:null};G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
+  G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
   const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
   G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0;q.boonPending=false;q.teamCd=0;q.breakReady=0;q.tauntGuard=0;q.mendT=0;q.deadT=0;q.respawnT=0;q.reviveHold=0;q.reviveTarget=0;q.reviveProgress=0;q.carry=null;if(!keepKills){q.secondWind=false;q.downCount=0;q.lastDown=-100}});
   G.cam={x:G.p.x,y:G.p.y};
@@ -643,7 +643,7 @@ const CHAIN_WINDOW=COMBO_WINDOW;
 const CHAIN_BONUS=[[30,{cd:.8},'cooldowns 20% faster'],[20,{mana:2},'mana regen x2'],[12,{dmg:1.1},'damage +10%'],[5,{spd:1.05},'move speed +5%']];
 const chainReset=()=>{G.chain={n:0,t:0,tier:null}};
 function chainBonus(){const n=(G.chain&&G.chain.n)||0,b={spd:1,dmg:1,mana:1,cd:1,label:''};
-  for(const c of CHAIN_BONUS)if(n>=c[0]){Object.assign(b,c[1]);b.label=c[2]}
+  for(const c of CHAIN_BONUS)if(n>=c[0]){Object.assign(b,c[1]);if(!b.label)b.label=c[2]}
   return b}
 function chainAdd(){if(!G.chain)chainReset();const c=G.chain;c.n++;c.t=CHAIN_WINDOW;
   const hit=COMBO_TIERS.findIndex(t=>t[0]===c.n);if(hit>=0){c.tier=COMBO_TIERS[hit];stinger(hit);if(!G.p.ult)voice(c.tier[1])}
@@ -668,6 +668,7 @@ const ULT_BY_KIT={necro:['Army of the Dead','110,255,170'],void:['Event Horizon'
 function ultOf(p){const k=kitOf(p);if(k)return ULT_BY_KIT[k];let b='pow';for(const s in p.stats)if(p.stats[s]>p.stats[b])b=s;return ULT_BY_STAT[b]}
 function doUlt(){
   const p=G.p;if(G.p.ult||p.rage<100||G.mode!=='play'||G.clearPending)return false;
+  if(G.players.length>1)openLink(p);
   const [name,col]=ultOf(p);p.rage=0;p.guard=false;p.mv=null;G.p.ult={t:0,hit:0,name,col,seed:Math.random()*99};p.inv=ULT_LEN;
   const k=kitOf(p);if(k)p.mv={id:'special',key:k,t:0,dur:KIT[k].special.dur,hit:99,side:Math.cos(p.face)>=0?1:-1,mirror:KIT[k].special.face!==0&&(Math.cos(p.face)>=0?1:-1)!==KIT[k].special.face};
   audioOn();tone(60,420,.68,'sawtooth',.06);tone(90,630,.68,'square',.025);voice(name+'!');return true;
@@ -676,14 +677,44 @@ function tickUlt(dt){const u=G.p.ult,p=G.p;u.t+=dt;p.inv=Math.max(p.inv,.3);if(p
   while(u.hit<ULT_HITS.length&&u.t>=ULT_HITS[u.hit]){ultHit(u,u.hit);u.hit++}
   if(u.t>=ULT_LEN){G.p.ult=null;p.mv=null}}
 const bossUltDamage=(e,d)=>Math.max(e.maxHp*.04,d*.3)/partySize();
+/* One ultimate hit, with the link bonus applied once, after the boss share is worked out. */
+function ultDmgFor(e,p,lb){const sk=Math.max(...Object.values(p.stats)),d=p.s.dmg*STAT_MUL[sk-1]*dmgMul()*6;
+  return e&&e.kind==='boss'?bossUltDamage(e,d)*(1+lb):d*(1+lb)}
 function ultHit(u,n){
-  const p=G.p,sk=Math.max(...Object.values(p.stats)),d=p.s.dmg*STAT_MUL[sk-1]*dmgMul()*6;
+  const p=G.p,sk=Math.max(...Object.values(p.stats)),lb=linkBonus(p),d=p.s.dmg*STAT_MUL[sk-1]*dmgMul()*6;
   shake(12);tone(70,28,.5,'sawtooth',.09);noiseHit(.45,.13);
   if(n===0){G.shots=G.shots.filter(s=>s.from!=='e');G.hazards=(G.hazards||[]).filter(h=>h.from!=='e')}
   G.fx.push({k:'nova',x:p.x,y:p.y-30,r:ULT_RADIUS*(.45+n*.28),t:.5,m:.5,c:u.col,a:rnd(TAU)});
-  for(const e of G.enemies){if(e.dead||dist(e,p)>ULT_RADIUS)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);G.fx.push({k:'pillar',x:e.x,y:e.y,t:.4,m:.4,c:u.col,w:e.r*1.5});glowP(e.x,e.y-30,u.col,8,190,.5,4);hitEnemy(e,e.kind==='boss'?bossUltDamage(e,d):d,a,260)}
+  for(const e of G.enemies){if(e.dead||dist(e,p)>ULT_RADIUS)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);G.fx.push({k:'pillar',x:e.x,y:e.y,t:.4,m:.4,c:u.col,w:e.r*1.5});glowP(e.x,e.y-30,u.col,8,190,.5,4);hitEnemy(e,ultDmgFor(e,p,lb),a,260)}
   for(const c of G.npcs)if(!c.dead&&dist(c,p)<ULT_RADIUS)hitNpc(c,d,Math.atan2(c.y-p.y,c.x-p.x),true);
 }
+/* ---------- Linked ultimates ---------- */
+const LINK_WINDOW=3;
+const LINK_TIERS=[[4,1,'Full Party'],[3,.7,'Trio'],[2,.4,'Duo']];
+function linkTier(n){let t=null;for(const c of LINK_TIERS)if(n>=c[0]&&(!t||c[0]>t[0]))t=c;return t}
+const linkBonus=p=>{const L=G.link;return L&&L.t>0&&L.ids.indexOf(p.id)>=0?L.dmg:0};
+function linkClearFire(){G.shots=G.shots.filter(s=>s.from!=='e');G.hazards=(G.hazards||[]).filter(h=>h.from!=='e')}
+function linkEffect(L,t){
+  if(L.ids.length>=2)linkClearFire();
+  if(L.ids.length>=3)for(const q of G.players)q.inv=Math.max(q.inv,ULT_LEN);
+  if(L.ids.length>=4){for(const q of G.players)q.hp=q.s.maxHp;
+    if(G.boss&&!G.boss.dead&&(G.boss.staggerT||0)<=0){G.boss.staggerT=BOSS_STAGGER;G.boss.guard=0}}
+  for(const q of G.players)if(L.ids.indexOf(q.id)>=0)text(q.x,q.y-118,t[2].toUpperCase()+' LINK · +'+Math.round(t[1]*100)+'%','#8fe6ff',true);
+  voice(t[2]+' link');
+}
+function openLink(p){
+  const L=G.link;
+  if(L&&L.t>0){
+    if(L.ids.indexOf(p.id)>=0)return;
+    L.ids.push(p.id);L.t=LINK_WINDOW;
+    const t=linkTier(L.ids.length);
+    if(t&&t[1]>L.dmg){L.dmg=t[1];L.name=t[2];linkEffect(L,t)}
+    return
+  }
+  G.link={t:LINK_WINDOW,ids:[p.id],dmg:0,name:''};
+  for(const q of G.players)if(q.id!==p.id)text(q.x,q.y-118,'LINK NOW!','#8fe6ff',true);
+}
+function tickLink(dt){const L=G.link;if(!L)return;L.t-=dt;if(L.t<=0)G.link=null}
 const gymCost=r=>Math.round(40*Math.pow(1.3,r));
 const shopCost=s=>Math.round(s.base*(1+(G.stage-1)*.35));
 const guardArmor=p=>(8+p.stats.grd*10+p.lvl*1.4)*(p.weapon==='shield'?1.6:1)*p.s.guardMul;
@@ -736,7 +767,7 @@ function updatePlayer(p,dt){
 function tagOwned(p){for(const s of G.shots)if(s.from==='p'&&s.pid===undefined)s.pid=p.id;for(const h of (G.hazards||[]))if(h.from!=='e'&&h.pid===undefined)h.pid=p.id}
 function update(dt){
   const real=dt;let slow=1;
-  chainTick(real);
+  chainTick(real);tickLink(real);
   for(const p of G.players){G.p=p;if(p.ult){tickUlt(real);tagOwned(p);if(!G.mp&&p.ult)slow=p.ult.t<ULT_HITS[0]?.06:.45}else if(p.combo){p.comboT-=real;if(p.comboT<=0){p.combo=0;p.comboTier=null}}p.comboPop=Math.max(0,p.comboPop-real*4)}
   dt*=slow;G.t+=dt;G.hour=(G.hour+dt/20)%24;objStep(dt);
   for(const p of G.players)updatePlayer(p,dt);

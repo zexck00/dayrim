@@ -351,6 +351,7 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  ok(T.chainBonus().mana===2,'twenty kills double mana regeneration');
  while(G().chain.n<30){G().p=ca;T.killEnemy(T.spawnMob(0,{x:ca.x+30,y:ca.y},false))}
  ok(T.chainBonus().cd===.8,'thirty kills make every cooldown 20 percent faster');
+ ok(/cooldowns/.test(T.chainBonus().label),'the label reports the strongest bonus, not the last one read');
  // The table has to reach the rules, not just exist.
  G().p=ca;G().enemies=[];
  const dm30=T.dmgMul(),cd30=T.cdMulOf(ca);T.chainReset();const dm0=T.dmgMul();
@@ -376,5 +377,33 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  // A new stage wipes the chain.
  T.chainAdd();const nr=mk(),np=s.createRoom(nr,'Detective',null,'ChainNew');T.enter(nr);
  ok(G().chain.n===0,'a new stage starts with an empty chain')}
+// C-16 linked ultimates: a three second window, and the party grows the effect.
+{const lr=mk(),pa=s.createRoom(lr,'Detective',null,'L1'),pb=s.addPlayer(lr,'Firefighter',null,'L2'),pc=s.addPlayer(lr,'Prodigy',null,'L3'),pd=s.addPlayer(lr,'Exorcist',null,'L4');
+ T.enter(lr);G().enemies=[];G().killsStage=99;G().gate.open=true;T.summonBoss();const bs=G().boss;
+ T.tickLink(99);
+ pa.rage=100;pa.actions.push({n:'ult'});s.step(lr,1/30);const evLink=lr.ev.slice();lr.ev.length=0;
+ ok(G().link&&G().link.ids.length===1&&G().link.t>2.9&&!T.linkBonus(pa),'an ultimate alone opens a three second window and earns nothing');
+ ok(evLink.some(v=>v.e&&v.e[0]==='x'&&v.e[3]==='LINK NOW!'),'allies are told to link now');
+ T.openLink(pa);ok(G().link.ids.length===1&&G().link.dmg===0,'the same player cannot link twice');
+ G().shots.push({from:'e',x:pa.x+20,y:pa.y,r:5,life:1,vx:0,vy:0,dmg:5});
+ pb.rage=100;pb.actions.push({n:'ult'});s.step(lr,1/30);lr.ev.length=0;
+ ok(G().link.ids.length===2&&G().link.dmg===.4&&T.linkTier(2)[2]==='Duo','a second ultimate inside the window makes a Duo link');
+ ok(!G().shots.some(sh=>sh.from==='e'),'Duo clears every enemy shot on the field');
+ ok(T.linkBonus(pa)===.4&&T.linkBonus(pb)===.4,'both ultimates gain 40 percent, including the one already running');
+ pc.rage=100;pc.actions.push({n:'ult'});s.step(lr,1/30);lr.ev.length=0;
+ ok(G().link.dmg===.7&&G().players.every(q=>q.inv>=T.ULT_LEN-.1),'a Trio gives 70 percent and makes the whole party invulnerable for the ultimate');
+ pd.hp=1;pd.rage=100;pd.actions.push({n:'ult'});s.step(lr,1/30);lr.ev.length=0;
+ ok(G().link.dmg===1&&pd.hp===pd.s.maxHp,'a Full Party doubles the ultimates and heals everyone');
+ ok((bs.staggerT||0)>4&&bs.guard===0,'a Full Party staggers the boss for five seconds');
+ ok(T.linkBonus(pa)===1,'the first caster still reads the new link strength');
+ T.tickLink(3.1);ok(!G().link&&T.linkBonus(pa)===0,'the window closes after three seconds and the bonus goes with it');
+ // The bonus has to reach ultimate damage, not just the table.
+ const rnd0=Math.random;Math.random=()=>.4;
+ const hitBoss=()=>{bs.hp=bs.maxHp;bs.guard=0;bs.staggerT=0;bs.armor=0;G().p=pa;pa.ult={t:0,hit:0,name:'x',col:'255,255,255',seed:1};pa.x=bs.x;pa.y=bs.y;T.ultHit(pa.ult,1);return bs.maxHp-bs.hp};
+ G().p=pa;const plain=T.ultDmgFor(bs,pa,0),linked=T.ultDmgFor(bs,pa,.4);Math.random=rnd0;
+ ok(plain>0&&Math.abs(linked/plain-1.4)<1e-9,'a Duo link multiplies the ultimate damage by 1.4: '+Math.round(plain)+' to '+Math.round(linked));
+ const mob={kind:'rival',r:13,armor:0};ok(Math.abs(T.ultDmgFor(mob,pa,.4)/T.ultDmgFor(mob,pa,0)-1.4)<1e-9,'and the same on ordinary enemies');
+ ok(Math.abs(T.bossUltDamage(bs,1)-bs.maxHp*.04/4)<1e-9,'boss ultimate damage is four percent divided by party size, before the link bonus')}
 console.log('\n'+n+' checks passed');
+
 ;;;
