@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- Revive progress resets when switching allies, expired statuses no longer resonate, and healing threat follows the healer.
 - Citizens now fear the player responsible for a civilian death, rather than every party member.
 
 ### Changed
