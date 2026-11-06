@@ -15,6 +15,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### Added
 - Levels and Agility now give Haste: every cooldown is shorter, down to 60% of its base time. The character sheet shows the percentage.
+- Bosses now share one framework: a guard bar that fills when you Break them or set off a reaction, a stagger that makes them take more damage and stop acting, a marked area on every big attack that fills up before it lands, an enrage timer that makes their attacks faster, a breather when they change phase that clears their incoming fire, and arena doors that keep the party in the fight until the boss dies.
 - Objectives now come in five kinds: clear a kill quota, revive a wounded scout, light or hold marked zones (some need several held at the same time), carry items to a marked drop while unable to attack, or escort a lantern boat that only moves while somebody stays close. A wipe restarts the step in progress instead of the whole stage.
 - Stage 1 now has a real objective: clear the villain quota, then find the wounded scout and hold F to revive them. The boss gate only opens when the whole objective is done, and the stage line shows the current step and its progress.
 - Enemies now show who they are coming for: a red marker above an enemy means it is after you, and a pale marker with a party number means it is after an ally. Role labels now cover shooters, casters and guards; casters leave a damaging zone at your feet, and guards only block from the front, so flanking works.

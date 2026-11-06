@@ -269,4 +269,34 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  const zs=G().obj.zones;zs[0].t=2.5;zs[0].done=true;G().obj.steps[1].have=1;
  T.resetStepState();
  ok(G().obj.i===1&&zs.every(z=>!z.done&&z.t===0)&&G().obj.steps[1].have===0,'a wipe restarts only the step in progress')}
-console.log('\n'+n+' checks passed');;;;;
+// C-17: guard bar, stagger, telegraph, enrage, phase changes and the arena.
+{const br=mk(),bp=s.createRoom(br,'Detective',null,'Boss');T.enter(br);G().enemies=[];G().gate.open=true;G().killsStage=15;T.summonBoss();
+ const bz=G().boss;
+ ok(!!bz&&bz.guard===0&&bz.guardMax>0&&(bz.phase||0)===0&&!!G().arena,'a boss starts with a guard bar and closes the arena');
+ ok(T.bossTelegraph(bz,'circle',100,.2).dur>=T.BOSS_TELEGRAPH,'a telegraph can never be shorter than the minimum');
+ bp.s.crit=0;G().p=bp;
+ for(let i=0;i<3;i++){bp.breakReady=6;T.hitEnemy(bz,10,0,0)}
+ ok(bz.staggerT>0,'three Breaks fill the guard and stagger the boss');
+ const rnd0=Math.random;Math.random=()=>.99;
+ const h1=bz.hp;T.hitEnemy(bz,100,0,0);const staggeredHit=h1-bz.hp;
+ bz.staggerT=0;const h2=bz.hp;T.hitEnemy(bz,100,0,0);const normalHit=h2-bz.hp;
+ Math.random=rnd0;
+ ok(staggeredHit>normalHit*1.2,'a staggered boss takes more damage: '+Math.round(staggeredHit)+' vs '+Math.round(normalHit));
+ bz.staggerT=3;T.updateBoss(bz,.1,300,true);ok(bz.moving===false,'a staggered boss does not act');
+ // A phase change clears enemy fire and gives the party a breather.
+ bz.staggerT=0;bz.hp=bz.maxHp*.49;G().shots=[{x:1,y:1,vx:0,vy:0,life:9,from:'e'}];G().p=bp;
+ T.hitEnemy(bz,1,0,0);
+ ok(bz.phase===1&&bz.breatherT>0&&!G().shots.some(s=>s.from==='e'),'a phase change clears enemy shots and takes a breather');
+ // Enrage when the clock runs out.
+ bz.breatherT=0;bz.enrageT=.01;T.updateBoss(bz,.02,300,true);
+ ok(bz.enraged,'the boss enrages when its clock runs out');
+ // The arena keeps the party inside, and a wipe respawns at its edge.
+ const out=G().arena;bp.x=out.x+out.r+400;bp.y=out.y;s.step(br,1/30);br.ev.length=0;
+ ok(Math.hypot(bp.x-out.x,bp.y-out.y)<=out.r+1,'the arena keeps players inside');
+ bp.deadT=0;bp.respawnT=.01;bp.hp=0;s.step(br,1/30);br.ev.length=0;
+ const rd=Math.hypot(bp.x-out.x,bp.y-out.y);ok(rd>out.r-120&&rd<=out.r+1,'a respawn lands at the arena edge: '+Math.round(rd));
+ // Killing the boss opens the arena again.
+ bp.deadT=0;bp.respawnT=0;bp.hp=bp.s.maxHp;G().p=bp;
+ for(let i=0;i<20&&G().boss;i++)T.hitEnemy(bz,bz.maxHp,0,0);
+ ok(!G().boss&&!G().arena,'killing the boss opens the arena')}
+console.log('\n'+n+' checks passed');;;;;;

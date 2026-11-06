@@ -99,7 +99,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | C-14 | C | L | **Status and reactions** (section 5), with a script to check every pair of characters has a reaction available | All 8 reactions work; only cross-player triggers count online | |
 | C-15 | C | M | **Party chain** and shared rage (section 6) | One counter for the party; personal best still saved | |
 | C-16 | C | M | **Linked ultimates**, plus the shorter effect for allies | 2, 3 and 4 links work and are tested | C-15 |
-| C-17 | C | M | **Boss framework:** guard bar, stagger, enrage, arena doors, phases, telegraph helper. Used by all 10 bosses. | Stage 1 boss runs on it | |
+| C-17 | C | M | **Boss framework:** guard bar, stagger, enrage, arena doors, phases, telegraph helper. Used by all 10 bosses. | Prototype: every boss gets a guard bar fed by Break and reactions, a 5s stagger that raises damage taken, a 0.6s minimum telegraph on every big attack, an enrage clock, phase breathers that clear enemy fire, and an arena that holds the party in until the boss dies. Stage 1 boss runs on it. | Per-boss guard tuning, phase tables for stages 2-10 and the stage-1 boss's own mechanics are open. |
 | C-18 | C | M | **Objective framework:** progress, checkpoints, carry, hold, escort | Used by stages 1 to 3 | |
 | C-19 | C | M | **Enemy targeting markers and roles** (section 11) | Rusher, Brute, Shooter, Caster, Guard and Healer behave as described | C-12 |
 
