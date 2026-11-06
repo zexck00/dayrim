@@ -714,7 +714,7 @@ function doUlt(){
 function tickUlt(dt){const u=G.p.ult,p=G.p;u.t+=dt;p.inv=Math.max(p.inv,.3);if(p.mv)p.mv.t=Math.min(p.mv.dur*.98,u.t/ULT_LEN*p.mv.dur);else p.castT=.3;
   while(u.hit<ULT_HITS.length&&u.t>=ULT_HITS[u.hit]){ultHit(u,u.hit);u.hit++}
   if(u.t>=ULT_LEN){G.p.ult=null;p.mv=null}}
-const bossUltDamage=(e,d)=>Math.max(e.maxHp*.04,d*.3)/partySize();
+const bossUltDamage=(e,d)=>e.maxHp*.04/partySize();
 /* One ultimate hit, with the link bonus applied once, after the boss share is worked out. */
 function ultDmgFor(e,p,lb){const sk=Math.max(...Object.values(p.stats)),d=p.s.dmg*STAT_MUL[sk-1]*dmgMul()*6;
   return e&&e.kind==='boss'?bossUltDamage(e,d)*(1+lb):d*(1+lb)}

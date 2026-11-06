@@ -12,6 +12,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Citizens now fear the player responsible for a civilian death, rather than every party member.
 
 ### Changed
+- Ultimate hits deal the designed 4% of boss life divided by party size before link bonuses, even for high-damage builds.
 - Every character pair can trigger a reaction: combinations without a named reaction now create resonance, granting both players rage and a small damage bonus.
 - Elements now come from the design for all 40 characters. Ten pairs react: Inferno, Shatter, Overload, Freeze, Rot, Collapse, Purge, Eclipse, Cauterise and Frostbite. Two players with the same element resonate for a small damage bonus instead. Other pairs create resonance, and both players who build a reaction earn rage.
 - Enemies now build threat from the damage and the healing they take and go for the player who earned the most attention, instead of always walking at the nearest one. Taunt still overrides it, and bosses are unchanged for now.

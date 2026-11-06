@@ -410,7 +410,7 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  G().p=pa;const plain=T.ultDmgFor(bs,pa,0),linked=T.ultDmgFor(bs,pa,.4);Math.random=rnd0;
  ok(plain>0&&Math.abs(linked/plain-1.4)<1e-9,'a Duo link multiplies the ultimate damage by 1.4: '+Math.round(plain)+' to '+Math.round(linked));
  const mob={kind:'rival',r:13,armor:0};ok(Math.abs(T.ultDmgFor(mob,pa,.4)/T.ultDmgFor(mob,pa,0)-1.4)<1e-9,'and the same on ordinary enemies');
- ok(Math.abs(T.bossUltDamage(bs,1)-bs.maxHp*.04/4)<1e-9,'boss ultimate damage is four percent divided by party size, before the link bonus')}
+ ok(Math.abs(T.bossUltDamage(bs,1e9)-bs.maxHp*.04/4)<1e-9,'even a high-damage build deals four percent divided by party size before the link bonus')}
 // A late link upgrades damage that has already landed, without replaying reactions.
 {const lr=mk(),a=s.createRoom(lr,'Detective',null,'Late A'),b=s.addPlayer(lr,'Detective',null,'Late B');T.enter(lr);G().enemies=[];const e=T.spawnMob(0,{x:a.x+20,y:a.y},false);e.hp=e.maxHp=100000;e.kx=e.ky=0;G().p=a;T.openLink(a);const hp=e.hp;T.ultHit({col:'255,255,255'},0);const damage=hp-e.hp;T.tickLink(2.9);G().p=b;T.openLink(b);ok(Math.abs((hp-e.hp)-damage*1.4)<1e-7,'late Duo upgrades earlier ultimate damage');T.openLink(b);ok(Math.abs((hp-e.hp)-damage*1.4)<1e-7,'repeat cast cannot apply the link bonus twice')}
 // Split objectives hand a party too small to split the design's timed version instead.
