@@ -8,6 +8,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Citizens now fear the player responsible for a civilian death, rather than every party member.
 
 ### Changed
+- Enemies now build threat from the damage and the healing they take and go for the player who earned the most attention, instead of always walking at the nearest one. Taunt still overrides it, and bosses are unchanged for now.
 - The game now fills the browser window. The in-game menu includes a return to main menu button and a weapons tab with distinct weapon icons.
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 

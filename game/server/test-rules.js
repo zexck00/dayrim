@@ -73,4 +73,33 @@ const r3=mk(),p3=s.createRoom(r3,'Detective',{...sv,gold:777},'A');ok(p3.gold===
 // Asset villains and every character run for a minute without errors
 for(const ch of['Necromancer','Void Empress','Toxin Alchemist','Mad Scientist','Demon Knight']){const r=mk(),p=s.createRoom(r,ch,null,'V'),q=s.addPlayer(r,ch,null,'W');for(let i=0;i<1800;i++){p.input.x=Math.sin(i/40);p.input.y=Math.cos(i/70);p.input.ax=p.x+Math.cos(i/9)*90;p.input.ay=p.y+Math.sin(i/9)*90;p.input.l=i%7<3;q.input.ax=p.x;q.input.ay=p.y;q.input.r=i%30<10;if(i%90===0){p.actions.push({n:'spell'},{n:'special'},{n:'dash'});q.actions.push({n:'heal'},{n:'potion'})}s.step(r,1/30);r.ev.length=0}ok(true,ch+' pair plays one minute: '+p.kills+' kills')}
 s.removePlayer(room,a);step(30);ok(G().players.length===1,'the game carries on after a player leaves');
+// Threat: an enemy walks at whoever earned its attention, not only whoever is nearest.
+const tr=mk(),tp=s.createRoom(tr,'Guardian',null,'Threat'),tq=s.addPlayer(tr,'Detective',null,'Quiet');T.enter(tr);G().enemies=[];
+const tpt=G().w.open.find(c=>Math.hypot((c%78+.5)*40-G().safe.x,((c/78|0)+.5)*40-G().safe.y)>500),ttx=(tpt%78+.5)*40,tty=((tpt/78|0)+.5)*40;
+tp.x=ttx-160;tp.y=tty;tq.x=ttx+40;tq.y=tty;
+const te=T.spawnMob(0,{x:ttx,y:tty},false);te.aware=true;te.hp=te.maxHp=100000;te.role='';te.kind='rival';
+ok(T.threatTarget(te)===tq,'an idle enemy targets the nearest player');
+tp.s.crit=0;G().p=tp;for(let i=0;i<30;i++)T.hitEnemy(te,300,0,0);
+ok(T.threatTarget(te)===tp,'damage pulls an enemy off the nearer player');
+// A close race keeps its target; a clear lead takes it over.
+tp.x=ttx-100;tq.x=ttx+100;te.th={[tp.id]:5,[tq.id]:6};te.targetId=tp.id;
+ok(T.threatTarget(te)===tp,'a close race keeps the current target');
+te.th[tq.id]=10;ok(T.threatTarget(te)===tq,'a clear lead takes the target');
+// Threat fades, and the enemy goes back to the nearest player.
+te.th={[tp.id]:6};T.threatDecay(te,1);ok(te.th[tp.id]===2,'threat decays every frame');
+T.threatDecay(te,1);ok(!te.th[tp.id],'decayed threat is dropped');
+tq.x=ttx+40;tq.y=tty;tp.x=ttx-700;ok(T.threatTarget(te)===tq,'attention returns to the nearer player');
+// Healing earns attention too.
+G().enemies=[te];te.th={};te.x=ttx;te.y=tty;tp.x=ttx-30;tp.y=tty;tp.hp=1;tp.mana=tp.s.maxMana;tp.cd.pull=0;G().p=tp;T.doHeal();
+ok((te.th[tp.id]||0)>0,'healing earns attention from nearby enemies');
+// Taunt overrides any amount of threat.
+te.targetId=0;te.th={[tq.id]:200};ok(T.threatTarget(te)===tq,'threat alone picks the target');
+G().p=tp;T.doTeam();ok(T.threatTarget(te)===tp,'taunt beats any amount of threat');
+// A rusher still prefers a back-line ally until someone out-threatens it.
+const ru=T.spawnMob(0,{x:ttx+40,y:tty},false);ru.role='rusher';ru.aware=true;ru.hp=ru.maxHp=100000;G().enemies=[ru];tp.x=ttx+60;tp.y=tty;tq.x=ttx+80;tq.y=tty;
+ok(T.threatTarget(ru)===tq,'a rusher still prefers a nearby back-line ally');
+ru.th={[tp.id]:40};ok(T.threatTarget(ru)===tp,'a rusher switches to whoever out-threatens the back line');
+// Bosses keep to the nearest player for now.
+T.enter(tr);G().enemies=[];G().gate.open=true;G().killsStage=15;T.summonBoss();const bz=G().boss;
+if(bz){bz.tauntT=0;tp.x=bz.x-30;tp.y=bz.y;tq.x=bz.x+600;tq.y=bz.y;bz.th={[tq.id]:200};ok(T.threatTarget(bz)===tp,'bosses keep to the nearest player')}
 console.log('\n'+n+' checks passed');

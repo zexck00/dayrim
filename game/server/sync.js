@@ -1,7 +1,7 @@
 'use strict';
 /* Builds one snapshot per client. Each client is sent only what changed since its last snapshot, and only what is near its player. */
 const AOI=1300,EVENT_AOI=1500;
-const ENEMY_SKIP=new Set(['xp','gold','dmg','sp','cd','wander','wa','still','kx','ky','spT','smT','mdT','healT','aware','hitCd','pid','dead','id']);
+const ENEMY_SKIP=new Set(['xp','gold','dmg','sp','cd','wander','wa','still','kx','ky','spT','smT','mdT','healT','aware','hitCd','pid','dead','id','th']);
 const NPC_SKIP=new Set(['kx','ky','t','sp','scare','dead','id']);
 const LOOT_SKIP=new Set(['t','amt','id']);
 const OWN_SKIP=new Set(['input','actions','ack','id','combo_','x','y']);
