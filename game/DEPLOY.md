@@ -41,6 +41,22 @@ sudo systemctl enable --now dayrim
 
 Edit `dayrim.service` first: set `ALLOWED_ORIGINS` to your address.
 
+## Behind a reverse proxy (optional)
+
+`docker-compose.yml` is the only compose file the project ships. It publishes one ordinary port and
+sets no proxy labels, so the same file runs on a laptop, a VPS or a NAS. If a reverse proxy such as
+Caddy, nginx or Traefik handles HTTPS in front of it, keep your proxy configuration out of this
+repository: it belongs to the host, not to the game.
+
+Three things matter when you do:
+
+- **Do not apply a strict Content-Security-Policy.** The game page is one file of inline scripts and styles.
+- **Pass WebSockets through** at `/ws`, with no buffering and a read timeout of at least a minute.
+- **Get `X-Forwarded-For` right.** `TRUST_PROXY=1` is correct only when the proxy replaces that header.
+  A proxy that appends to it lets a visitor fake their address, so leave `TRUST_PROXY=0` in that case.
+
+Never put an authentication prompt in front of `/ws`: the game's own token is the identity.
+
 ## HTTPS
 
 Browsers on an HTTPS page will only connect to the game over secure WebSockets, so put Caddy or nginx in front. Both samples are in `deploy/`, and both pass WebSockets through. Replace `play.example.com` with your domain.
