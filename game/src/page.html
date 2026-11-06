@@ -16,23 +16,27 @@
 }
 *{box-sizing:border-box;font-variant-ligatures:none!important}
 [hidden]{display:none!important}
-body{background:var(--ink);color:var(--bone);font:400 17px/1.55 var(--body);margin:0;font-variant-ligatures:none}
+body{width:100%;overflow:hidden;background:var(--ink);color:var(--bone);font:400 17px/1.55 var(--body);margin:0;font-variant-ligatures:none}
 a{color:var(--foam)}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,a:focus-visible{outline:2px solid var(--lichen);outline-offset:2px}
 .wrap{max-width:1240px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top,main.plan,footer,.sheet{display:none!important}
 header.top{padding-block:28px 18px;display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 32px}
 h1{font:700 clamp(46px,7vw,76px)/.95 var(--display);margin:0;color:var(--bone);letter-spacing:.005em}
 .lede{margin:0;max-width:52ch;color:var(--mist);font-size:18px;text-wrap:pretty}
 .stage{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px}
-.screen{position:relative;aspect-ratio:16/10;background:#06141a;border:1px solid var(--line);overflow:hidden;min-width:0}
+.screen{position:fixed;inset:0;z-index:10;width:100vw;max-width:100vw;height:100dvh;aspect-ratio:auto;background:#06141a;border:1px solid var(--line);overflow:hidden;min-width:0}
 canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
 .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,20,26,.62);overflow:auto;z-index:3}
 .ov.pick{background:rgba(7,12,24,.88);align-items:flex-start}
-.card.sel{max-width:none}
+.card.sel{max-width:1200px}
+.weapon-icon{position:static;width:44px;height:44px;flex:none;image-rendering:pixelated;cursor:default;background:#111b30;border:1px solid var(--line)}
+.mrow.weapon-row{grid-template-columns:minmax(0,1fr) auto auto auto}
+.weapon-choice{display:flex;align-items:center;gap:12px}.weapon-choice div{flex:1}
 .sel-top{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .card .sel-top h2{margin:0;font-size:clamp(22px,2.6vw,32px)}
-.tabs{display:flex;gap:4px}
+.tabs{display:flex;flex-wrap:wrap;gap:4px}
 .tab{background:var(--deep);border:1px solid var(--line);padding:4px 12px;font-weight:700;font-size:15px}
 .tab[aria-pressed="true"]{background:var(--lichen);border-color:var(--lichen);color:#1a1405}
 .sel-body{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px;align-items:start}
@@ -70,7 +74,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .ghost:hover{border-color:var(--foam)}
 .sheet-who{display:flex;gap:10px;align-items:flex-end}
 .sheet-who i{display:block;flex:none;background-image:var(--atlas);background-repeat:no-repeat}
-.card{max-width:540px;width:100%;margin:auto;text-align:left}
+.card{min-width:0;max-width:540px;width:100%;margin:auto;text-align:left}
 .card h2{font:700 clamp(32px,5vw,50px)/1 var(--display);margin:0 0 8px}
 .card p{margin:0 0 14px;color:var(--bone)}
 .keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 16px;margin:0 0 16px;padding:0;list-style:none;font-size:15px;color:var(--mist)}
@@ -86,6 +90,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .touch{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:8px;display:grid;grid-template-columns:repeat(3,54px);gap:6px;z-index:2}
 .touch button{height:54px;border-radius:50%;border:1px solid var(--foam);background:rgba(18,48,58,.72);font:500 11px var(--body);padding:0;touch-action:none}
 .touch .big{background:rgba(240,128,92,.55);border-color:var(--coral)}
+.fx3{z-index:1;pointer-events:none}
+.fx3b{top:calc(216px*var(--k,1))!important}
 .menub{top:calc(160px*var(--k,1))!important}
 .fsb{top:calc(188px*var(--k,1))!important}
 .ov:not(.pick) .card{zoom:var(--k,1)}
@@ -197,8 +203,11 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
   .sp-words{width:92%;top:40%}.sp-play{font-size:clamp(13px,3.6cqw,22px);top:70%}
 }
 @media(max-width:640px){
-  .screen{aspect-ratio:3/4}
-  .sound{top:102px}.menub{top:130px!important}.fsb{top:158px!important}
+  .screen{aspect-ratio:auto}
+  .mrow.weapon-row{grid-template-columns:minmax(0,1fr) auto}.weapon-row .weapon-choice{grid-column:1/-1}
+  .sound{top:102px}.fx3{z-index:1;pointer-events:none}
+.fx3b{top:calc(216px*var(--k,1))!important}
+.menub{top:130px!important}.fsb{top:158px!important}
   .phase{grid-template-columns:38px minmax(0,1fr)}
   .exit{grid-column:2}
   .call{grid-template-columns:minmax(0,1fr)}
@@ -223,16 +232,18 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
   </header>
   <section class="stage" aria-label="Playable prototype">
     <div class="screen" id="screen">
-      <canvas id="c" aria-label="Game view"></canvas>
-      <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button>
+      <canvas id="c" aria-label="Game view"></canvas><canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas>
+      <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button>
       <div class="touch" id="touch" hidden>
         <button type="button" data-a="potion">Potion</button>
+        <button type="button" data-a="revive">Hold to revive</button>
         <button type="button" data-a="fast">Fast</button>
         <button type="button" data-a="magic">Magic</button>
         <button type="button" data-a="heal">Heal</button>
         <button type="button" data-a="spell">Spell</button>
         <button type="button" data-a="swap">Weapon</button>
         <button type="button" data-a="special">Special</button>
+        <button type="button" data-a="team">Team</button>
         <button type="button" data-a="ult" style="border-color:#ffd860;color:#ffd860">Ult</button>
         <button type="button" data-a="menu">Menu</button>
         <button type="button" data-a="dash">Dodge</button>

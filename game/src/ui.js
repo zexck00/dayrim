@@ -1,7 +1,7 @@
 /* ---------- Sheet, menus, input and main loop ---------- */
 function renderStats(){const p=G.p,s=p.s;
   $('whoname').textContent='The '+label(p.char);$('who').textContent='Level '+p.lvl+' · '+Math.floor(p.gold)+' gold'+(p.sp?' · '+p.sp+' skill pts':'');
-  const rows=[['Hit damage',Math.round(weaponDamage(p.weapon))],['Life',Math.ceil(p.hp)+' / '+Math.round(s.maxHp)],['Mana',Math.floor(p.mana)+' / '+Math.round(s.maxMana)],['Armor',Math.round(s.armor)],['Critical',Math.round(s.crit*100)+'%'],['Speed',Math.round(s.speed)],['Items','P'+p.potions+' F'+p.fast+' M'+p.magic],['Rage',Math.floor(p.rage)+'%'],['Best combo',p.bestCombo]];
+  const rows=[['Hit damage',Math.round(weaponDamage(p.weapon))],['Life',Math.ceil(p.hp)+' / '+Math.round(s.maxHp)],['Mana',Math.floor(p.mana)+' / '+Math.round(s.maxMana)],['Armor',Math.round(s.armor)],['Critical',Math.round(s.crit*100)+'%'],['Speed',Math.round(s.speed)],['Haste',Math.round((1-s.cdMul)*100)+'%'],['Items','P'+p.potions+' F'+p.fast+' M'+p.magic],['Rage',Math.floor(p.rage)+'%'],['Best combo',p.bestCombo]];
   $('stats').innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')}
 const statBars=st=>Object.keys(STAT_NAMES).map(k=>'<div class="sb"><span>'+STAT_NAMES[k]+'</span><i>'+'<b></b>'.repeat(st[k])+'<u></u>'.repeat(5-st[k])+'</i></div>').join('');
 function renderPanel(){const p=G.p;renderStats();$('whoart').style.cssText=artStyle(p.char,52,62);
@@ -15,10 +15,10 @@ $('bag').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b
   if(b.dataset.sell!==undefined){const i=+b.dataset.sell,it=p.bag[i];if(!it)return;const g=salvage(it);p.gold+=g;p.bag.splice(i,1);addLog('Sold '+esc(it.name)+' for '+g+' gold.');writeSave()}});
 $('rack').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b&&b.dataset.w){if(netOn())netAct('weapon',b.dataset.w);else equipWeapon(b.dataset.w)}});
 $('wearbest').addEventListener('click',()=>wearBest());
-function returnToMenu(){writeSave();demoScene();setMode('title')}
+function returnToMenu(){if(netOn()){netLeave();return}writeSave();demoScene();setMode('title')}
 function setMode(m){
   setTimeout(()=>{menuMusic();gameAmbience()},0);
-  G.mode=m;mouse.left=mouse.right=false;touchHold.slash=false;touchHold.guard=false;keys.clear();const ov=$('ov'),c=$('card');
+  G.mode=m;mouse.left=mouse.right=false;touchHold.slash=false;touchHold.guard=false;touchHold.revive=false;keys.clear();const ov=$('ov'),c=$('card');
   $('touch').hidden=!(touchMode&&m==='play');
   if(m==='play'){ov.hidden=true;return}
   ov.hidden=false;ov.classList.toggle('pick',m==='title'||m==='menu');c.classList.toggle('sel',m==='title'||m==='menu');
@@ -26,16 +26,17 @@ function setMode(m){
   else if(m==='menu')renderMenu();
   else if(netOn()&&netOverlay(m,c))return;
   else if(m==='pause'){c.innerHTML='<h2>Paused</h2><p>Stage '+G.stage+'. Your progress saves automatically.</p><div class="btnrow"><button class="go" id="go" type="button">Resume</button><button class="ghost" id="tomenu" type="button">Return to menu</button></div>';$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
-  else if(m==='dead'){c.innerHTML='<h2>The '+esc(label(G.p.char))+' is down</h2><p>You lost 20% of your gold and wake at the safehouse. Your level, gear and stage progress are safe. Bosses get much harder each stage, so train, upgrade skills and stock up on potions.</p><div class="btnrow"><button class="go" id="go" type="button">Wake at safehouse</button></div>';$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
+  else if(m==='dead'){c.innerHTML='<h2>The '+esc(label(G.p.char))+' is down</h2><p>You lost 20% of your gold and wake at the safehouse. Your level, gear and stage progress are safe. Bosses get much harder each stage, so train, upgrade skills and stock up on potions.</p><div class="btnrow"><button class="go" id="go" type="button">Wake at safehouse</button><button class="ghost" id="tomenu" type="button">Return to main menu</button></div>';$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
   else if(m==='clear'){const n=G.stage,last=n>=10,hero=factionOf(G.p.char)==='hero';
     c.innerHTML=last?'<h2>'+(hero?'Dayrim is safe':'Dayrim is yours')+'</h2><p>The crowned horror has fallen and all 10 stages are clear. You finished as a level '+G.p.lvl+' '+esc(label(G.p.char))+' with '+G.p.kills+' defeated.</p><div class="btnrow"><button class="go" id="go" type="button">Keep playing</button></div>':'<h2>Stage '+n+' cleared</h2><p>You defeated '+esc(STAGES[n-1].label||STAGES[n-1].boss)+' and earned 2 skill points. Next is stage '+(n+1)+': '+esc(STAGES[n].n)+'. The recommended level is '+recLevel(n+1)+'. You are level '+G.p.lvl+'.</p><div class="btnrow"><button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button></div>';
+    c.querySelector('.btnrow').insertAdjacentHTML('beforeend','<button class="ghost" id="tomenu" type="button">Return to main menu</button>');$('tomenu').onclick=returnToMenu;
     $('go').onclick=()=>{if(!last)enterStage(n+1);setMode('play')};const st=$('stay');if(st)st.onclick=()=>{G.gate.open=true;setMode('play')}}
 }
 /* Scales with its column through CSS alone, so it never depends on measuring the page */
 const cardStyle=n=>{const a=CAST[n];return 'width:100%;aspect-ratio:'+a.w+'/'+a.h+';background-size:'+(AW/a.w*100)+'% '+(AH/a.h*100)+'%;background-position:'+(a.x/(AW-a.w)*100)+'% '+(a.y/(AH-a.h)*100)+'%'};
 function renderSelect(){
   const c=$('card'),names=Object.keys(ROSTER[selTab]),a=archOf(chosen),sv=readSave(),foe=factionOf(chosen)==='hero'?'villains':'heroes';
-  const controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s) · V ultimate · Hold right click shield · E heal · Space dodge · 1 potion · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack · Hold right click shield · Q spell · E heal · Space dodge · V ultimate · Tab change weapon · 1 potion · 2 fast pill · 3 magic pill · T skills · L fullscreen';
+  const controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s) · V ultimate · Hold right click shield · E heal · Space dodge · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack · Hold right click shield · Q spell · E heal · Space dodge · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
   const w0=weaponOf(chosen);
   c.innerHTML='<div class="sel-top"><h2>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
   (sv?'<div class="cont"><span>Saved: The '+esc(label(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
@@ -48,14 +49,20 @@ function renderSelect(){
   const ct=$('cont');if(ct)ct.onclick=()=>{audioOn();announce('start',2);loadRun(sv);addLog('Welcome back, '+esc(label(sv.char))+'.');setMode('play')};
 }
 function renderMenu(){
-  const c=$('card'),p=G.p,tabs=[['skills','Skills'],['gym','Gym'],['shop','Shop'],['travel','Travel']],safe=G.p.nearSafe;
+  const c=$('card'),p=G.p,tabs=[['skills','Skills'],['weapons','Weapons'],['gym','Gym'],['shop','Shop'],['travel','Travel']],safe=G.p.nearSafe;
   let body='';
-  if(menuTab==='skills'){body='<p class="mhead">Skill points: <b>'+p.sp+'</b>. You earn 1 per level and 2 per boss.</p>'+SKILLS.map(s=>{const r=p.skills[s.id]||0,full=r>=s.max;return'<div class="mrow"><div><strong>'+s.n+'</strong><span>'+s.d+'</span></div><em>'+r+'/'+s.max+'</em><button type="button" class="buy" data-skill="'+s.id+'"'+(p.sp<=0||full?' disabled':'')+'>'+(full?'Max':'Train')+'</button></div>'}).join('')}
+  if(menuTab==='skills'){const aura=auraOf(p),team=TEAM_ABILITY[archKey(p.char)],boon=p.boonPending?'<div class="boons"><p class="mhead">Checkpoint boon: choose one for this run.</p><button class="boon" type="button" data-boon="wide"'+((p.runBoons.wide||0)>=3?' disabled':'')+'><strong>Safer dodge</strong><span>Longer dodge protection.</span></button><button class="boon" type="button" data-boon="opening"'+((p.runBoons.opening||0)>=3?' disabled':'')+'><strong>Longer opening</strong><span>Dodged brute attacks stay open longer.</span></button></div>':'';body=boon+'<p class="mhead">Team ability (G): <b>'+team.n+'</b> · '+team.d+'</p><p class="mhead">Aura: <b>'+aura.n+'</b> · '+aura.d+' for you and nearby allies.</p><p class="mhead">Skill points: <b>'+p.sp+'</b>. You earn 1 per level and 2 per boss.</p>'+SKILLS.map(s=>{const r=p.skills[s.id]||0,full=r>=s.max;return'<div class="mrow"><div><strong>'+s.n+'</strong><span>'+s.d+'</span></div><em>'+r+'/'+s.max+'</em><button type="button" class="buy" data-skill="'+s.id+'"'+(p.sp<=0||full?' disabled':'')+'>'+(full?'Max':'Train')+'</button></div>'}).join('')}
+  else if(menuTab==='weapons'){body=kitOf(p)?'<p class="mhead">This character fights with signature moves.</p>':'<p class="mhead">Upgrade weapons at the safehouse. Melee gains reach and a wider swing; ranged weapons spread shots; spells spread and gain blast radius.</p>'+p.weapons.map(id=>{const w=WEAPONS[id],on=id===p.weapon,lv=upgradeLevel(p,id),cost=upgradeCost(lv);return '<div class="mrow weapon-row"><div class="weapon-choice"><canvas class="weapon-icon" width="44" height="44" data-icon="'+id+'" aria-hidden="true"></canvas><div><strong>'+esc(w.n)+'</strong><span>'+METHODS[w.m].n+' · power '+w.p+' · upgrade '+lv+'/2</span></div></div><em>'+(on?'In hand':'')+'</em><button type="button" class="buy" data-weapon="'+id+'"'+(on?' disabled':'')+'>'+(on?'Equipped':'Equip')+'</button><button type="button" class="buy" data-upgrade="'+id+'"'+(!safe||!cost||p.gold<cost?' disabled':'')+'>'+(cost?'Upgrade '+cost+' gold':'Max')+'</button></div>'}).join('')}
   else if(!safe)body='<p class="mhead">Go to the green safehouse marker to use the '+(menuTab==='gym'?'gym':menuTab==='shop'?'shop':'travel board')+'. Follow its dot on the mini map.</p>';
   else if(menuTab==='gym'){body='<p class="mhead">Gold: <b>'+Math.floor(p.gold)+'</b>. Training is permanent and gets more expensive.</p>'+GYM.map(g=>{const r=p.train[g.id]||0,cost=gymCost(r);return'<div class="mrow"><div><strong>'+g.n+'</strong><span>'+g.d+'</span></div><em>'+r+' done</em><button type="button" class="buy" data-gym="'+g.id+'"'+(p.gold<cost?' disabled':'')+'>'+cost+' gold</button></div>'}).join('')}
   else if(menuTab==='shop'){body='<p class="mhead">Gold: <b>'+Math.floor(p.gold)+'</b>. You can carry up to 9 of each.</p>'+SHOP.map(s=>{const cost=shopCost(s),have=p[s.id];return'<div class="mrow"><div><strong>'+s.n+'</strong><span>'+s.d+'</span></div><em>'+have+' held</em><button type="button" class="buy" data-shop="'+s.id+'"'+(p.gold<cost||have>=9?' disabled':'')+'>'+cost+' gold</button></div>'}).join('')}
   else{body='<p class="mhead">'+(netOn()&&!netIsHost()?'Only the room host can change stage.':'Replay any unlocked stage to train.')+'</p>'+STAGES.map((s,i)=>{const n=i+1,locked=n>p.maxStage;return'<div class="mrow"><div><strong>Stage '+n+': '+s.n+'</strong><span>Boss: '+(locked?'unknown':(s.label||s.boss))+'. Recommended level '+recLevel(n)+'.</span></div><em>'+(n<=p.beaten?'Cleared':locked?'Locked':'Open')+'</em><button type="button" class="buy" data-go="'+n+'"'+(locked||n===G.stage||(netOn()&&!netIsHost())?' disabled':'')+'>'+(n===G.stage?'Here':'Go')+'</button></div>'}).join('')}
-  c.innerHTML='<div class="sel-top"><h2>Stage '+G.stage+' · Level '+p.lvl+'</h2><div class="tabs">'+tabs.map(t=>'<button class="tab" type="button" data-m="'+t[0]+'" aria-pressed="'+(menuTab===t[0])+'">'+t[1]+'</button>').join('')+'</div></div><div class="mlist">'+body+'</div><div class="btnrow"><button class="go" id="go" type="button">Back to the city</button></div>';
+  c.innerHTML='<div class="sel-top"><h2>Stage '+G.stage+' · Level '+p.lvl+'</h2><div class="tabs">'+tabs.map(t=>'<button class="tab" type="button" data-m="'+t[0]+'" aria-pressed="'+(menuTab===t[0])+'">'+t[1]+'</button>').join('')+'</div></div><div class="mlist">'+body+'</div><div class="btnrow"><button class="go" id="go" type="button">Back to the city</button><button class="ghost" id="tomenu" type="button">Return to main menu</button></div>';
+  c.querySelectorAll('[data-icon]').forEach(el=>{const id=el.dataset.icon,g=el.getContext('2d');g.imageSmoothingEnabled=false;g.save();g.translate(19,25);g.scale(1.5,1.5);drawWeaponSprite(g,id==='fists'?'fist':id,0,0,-.65,undefined,'#d9ac83');g.restore()});
+  c.querySelectorAll('[data-boon]').forEach(b=>b.onclick=()=>{if(netOn())netAct('boon',b.dataset.boon);else{chooseBoon(b.dataset.boon);renderMenu()}});
+  c.querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>{if(netOn())netAct('upgrade',b.dataset.upgrade);else{upgradeWeapon(b.dataset.upgrade);renderMenu()}});
+  c.querySelectorAll('[data-weapon]').forEach(b=>b.onclick=()=>{if(netOn())netAct('weapon',b.dataset.weapon);else{equipWeapon(b.dataset.weapon);renderMenu()}});
+  $('tomenu').onclick=returnToMenu;
   c.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{menuTab=b.dataset.m;renderMenu()});
   c.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>{if(netOn()){netAct('skill',b.dataset.skill);return}if(p.sp<=0)return;p.sp--;p.skills[b.dataset.skill]=(p.skills[b.dataset.skill]||0)+1;recalc();writeSave();renderMenu()});
   c.querySelectorAll('[data-gym]').forEach(b=>b.onclick=()=>{if(netOn()){netAct('gym',b.dataset.gym);return}const id=b.dataset.gym,cost=gymCost(p.train[id]||0);if(p.gold<cost)return;p.gold-=cost;p.train[id]=(p.train[id]||0)+1;recalc();writeSave();renderMenu()});
@@ -65,8 +72,8 @@ function renderMenu(){
 }
 
 /* Input. Online, actions go to the server. Alone, they run here. */
-const LOCAL_ACT={dash:()=>doDash(),ult:()=>doUlt(),special:()=>doMove('special'),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
-function doAct(n,v){if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
+const LOCAL_ACT={dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
+function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
 function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}
 function setTouch(on){if(touchMode===on)return;touchMode=on;$('touch').hidden=!(on&&G.mode==='play')}
@@ -85,12 +92,12 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(G.mode!=='play')return;if(GAME_CODES.has(ev.code))ev.preventDefault();if(ev.repeat)return;keys.add(ev.code);
   if(ev.code==='KeyM')toggleSound();
   if(ev.code==='Space'||ev.code==='ShiftLeft')doAct('dash');
-  if(ev.code==='KeyV')doAct('ult');if(ev.code==='KeyX')doAct('special');if(ev.code==='KeyQ')doAct('spell');if(ev.code==='KeyE')doAct('heal');if(ev.code==='Tab'){ev.preventDefault();doAct('cycle',ev.shiftKey?-1:1)}
-  if(ev.code==='Digit1'||ev.code==='KeyF')doAct('potion');if(ev.code==='Digit2')doAct('fast');if(ev.code==='Digit3')doAct('magic');
+  if(ev.code==='KeyG')doAct('team');if(ev.code==='KeyV')doAct('ult');if(ev.code==='KeyX')doAct('special');if(ev.code==='KeyQ')doAct('spell');if(ev.code==='KeyE')doAct('heal');if(ev.code==='Tab'){ev.preventDefault();doAct('cycle',ev.shiftKey?-1:1)}
+  if(ev.code==='Digit1')doAct('potion');if(ev.code==='KeyF'&&netOn())netAct('revive',true);if(ev.code==='Digit2')doAct('fast');if(ev.code==='Digit3')doAct('magic');
   if(ev.code==='KeyT'){menuTab='skills';setMode('menu')}
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
-addEventListener('keyup',ev=>keys.delete(ev.code));
-addEventListener('blur',()=>{keys.clear();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
+addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
+addEventListener('blur',()=>{keys.clear();touchHold.revive=false;mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
 function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';menuMusic();gameAmbience()}
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
 const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
@@ -168,8 +175,8 @@ $('fsbtn').hidden=!canFullscreen;$('fsbtn').onclick=ev=>{ev.currentTarget.blur()
 $('menubtn').onclick=ev=>{ev.currentTarget.blur();if(G.mode==='play'){menuTab='skills';setMode('menu')}};
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
   if(a==='slash'){touchHold.slash=true;b.setPointerCapture(ev.pointerId)}
-  if(a==='guard'){touchHold.guard=true;b.setPointerCapture(ev.pointerId)}if(a==='swap')doAct('cycle',1);if(['ult','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
-['pointerup','pointercancel'].forEach(n=>$('touch').addEventListener(n,ev=>{const b=ev.target.closest('button');if(b&&b.dataset.a==='slash')touchHold.slash=false;if(b&&b.dataset.a==='guard')touchHold.guard=false}));
+  if(a==='guard'){touchHold.guard=true;b.setPointerCapture(ev.pointerId)}if(a==='revive'){touchHold.revive=true;b.setPointerCapture(ev.pointerId);if(netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
+['pointerup','pointercancel'].forEach(n=>$('touch').addEventListener(n,ev=>{const b=ev.target.closest('button');if(b&&b.dataset.a==='slash')touchHold.slash=false;if(b&&b.dataset.a==='guard')touchHold.guard=false;if(b&&b.dataset.a==='revive'){touchHold.revive=false;if(netOn())netAct('revive',false)}}));
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.previousElementSibling,done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected';setTimeout(()=>b.textContent='Copy',1400)};try{navigator.clipboard.writeText(pre.textContent).then(done,sel)}catch(e){sel()}}));
 if('IntersectionObserver'in window)new IntersectionObserver(es=>{es.forEach(e=>{if(e.intersectionRatio<.35&&G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')})},{threshold:[.35]}).observe($('screen'));
 /* Select-screen preview cycles through every animation */
@@ -186,7 +193,7 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   else if(G.mode==='title'||G.mode==='menu'){G.t+=dt;if(G.mode==='title')drawPreview(now)}
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
   footsteps();soundWatch();
-  try{render()}catch(err){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
+  try{render();drawFx3(now)}catch(err){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}
 if(matchMedia('(pointer:coarse)').matches)touchMode=true;

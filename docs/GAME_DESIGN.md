@@ -1,6 +1,6 @@
 # Dayrim co-op game design
 
-Status: proposal for Z, C and D to review. Every number is a starting value to tune in playtests. Tasks that build this are in [TASKS.md](TASKS.md).
+Status: target design for Z, C and D to review. Every number is a starting value to tune in playtests. This document describes intended behavior, not an inventory of completed features; current prototype progress and open work are in [TASKS.md](TASKS.md) and [HANDOFF.md](../HANDOFF.md).
 
 ## 1. The goal
 
