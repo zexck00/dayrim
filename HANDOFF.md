@@ -27,7 +27,7 @@ See [Combat depth review](docs/COMBAT_DEPTH_REVIEW.md) for C-01–C-16 findings 
 
 Nothing here is promised, and the owner sets priorities.
 
-- **Party runner:** `node game/tools/party-bot.js --url ws://127.0.0.1:8080/ws --players 4 --seconds 180` drives real clients and reports outcomes. Use an isolated server and data directory; the bots are prototypes and have not met D-06 clear requirements.
+- **Party runner:** `node game/tools/party-bot.js --url ws://127.0.0.1:8080/ws --players 4 --seconds 180` drives real clients and reports outcomes. Use an isolated server and data directory; one-, two- and four-bot samples cleared Stage 1; the three-bot sample timed out and none reached Stage 3. Further seeds and human playtests remain open.
 - **Co-op balance:** `PARTY_SCALE` in `game.js` holds provisional scaling; no one-to-four-player party-bot or human balance results are recorded. The ×8 four-player damage candidate can be punishing.
 - **Solo balance:** the latest single bot sample suggests Necromancer may struggle; random results vary, and the bot does not use team abilities, checkpoint boons or weapon upgrades.
 - **Asset villains:** walking, dodge, pill and heal poses need video from the owner. They are built from idle frames for now.

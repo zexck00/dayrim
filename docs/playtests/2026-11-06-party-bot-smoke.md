@@ -18,3 +18,18 @@ A later four-player diagnostic ended after 17.4 seconds when an ultimate killed 
 After the scout fix and error-detection change, a fresh four-player, 90-second diagnostic on map seed `368231906` remained connected with no server errors. It did not clear Stage 1: the party was still on the scout objective at timeout. There were no observed downs or wipes, Hope remained 6, and estimated damage taken was 0, 0, 0 and 42. The bots had spread out and were pursuing enemies, so this is a navigation and objective-priority diagnostic, not a balance result.
 
 With objective-priority navigation and the scout replacement fix, a further four-player run on seed `1439030811` stayed connected without server errors for 90 seconds. The party completed the scout objective and was travelling to the boss gate at timeout. It recorded no downs or wipes, Hope 6, and estimated damage taken of 8, 20, 255 and 481. It did not clear Stage 1. This remains a bot-behavior check, not a balance verdict.
+
+After adding ally recovery, potion/heal use and basic skill spending, a four-player 240-second run on Stage 1 seed `847660791` cleared Stage 1 in 138.9 seconds with one Hope remaining. Across the whole run there were 3, 1, 2 and 2 observed downs, no wipes, and estimated damage taken of 594, 595, 444 and 388. At timeout the party was on Stage 2 seed `569199875`, with one of three beacons lit and 6 Hope. No room errors were reported. This demonstrates a four-bot Stage 1 clear in one sample; it does not establish a clear rate or support a scaling change.
+
+## Longer runs after crash and runner fixes
+
+Each party had a 240-second budget and a different random seed. The one-, two- and three-player rooms ran concurrently; the four-player run ran separately. Downs and estimated damage are totals across all stages reached. No room errors were reported.
+
+| Players | Stage 1 seed | Stage 1 result | Downs | Wipes | Estimated damage taken | At timeout |
+|---:|---:|---|---|---:|---|---|
+| 1 | 1845844613 | Cleared in 154.9 s, Hope 3 | 0 | 0 | 409 | Stage 2, 0/3 beacons, Hope 3 |
+| 2 | 1925772695 | Cleared in 224.8 s, Hope 4 | 0, 0 | 0 | 0, 220 | Stage 2, kill objective 1/17, Hope 4 |
+| 3 | 157091853 | No clear; gate open | 3, 3, 2 | 0 | 984, 913, 888 | Stage 1, Hope 0 |
+| 4 | 847660791 | Cleared in 138.9 s, Hope 1 | 3, 1, 2, 2 | 0 | 594, 595, 444, 388 | Stage 2, 1/3 beacons, Hope 6 |
+
+These runs demonstrate Stage 1 clears for one, two and four bots. The three-bot party did not clear within the budget, and no run reached Stage 3. Different maps, simple bot behavior, a single sample per party size and snapshot-based damage measurement prevent a reliable comparison of difficulty. More seeds, longer runs, improved navigation and human playtests remain necessary before recommending changes to damage scaling. The runner now also reports observed downs, wipes and damage per stage; these runs preceded that reporting addition.
