@@ -404,6 +404,78 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  ok(plain>0&&Math.abs(linked/plain-1.4)<1e-9,'a Duo link multiplies the ultimate damage by 1.4: '+Math.round(plain)+' to '+Math.round(linked));
  const mob={kind:'rival',r:13,armor:0};ok(Math.abs(T.ultDmgFor(mob,pa,.4)/T.ultDmgFor(mob,pa,0)-1.4)<1e-9,'and the same on ordinary enemies');
  ok(Math.abs(T.bossUltDamage(bs,1)-bs.maxHp*.04/4)<1e-9,'boss ultimate damage is four percent divided by party size, before the link bonus')}
+// Split objectives hand a party too small to split the design's timed version instead.
+{const atStage=(n,chars)=>{const rr=mk(),list=[s.createRoom(rr,chars[0],null,'F'+n+chars.length)];
+  for(let i=1;i<chars.length;i++)list.push(s.addPlayer(rr,chars[i],null,'F'+n+chars.length+i));
+  T.enter(rr);const p=list[0];p.maxStage=10;p.nearSafe=true;s.hostAction(rr,p,'travel',String(n));T.enter(rr);
+  T.G.enemies=[];T.G.killsStage=999;T.G.spawnT=1e9;for(const q of T.G.players)q.inv=1e9;const step=(k=1)=>{for(let i=0;i<k;i++){s.step(rr,1/30);rr.ev.length=0}};
+  step(2);return {rr,list,p,step}};
+ // Solo, two plates: the fallback, one plate at a time for eight seconds each.
+ {const {list,p,step}=atStage(6,['Detective']);const o=T.G.obj,st=o.steps[o.i],zs=o.zones;
+  ok(st.kind==='hold'&&st.simul&&!st.split&&st.aloneT===T.HOLD_ALONE_T,'one player cannot split a two plate step, so it uses the timed version');
+  const stand=(z,n)=>{for(let i=0;i<n;i++){p.x=z.x;p.y=z.y;step(1)}};
+  stand(zs[0],90);ok(!zs[0].done,'three seconds is not enough on the solo version');
+  stand(zs[0],170);ok(zs[0].done&&zs[0].t>=T.HOLD_ALONE_T,'eight seconds lights the plate and it stays down');
+  stand(zs[1],260);ok(T.G.obj.done&&T.G.gate.open,'the solo player finishes the two plate objective and the gate opens')}
+ // Solo, three shrines: same fallback, and it also has to finish.
+ {const {p,step}=atStage(9,['Detective']);const o=T.G.obj,st=o.steps[o.i],zs=o.zones;
+  ok(zs.length===3&&!st.split&&st.aloneT===T.HOLD_ALONE_T,'a solo player lights three shrines one at a time');
+  for(const z of zs){for(let i=0;i<260;i++){p.x=z.x;p.y=z.y;step(1)}}
+  ok(T.G.obj.done&&T.G.gate.open,'three shrines are finishable alone')}
+ // Two players still split two plates at once, and releasing one resets the hold.
+ {const {list,step}=atStage(6,['Detective','Firefighter']);const o=T.G.obj,st=o.steps[o.i],zs=o.zones;
+  ok(st.split&&st.aloneT===undefined,'two players for two plates keep the simultaneous version');
+  const put=(a,b)=>{list[0].x=zs[0].x;list[0].y=zs[0].y;list[1].x=zs[1].x;list[1].y=zs[1].y};
+  put();step(60);ok(!T.G.obj.done,'a partial hold is not the objective');
+  for(let i=0;i<40;i++){put();step(1)}
+  ok(T.G.obj.done&&T.G.gate.open,'two players holding both plates finish it in three seconds')}
+ // Two players on three shrines is too few to split, so it falls back.
+ {const {step}=atStage(9,['Detective','Firefighter']);const o=T.G.obj,st=o.steps[o.i];
+  ok(T.G.obj.zones.length===3&&!st.split&&st.aloneT===T.HOLD_ALONE_T,'two players on three shrines fall back to one at a time')}}
+// Enemy health is set in hits, so the fight does not turn to chewing gum at high stages.
+{const hr=mk(),hp=s.createRoom(hr,'Detective',null,'Hits');T.enter(hr);const hits=[],brutes=[];
+ for(let st=1;st<=10;st++){hp.maxStage=10;hp.nearSafe=true;s.hostAction(hr,hp,'travel',String(st));T.enter(hr);
+  const H=T.G;H.enemies=[];hp.lvl=st*3;T.recalc(hp);hp.weaponUpgrades={};
+  const w=hp.weapons.find(x=>x!=='fists')||'fists';hp.weapon=w;const dmg=T.weaponDamage(w);
+  const weak=T.spawnMob(0,{x:hp.x+200,y:hp.y},false),brute=T.spawnMob(0,{x:hp.x+240,y:hp.y},true);
+  hits.push(weak.maxHp/dmg);brutes.push(brute.maxHp/weak.maxHp)}
+ ok(Math.max(...hits)/Math.min(...hits)<1.001,'a weak minion takes the same number of hits at every stage: '+hits[0].toFixed(2));
+ ok(hits[0]>1.2&&hits[0]<3,'and that number is snappy rather than spongy: '+hits[0].toFixed(2)+' hits at the recommended level');
+ ok(Math.abs(brutes[0]-3.2/.6)<1e-9&&Math.max(...brutes)/Math.min(...brutes)<1.001,'brutes keep their place in the family at every stage: '+(brutes[0]).toFixed(2)+' times a weak minion');
+ ok(Math.abs(T.mobUnit(10)/T.mobUnit(1)-(11+2.6*30)/(11+2.6*3))<1e-9,'the unit follows recommended-level damage instead of a runaway curve')}
+// A melee upgrade now buys damage as well as reach.
+{const mr=mk(),mp=s.createRoom(mr,'Firefighter',null,'Melee');T.enter(mr);const H=T.G;H.enemies=[];
+ const w=mp.weapons.find(x=>{const M=T.WEAPONS[x].m;return M!=='shoot'&&M!=='spell'})||'fists';mp.weapon=w;
+ const dummy=T.spawnMob(0,{x:mp.x+40,y:mp.y},false);dummy.hp=dummy.maxHp=1e6;dummy.armor=0;dummy.kx=dummy.ky=0;
+ const rnd0=Math.random;Math.random=()=>.4;
+ const swing=(up)=>{mp.weaponUpgrades={[w]:up};T.recalc(mp);mp.s.crit=0;mp.cd.slash=0;mp.face=0;mp.x=dummy.x-24;mp.y=dummy.y;H.p=mp;
+   mp.breakReady=0;dummy.kx=dummy.ky=0;dummy.brokenT=0;dummy.statusT=0;dummy.statusType='';dummy.statusBy=0;dummy.hp=dummy.maxHp;const before=dummy.hp;T.doAttack();return before-dummy.hp};
+ const avg=(up)=>{let t=0;for(let i=0;i<60;i++)t+=swing(up);return t/60};
+ const d0=avg(0),d1=avg(1),d2=avg(2);Math.random=rnd0;
+ ok(T.MELEE_UP[0]===1&&T.MELEE_UP[1]===1.2&&T.MELEE_UP[2]===1.5,'the swing table is exactly 1, 1.2 and 1.5');
+ ok(d0>0&&d1/d0>1.1&&d1/d0<1.33&&d2/d0>1.36&&d2/d0<1.66,'a melee upgrade adds damage in the same 1.2 and 1.5 steps a ranged upgrade gives (hit variance allowed): '+Math.round(d0)+' '+Math.round(d1)+' '+Math.round(d2))}
+// The HUD pointer knows where every kind of objective is.
+{const go=(n,chars)=>{const rr=mk(),list=[s.createRoom(rr,chars[0],null,'O'+n+chars.length)];
+  for(let i=1;i<chars.length;i++)list.push(s.addPlayer(rr,chars[i],null,'O'+n+chars.length+i));
+  T.enter(rr);const p=list[0];p.maxStage=10;p.nearSafe=true;s.hostAction(rr,p,'travel',String(n));T.enter(rr);
+  T.G.enemies=[];T.G.killsStage=999;s.step(rr,1/30);rr.ev.length=0;T.enter(rr);return {rr,p,list}};
+ {const {rr,p}=go(1,['Detective']);const o=T.G.obj,st=o.steps[o.i],tg=T.objTargets(),scout=T.G.npcs.find(c=>c.wounded);
+  ok(st.kind==='revive'&&tg.length===1&&tg[0].label==='Scout'&&tg[0].x===scout.x&&tg[0].y===scout.y,'the revive step points at the wounded scout')}
+ {const {rr,p}=go(6,['Detective']);const o=T.G.obj,st=o.steps[o.i],zs=o.zones;
+  ok(st.kind==='hold'&&T.objTargets().length===2,'a two plate step points at both plates');
+  zs[0].done=true;zs[0].t=99;ok(T.objTargets().length===1,'and stops pointing at the plate that is already down');
+  p.x=zs[1].x;p.y=zs[1].y;for(let i=0;i<260;i++){p.x=zs[1].x;p.y=zs[1].y;s.step(rr,1/30);rr.ev.length=0}
+  ok(T.G.obj.done&&T.objTargets().length===0,'a finished objective leaves nothing to point at')}
+ {const {rr,p}=go(5,['Detective']);const o=T.G.obj,st=o.steps[o.i];
+  ok(st.kind==='carry'&&T.objTargets().length===3&&T.objTargets().every(t=>t.label==='Canister'),'a carry step points at every canister still on the ground');
+  p.carry={x:0,y:0,done:false,by:p.id};ok(T.objTargets().length===1&&T.objTargets()[0].label==='Drop','and switches to the drop once somebody is carrying');p.carry=null}
+ {const {rr,p}=go(3,['Detective']);const o=T.G.obj,st=o.steps[o.i];
+  ok(st.kind==='escort'&&T.objTargets().length===1&&T.objTargets()[0].label==='Boat','an escort step points at the boat')}
+ {const {rr,p}=go(2,['Detective']);const o=T.G.obj,st=o.steps[o.i];
+  ok(T.objTargets().length>=1,'a beacon step points at the beacons that are still dark')}}
 console.log('\n'+n+' checks passed');
+
+
+
 
 ;;;
