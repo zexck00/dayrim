@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- Signature moves can hit crystal pillars without closing the room.
 - A replacement wounded scout appears if the objective scout is killed.
 - Killing the wounded scout no longer closes an online room.
 - Online enemy target markers now receive the awareness state they need to appear.

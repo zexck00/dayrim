@@ -642,7 +642,7 @@ function moveDamage(a,key,id){const base=a.char?a.s.dmg*statMul(a,'mag')*(1+(a.s
 function strike(a,shape,dmg,kb){
   const inShape=t=>shape(t.x-a.x,t.y-a.y,t);
   if(a.char){for(const e of G.enemies)if(!e.dead&&inShape(e))hitEnemy(e,dmg,Math.atan2(e.y-a.y,e.x-a.x),kb,!!(a.mv&&a.mv.id!=='small'));
-    for(const c of (G.props||[]))if(c.kind==='pillar'&&!c.done&&inShape(c))pillarHit(c,p,!!(a.mv&&a.mv.id!=='small'));for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),true)}
+    for(const c of (G.props||[]))if(c.kind==='pillar'&&!c.done&&inShape(c))pillarHit(c,a,!!(a.mv&&a.mv.id!=='small'));for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),true)}
   else{if(inShape(G.p))hurtPlayer(dmg);for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),false)}
 }
 function fireMove(a,mv,hitN){

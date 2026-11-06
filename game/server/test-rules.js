@@ -339,6 +339,8 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  G().shots=[];T.startSpray(cz);
  for(let i=0;i<40;i++)T.updateBoss(cz,1/30,200,true);
  ok(G().shots.filter(s=>s.fx==='shard').length>=5,'shard spray fires a cone of crystals')}
+// Signature move hit detection uses the acting player when breaking a pillar.
+{const r=mk(),p=s.createRoom(r,'Necromancer',null,'Kit pillar');T.enter(r);G().enemies=[];T.spawnPillars(1);const pillar=G().props.find(c=>c.kind==='pillar');pillar.x=p.x+40;pillar.y=p.y;p.input.ax=p.x+100;p.input.ay=p.y;p.actions.push({n:'spell'});for(let i=0;i<28&&!pillar.done;i++){s.step(r,1/30);r.ev.length=0}ok(pillar.done,'a solo signature moderate move breaks a pillar without crashing')}
 // Party pillars: two players, within two seconds.
 {const pr=mk(),pa=s.createRoom(pr,'Detective',null,'P21'),pb=s.addPlayer(pr,'Firefighter',null,'Q');T.enter(pr);G().enemies=[];G().gate.open=true;G().killsStage=15;T.summonBoss();
  T.spawnPillars(1);const pc=(G().props||[]).find(c=>c.kind==='pillar'&&!c.done);
