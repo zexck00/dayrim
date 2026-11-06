@@ -165,7 +165,8 @@ const rxPair=(a,b,e)=>{G().p=a;T.hitEnemy(e,10,0,0);G().p=b;T.hitEnemy(e,10,0,0)
 // Collapse: pulls the neighbours in.
 {const [a,b]=rx2('Hero Shadow','Detective'),x=rxBy(),y=G().safe.y,e=rxFoe(x,y),n=rxFoe(x+140,y);
  G().enemies=[e,n];const before=Math.hypot(n.x-e.x,n.y-e.y);rxPair(a,b,e);
- ok(Math.hypot(n.x-e.x,n.y-e.y)<before,'Collapse drags nearby enemies together')}
+ const after=Math.hypot(n.x-e.x,n.y-e.y);
+ ok(n.hp<10000&&(after<before||after<=e.r*.8+25),'Collapse pulls nearby enemies in and bursts them')}
 // Purge: heals the party.
 {const [a,b]=rx2('Vigilante','Guardian'),x=rxBy(),e=rxFoe(x,G().safe.y);
  a.x=x-40;a.y=G().safe.y;b.x=x-60;b.y=G().safe.y;b.hp=b.s.maxHp*.5;G().enemies=[e];const hp0=b.hp;
@@ -185,4 +186,31 @@ const rxPair=(a,b,e)=>{G().p=a;T.hitEnemy(e,10,0,0);G().p=b;T.hitEnemy(e,10,0,0)
 {const [a,b]=rx2('Detective','Inventor'),x=rxBy(),e=rxFoe(x,G().safe.y);
  G().enemies=[e];G().fx=[];rxPair(a,b,e);
  ok(e.statusT===4&&!e.stunT&&G().fx.some(f=>f.k==='ring'&&f.c==='#8fd6ff'),'two players with the same element resonate')}
-console.log('\n'+n+' checks passed');;
+// C-19: roles follow the weapon, guards block only the front, casters leave zones, shooters keep distance.
+const c19=mk(),c1=s.createRoom(c19,'Firefighter',null,'Roles');T.enter(c19);G().enemies=[];
+const roleWant={heal:'healer',shield:'guard',spell:'caster',shoot:'shooter'},badRole=[];
+for(const n of Object.keys(T.ROSTER.villain)){const e=T.spawnRival(0,false,{x:G().safe.x+300,y:G().safe.y},n);const want=roleWant[e.method]||'rusher';if(e.role!==want)badRole.push(n)}
+ok(!badRole.length,'every enemy takes the role its weapon implies'+(badRole.length?': '+badRole.join(', '):''));
+const rAway=p=>{const c=G().w.open.find(c=>Math.hypot((c%78+.5)*40-G().safe.x,((c/78|0)+.5)*40-G().safe.y)>600);p.x=(c%78+.5)*40;p.y=((c/78|0)+.5)*40;return p};
+// A guard blocks the front and not the back.
+{const gr=mk(),v=s.createRoom(gr,'Necromancer',null,'Villain');T.enter(gr);G().enemies=[];rAway(v);
+ const gd=T.spawnRival(0,true,{x:v.x+90,y:v.y},'Guardian');gd.aware=true;gd.hp=gd.maxHp=10000;gd.guarding=true;gd.ang=0;gd.cd=99;
+ v.s.crit=0;G().p=v;const h0=gd.hp;T.hitEnemy(gd,100,Math.PI,0);const front=h0-gd.hp;
+ const h1=gd.hp;gd.guarding=true;gd.ang=0;T.hitEnemy(gd,100,0,0);const back=h1-gd.hp;
+ ok(gd.role==='guard'&&back>front*1.5,'a guard blocks the front and not the back: '+Math.round(front)+' vs '+Math.round(back))}
+// A caster leaves a damaging zone.
+{const cr=mk(),c2=s.createRoom(cr,'Firefighter',null,'Caster');T.enter(cr);G().enemies=[];rAway(c2);
+ const ce=T.spawnRival(0,false,{x:c2.x+30,y:c2.y},'Necromancer');ce.aware=true;ce.cd=99;ce.zoneT=.01;G().hazards=[];
+ G().p=c2;T.updateEnemy(ce,.05);
+ ok(ce.role==='caster'&&G().hazards.some(h=>h.from==='e'&&h.dps>0),'a caster leaves a damaging zone')}
+// A shooter backs off when a player closes in.
+{const sr=mk(),sh=s.createRoom(sr,'Firefighter',null,'Shooter');T.enter(sr);G().enemies=[];rAway(sh);
+ const se=T.spawnRival(0,false,{x:sh.x+80,y:sh.y},'Mad Scientist');se.aware=true;se.cd=99;
+ G().p=sh;const d0=Math.abs(se.x-sh.x);for(let i=0;i<10;i++)T.updateEnemy(se,.05);
+ ok(se.role==='shooter'&&Math.abs(se.x-sh.x)>d0,'a shooter backs away from a close player')}
+// Every aware enemy records which player it is after, so the marker has something to draw.
+{const mr2=mk(),m1=s.createRoom(mr2,'Firefighter',null,'Mark'),m2=s.addPlayer(mr2,'Detective',null,'Mate');T.enter(mr2);G().enemies=[];
+ const me2=T.spawnMob(0,{x:m1.x+60,y:m1.y},false);me2.aware=true;me2.cd=99;G().enemies=[me2];
+ for(let i=0;i<3;i++){s.step(mr2,1/30);mr2.ev.length=0}
+ ok(me2.targetId===m1.id||me2.targetId===m2.id,'an aware enemy records the player it targets')}
+console.log('\n'+n+' checks passed');;;

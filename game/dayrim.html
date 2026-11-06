@@ -820,7 +820,7 @@ function tintOf(h,n){h=(h%24+24)%24;const warm=(h>=5&&h<8)||(h>=16&&h<20);return
 const clock=h=>{h=(h%24+24)%24;const hh=h|0,m=(h-hh)*60|0;return String(hh).padStart(2,'0')+':'+String(m-(m%5)).padStart(2,'0')};
 
 /* ---------- Stage flow ---------- */
-function freshPlayer(name){return{char:name,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),weaponUpgrades:{},runBoons:{wide:0,opening:0},boonPending:false,teamCd:0,breakReady:0,tauntGuard:0,mendT:0,mendRate:0,stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,killerT:0,deadT:0,respawnT:0,downCount:0,lastDown:-100,secondWind:false,reviveHold:0,reviveTarget:0,reviveProgress:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
+function freshPlayer(name){return{char:name,id:1,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),weaponUpgrades:{},runBoons:{wide:0,opening:0},boonPending:false,teamCd:0,breakReady:0,tauntGuard:0,mendT:0,mendRate:0,stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,killerT:0,deadT:0,respawnT:0,downCount:0,lastDown:-100,secondWind:false,reviveHold:0,reviveTarget:0,reviveProgress:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
 function recalc(){
   const p=G.p,sk=id=>p.skills[id]||0,s={dmg:11+p.lvl*2.6+p.train.str*2,maxHp:95+p.lvl*18+p.train.end*15,maxMana:60+p.lvl*4,armor:p.lvl*1.6,crit:.05,speed:165+p.train.agi*2,leech:0,regen:3,blast:64,dashCd:2.4,mana:0,hp:0,spellCost:16,cdMul:1-.012*(p.lvl-1)-.03*p.train.agi,guardMul:1,mendMul:1};
   Object.values(p.gear).forEach(it=>{if(!it)return;for(const k in it.aff)s[k]=(s[k]||0)+it.aff[k]});
@@ -882,6 +882,8 @@ function randomOpen(minD,maxD){for(let i=0;i<40;i++){const c=pick(G.w.open),x=(c
 const ENEMY_VILLAINS=['Necromancer','Void Empress','Toxin Alchemist'];
 const MINIONS={Necromancer:[{n:'Skeleton',ah:62},{n:'Bone Goliath',ah:104}],'Void Empress':[{n:'Voidling',ah:60},{n:'Void Goliath',ah:108}],'Toxin Alchemist':[{n:'Toxin Grunt',ah:60},{n:'Toxin Enforcer',ah:102}]};
 const useMobs=()=>factionOf(G.p.char)==='hero';
+/* Section 11: one job per enemy, picked from how the character fights. */
+const METHOD_ROLE={heal:'healer',shield:'guard',spell:'caster',shoot:'shooter'};
 /* Weak and strong minions of the three villains */
 function spawnMob(minD=500,at=null,forceStrong=null){
   const o=at||randomOpen(minD,1500);if(!o)return null;
@@ -901,7 +903,7 @@ function spawnRival(minD=500,elite=null,at=null,force=null){
   if(method==='unarmed'){a.atk*=.75;a.dmg*=.85}
   const el=elite===null?Math.random()<.06+s*.008:elite,m=el?2.5:1;
   const night=nightness(G.hour)>.5?1.15:1;
-  const e={role:method==='heal'?'healer':(a.melee?'rusher':'shooter'),kind:'rival',name,a,w,method,healT:rnd(1,3),castT:0,guarding:false,x:o.x,y:o.y,r:a.r*(el?1.1:1),hp:55*a.hp*sc*m,maxHp:55*a.hp*sc*m,dmg:11*a.dmg*Math.pow(1.36,s-1)*(el?1.3:1)*night,sp:a.sp*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(el?3:1),gold:rnd(2,6)*Math.pow(1.22,s-1)*(el?3:1),elite:el,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU)};
+  const e={role:METHOD_ROLE[method]||(a.melee?'rusher':'shooter'),kind:'rival',name,a,w,method,healT:rnd(1,3),castT:0,guarding:false,x:o.x,y:o.y,r:a.r*(el?1.1:1),hp:55*a.hp*sc*m,maxHp:55*a.hp*sc*m,dmg:11*a.dmg*Math.pow(1.36,s-1)*(el?1.3:1)*night,sp:a.sp*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(el?3:1),gold:rnd(2,6)*Math.pow(1.22,s-1)*(el?3:1),elite:el,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU)};
   partyToughen(e);G.enemies.push(e);return e;
 }
 function spawnNpc(){const o=randomOpen(0,5000);if(!o)return;const hp=26*stageScale(G.stage);G.npcs.push({name:pick(NPC_NAMES),x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:rnd(9),quip:null,qt:0,sp:rnd(34,56),hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0})}
@@ -973,7 +975,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){
   else if(same){base*=REACT_SAME;G.fx.push({k:'ring',x:e.x,y:e.y,r:6,to:36,t:.25,m:.25,c:'#8fd6ff'});e.statusT=4}
   else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
   if(e.shatterT>0)base*=1.25;
-  base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),block=e.guarding?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
+  base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),facing=Math.abs(Math.atan2(Math.sin(ang-e.ang-Math.PI),Math.cos(ang-e.ang-Math.PI))),block=(e.guarding&&facing<1.05)?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
   e.hp-=d;e.flash=.11;e.aware=true;threatAdd(e,p.id||0,100*d/Math.max(1,e.maxHp));if(e.kind==='boss')e.recoil=.16;const res=e.kind==='boss'?.15:1;e.kx+=Math.cos(ang)*kb*res;e.ky+=Math.sin(ang)*kb*res;
   text(e.x,e.y-(e.kind==='boss'?e.ah*.7:66),Math.round(d)+(crit?'!':''),crit?'#ffd86b':'#fff',crit);if(crit||(e.exposedT||0)>0)G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:e.r*1.6,t:.22,m:.22,c:crit?'#ffd86b':'#f2ecd8'});goreSpray(e,ang,d/Math.max(1,e.maxHp),crit);burst(e.x,e.y-20,'#f0805c',crit?4:1);if(crit||heavy)goreChunks(e,ang,crit?2:1);
   if(p.s.leech>0)p.hp=Math.min(p.s.maxHp,p.hp+p.s.leech);sfx('hit');if(crit)shake(2);
@@ -1281,6 +1283,7 @@ function updateEnemy(e,dt){
     e.ang=Math.atan2(p.y-e.y,p.x-e.x);
     if(seen&&d<170){const b=Math.atan2(e.y-p.y,e.x-p.x);move(e,Math.cos(b)*e.sp*dt,Math.sin(b)*e.sp*dt);e.walk+=dt*6;e.moving=true}
     else if(!seen||d>310)steer(e,dt,e.sp,seen);
+    if(e.role==='caster'){e.zoneT=(e.zoneT===undefined?rnd(4,7):e.zoneT)-dt;if(e.zoneT<=0&&seen&&d<360){e.zoneT=rnd(6,9);e.castT=.5;G.hazards=G.hazards||[];G.hazards.push({x:p.x,y:p.y,r:52,t:3.2,dps:e.dmg*.25,from:'e',col:'120,90,200'});text(e.x,e.y-88,'ZONE','#b98cff',true)}}
     if(seen&&e.cd<=0&&d<480){e.cd=a.atk;const sp=e.method==='spell';if(sp)e.castT=.3;else e.atkShow=.2;G.shots.push({x:e.x,y:e.y-22,vx:Math.cos(e.ang)*(sp?165:220),vy:Math.sin(e.ang)*(sp?165:220),r:sp?8:4,from:'e',life:3,dmg:e.dmg*(sp?1.25:1),spell:sp,fx:sp?(e.w==='flask'?'flask':e.w==='staff'?'skull':e.w==='cards'?'card':e.w==='book'?'arcane':e.w==='candle'?'ember':'orb'):(e.w==='bow'?'arrow':e.w==='blaster'?'plasma':'bullet'),col:sp?spellCol(e.name,e.w==='flask'?'flask':'orb'):e.w==='blaster'?'111,220,255':'255,160,90',a:e.ang})}
   }
 }
@@ -1397,7 +1400,9 @@ function drawMob(e){
   drawBossSprite(ctx,e,G.t,P);
   if(e.hp<e.maxHp||e.aware){const w=e.r*2.8,y=e.y-e.ah-6;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(e.x-w/2,y,w,4);ctx.fillStyle=e.mob==='strong'?'#e8c95c':'#e8463f';ctx.fillRect(e.x-w/2,y,w*Math.max(0,e.hp/e.maxHp),4)}
 }
-function drawCombatMarker(e){const status=e.healWind>0?'HEALING · Q TO INTERRUPT':e.exposedT>0?'OPEN':e.brokenT>0?'BROKEN':e.markT>0?'MARKED':e.role==='healer'?'HEALER':e.role==='brute'?'BRUTE':e.role==='rusher'?'RUSHER':'';if(!status)return;ctx.textAlign='center';ctx.font='700 12px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(status,e.x,e.y-(e.ah||74)-20);ctx.fillStyle=e.healWind>0?'#80e5aa':e.exposedT>0?'#ffe27a':'#bcd9ee';ctx.fillText(status,e.x,e.y-(e.ah||74)-20)}
+function drawCombatMarker(e){const status=e.healWind>0?'HEALING · Q TO INTERRUPT':e.exposedT>0?'OPEN':e.brokenT>0?'BROKEN':e.markT>0?'MARKED':e.role==='healer'?'HEALER':e.role==='brute'?'BRUTE':e.role==='rusher'?'RUSHER':e.role==='shooter'?'SHOOTER':e.role==='caster'?'CASTER':e.role==='guard'?'GUARD':'';if(!status)return;ctx.textAlign='center';ctx.font='700 12px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(status,e.x,e.y-(e.ah||74)-20);ctx.fillStyle=e.healWind>0?'#80e5aa':e.exposedT>0?'#ffe27a':'#bcd9ee';ctx.fillText(status,e.x,e.y-(e.ah||74)-20)}
+/* Who an enemy is coming for. Red means you, pale with a party number means an ally. */
+function drawTargetMark(e){if(!e.aware||!e.targetId)return;const idx=G.players.findIndex(q=>(q.id||0)===e.targetId);if(idx<0)return;const mine=!!G.p&&(G.p.id||0)===e.targetId,x=e.x,y=e.y-(e.ah||74)-38+Math.sin(G.t*7+e.x*.3)*1.5;ctx.beginPath();ctx.moveTo(x-6,y-4);ctx.lineTo(x+6,y-4);ctx.lineTo(x,y+4);ctx.closePath();ctx.globalAlpha=mine?.95:.5;ctx.fillStyle=mine?'#ff5a4a':'#8fd4ff';ctx.fill();ctx.globalAlpha=1;if(!mine&&G.players.length>1){ctx.font='700 10px Barlow,sans-serif';ctx.textAlign='center';ctx.fillStyle='#8fd4ff';ctx.fillText(String(idx+1),x,y-6)}}
 function drawRival(e){
   if(e.art)return drawMob(e);
   if(e.vill){drawKitActor(e,e.moving,e.walk,e.ang,{key:KIT_OF[e.name]});const w=56,y=e.y-112;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(e.x-w/2,y,w,5);ctx.fillStyle='#ff4a6a';ctx.fillRect(e.x-w/2,y,w*Math.max(0,e.hp/e.maxHp),5);return}
@@ -1539,7 +1544,7 @@ function render(){
   G.fx.forEach(f=>{if(f.k!=='p')return;ctx.globalAlpha=clamp(f.t/f.m,0,1);ctx.fillStyle=f.c;ctx.fillRect(f.x-f.s/2,f.y-f.s/2,f.s,f.s)});ctx.globalAlpha=1;
   G.fx.forEach(f=>{if(f.k==='ko')blit(ctx,f.name,f.x,f.y,2,'ko',0,false,Math.PI/2,clamp(f.t/f.m,0,1))});
   const list=[...G.enemies,...G.players.filter(q=>!(q.respawnT>0)),...G.loot,...G.npcs,...G.w.props.filter(inView)].filter(inView).sort((a,b)=>a.y-b.y);
-  list.forEach(o=>{if(o.stats){drawPlayer(o);if(G.mp&&o!==G.p)drawTag(o);if(o.deadT>0)drawDowned(o)}else if(typeof o.t==='string')drawProp(o);else if(o.kind==='boss')drawBoss(o);else if(o.kind==='rival'){drawRival(o);drawCombatMarker(o)}else if(o.name&&o.quip!==undefined)drawNpc(o);else drawLoot(o)});
+  list.forEach(o=>{if(o.stats){drawPlayer(o);if(G.mp&&o!==G.p)drawTag(o);if(o.deadT>0)drawDowned(o)}else if(typeof o.t==='string')drawProp(o);else if(o.kind==='boss'){drawBoss(o);drawTargetMark(o)}else if(o.kind==='rival'){drawRival(o);drawCombatMarker(o);drawTargetMark(o)}else if(o.name&&o.quip!==undefined)drawNpc(o);else drawLoot(o)});
   G.shots.forEach(drawShot);
   drawFxTop();
   (G.hazards||[]).forEach(h=>{if(inView(h))drawHazard(h)});
