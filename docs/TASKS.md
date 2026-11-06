@@ -120,7 +120,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
 | C-26 | C | M | Balance the five passive role auras in solo and parties; review stacking, range, recovery and clarity | All 40 characters covered; tests and human balance notes reviewed by Z | D-06 |
-| C-27 | C | M | Playtest the two safehouse weapon upgrades, including melee arcs, ranged cones and spell blasts | Upgrade balance and progression reviewed by Z; decide how signature-move characters participate | D-06 |
+| C-27 | C | M | Playtest the two safehouse weapon upgrades, including melee arcs, ranged cones and spell blasts | Prototype: melee upgrades now add 1.2 and 1.5 damage steps as well as reach and arc; the arcs, cones and blasts still need a human playtest. | Upgrade balance and progression reviewed by Z; decide how signature-move characters participate | D-06 |
 | C-28 | C | M | Review boss-gate boon choices and their run/save lifecycle | Choices are discoverable, meaningful and reset at the agreed end of a run; tested solo and online | C-18 |
 | C-29 | C | S | **Haste:** levels and trained Agility shorten every cooldown through one `cdMul`, floored at 60% of base | Rule tests cover the curve, the floor and that dash and team abilities use it; sheet shows Haste | |
 | C-30 | C | S | **Gore pass:** damage-scaled blood, chunks on heavy hits and kills, pools, wound trails, per-family blood colour | Works solo and online, decal list capped, tests added; Z review | |

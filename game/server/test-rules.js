@@ -432,7 +432,30 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  // Two players on three shrines is too few to split, so it falls back.
  {const {step}=atStage(9,['Detective','Firefighter']);const o=T.G.obj,st=o.steps[o.i];
   ok(T.G.obj.zones.length===3&&!st.split&&st.aloneT===T.HOLD_ALONE_T,'two players on three shrines fall back to one at a time')}}
+// Enemy health is set in hits, so the fight does not turn to chewing gum at high stages.
+{const hr=mk(),hp=s.createRoom(hr,'Detective',null,'Hits');T.enter(hr);const hits=[],brutes=[];
+ for(let st=1;st<=10;st++){hp.maxStage=10;hp.nearSafe=true;s.hostAction(hr,hp,'travel',String(st));T.enter(hr);
+  const H=T.G;H.enemies=[];hp.lvl=st*3;T.recalc(hp);hp.weaponUpgrades={};
+  const w=hp.weapons.find(x=>x!=='fists')||'fists';hp.weapon=w;const dmg=T.weaponDamage(w);
+  const weak=T.spawnMob(0,{x:hp.x+200,y:hp.y},false),brute=T.spawnMob(0,{x:hp.x+240,y:hp.y},true);
+  hits.push(weak.maxHp/dmg);brutes.push(brute.maxHp/weak.maxHp)}
+ ok(Math.max(...hits)/Math.min(...hits)<1.001,'a weak minion takes the same number of hits at every stage: '+hits[0].toFixed(2));
+ ok(hits[0]>1.2&&hits[0]<3,'and that number is snappy rather than spongy: '+hits[0].toFixed(2)+' hits at the recommended level');
+ ok(Math.abs(brutes[0]-3.2/.6)<1e-9&&Math.max(...brutes)/Math.min(...brutes)<1.001,'brutes keep their place in the family at every stage: '+(brutes[0]).toFixed(2)+' times a weak minion');
+ ok(Math.abs(T.mobUnit(10)/T.mobUnit(1)-(11+2.6*30)/(11+2.6*3))<1e-9,'the unit follows recommended-level damage instead of a runaway curve')}
+// A melee upgrade now buys damage as well as reach.
+{const mr=mk(),mp=s.createRoom(mr,'Firefighter',null,'Melee');T.enter(mr);const H=T.G;H.enemies=[];
+ const w=mp.weapons.find(x=>{const M=T.WEAPONS[x].m;return M!=='shoot'&&M!=='spell'})||'fists';mp.weapon=w;
+ const dummy=T.spawnMob(0,{x:mp.x+40,y:mp.y},false);dummy.hp=dummy.maxHp=1e6;dummy.armor=0;dummy.kx=dummy.ky=0;
+ const rnd0=Math.random;Math.random=()=>.4;
+ const swing=(up)=>{mp.weaponUpgrades={[w]:up};T.recalc(mp);mp.s.crit=0;mp.cd.slash=0;mp.face=0;mp.x=dummy.x-24;mp.y=dummy.y;H.p=mp;
+   mp.breakReady=0;dummy.kx=dummy.ky=0;dummy.brokenT=0;dummy.statusT=0;dummy.statusType='';dummy.statusBy=0;dummy.hp=dummy.maxHp;const before=dummy.hp;T.doAttack();return before-dummy.hp};
+ const avg=(up)=>{let t=0;for(let i=0;i<60;i++)t+=swing(up);return t/60};
+ const d0=avg(0),d1=avg(1),d2=avg(2);Math.random=rnd0;
+ ok(T.MELEE_UP[0]===1&&T.MELEE_UP[1]===1.2&&T.MELEE_UP[2]===1.5,'the swing table is exactly 1, 1.2 and 1.5');
+ ok(d0>0&&d1/d0>1.1&&d1/d0<1.33&&d2/d0>1.36&&d2/d0<1.66,'a melee upgrade adds damage in the same 1.2 and 1.5 steps a ranged upgrade gives (hit variance allowed): '+Math.round(d0)+' '+Math.round(d1)+' '+Math.round(d2))}
 console.log('\n'+n+' checks passed');
+
 
 
 ;;;
