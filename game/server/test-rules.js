@@ -332,4 +332,49 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  const p2=T.spawnPillars(1),pc2=(G().props||[]).filter(c=>c.kind==='pillar'&&!c.done).pop();
  T.pillarHit(pc2,pa,false);G().t+=3;T.pillarHit(pc2,pb,false);
  ok(!pc2.done,'hits more than two seconds apart do not count')}
-console.log('\n'+n+' checks passed');;;;;;;
+// C-15 party chain: one counter for the party, personal combos stay personal, and the bonus tiers bite.
+{const cr=mk(),ca=s.createRoom(cr,'Detective',null,'ChainA'),cb=s.addPlayer(cr,'Firefighter',null,'ChainB');T.enter(cr);G().enemies=[];
+ T.chainReset();ok(G().chain.n===0&&G().chain.t===0,'the chain starts empty');
+ T.chainAdd();ok(G().chain.n===1&&Math.abs(G().chain.t-6)<1e-9,'a kill counts up and opens a six second window');
+ T.chainTick(6.1);ok(G().chain.n===0,'the shared window runs out after six seconds');
+ // A kill by either player feeds the same counter, and the personal combo belongs to the killer.
+ const m1=T.spawnMob(0,{x:ca.x+30,y:ca.y},false),m2=T.spawnMob(0,{x:ca.x-30,y:ca.y},false);
+ G().p=ca;T.killEnemy(m1);G().p=cb;T.killEnemy(m2);
+ ok(G().chain.n===2&&ca.combo===1&&cb.combo===1,"either player's kill feeds the party chain while each keeps a personal combo");
+ ok(ca.bestCombo===1&&cb.bestCombo===1,'the personal best is still recorded per player');
+ for(let i=0;i<3;i++){G().p=ca;T.killEnemy(T.spawnMob(0,{x:ca.x+30,y:ca.y},false))}
+ ok(G().chain.n===5&&T.chainBonus().spd===1.05&&/speed/.test(T.chainBonus().label),'five kills give the whole party 5 percent move speed');
+ ok(T.chainBonus().dmg===1,'damage stays at 100 percent until twelve');
+ while(G().chain.n<12){G().p=ca;T.killEnemy(T.spawnMob(0,{x:ca.x+30,y:ca.y},false))}
+ ok(T.chainBonus().dmg===1.1,'twelve kills give the party 10 percent damage');
+ while(G().chain.n<20){G().p=ca;T.killEnemy(T.spawnMob(0,{x:ca.x+30,y:ca.y},false))}
+ ok(T.chainBonus().mana===2,'twenty kills double mana regeneration');
+ while(G().chain.n<30){G().p=ca;T.killEnemy(T.spawnMob(0,{x:ca.x+30,y:ca.y},false))}
+ ok(T.chainBonus().cd===.8,'thirty kills make every cooldown 20 percent faster');
+ // The table has to reach the rules, not just exist.
+ G().p=ca;G().enemies=[];
+ const dm30=T.dmgMul(),cd30=T.cdMulOf(ca);T.chainReset();const dm0=T.dmgMul();
+ ok(Math.abs(dm30/dm0-1.1)<1e-9,'the damage bonus reaches dmgMul');
+ ok(Math.abs(cd30/ca.s.cdMul-.8)<1e-9,'the cooldown bonus reaches every ability timer');
+ ok(Math.abs(T.cdMulOf(ca)/ca.s.cdMul-1)<1e-9,'and it is gone once the chain is');
+ ca.x=G().safe.x;ca.y=G().safe.y;ca.input.x=1;s.step(cr,1/30);cr.ev.length=0;const x0=ca.x;
+ ca.x=x0;ca.mana=0;T.chainReset();s.step(cr,1/30);cr.ev.length=0;const dx0=ca.x-x0,mg0=ca.mana;
+ ca.x=x0;ca.mana=0;for(let i=0;i<5;i++)T.chainAdd();s.step(cr,1/30);cr.ev.length=0;
+ ok(Math.abs((ca.x-x0)/dx0-1.05)<1e-6,'five kills really move the party 5 percent faster');
+ ok(Math.abs(ca.mana/mg0-1)<1e-9,'five kills leave mana regeneration alone');
+ ca.mana=0;while(G().chain.n<20)T.chainAdd();s.step(cr,1/30);cr.ev.length=0;
+ ok(Math.abs(ca.mana/mg0-2)<1e-6,'twenty kills really double the mana that comes back');
+ ca.input.x=0;
+ // Rage: the killer fills up, allies inside 500 get a third of it, allies outside get nothing.
+ T.enter(cr);G().enemies=[];T.chainReset();ca.rage=0;cb.rage=0;ca.x=G().safe.x;ca.y=G().safe.y;
+ cb.x=ca.x+400;cb.y=ca.y;const rk1=T.spawnMob(0,{x:ca.x+10,y:ca.y},false);
+ G().p=ca;T.killEnemy(rk1);const gainA=ca.rage,gainNear=cb.rage;
+ ok(gainA>0&&Math.abs(gainNear/gainA-.35)<1e-9,"an ally inside 500 units earns 35 percent of the killer's rage");
+ ca.rage=0;cb.rage=0;cb.x=ca.x+600;const rk2=T.spawnMob(0,{x:ca.x+10,y:ca.y},false);
+ G().p=ca;T.killEnemy(rk2);
+ ok(ca.rage>0&&cb.rage===0,'an ally beyond 500 units earns nothing');
+ // A new stage wipes the chain.
+ T.chainAdd();const nr=mk(),np=s.createRoom(nr,'Detective',null,'ChainNew');T.enter(nr);
+ ok(G().chain.n===0,'a new stage starts with an empty chain')}
+console.log('\n'+n+' checks passed');
+;;;

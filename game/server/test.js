@@ -53,10 +53,12 @@ class Bot{
 
   console.log('Fighting together');
   await sleep(1500);const bb=a.bytes;const sn=a.snaps;const t0=Date.now();
-  const atk=setInterval(()=>{for(const p of[a,b]){const e=[...p.ents.e.values()][0];p.send({t:'i',s:Date.now()%1e9,x:0,y:0,ax:(e?e.x:0),ay:(e?e.y:0),l:true,r:false})}},100);
+  const atk=setInterval(()=>{for(const p of[a,b]){const es=[...p.ents.e.values()].filter(e=>!e.dead);const e=es.sort((x,y)=>Math.hypot(x.x-p.me.x,x.y-p.me.y)-Math.hypot(y.x-p.me.x,y.y-p.me.y))[0];
+    p.send({t:'i',s:Date.now()%1e9,x:e?Math.sign(e.x-p.me.x):0,y:e?Math.sign(e.y-p.me.y):0,ax:(e?e.x:0),ay:(e?e.y:0),l:true,r:false})}},100);
   await sleep(5000);clearInterval(atk);const sec=(Date.now()-t0)/1000;
   console.log('      '+Math.round((a.bytes-bb)/sec/1024*10)/10+' KB/s before compression per player, '+Math.round((a.snaps-sn)/sec)+' snapshots/s, '+a.ents.e.size+' enemies in view');
   ok(a.ents.e.size>=0&&a.snaps>sn+50,'snapshots keep flowing during a fight');
+  ok(a.world.ch!==undefined&&a.world.ch===b.world.ch,'both players see the same party chain: '+(a.world.ch||0));
 
   console.log('Host and leaving');
   const host=b.wait('host');a.close();const hm=await host;ok(hm.host===b.id,'host moves to the next player when the host leaves');
