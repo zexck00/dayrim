@@ -1768,7 +1768,9 @@ const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
 function loadSounds(){if(!ac)return;Object.entries(SOUND_CLIPS).forEach(([k,b64])=>{if(SOUND_BUF[k]||SOUND_WAIT[k]===-1)return;SOUND_WAIT[k]=SOUND_WAIT[k]||-1;try{const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
   ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k.startsWith('an_')&&SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900){SOUND_WAIT[k]=0;announce(k.slice(3))}if(k==='menu')menuMusic();else if(k==='ambA'||k==='ambB')gameAmbience();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
 /* A browse sound cuts off the one before it, so clicking quickly through cards doesn't pile up */
-function playSound(k,v=.8){if(muted||!ac)return;const b=SOUND_BUF[k];if(!b){if(SOUND_WAIT[k]===-1)SOUND_WAIT[k]=performance.now();return}
+/* Villain browse is twice the hero browse level, at the owner's request. Its loudest point stays below clipping (about -1.7 dB). */
+const SOUND_VOL={heroBrowse:.8,villainBrowse:1.6};
+function playSound(k,v=SOUND_VOL[k]||.8){if(muted||!ac)return;const b=SOUND_BUF[k];if(!b){if(SOUND_WAIT[k]===-1)SOUND_WAIT[k]=performance.now();return}
   try{if(browseSrc)browseSrc.stop()}catch(e){}try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;g.gain.value=v;s.connect(g).connect(ac.destination);s.start();browseSrc=s;(window.__soundLog=window.__soundLog||[]).push(k)}catch(e){}}
 /* Loops on the character and online screens, fades in and out, and respects Sound off */
 function menuMusic(){const want=!muted&&!!ac&&!!SOUND_BUF.menu&&!!G&&G.mode==='title';if(want===!!menuSrc)return;const now=ac?ac.currentTime:0;
