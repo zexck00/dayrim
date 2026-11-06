@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- Online enemy target markers now receive the awareness state they need to appear.
 - Full Party healing no longer gives life to downed or respawning players without reviving them.
 - Healing generates enemy attention only for life actually restored, credited to the healer.
 - Online linked-ultimate feedback now shows its damage bonus.
@@ -21,6 +22,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 
 ### Added
+- Party and combat feedback now shows difficulty, Hope spent, retry location, revive target and range, chain time and bonuses, enemy status and Taunt duration, and citizen fear. The Skills menu explains reactions.
 - Solo players can trigger half-strength Resonance with a second hit on an active status.
 - A title poster before hero selection: the owner's poster art with the DAYRIM letters cut from the title art in the centre, slow drifting embers, and a small stone-lettered Play Game button (Enter also works) that leads to choosing a hero.
 - Footsteps that change with the ground: grass, sandy paths, stone, water and wood, using the owner's step recordings.
