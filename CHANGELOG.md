@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- Full Party healing no longer gives life to downed or respawning players without reviving them.
 - Healing generates enemy attention only for life actually restored, credited to the healer.
 - Online linked-ultimate feedback now shows its damage bonus.
 - Linked ultimates now increase damage already dealt when an ally joins late.
