@@ -14,6 +14,14 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 
 ### Added
+- A title poster before hero selection: the owner's poster art with the DAYRIM letters cut from the title art in the centre, slow drifting embers, and a small stone-lettered Play Game button (Enter also works) that leads to choosing a hero.
+- Footsteps that change with the ground: grass, sandy paths, stone, water and wood, using the owner's step recordings.
+- Shallow ponds you can wade through, with wooden bridges where paths cross them. Their colors follow each stage's theme.
+- Announcer lines from the owner's recordings: start game, the 9 combo tiers (replacing the temporary computer voice for combos), boss fight, boss defeated, enemy hero or villain down, you down, a friend down, all friends down and all down.
+- Boss music: an entrance theme, then a more urgent track if the boss is still alive after a minute. It replaces the ambience during the fight.
+- Melee swing and heal sounds from the owner's recordings.
+- Background ambience throughout the game, mixed from the owner's two ambience tracks and kept soft. It fades in when play starts, and gives way to the menu music on the character screen.
+- Menu music on the character and online screens, which fades out when a game starts. Hero and villain browse sounds play when picking a card or switching tabs. All three are the owner's files from `ASSETS/audio`.
 - Levels and Agility now give Haste: every cooldown is shorter, down to 60% of its base time. The character sheet shows the percentage.
 - Enemy health is now set in hits instead of a number that grew away from the player. A weak minion takes about two hits at the stage's recommended level on every stage - it used to take 1.4 on stage 1 and 5.4 on stage 10 - and brutes keep their place in the family at five times that. A stage 10 weak minion has 196 life instead of 1026.
 - Melee upgrades now add damage. They used to buy only reach and arc, so a blade got no stronger while a gun got 50% more damage across its extra shots. A fully upgraded melee swing hits for 1.5 times its base, in the same steps a ranged upgrade uses.

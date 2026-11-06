@@ -13,7 +13,16 @@ function drawTiles(l,t,r,b){
       else{ctx.fillStyle=biome.w[0];if(d%4===0)ctx.fillRect(px+(d%26),py+(d%24),10,8);ctx.fillStyle=biome.leaf[d%3];if(d%3===0)ctx.fillRect(px+(d%30),py+((d*3)%30),9,7)}
     }else{
       const g=ground[i];
-      if(g===2){ctx.fillStyle=(x+y)%2?'#a89a7c':'#9c8e70';ctx.fillRect(px,py,T+.5,T+.5);ctx.fillStyle='rgba(40,34,24,.28)';ctx.fillRect(px,py,T,1);ctx.fillRect(px,py,1,T);if(d<40){ctx.fillStyle=biome.leaf[d%3];ctx.fillRect(px+(d%30),py+(d%32),7,3)}}
+      if(g===3||g===4){const wa=biome.wa,isW=n=>{const k=ground[n];return !map[n]&&(k===3||k===4)};
+        ctx.fillStyle=wa[0];ctx.fillRect(px,py,T+.5,T+.5);
+        // slow ripples, then a pale shore where the water meets land
+        const ph=tm*1.6+d*.05;ctx.fillStyle=wa[1];ctx.fillRect(px+((d+tm*6)%34),py+6+(d%22),8,2);ctx.fillRect(px+((d*3+tm*4)%30),py+22+(d%12),6,2);
+        ctx.fillStyle='rgba(255,255,255,'+(.07+.05*Math.sin(ph)).toFixed(3)+')';ctx.fillRect(px+(d%28),py+((d*5)%30),4,1);
+        ctx.fillStyle=wa[2];ctx.globalAlpha=.55;if(!isW(i-1))ctx.fillRect(px,py,3,T);if(!isW(i+1))ctx.fillRect(px+T-3,py,3,T);if(!isW(i-MW))ctx.fillRect(px,py,T,3);if(!isW(i+MW))ctx.fillRect(px,py+T-3,T,3);ctx.globalAlpha=1;
+        if(g===4){const across=isW(i-1)||isW(i+1)?0:1;ctx.fillStyle='rgba(5,10,20,.3)';ctx.fillRect(px+2,py+2,T-2,T-2);
+          for(let k=0;k<5;k++){ctx.fillStyle=(k+d)%3?'#8a6840':'#7a5a38';if(across)ctx.fillRect(px+3+k*7,py+2,6,T-4);else ctx.fillRect(px+2,py+3+k*7,T-4,6)}
+          ctx.fillStyle='#4a3420';if(across){ctx.fillRect(px+3,py+2,T-6,2);ctx.fillRect(px+3,py+T-4,T-6,2)}else{ctx.fillRect(px+2,py+3,2,T-6);ctx.fillRect(px+T-4,py+3,2,T-6)}}}
+      else if(g===2){ctx.fillStyle=(x+y)%2?'#a89a7c':'#9c8e70';ctx.fillRect(px,py,T+.5,T+.5);ctx.fillStyle='rgba(40,34,24,.28)';ctx.fillRect(px,py,T,1);ctx.fillRect(px,py,1,T);if(d<40){ctx.fillStyle=biome.leaf[d%3];ctx.fillRect(px+(d%30),py+(d%32),7,3)}}
       else{ctx.fillStyle=g===1?biome.d:biome.g[0];ctx.fillRect(px,py,T+.5,T+.5);
         // soften edges against grass and paths with chunky dither
         if(g===1){ctx.fillStyle=biome.g[0];if(d%2)ctx.fillRect(px+(d%34),py,6,3);if(d%3===0)ctx.fillRect(px,py+(d%34),3,6);ctx.fillStyle='rgba(30,24,16,.3)';ctx.fillRect(px+(d%28),py+(d*3%30),5,3)}
