@@ -79,6 +79,7 @@ canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',
 const GAME_CODES=new Set(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
 addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyL'&&!ev.repeat&&ev.target.tagName!=='INPUT'){toggleFullscreen();return}
+  if(splashOn()){if((ev.code==='Enter'||ev.code==='Space')&&!ev.repeat){ev.preventDefault();leaveSplash()}return}
   if(ev.code==='Escape'||ev.code==='KeyP'){if(G.mode==='play'){setMode('pause');return}if(G.mode==='pause'||G.mode==='menu'){writeSave();setMode('play');return}}
   if(G.mode==='menu'&&(ev.code==='KeyT'||ev.code==='KeyR')){writeSave();setMode('play');return}
   if(G.mode!=='play')return;if(GAME_CODES.has(ev.code))ev.preventDefault();if(ev.repeat)return;keys.add(ev.code);
@@ -189,6 +190,29 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}
 if(matchMedia('(pointer:coarse)').matches)touchMode=true;
+/* Title poster, shown once before hero selection. Play Game (or Enter) goes on to choosing a hero. */
+const SPLASH=$('splash');
+function splashOn(){return !!SPLASH&&!SPLASH.classList.contains('gone')}
+function leaveSplash(){if(!splashOn())return;const b=$('spplay');if(b.classList.contains('go'))return;b.classList.add('go');
+  setTimeout(()=>{SPLASH.classList.add('gone');if(G.mode!=='title')setMode('title');menuMusic()},350)}
+function initSplash(){if(!SPLASH)return;$('spposter').src=TITLE_URLS.poster;$('spwords').src=TITLE_URLS.words;
+  /* The button letters are filled with stone cut from the DAYRIM letters, so they match the title */
+  SPLASH.querySelector('.pg-t').style.backgroundImage='url('+TITLE_URLS.stone+'),linear-gradient(#d9cbb4,#8a7660)';
+  const b=$('spplay');b.addEventListener('click',leaveSplash);try{b.focus({preventScroll:true})}catch(e){}requestAnimationFrame(splashTick)}
+/* Embers drift slowly up across the poster */
+const spEmbers=[];let spLast=0;
+function newEmber(){const a=Math.random();return{x:Math.random(),y:1.02,vx:(Math.random()-.5)*.02,vy:-.03-Math.random()*.06,life:0,max:6+Math.random()*8,r:.8+Math.random()*1.8,h:a<.8?24+Math.random()*24:275+Math.random()*20,w:Math.random()*6.28}}
+function drawEmbers(cv,list,dt){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;const dpr=Math.min(2,devicePixelRatio||1);
+  if(cv.width!==Math.round(w*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);c.globalCompositeOperation='lighter';
+  for(let i=list.length-1;i>=0;i--){const e=list[i];e.life+=dt;if(e.life>e.max){list.splice(i,1);continue}
+    e.w+=dt*1.3;e.x+=(e.vx+Math.sin(e.w)*.008)*dt;e.y+=e.vy*dt;
+    const k=1-e.life/e.max,al=Math.min(1,e.life*4)*k,x=e.x*w,y=e.y*h,r=e.r*1.2;
+    const g=c.createRadialGradient(x,y,0,x,y,r*4);g.addColorStop(0,`hsla(${e.h},100%,75%,${al})`);g.addColorStop(.35,`hsla(${e.h},100%,55%,${al*.55})`);g.addColorStop(1,`hsla(${e.h},100%,45%,0)`);
+    c.fillStyle=g;c.beginPath();c.arc(x,y,r*4,0,6.283);c.fill()}}
+function splashTick(now){if(!splashOn())return;const dt=Math.min(.05,(now-(spLast||now))/1000);spLast=now;
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&Math.random()<dt*14)spEmbers.push(newEmber());
+  drawEmbers($('spfx'),spEmbers,dt);requestAnimationFrame(splashTick)}
 demoScene();resize();setMode('title');
+initSplash();
 window.__dayrim={get state(){return G},net,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
 requestAnimationFrame(tick);
