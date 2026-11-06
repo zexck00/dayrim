@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- The online Skills menu updates when the server confirms training or a checkpoint choice.
 - The online Weapons menu updates when the server confirms a purchase or changes safehouse access.
 - Signature moves can hit crystal pillars without closing the room.
 - A replacement wounded scout appears if the objective scout is killed.
@@ -18,6 +19,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Citizens now fear the player responsible for a civilian death, rather than every party member.
 
 ### Changed
+- Skills are grouped by purpose and show rank progress and current and next bonuses; descriptions clarify which attacks and healing they affect.
 - Weapon upgrade cards show tier progress, current and next effects, and why an upgrade is unavailable. Piercing, shield interrupts and ally heals have distinct combat cues.
 - Ultimate hits deal the designed 4% of boss life divided by party size before link bonuses, even for high-damage builds.
 - Every character pair can trigger a reaction: combinations without a named reaction now create resonance, granting both players rage and a small damage bonus.

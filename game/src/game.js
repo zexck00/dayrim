@@ -95,11 +95,11 @@ const SUF=['of the Alley','of Last Call','of the Precinct','of the Ninth Ward','
 const AFF={dmg:{l:'damage',v:i=>1+i*.8,w:3,f:v=>'+'+v.toFixed(0)},hp:{l:'life',v:i=>6+i*4,w:.55,f:v=>'+'+v.toFixed(0)},armor:{l:'armor',v:i=>2+i*1.3,w:2,f:v=>'+'+v.toFixed(0)},crit:{l:'crit',v:i=>.012+Math.min(.04,i*.003),w:120,f:v=>'+'+(v*100).toFixed(1)+'%'},speed:{l:'speed',v:i=>3+Math.min(10,i*.6),w:1.1,f:v=>'+'+v.toFixed(0)},leech:{l:'life per hit',v:i=>.3+i*.1,w:9,f:v=>'+'+v.toFixed(1)},regen:{l:'mana/sec',v:i=>.5+i*.12,w:6,f:v=>'+'+v.toFixed(1)},mana:{l:'mana',v:i=>5+i*2.2,w:.5,f:v=>'+'+v.toFixed(0)}};
 const RAR=[{n:'Common',c:'#d9d4c2'},{n:'Uncommon',c:'#7cc7f2'},{n:'Rare',c:'#e8c95c'},{n:'Legendary',c:'#ff8f6b'}];
 const SKILLS=[
- {id:'power',n:'Melee Training',d:'+8% unarmed and weapon melee damage',max:15},
- {id:'aim',n:'Marksmanship',d:'+8% gun damage',max:15},
- {id:'spell',n:'Spellcraft',d:'+10% spell damage',max:15},
+ {id:'power',n:'Melee Training',d:'+8% melee, shield and healing-weapon damage per rank',max:15},
+ {id:'aim',n:'Marksmanship',d:'+8% ranged-weapon damage per rank',max:15},
+ {id:'spell',n:'Spellcraft',d:'+10% spell and signature-move damage per rank',max:15},
  {id:'guard',n:'Shield Drill',d:'+12% armor while shielding',max:10},
- {id:'mend',n:'First Aid',d:'+10% healing',max:10},
+ {id:'mend',n:'First Aid',d:'+10% self-healing from E and healing weapons per rank',max:10},
  {id:'tough',n:'Toughness',d:'+6% maximum life',max:15},
  {id:'foot',n:'Footwork',d:'+2% move speed',max:10},
  {id:'focus',n:'Focus',d:'+1 mana per second',max:10},

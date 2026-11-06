@@ -232,7 +232,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | C-54 | C | L | Stage 10 The Last Night: 3 trials | Done | C-30 to C-52 |
 | C-55 | C | L | Boss: Nameless King, 4 phases, boss echoes and Final Toll | Beaten by a real party, and by one solo tester | C-16, C-35 to C-53 |
 | C-56 | C | M | **Difficulty tiers** and elite modifiers (section 9) | Veteran and Nightmare work on every stage | C-39 |
-| C-57 | C | M | **Team skills** (section 13) and stage scoring (section 8) | Saved and shown at stage end | |
+| C-57 | C | M | **Team skills** (section 13) and stage scoring (section 8) | Saved and shown at stage end | Existing independent skills are grouped and previewed in the Skills menu; team skills and stage scoring remain open. |
 | C-58 | C | L | **Signature passives** for 40 characters. Design with Z. | Each one tested | Z-30 |
 | D-30 | D | M | Stage results screen, team scoreboard, and best records per room | Works online and solo | C-57 |
 | D-31 | D | M | Darkness and light rendering that works on phones | Passes D-25 test | C-50 |
