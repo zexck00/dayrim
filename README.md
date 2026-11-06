@@ -43,7 +43,7 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 
 Touch controls appear on phones and tablets.
 
-At the safehouse, open the menu and choose **Weapons** to upgrade an owned weapon. The two upgrades cost 80 and 180 gold; the menu compares their effects before purchase. Necromancer, Void Empress and Toxin Alchemist upgrade their signature moves instead. At the final tier, pistols and bows pierce one additional enemy, shields interrupt ordinary enemy wind-ups, and healing weapons can restore a nearby ally on a hit.
+At the safehouse, open the menu and choose **Weapons** to upgrade an owned weapon. The two upgrades cost 80 and 180 gold; the menu shows tier progress, compares effects before purchase and explains unavailable upgrades. Necromancer, Void Empress and Toxin Alchemist upgrade their signature moves instead. At the final tier, pistols and bows pierce one additional enemy, shields interrupt ordinary enemy wind-ups, and healing weapons can restore a nearby ally on a hit.
 
 ## How online play works
 

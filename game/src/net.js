@@ -68,7 +68,7 @@ function applyList(rec,map,kind){if(!rec)return false;const [upd,rm]=rec;let cha
 function netSnapshot(m){
   if(!net.inRoom||!net.ents)return;const E=net.ents,me=G.p;
   if(m.p){const [upd,rm]=m.p,others=[];
-    for(const d of upd){if(d.id===me.id){const was=me.s&&me.s.maxHp;patch(me,d,true,true);if(d.lvl!==undefined||d.gold!==undefined||d.potions!==undefined||d.sp!==undefined||d.weapon!==undefined||was!==me.s.maxHp)dirty()}else others.push(d)}
+    for(const d of upd){if(d.id===me.id){const was=me.s&&me.s.maxHp;patch(me,d,true,true);if(d.lvl!==undefined||d.gold!==undefined||d.potions!==undefined||d.sp!==undefined||d.weapon!==undefined||was!==me.s.maxHp)dirty();if(G.mode==='menu'&&menuTab==='weapons'&&(d.gold!==undefined||d.weapon!==undefined||d.weapons!==undefined||d.weaponUpgrades!==undefined||d.nearSafe!==undefined))refreshWeaponMenu()}else others.push(d)}
     if(applyList([others,rm],E.p,'p')){const before=G.players.length;G.players=[...E.p.values()];if(before!==G.players.length&&before>0)net.scaleNotice=performance.now()+4000}}
   if(applyList(m.e,E.e,'e'))G.enemies=[...E.e.values()];
   if(applyList(m.n,E.n,'n'))G.npcs=[...E.n.values()];
