@@ -50,6 +50,9 @@ const THREAT={decay:4,prox:25,heal:.6,switch:1.15,backline:1.5,range:900,healRan
 function threatAdd(e,pid,amt){if(!e||e.dead||!(amt>0))return;const th=e.th||(e.th={});th[pid]=Math.min(THREAT.cap,(th[pid]||0)+amt)}
 function threatDecay(e,dt){if(!e.th)return;for(const k in e.th){const v=e.th[k]-THREAT.decay*dt;if(v<=0)delete e.th[k];else e.th[k]=v}}
 function threatScore(e,q){const d=dist(e,q);if(d>THREAT.range)return -1;let s=((e.th&&e.th[q.id||0])||0)+THREAT.prox*(1-d/THREAT.range);if(e.role==='rusher'&&['shooter','medic'].includes(archKey(q.char)))s*=THREAT.backline;return s}
+/* The player the boss resents most, taunt included: used by attacks that hunt a target rather than the nearest body. */
+function topThreatPlayer(e){if(e.tauntT>0){const t=G.players.find(q=>(q.id||0)===e.tauntId&&!(q.deadT>0)&&!(q.respawnT>0));if(t)return t}
+  let best=null,bs=-1;for(const q of alivePlayers()){const s=threatScore(e,q);if(s>bs){bs=s;best=q}}return best||nearestPlayer(e)}
 /* Taunt overrides everything. A switch needs a clear win, so enemies do not flip-flop. Bosses keep to the nearest player until the boss framework defines their targeting. */
 function threatTarget(e){
   if(e.tauntT>0){const t=G.players.find(q=>(q.id||0)===e.tauntId&&!(q.deadT>0)&&!(q.respawnT>0));if(t)return t}
@@ -374,9 +377,39 @@ const BOSS_PHASES={1:[.5]};
 const BOSS_GUARD_GAIN={break:34,reaction:22,special:10};
 function bossGuard(e,amt){if(!e||e.kind!=='boss'||e.staggerT>0)return;e.guard=Math.min(e.guardMax||BOSS_GUARD_MAX,(e.guard||0)+amt);if(e.guard>=(e.guardMax||BOSS_GUARD_MAX)){e.guard=0;e.staggerT=BOSS_STAGGER;e.tel=null;e.act='walk';e.actT=BOSS_STAGGER;text(e.x,e.y-e.ah*.8,'STAGGERED','#ffd860',true);shake(8);sfx('boom');addLog('The boss is staggered.')}}
 function bossTelegraph(e,kind,r,dur){e.tel={k:kind,r,r2:r,dur:Math.max(BOSS_TELEGRAPH,dur)};e.actT=e.tel.dur;return e.tel}
-function bossPhaseCheck(e){if(e.kind!=='boss')return;const th=BOSS_PHASES[G.stage]||[];const frac=e.hp/e.maxHp;while((e.phase||0)<th.length&&frac<=th[e.phase]){e.phase=(e.phase||0)+1;G.shots=G.shots.filter(s=>s.from!=='e');e.breatherT=2;e.act='walk';e.actT=2;e.tel=null;G.banner={t:2.4,a:'Phase '+(e.phase+1),b:'It changes its attack'};shake(6);sfx('boom');burst(e.x,e.y-30,'#ffd8a0',40,240)}}
+function bossPhaseCheck(e){if(e.kind!=='boss')return;const th=BOSS_PHASES[G.stage]||[];const frac=e.hp/e.maxHp;while((e.phase||0)<th.length&&frac<=th[e.phase]){e.phase=(e.phase||0)+1;G.shots=G.shots.filter(s=>s.from!=='e');const fx=BOSS_PHASE_FX[G.stage];if(fx)fx(e);e.breatherT=2;e.act='walk';e.actT=2;e.tel=null;G.banner={t:2.4,a:'Phase '+(e.phase+1),b:'It changes its attack'};shake(6);sfx('boom');burst(e.x,e.y-30,'#ffd8a0',40,240)}}
 function bossEnrage(e,dt){if(e.enrageT===undefined)e.enrageT=BOSS_ENRAGE_BASE+BOSS_ENRAGE_STEP*G.stage;e.enrageT-=dt;if(e.enrageT<=0&&!e.enraged){e.enraged=true;e.cd*=.7;G.banner={t:3,a:'Enraged',b:'Its attacks come faster'};sfx('level');addLog('The boss is enraged.')}}
 const bossCd=e=>e.enraged?BOSS_ENRAGE_RATE:1;
+/* ---------- Stage 1: Crystal Scurrier ----------
+   Skitter Rush and Shard Spray at full life; at half life it burrows, erupts under whoever holds the most
+   threat, and raises two crystal pillars. While a pillar stands the boss heals, so the pillars are the
+   clock: party play breaks one by hitting it within two seconds of each other, solo play by landing one
+   charged move on it. */
+const PILLAR_REGEN=.01,PILLAR_WINDOW=2,PILLAR_HP_FRAC=.02;
+function pillarsUp(){return (G.props||[]).filter(c=>c.kind==='pillar'&&!c.done).length}
+function spawnPillars(n){let made=0;for(let i=0;i<220&&made<n;i++){const c=pick(G.w.open),x=(c%MW+.5)*T,y=((c/MW|0)+.5)*T;
+    if(G.props.some(q=>q.kind==='pillar'&&Math.hypot(q.x-x,q.y-y)<140))continue;
+    if(G.boss&&Math.hypot(G.boss.x-x,G.boss.y-y)>300)continue;
+    addProp('pillar',x,y,26);made++}
+  while(made<n){const a=rnd(TAU),o=G.boss||G.p;addProp('pillar',o.x+Math.cos(a)*170,o.y+Math.sin(a)*170,26);made++}
+  G.banner={t:2.6,a:'Crystal pillars',b:G.players.length===1?'A charged move breaks one':'Hit one together, within 2s'}}
+function breakPillar(c){if(!c||c.done)return false;c.done=true;G.fx.push({k:'ring',x:c.x,y:c.y,r:10,to:90,t:.35,m:.35,c:'#bff0ff'});burst(c.x,c.y,'#bff0ff',26,210);shake(4);sfx('boom');text(c.x,c.y-44,'Pillar broken','#8fd6ff',true);return true}
+/* A pillar only breaks on timing, never on raw damage. */
+function pillarHit(c,p,charged){if(!c||c.done)return false;
+  if(G.players.length===1){if(!charged){text(c.x,c.y-44,'Charged move','#8fd6ff',true);return false}return breakPillar(c)}
+  c.hits=(c.hits||[]).filter(h=>G.t-h.t<=PILLAR_WINDOW&&h.id!==(p.id||0));
+  c.hits.push({id:p.id||0,t:G.t});
+  if(c.hits.length>=2)return breakPillar(c);
+  text(c.x,c.y-44,'Now together','#8fd6ff',true);return false}
+function bossPillarRegen(e,dt){const up=pillarsUp();if(up){e.hp=Math.min(e.maxHp,e.hp+e.maxHp*PILLAR_REGEN*up*dt);if(Math.random()<dt*2)G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:30,t:.3,m:.3,c:'#8fd6ff'})}}
+function startBurrow(e){e.act='burrow';e.actT=1.1;e.buried=true;e.tel=null;e.moving=false;sfx('dash');burst(e.x,e.y,'#8a8478',20,150)}
+function startSpray(e){e.act='spray';bossTelegraph(e,'cone',200,.65);e.ang=Math.atan2((G.p.y-e.y),(G.p.x-e.x))}
+/* Attack choice per boss; stage 1 has its own kit, the rest keep the shared one. */
+function bossPick(e,n,low){const r=Math.random();
+  if(n===1){if((e.phase||0)>=1&&r<.22){startBurrow(e);return}
+    if(r<.6){e.act='aim';bossTelegraph(e,'line',e.r+230,.62)}else startSpray(e);return}
+  if(r<.42){e.act='aim';bossTelegraph(e,'line',e.r+230,Math.max(.45,.8-n*.03))}else if(r<.8){e.act='nova';bossTelegraph(e,'circle',150,.6)}else{e.act='call';e.actT=.5}}
+const BOSS_PHASE_FX={1:()=>spawnPillars(2)};
 function summonBoss(){
   const n=G.stage,st=STAGES[n-1],g=G.gate;
   const e={kind:'boss',name:st.label||st.boss,art:st.boss,ah:st.ah,x:g.x,y:g.y-40,r:st.r,hp:bossHp(n),maxHp:bossHp(n),dmg:bossDmg(n),sp:58+n*3,xp:xpNeed(recLevel(n)),gold:40*Math.pow(1.25,n-1),cd:1,ang:0,aware:true,flash:0,kx:0,ky:0,ph:rnd(TAU),act:'rise',actT:.95,hitCd:0,atkShow:0,wind:0,walk:0,fs:1,recover:0,recoil:0,release:0,trail:[],guard:0,guardMax:BOSS_GUARD_MAX,staggerT:0,phase:0,breatherT:0,enrageT:BOSS_ENRAGE_BASE+BOSS_ENRAGE_STEP*n,tel:null};
@@ -437,7 +470,7 @@ function reactRage(e,p){const other=G.players.find(q=>(q.id||0)===(e.statusBy||0
 function reactionCoverage(){const names=Object.keys(ELEMENT),miss=[],same=[];for(let i=0;i<names.length;i++)for(let j=i+1;j<names.length;j++){const a=names[i],b=names[j],ea=ELEMENT[a],eb=ELEMENT[b];if(ea===eb){same.push([a,b]);continue}if(!reactionOf(ea,eb))miss.push([a,b])}const total=names.length*(names.length-1)/2;return{total,byElement:total-miss.length-same.length,byResonance:same.length,covered:total-miss.length,missing:miss,same}}
 function expose(e,duration=2){if(e.dead)return;e.exposedT=Math.max(e.exposedT||0,duration);text(e.x,e.y-100,'OPEN','#ffe27a',true)}
 function hitEnemy(e,base,ang,kb,heavy=false){
-  if(e.dead)return;const p=G.p;let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
+  if(e.dead||e.buried)return;const p=G.p;let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
   if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
   if(justBroke)bossGuard(e,BOSS_GUARD_GAIN.break);
   const el=ELEMENT[p.char],prev=e.statusType,rid=(el&&e.statusT>0&&prev&&prev!==el&&(G.players.length===1||(e.statusBy||0)!==(p.id||0)))?reactionOf(prev,el):'';
@@ -488,6 +521,7 @@ function doAttack(){
   const reach=W.reach+up*12,arc=1.1+up*.25;p.swingArc=arc;p.swing=.17;p.swingA=p.face;p.swingR=reach;sfx(W.m==='unarmed'?'hit':'slash');let n=0;
   for(const e of G.enemies){if(e.dead)continue;const d=dist(e,p);if(d>reach+e.r)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc||d<e.r+p.r+4){hitEnemy(e,dmg,a,W.m==='shield'?300:W.m==='unarmed'?90:170);n++}}
   for(const c of G.npcs){if(c.dead)continue;const d=dist(c,p);if(d>reach+10)continue;const a=Math.atan2(c.y-p.y,c.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc)hitNpc(c,dmg,a,true)}
+  for(const c of (G.props||[])){if(c.kind!=='pillar'||c.done)continue;const d=dist(c,p);if(d>reach+c.r)continue;const a=Math.atan2(c.y-p.y,c.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc||d<c.r+p.r+4){pillarHit(c,p,false);n++}}
   if(n&&W.m==='heal'){const h=p.s.maxHp*.01*p.stats.hea*p.s.mendMul;p.hp=Math.min(p.s.maxHp,p.hp+h);burst(p.x,p.y-24,'#6fdca0',3)}
   if(n>2)shake(1.5);
 }
@@ -564,7 +598,8 @@ function startMove(a,id,aimX){const key=kitOf(a);if(!key||a.mv)return false;cons
 function moveDamage(a,key,id){const base=a.char?a.s.dmg*statMul(a,'mag')*(1+(a.skills.spell||0)*.1)*dmgMul():a.dmg;return base*(a.char?{small:2.3,moderate:3.2,special:1.7}:{small:1,moderate:1.65,special:.7})[id]}
 function strike(a,shape,dmg,kb){
   const inShape=t=>shape(t.x-a.x,t.y-a.y,t);
-  if(a.char){for(const e of G.enemies)if(!e.dead&&inShape(e))hitEnemy(e,dmg,Math.atan2(e.y-a.y,e.x-a.x),kb,!!(a.mv&&a.mv.id!=='small'));for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),true)}
+  if(a.char){for(const e of G.enemies)if(!e.dead&&inShape(e))hitEnemy(e,dmg,Math.atan2(e.y-a.y,e.x-a.x),kb,!!(a.mv&&a.mv.id!=='small'));
+    for(const c of (G.props||[]))if(c.kind==='pillar'&&!c.done&&inShape(c))pillarHit(c,p,!!(a.mv&&a.mv.id!=='small'));for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),true)}
   else{if(inShape(G.p))hurtPlayer(dmg);for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),false)}
 }
 function fireMove(a,mv,hitN){
@@ -771,7 +806,7 @@ function updateBoss(e,dt,d,seen){
   e.recover=Math.max(0,e.recover-dt);e.recoil=Math.max(0,e.recoil-dt);e.release=Math.max(0,e.release-dt);
   if((e.staggerT||0)>0){e.staggerT=Math.max(0,e.staggerT-dt);e.moving=false;if(Math.random()<.12)burst(e.x+rnd(-e.r,e.r),e.y-16,'#ffd860',1,50);return}
   if((e.breatherT||0)>0){e.breatherT=Math.max(0,e.breatherT-dt);e.moving=false;e.tel=null;return}
-  bossEnrage(e,dt);
+  bossEnrage(e,dt);if(G.stage===1)bossPillarRegen(e,dt);
   if(e.act==='charge'){e.trail.push({x:e.x,y:e.y});if(e.trail.length>4)e.trail.shift()}else if(e.trail.length)e.trail.shift();
   if(e.act==='rise'){if(Math.random()<.5)burst(e.x+rnd(-e.r,e.r),e.y,'#8a8478',2,90);if(e.actT<=0){e.act='walk';e.actT=rnd(1,1.8)}return}
   const before=Math.sin((e.walk||0)*BOSS_RATE(e));
@@ -780,11 +815,14 @@ function updateBoss(e,dt,d,seen){
     const after=Math.sin((e.walk||0)*BOSS_RATE(e));
     if(e.moving&&before*after<0&&BOSS_STYLE[STYLE_OF[e.art]].step>=6){burst(e.x+(after>0?-1:1)*e.r*.6,e.y,'#8a8478',4,70);shake(.7)}
     if(d<e.r+p.r+14&&e.cd<=0){e.act='slam';bossTelegraph(e,'circle',e.r+52,Math.max(.34,.6-n*.02));return}
-    if(e.actT<=0&&seen){const r=Math.random();if(r<.42){e.act='aim';bossTelegraph(e,'line',e.r+230,Math.max(.45,.8-n*.03))}else if(r<.8){e.act='nova';bossTelegraph(e,'circle',150,.6)}else{e.act='call';e.actT=.5}}else if(e.actT<=0)e.actT=.6;
+    if(e.actT<=0&&seen)bossPick(e,n,low);else if(e.actT<=0)e.actT=.6;
   }else if(e.act==='slam'){
     if(e.actT<=0){e.tel=null;if(d<e.r+p.r+52)hurtPlayer(e.dmg*1.2);G.fx.push({k:'ring',x:e.x,y:e.y,r:12,to:e.r+50,t:.22,m:.22,c:'#f0805c'});burst(e.x,e.y,'#8a8478',12,160);e.recover=.3;shake(4);sfx('boom');e.cd=Math.max(.9,1.8-n*.07)*bossCd(e);e.act='walk';e.actT=rnd(1,2)}
   }else if(e.act==='aim'){e.ang=Math.atan2(p.y-e.y,p.x-e.x);if(e.actT<=0){e.act='charge';e.actT=.85;sfx('dash')}
   }else if(e.act==='charge'){const hit=move(e,Math.cos(e.ang)*(430+n*14)*dt,Math.sin(e.ang)*(430+n*14)*dt);if(dist(e,p)<e.r+p.r+2&&e.hitCd<=0){hurtPlayer(e.dmg*1.15);e.hitCd=.6}if(hit||e.actT<=0){if(hit){shake(6);sfx('boom');e.recover=.3}e.tel=null;e.act='walk';e.actT=rnd(1.4,2.6)}
   }else if(e.act==='nova'){if(e.actT<=0){e.tel=null;const c=(low?16:10)+n,o=rnd(TAU);for(let i=0;i<c;i++){const a=o+i/c*TAU;G.shots.push({x:e.x,y:e.y-30,vx:Math.cos(a)*(170+n*4),vy:Math.sin(a)*(170+n*4),r:7,from:'e',life:3.2,dmg:e.dmg*.7,fx:'orb',col:'255,110,90',a})}sfx('bolt');e.release=.25;e.act='walk';e.actT=rnd(1.5,2.8)}
+  }else if(e.act==='burrow'){e.moving=false;if(e.actT<=0){const t=topThreatPlayer(e);e.x=t.x;e.y=t.y;e.ang=0;e.act='erupt';bossTelegraph(e,'circle',112,.6)}
+  }else if(e.act==='erupt'){e.moving=false;if(e.actT<=0){e.tel=null;e.buried=false;for(const q of G.players){if(q.deadT>0||q.respawnT>0)continue;if(Math.hypot(q.x-e.x,q.y-e.y)<112+q.r){G.p=q;hurtPlayer(e.dmg*1.6)}}G.fx.push({k:'ring',x:e.x,y:e.y,r:14,to:130,t:.3,m:.3,c:'#f0805c'});burst(e.x,e.y,'#8a8478',26,230);shake(7);sfx('boom');e.recover=.45;e.cd=Math.max(.9,1.8-n*.07)*bossCd(e);e.act='walk';e.actT=rnd(1.2,2.2)}
+  }else if(e.act==='spray'){e.ang=Math.atan2(p.y-e.y,p.x-e.x);if(e.actT<=0){e.tel=null;const c=6;for(let i=0;i<c;i++){const a=e.ang+(i-(c-1)/2)*.13;G.shots.push({x:e.x,y:e.y-28,vx:Math.cos(a)*(260+n*6),vy:Math.sin(a)*(260+n*6),r:6,from:'e',life:2.4,dmg:e.dmg*.6,fx:'shard',col:'150,230,255',a})}sfx('bolt');shake(3);e.release=.2;e.act='walk';e.actT=rnd(1.4,2.6)}
   }else if(e.act==='call'){if(e.actT<=0){const minions=G.enemies.filter(o=>o.minion).length;if(minions<2+n)for(let i=0;i<2+(n>>2);i++){const a=rnd(TAU),nx=e.x+Math.cos(a)*(e.r+24),ny=e.y+Math.sin(a)*(e.r+24);if(!blocked(nx,ny,13)){const m=useMobs()?spawnMob(0,{x:nx,y:ny},false):spawnRival(0,false,{x:nx,y:ny});if(m){m.aware=true;m.minion=true;m.xp*=.3}}}e.act='walk';e.actT=rnd(1.8,3)}}
 }

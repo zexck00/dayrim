@@ -108,7 +108,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
 | C-20 | C | M | Stage 1 Sunrise Hollow, with its objective | Teaches revive and Mark, with no text wall | C-10, C-18 |
-| C-21 | C | M | Boss: Crystal Scurrier (Pillar Break) | Solo and party versions pass bot and human tests | C-17 |
+| C-21 | C | M | Boss: Crystal Scurrier (Pillar Break) | Prototype: Skitter Rush and Shard Spray at full life, Burrow and two crystal pillars at half life. Pillars heal the boss; solo breaks one with a charged move, a party breaks one with two hits inside 2s. Rules tests cover both, human tests open. | Human playtest, pillar art and the asset animations are open. |
 | C-22 | C | M | Stage 2 Noonshade Thicket: thicket, beacons, Stalker | Objective done | C-18 |
 | C-23 | C | M | Boss: Gloom Eye (Look Away) | As above | C-17 |
 | C-24 | C | L | Stage 3 Duskwater Fen: rising water, escort boat, Lurker | Objective done | C-18 |

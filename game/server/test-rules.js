@@ -250,7 +250,7 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
 {const {r,p}=stg(5);adv(r);
  const items=G().obj.items||[];ok(items.length===3&&!!G().obj.drop,'stage 5 spawns three canisters and a vent');
  const c=items[0];p.x=c.x;p.y=c.y;s.step(r,1/30);r.ev.length=0;
- ok(p.carry===c&&c.by===p.id,'walking over a canister picks it up');
+ ok(p.carry===c&&c.by===p.id,'walking over a canister picks it up '+JSON.stringify({step:G().obj.steps[G().obj.i].kind,idx:G().obj.i,d:Math.round(Math.hypot(p.x-c.x,p.y-c.y)),by:c.by,done:!!c.done,carry:!!p.carry,dead:p.deadT>0,res:p.respawnT>0,hope:G().hope}));
  p.weapon='pistol';p.cd.slash=0;const shots=G().shots.length;T.doAttack();
  ok(G().shots.length===shots&&T.doTeam()===false,'a carrier cannot attack or use a team ability');
  p.x=G().obj.drop.x;p.y=G().obj.drop.y;s.step(r,1/30);r.ev.length=0;s.step(r,1/30);r.ev.length=0;
@@ -299,4 +299,37 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  bp.deadT=0;bp.respawnT=0;bp.hp=bp.s.maxHp;G().p=bp;
  for(let i=0;i<20&&G().boss;i++)T.hitEnemy(bz,bz.maxHp,0,0);
  ok(!G().boss&&!G().arena,'killing the boss opens the arena')}
-console.log('\n'+n+' checks passed');;;;;;
+// C-21: the Crystal Scurrier, its pillars and its burrow.
+{const cr=mk(),cp=s.createRoom(cr,'Detective',null,'Boss21');T.enter(cr);G().enemies=[];G().gate.open=true;G().killsStage=15;T.summonBoss();
+ const cz=G().boss;cp.s.maxHp=99999;cp.hp=99999;
+ ok(cz.name==='Crystal Scurrier','stage 1 fields the Crystal Scurrier');
+ // Half life raises two pillars, and they heal it while they stand.
+ cz.hp=cz.maxHp*.49;T.hitEnemy(cz,1,0,0);
+ ok(cz.phase===1&&T.pillarsUp()===2,'half life raises two crystal pillars');
+ cz.breatherT=0;cz.staggerT=0;const hp0=cz.hp;
+ for(let i=0;i<30;i++)T.updateBoss(cz,1/30,400,false);
+ ok(cz.hp>hp0,'standing pillars heal the boss: '+Math.round(hp0)+' to '+Math.round(cz.hp));
+ // Solo: a plain swing does nothing, a charged move breaks it.
+ const pl=(G().props||[]).find(c=>c.kind==='pillar'&&!c.done);
+ ok(T.pillarHit(pl,G().p,false)===false&&!pl.done,'a plain swing does not break a pillar solo');
+ ok(T.pillarHit(pl,G().p,true)===true&&pl.done,'one charged move breaks a pillar solo');
+ // The burrow hides the boss, then it erupts under the top-threat player.
+ T.startBurrow(cz);ok(cz.buried===true,'burrowing hides the boss');
+ const hpB=cz.hp;T.hitEnemy(cz,500,0,0);ok(cz.hp===hpB,'a buried boss cannot be hit');
+ for(let i=0;i<100&&cz.buried;i++)T.updateBoss(cz,1/30,300,true);
+ ok(!cz.buried,'the boss comes back up');
+ // Shard spray throws a cone, not a ring.
+ G().shots=[];T.startSpray(cz);
+ for(let i=0;i<40;i++)T.updateBoss(cz,1/30,200,true);
+ ok(G().shots.filter(s=>s.fx==='shard').length>=5,'shard spray fires a cone of crystals')}
+// Party pillars: two players, within two seconds.
+{const pr=mk(),pa=s.createRoom(pr,'Detective',null,'P21'),pb=s.addPlayer(pr,'Firefighter',null,'Q');T.enter(pr);G().enemies=[];G().gate.open=true;G().killsStage=15;T.summonBoss();
+ T.spawnPillars(1);const pc=(G().props||[]).find(c=>c.kind==='pillar'&&!c.done);
+ ok(T.pillarHit(pc,pa,false)===false&&!pc.done,'one hit is not enough in a party');
+ ok(T.pillarHit(pc,pa,false)===false,'the same player twice is not enough either');
+ ok(T.pillarHit(pc,pb,false)===true&&pc.done,'two players inside the window break the pillar');
+ // Outside the window it has to start over.
+ const p2=T.spawnPillars(1),pc2=(G().props||[]).filter(c=>c.kind==='pillar'&&!c.done).pop();
+ T.pillarHit(pc2,pa,false);G().t+=3;T.pillarHit(pc2,pb,false);
+ ok(!pc2.done,'hits more than two seconds apart do not count')}
+console.log('\n'+n+' checks passed');;;;;;;
