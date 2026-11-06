@@ -216,4 +216,18 @@ const rAway=p=>{const c=G().w.open.find(c=>Math.hypot((c%78+.5)*40-G().safe.x,((
  const me2=T.spawnMob(0,{x:m1.x+60,y:m1.y},false);me2.aware=true;me2.cd=99;G().enemies=[me2];
  for(let i=0;i<3;i++){s.step(mr2,1/30);mr2.ev.length=0}
  ok(me2.targetId===m1.id||me2.targetId===m2.id,'an aware enemy records the player it targets')}
-console.log('\n'+n+' checks passed');;;
+// C-18: a stage runs its steps in order, and the gate opens on the last one.
+{const or=mk(),op=s.createRoom(or,'Firefighter',null,'Obj');T.enter(or);G().enemies=[];
+ ok(G().obj&&G().obj.steps.length===2&&G().obj.steps[0].kind==='kill'&&G().obj.steps[0].need===T.quota(1),'stage 1 starts on the kill step');
+ G().killsStage=T.quota(1)-1;G().enemies=[];
+ const foe=T.spawnMob(0,{x:op.x+40,y:op.y},false);foe.aware=true;foe.hp=1;G().p=op;op.s.crit=0;
+ T.hitEnemy(foe,9999,0,0);s.step(or,1/30);or.ev.length=0;
+ ok(G().obj.i===1&&G().obj.steps[1].kind==='revive'&&G().npcs.some(c=>c.wounded),'the kill quota hands over to the wounded scout');
+ ok(!G().gate.open,'the gate waits for the scout');
+ const sc=G().npcs.find(c=>c.wounded);op.x=sc.x+10;op.y=sc.y;op.reviveProgress=0;
+ for(let i=0;i<120&&!G().gate.open;i++){op.actions.push({n:'revive',v:true});s.step(or,1/30);or.ev.length=0}
+ ok(!sc.wounded&&G().obj.done&&G().gate.open,'reviving the scout finishes the objective and opens the gate');
+ ok(op.hp>0&&sc.hp===sc.maxHp,'the scout is back on their feet')}
+{const dr=mk(),dp=s.createRoom(dr,'Firefighter',{maxStage:2},'Default');T.enter(dr);
+ ok(G().obj.steps.length===1&&G().obj.steps[0].kind==='kill','a stage with no steps yet falls back to the kill quota')}
+console.log('\n'+n+' checks passed');;;;

@@ -23,6 +23,8 @@ function drawTiles(l,t,r,b){
     }
   }
 }
+/* Solo keeps every step on G.obj; online the server sends only the current one as G.obj.cur. */
+function objNow(){const o=G.obj;if(!o)return null;const st=o.steps&&o.steps[o.i];return st&&st.need?st:(o.cur||null)}
 function drawDecals(inV){const d=G.decals;if(!d)return;for(const o of d){if(!inV(o))continue;const base=o.col||(o.pool?'#5e0f16':'#7c141c'),hi=o.col?shade(o.col):'#8c1820',lo=o.col?shade(hi):'#6e1219';ctx.fillStyle=base;if(o.pool){const s=o.seed;ctx.beginPath();ctx.ellipse(o.x,o.y+2,o.r,o.r*.55,0,0,TAU);ctx.fill();ctx.fillStyle=hi;ctx.beginPath();ctx.ellipse(o.x-3,o.y,o.r*.6,o.r*.3,0,0,TAU);ctx.fill();for(let i=0;i<5;i++){const a=(s+i*53)%63/10;ctx.fillStyle=lo;ctx.fillRect(o.x+Math.cos(a)*o.r*1.2,o.y+Math.sin(a)*o.r*.7,3,3)}}else ctx.fillRect(o.x-o.r/2,o.y-o.r/3,o.r,o.r*.66)}}
 function drawCar(c){ctx.save();ctx.translate(c.x,c.y);if(c.v)ctx.rotate(Math.PI/2);if(c.s<0)ctx.scale(-1,1);ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(-21,-8,44,20);ctx.fillStyle=c.col;ctx.fillRect(-22,-10,44,20);ctx.fillStyle='#22303c';ctx.fillRect(-8,-8,18,16);ctx.fillStyle=shade(c.col);ctx.fillRect(-4,-7,9,14);ctx.fillStyle='#fff6c0';ctx.fillRect(20,-8,2,4);ctx.fillRect(20,4,2,4);ctx.fillStyle='#d02020';ctx.fillRect(-22,-8,2,4);ctx.fillRect(-22,4,2,4);ctx.restore()}
 function shadow(x,y,r){ctx.fillStyle='rgba(10,14,20,.34)';ctx.beginPath();ctx.ellipse(x,y+3,r*.95,r*.4,0,0,TAU);ctx.fill()}
@@ -288,7 +290,7 @@ function hudBody(){
   const pad=(x,y,w,h)=>{ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(x,y,w,h)};pad(6,6,small?210:300,48);
   ctx.textAlign='left';ctx.font='700 '+(small?15:19)+'px "Pixelify Sans",monospace';ctx.fillStyle='#f2ecd8';ctx.fillText('Stage '+G.stage+': '+st.n,12,25);
   ctx.font='600 13px Barlow,sans-serif';ctx.fillStyle=G.gate.open?'#ff8f80':'#d0d8e8';
-  const obj=G.boss?'Defeat '+G.boss.name:G.gate.open?'Boss gate open. Rec. level '+recLevel(G.stage):'Defeat '+foeWord()+': '+Math.min(G.killsStage,q)+'/'+q;ctx.fillText(obj,12,46);
+  const cur=objNow(),obj=G.boss?'Defeat '+G.boss.name:G.gate.open?'Boss gate open. Rec. level '+recLevel(G.stage):cur?(cur.label||'Objective')+' '+Math.min(cur.have,cur.need)+'/'+cur.need:'Defeat '+foeWord()+': '+Math.min(G.killsStage,q)+'/'+q;ctx.fillText(obj,12,46);
   const barY=touchMode?60:H-57;
   bar(12,barY,bw,20,p.hp/p.s.maxHp,'#c0392f','Life '+Math.ceil(p.hp)+'/'+Math.round(p.s.maxHp));bar(12,barY+23,bw,18,p.mana/p.s.maxMana,'#2d6fc0','Mana '+Math.floor(p.mana));bar(12,barY+44,bw,8,p.xp/xpNeed(p.lvl),'#e8c02a','');
   // rage gauge
