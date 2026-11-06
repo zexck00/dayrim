@@ -851,7 +851,7 @@ function onStepStart(st){if(!st)return;if(st.kind==='revive'&&!G.npcs.some(c=>c.
 function openGate(){if(!G.gate||G.gate.open)return;G.gate.open=true;G.banner={t:3,a:'Boss gate open',b:'Choose a checkpoint boon in Skills'};sfx('level');addLog('The boss gate is open.');offerBoons()}
 function objStep(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='kill')st.have=G.killsStage;if(st.have<st.need)return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
-function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200);if(!o)return null;const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
+function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
 function enterStage(n,keepKills){
   const kept=keepKills?G.killsStage:0;
   G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.boss=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;

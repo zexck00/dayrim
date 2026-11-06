@@ -207,8 +207,9 @@ const rAway=p=>{const c=G().w.open.find(c=>Math.hypot((c%78+.5)*40-G().safe.x,((
  G().p=c2;T.updateEnemy(ce,.05);
  ok(ce.role==='caster'&&G().hazards.some(h=>h.from==='e'&&h.dps>0),'a caster leaves a damaging zone')}
 // A shooter backs off when a player closes in.
-{const sr=mk(),sh=s.createRoom(sr,'Firefighter',null,'Shooter');T.enter(sr);G().enemies=[];rAway(sh);
- const se=T.spawnRival(0,false,{x:sh.x+80,y:sh.y},'Mad Scientist');se.aware=true;se.cd=99;
+{const sr=mk(),sh=s.createRoom(sr,'Firefighter',null,'Shooter');T.enter(sr);G().enemies=[];
+ const c=openEast();sh.x=(c%78+.5)*40;sh.y=((c/78|0)+.5)*40;
+ const se=T.spawnRival(0,false,{x:sh.x+40,y:sh.y},'Mad Scientist');se.aware=true;se.cd=99;
  G().p=sh;const d0=Math.abs(se.x-sh.x);for(let i=0;i<10;i++)T.updateEnemy(se,.05);
  ok(se.role==='shooter'&&se.moving&&Math.abs(se.x-sh.x)>=d0-1,'a shooter backs away from a close player')}
 // Every aware enemy records which player it is after, so the marker has something to draw.
