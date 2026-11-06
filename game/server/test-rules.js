@@ -94,6 +94,9 @@ tq.x=ttx+40;tq.y=tty;tp.x=ttx-700;ok(T.threatTarget(te)===tq,'attention returns 
 // Healing earns attention too.
 G().enemies=[te];te.th={};te.x=ttx;te.y=tty;tp.x=ttx-30;tp.y=tty;tp.hp=1;tp.mana=tp.s.maxMana;tp.cd.pull=0;G().p=tp;T.doHeal();
 ok((te.th[tp.id]||0)>0,'healing earns attention from nearby enemies');
+// Healing attention reflects actual life restored and the active healer.
+{te.th={};tp.hp=tp.s.maxHp-1;tp.potions=1;tp.cd.potion=0;G().p=tp;T.usePotion();ok(Math.abs(te.th[tp.id]-T.THREAT.heal*100/tp.s.maxHp)<1e-8,'potion overheal produces threat for only one life');
+ const m=s.addPlayer(tr,'Exorcist',null,'Medic threat');T.enter(tr);m.x=tp.x;m.y=tp.y;tp.hp=tp.s.maxHp-1;tp.mendT=1;tp.mendRate=100;tp.mendBy=m.id;te.th={};s.step(tr,1/30);ok((te.th[m.id]||0)>0&&!(te.th[tp.id]>0),'Mend Link credits the healer for effective healing');te.th={};s.step(tr,1/30);ok(!te.th[m.id],'full-health Mend Link creates no healing threat');tp.hp=tp.s.maxHp-1;tp.mendT=1;tp.mendBy=m.id;s.removePlayer(tr,m);T.enter(tr);te.th={};s.step(tr,1/30);ok(!te.th[tp.id],'disconnected healer does not transfer threat to the recipient')}
 // Taunt overrides any amount of threat.
 te.targetId=0;te.th={[tq.id]:200};ok(T.threatTarget(te)===tq,'threat alone picks the target');
 G().p=tp;T.doTeam();ok(T.threatTarget(te)===tp,'taunt beats any amount of threat');
