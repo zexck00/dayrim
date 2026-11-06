@@ -368,6 +368,7 @@ Elements below are a first pass. Z may change any of them to match the final art
 - **New team skills:** a third skill group gives Faster Revive, Longer Link Window, Stronger Reactions and Share Potion.
 - **Stage unlocks:** clearing with a party unlocks that stage for all its members.
 - **Equipment and weapon drops stay off**, as the owner decided. Z decides whether they return.
+- **Weapon upgrade prototype:** two safehouse tiers cost 80 and 180 gold. At the second tier, pistols and bows pierce one additional enemy; shields interrupt ordinary enemy attack or healing wind-ups; healing weapons restore 2% of the lowest-health nearby standing ally’s maximum life on a successful enemy hit, at most once per second. Boss moves are not interrupted. These values need playtesting.
 
 ## 14. Communication
 
