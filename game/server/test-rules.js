@@ -113,4 +113,25 @@ T.enter(hzr);hz.lvl=20;hz.train.agi=0;T.recalc();G().p=hz;hz.cd.dash=0;T.doDash(
 ok(hz.cd.dash<hz.s.dashCd&&Math.abs(hz.cd.dash-hz.s.dashCd*hz.s.cdMul)<1e-9,'dash uses the haste timer');
 hz.cd.dash=0;hz.teamCd=0;hz.x=G().safe.x;hz.y=G().safe.y;G().enemies=[];
 ok(T.doTeam()&&hz.teamCd<14&&Math.abs(hz.teamCd-14*hz.s.cdMul)<1e-9,'team ability cooldowns shrink with haste');
+// Gore: blood scales with the damage, kills leave chunks and a pool, wounds drip. On the server every
+// drop and decal leaves as an event, so the counts here are what a client would draw.
+const gr=mk(),gp=s.createRoom(gr,'Firefighter',null,'Gore');T.enter(gr);G().enemies=[];G().decals=[];gr.ev.length=0;
+const gt=T.spawnMob(0,{x:G().safe.x+300,y:G().safe.y},false);gt.aware=true;gt.hp=gt.maxHp=1000;gt.kx=gt.ky=0;
+const gBlood=()=>gr.ev.filter(v=>v.e&&v.e[0]==='e').reduce((a,v)=>a+v.e[5],0);
+const gDecals=()=>gr.ev.filter(v=>v.e&&v.e[0]==='d');
+gp.s.crit=0;G().p=gp;
+gr.ev.length=0;T.hitEnemy(gt,10,0,0);const gLight=gBlood();
+gr.ev.length=0;G().fx=[];T.hitEnemy(gt,400,0,0,true);const gHeavy=gBlood();
+ok(gLight>0&&gHeavy>gLight,'a bigger hit bleeds more: '+gLight+' vs '+gHeavy);
+ok(G().fx.some(f=>f.k==='gib'),'a heavy hit throws chunks');
+gr.ev.length=0;G().fx=[];T.killEnemy(gt);
+ok(G().fx.filter(f=>f.k==='gib').length>=6,'a kill throws chunks');
+const gPool=gDecals().filter(v=>v.e[4]===1);
+ok(gPool.length>=1,'a kill leaves a pool');
+ok(gPool.every(v=>typeof v.e[5]==='string'&&v.e[5].length===7),'gore decals carry their own colour');
+// A badly wounded enemy drips as it moves, once per interval, and a healthy one does not.
+T.enter(gr);gr.ev.length=0;gt.dead=false;gt.hp=gt.maxHp*.2;gt.moving=true;gt.goreT=0;T.goreTrail(gt,1);
+const dTrail=gDecals().length;T.goreTrail(gt,.05);
+ok(dTrail===1&&gDecals().length===1,'a wounded enemy drips once per interval');
+gt.hp=gt.maxHp;T.goreTrail(gt,1);ok(gDecals().length===1,'a healthy enemy leaves no trail');
 console.log('\n'+n+' checks passed');

@@ -14,7 +14,7 @@ text=(x,y,s,c,big)=>ev(['x',Math.round(x),Math.round(y),s,c,big?1:0],x,y);
 burst=(x,y,c,n,sp=120)=>ev(['b',Math.round(x),Math.round(y),c,n,sp],x,y);
 glowP=(x,y,c,n=1,sp=60,t=.4,s=3)=>ev(['w',Math.round(x),Math.round(y),c,n,sp,t,s],x,y);
 bleed=(x,y,dx,dy,n)=>ev(['e',Math.round(x),Math.round(y),+dx.toFixed(2),+dy.toFixed(2),n],x,y);
-addDecal=(x,y,r,pool)=>ev(['d',Math.round(x),Math.round(y),+r.toFixed(1),pool?1:0],x,y);
+addDecal=(x,y,r,pool,col)=>ev(['d',Math.round(x),Math.round(y),+r.toFixed(1),pool?1:0,typeof col==='string'?col.slice(0,7):''],x,y);
 trail=()=>{};tickFx=()=>{};dirty=()=>{};audioOn=()=>{};writeSave=()=>{};
 function setMode(m){if(m==='clear'&&CUR){CUR.cleared=true;ev(['clear',G.stage])}}
 
@@ -77,5 +77,5 @@ return{
   },
   saveOf(p){const o={};for(const k of SAVE_KEYS)o[k]=p[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,doTeam,chooseBoon,offerBoons,spawnMob,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc}
+  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,doTeam,chooseBoon,offerBoons,spawnMob,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc,addDecal,GORE,goreTrail,goreSpray,goreChunks,gorePool}
 };

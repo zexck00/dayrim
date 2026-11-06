@@ -86,7 +86,7 @@ function netSnapshot(m){
 function netEvent(v){switch(v[0]){
   case's':sfx(v[1]);break;case'v':voice(v[1]);break;case't':tone(v[1],v[2],v[3],v[4],v[5],v[6]);break;case'o':noiseHit(v[1],v[2]);break;case'g':stinger(v[1]);break;case'k':shake(v[1]);break;
   case'l':addLog(v[1]);break;case'x':text(v[1],v[2],v[3],v[4],!!v[5]);break;case'b':burst(v[1],v[2],v[3],v[4],v[5]);break;case'w':glowP(v[1],v[2],v[3],v[4],v[5],v[6],v[7]);break;
-  case'e':bleed(v[1],v[2],v[3],v[4],v[5]);break;case'd':addDecal(v[1],v[2],v[3],!!v[4]);break;case'f':G.fx.push(v[1]);break;
+  case'e':bleed(v[1],v[2],v[3],v[4],v[5]);break;case'd':addDecal(v[1],v[2],v[3],!!v[4],v[5]||undefined);break;case'f':G.fx.push(v[1]);break;
   case'clear':if(G.mode==='play'||G.mode==='menu'||G.mode==='pause')setMode('clear');break;case'clearDone':if(G.mode==='clear')setMode('play');break}}
 
 /* Runs every frame in a room, in place of update() */

@@ -14,6 +14,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### Added
 - Levels and Agility now give Haste: every cooldown is shorter, down to 60% of its base time. The character sheet shows the percentage.
+- Combat bleeds now. Every hit sprays blood that scales with the damage, heavy hits and criticals throw chunks, kills leave a pool, badly wounded enemies drip as they run, and players bleed when they are hit. Toxin and void minions bleed green and violet. Ground blood lasts much longer before the oldest marks are cleared.
 - Prototype combat roles: use G for Taunt, Break, Mark, Mend Link or Rescue Dash. Brute dodges and interrupts create openings, and healers can be interrupted.
 - Soak and Shock trigger Overload; a heavy attack can follow an ally’s Break. Boss-gate checkpoints offer a dodge boon.
 - Optional Three.js r187 ambient effects, with an off switch and an offline fallback.
