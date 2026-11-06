@@ -1,14 +1,16 @@
 # Combat depth review: C-01–C-16
 
-Reviewed on `combat-depth-fixes` after `509feeb`. This is a follow-up inventory, not a balance sign-off. The latest full server run passed 259 rule checks, 41 networking checks and the script that exercises all 780 distinct-character reaction pairs. These checks do not replace a four-player, touch-device or human balance test. C-07–C-09 are not assigned in the task list.
+Reviewed on `combat-depth-fixes` after the combat follow-up fixes. This is a follow-up inventory, not a balance sign-off. The latest full server run passed 273 rule checks, 41 networking checks and the script that exercises all 780 distinct-character reaction pairs. These checks do not replace a four-player, touch-device or human balance test. C-07–C-09 are not assigned in the task list.
 
-## Findings to address first
+## Prioritized findings addressed
 
-1. **C-16 — Show the link bonus online.** `server/sync.js` sends link count, time and membership, but `src/net.js` reconstructs the link with `dmg:0`; `render.js` only displays a percentage when `dmg` is nonzero. Derive the tier from the count or sync the bonus, and test Duo through Full Party in a real client.
-2. **C-12/C-13 — Base healing threat on effective healing.** `threatHeal` receives the nominal amount from Mend Link, potions and other heals, even when the recipient is already at or near full health. Mend Link therefore continues generating attention from overheal. Compute the actual life restored and test the healer's credit, overheal, death and disconnect cases. The current prototype measures healing relative to the healer's maximum life, not the enemy's life.
-3. **C-14 — Give solo players access to reactions.** The target design calls for solo reactions at half strength, but all hits take the player's one element from `ELEMENT`, and same-element solo hits do not trigger a reaction. The 780-pair check covers two distinct players; it does not establish solo coverage. Decide how a solo player can apply a second status, then test the intended reduced effects.
-4. **C-16 — Exercise delayed link damage against boss state changes.** The late-link fix records damage already dealt and applies the incremental bonus when another caster joins. Add cases for an enemy dying or healing before the link, boss phase changes or temporary immunity, a caster disconnecting, and Duo → Trio → Full Party upgrades. Check how Full Party healing should affect downed and respawning players; it currently sets their life but does not revive them.
-5. **C-01 — Check the boss ultimate damage floor.** `bossUltDamage` uses the greater of 4% of boss life and a stat-derived term, divided by party size. The design describes a fixed 4% per hit. Test high-damage builds and agree whether the floor or fixed percentage is intended before changing balance.
+- **C-16:** The online client derives and displays the link damage bonus from the synchronized participant count.
+- **C-12/C-13:** Potions, active self-heals and Mend Link credit threat only for life actually restored; a disconnected Mend Link caster does not transfer their threat to the recipient.
+- **C-14:** Solo players can trigger Resonance with a second hit on an active status, at half the party damage bonus, rage and boss guard gain. Named cross-element reactions still require two players with the current one-element character rules.
+- **C-16:** Rules tests cover delayed bonuses after target healing or death, caster disconnect, tier upgrades, boss phase changes and burrow. A blocked hit creates no delayed damage; the bonus for an earlier valid hit is still applied during burrow. Full Party heals standing players without giving life to downed or respawning players.
+- **C-01:** Boss ultimate base damage is the design's fixed 4% of maximum life per hit divided by party size, including high-damage builds. Hit modifiers and link bonuses still apply.
+
+These fixes have automated rules coverage. Human feedback, reaction and boss balance, the full client presentation, and the quality-of-life ideas below remain open.
 
 ## Enhancements and quality of life
 
@@ -23,7 +25,7 @@ Reviewed on `combat-depth-fixes` after `509feeb`. This is a follow-up inventory,
 | C-13 | Clarify target, range and failed casts. | Show which ally Mend Link or Rescue Dash will choose and why Mark cannot fire. Compare the prototype with the role passives and stat scaling in section 4; test walls, overlapping players, solo fallback and mobile input. |
 | C-14 | Make status setup and reactions legible. | Show active status and remaining time, give named reactions distinct readable cues, and explain Resonance in the character or skills UI. Measure whether shared rage and boss guard gain from frequent Resonance need tuning. |
 | C-15 | Show the chain timer and all active bonuses. | The HUD shows a count and highest-tier label, but a timer and clear list of cumulative bonuses would make the six-second window easier to play around. Show when an ally is in rage-sharing range without excessive effects. |
-| C-16 | Make link participation and timing clear. | Show the actual bonus, participant count and countdown to each player; make late bonus application visible. Test linked casts under latency and overlapping effects without obscuring enemy telegraphs. |
+| C-16 | Make link participation and timing clear. | Make late bonus application visible and test the existing bonus, participant count and countdown. Test linked casts under latency and overlapping effects without obscuring enemy telegraphs. |
 
 ## Design and verification notes
 

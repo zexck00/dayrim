@@ -89,7 +89,7 @@ Stats keep their current meaning. The ability's strength scales with the matchin
 
 ## 5. Status reactions
 
-Attacks apply a status for 4 seconds. When a **different player** hits that target with a status that reacts, the reaction fires and both players gain extra rage. Your own attacks cannot trigger reactions online. The solo design calls for half-strength reactions; the current single-element attack implementation does not yet give a solo character a way to trigger one.
+Attacks apply a status for 4 seconds. When a **different player** hits that target with a status that reacts, the reaction fires and both players gain extra rage. Your own attacks cannot trigger reactions in a party. When alone, a second hit on an active status triggers Resonance at half strength: 5% extra damage and 6 rage, with half the usual boss guard gain.
 
 | First status | Second status | Reaction | Effect |
 |---|---|---|---|
@@ -125,7 +125,7 @@ Each character's element is in section 12. In the current prototype, pairs witho
 |---|---|
 | 2 players | **Duo:** both ultimates +40% damage, and enemy shots are cleared across the area |
 | 3 players | **Trio:** +70% damage, and party is invulnerable for the full length |
-| 4 players | **Full Party:** +100% damage, full heal, boss staggered 5 s |
+| 4 players | **Full Party:** +100% damage, full heal for standing players, boss staggered 5 s |
 
 **Ultimates online:** the fullscreen effect plays fully for the caster, and allies see a shorter version so that they can still dodge. Boss damage becomes `4% of max life ÷ party size` per hit, before the link bonus.
 
