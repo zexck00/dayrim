@@ -187,6 +187,12 @@ function onFullscreen(){const on=!!fsEl();$('fsbtn').textContent=on?'Exit fullsc
 document.addEventListener('fullscreenchange',onFullscreen);document.addEventListener('webkitfullscreenchange',onFullscreen);
 $('fsbtn').hidden=!canFullscreen;$('fsbtn').onclick=ev=>{ev.currentTarget.blur();toggleFullscreen()};
 $('menubtn').onclick=ev=>{ev.currentTarget.blur();if(G.mode==='play'){menuTab='skills';setMode('menu')}};
+/* Indicators describe known local or server-confirmed state; action validation stays in the rules. */
+function updateTouchStatus(){if(!touchMode||G.mode!=='play'||!G.p)return;const p=G.p,cd=p.cd||{},kit=!!kitOf(p),wait=t=>t>0?Math.ceil(t)+'s':'',low=p.hp>=p.s.maxHp,states={
+  dash:wait(cd.dash),team:wait(p.teamCd),ult:p.rage<100?Math.floor(p.rage)+'%':'',special:kit?wait(p.specT):'—',
+  spell:kit?(p.mv?'Busy':''):(wait(cd.bolt)||(p.mana<p.s.spellCost?'Mana':'')),heal:wait(cd.pull)||(p.mana<22?'Mana':low?'Full':''),
+  potion:wait(cd.potion)||(!p.potions?'Empty':low?'Full':''),fast:wait(p.fastT)||(!p.fast?'Empty':''),magic:wait(p.magicT)||(!p.magic?'Empty':'')};
+  for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.textContent+(value?', '+value:''))}}
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
   if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('touch').addEventListener(n,ev=>{const a=touchPointers.get(ev.pointerId);if(!a)return;touchPointers.delete(ev.pointerId);if(![...touchPointers.values()].includes(a)){touchHold[a]=false;const b=$('touch').querySelector('[data-a="'+a+'"]');if(b)b.classList.remove('held');if(a==='revive'&&netOn())netAct('revive',false)}}));
@@ -199,13 +205,14 @@ function drawPreview(now){const cv=$('pv');if(!cv)return;const g=cv.getContext('
 /* Loop */
 function resize(){const r=$('screen').getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);zoom=Math.max(H/560,W/980);hudK=clamp(H/640,1,2.5);$('screen').style.setProperty('--k',hudK)}
 if('ResizeObserver'in window)new ResizeObserver(resize).observe($('screen'));else addEventListener('resize',resize);
-let last=performance.now(),statT=0;
+let last=performance.now(),statT=0,touchStatusT=0;
 function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   if(netOn()){if(G.mode==='play'&&!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}netUpdate(dt)}
   else if(G.mode==='play'){if(!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}update(dt)}
   else if(G.mode==='title'||G.mode==='menu'){G.t+=dt;if(G.mode==='title')drawPreview(now)}
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
   footsteps();soundWatch();
+  touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus()}
   try{render();drawFx3(now)}catch(err){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}

@@ -95,6 +95,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .touch{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,54px);gap:6px;z-index:2;pointer-events:none}
 .touch button{height:54px;border-radius:50%;border:1px solid var(--foam);background:rgba(18,48,58,.82);font:700 11px var(--body);padding:2px;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
 .touch button:active,.touch button.held{background:rgba(63,117,133,.95);border-color:var(--lichen)}
+.touch button{position:relative}.touch button[data-state="waiting"]{color:#b3bac4;border-color:#7c8998;background:rgba(25,35,45,.82)}.touch button[data-state="ready"]{border-color:#f0c23c}.touch button[data-status]:not([data-status=""])::after{content:attr(data-status);position:absolute;bottom:1px;left:0;right:0;font:700 9px/1 var(--mono);color:#f5d78b}
 .joystick{position:absolute;width:92px;height:92px;margin:-46px 0 0 -46px;border:2px solid rgba(190,225,244,.65);border-radius:50%;background:rgba(12,32,48,.25);pointer-events:none;z-index:2}
 .joystick i{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border-radius:50%;background:rgba(190,225,244,.7);border:2px solid #eef8ff}
 .touch .big{background:rgba(240,128,92,.55);border-color:var(--coral)}

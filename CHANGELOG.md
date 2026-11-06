@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- The mobile party panel no longer overlaps the player status bars, and the linked-ultimate prompt names the touch control.
 - Touch movement and held actions clear when interrupted, including when a menu opens or the game loses focus.
 - The online Skills menu updates when the server confirms training or a checkpoint choice.
 - The online Weapons menu updates when the server confirms a purchase or changes safehouse access.
@@ -20,6 +21,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Citizens now fear the player responsible for a civilian death, rather than every party member.
 
 ### Changed
+- Touch buttons show ability cooldowns, ultimate charge and common reasons an item or ability is unavailable.
 - Touch controls fit short landscape screens, show held actions and a movement stick, and keep utility buttons clear of the action grid.
 - Skills are grouped by purpose and show rank progress and current and next bonuses; descriptions clarify which attacks and healing they affect.
 - Weapon upgrade cards show tier progress, current and next effects, and why an upgrade is unavailable. Piercing, shield interrupts and ally heals have distinct combat cues.

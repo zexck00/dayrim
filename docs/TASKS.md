@@ -162,7 +162,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
 | D-10 | D | M | Sync new fields: downed, threat target, statuses, guard, objectives (`sync.js`) | Bandwidth stays under 25 KB/s per player before compression | C-10 |
-| D-11 | D | M | **Party panel:** life, downed timer, status, rage, ultimate ready | Readable at phone size | C-10 |
+| D-11 | D | M | **Party panel:** life, downed timer, status, rage, ultimate ready | Readable at phone size | C-10; simulated four-player mobile layout checked, real-phone playtest open |
 | D-12 | D | M | **Revive and ally UI:** ring around downed ally, progress bar, screen-edge arrows | Tested with 4 players | C-10 |
 | D-13 | D | M | **Pings and quick phrases** (section 14), with server rate limits | Spam can't flood others | |
 | D-14 | D | M | **Lobby:** role of each player, ready check, host starts, difficulty and stage choice | Party can choose before starting | |
