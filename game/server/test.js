@@ -59,6 +59,7 @@ class Bot{
   console.log('      '+Math.round((a.bytes-bb)/sec/1024*10)/10+' KB/s before compression per player, '+Math.round((a.snaps-sn)/sec)+' snapshots/s, '+a.ents.e.size+' enemies in view');
   ok(a.ents.e.size>=0&&a.snaps>sn+50,'snapshots keep flowing during a fight');
   ok(a.world.ch!==undefined&&a.world.ch===b.world.ch,'both players see the same party chain: '+(a.world.ch||0));
+  ok(Number.isFinite(a.world.ct)&&Number.isFinite(a.world.hopeSpent),'chain timer and Hope spent reach real clients');
   ok(a.world.lk!==undefined&&a.world.lk===b.world.lk,'the link window is on the wire and empty when nobody links');
 
   console.log('Host and leaving');
