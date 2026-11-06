@@ -28,7 +28,7 @@ function diff(items,known,toFlat,once){
   const rm=[];for(const id of known.keys())if(!seen.has(id)){rm.push(id);known.delete(id)}
   return upd.length||rm.length?[upd,rm]:undefined;
 }
-function newClient(){return{g:{},p:new Map(),e:new Map(),n:new Map(),h:new Map(),l:new Map(),z:new Map()}}
+function newClient(){return{g:{},p:new Map(),e:new Map(),n:new Map(),h:new Map(),l:new Map(),z:new Map(),pr:new Map()}}
 const near=(a,o,r)=>Math.hypot(a.x-o.x,a.y-o.y)<r;
 
 function snapshot(room,me,known,tick){
@@ -44,6 +44,8 @@ function snapshot(room,me,known,tick){
   const hazard=z=>({x:rnum('x',z.x),y:rnum('y',z.y),r:z.r,t:rnum('t',z.t),from:z.from,col:z.col});
   const z=diff((G.hazards||[]).filter(o=>near(me,o,AOI)),known.z,hazard,true);if(z)out.z=z;
   const l=diff(G.loot.filter(o=>near(me,o,AOI)),known.l,o=>flatten(o,LOOT_SKIP));if(l)out.l=l;
+  const prop=o=>({x:rnum('x',o.x),y:rnum('y',o.y),r:o.r,k:o.kind,t:rnum('t',o.t||0),by:o.by||0,d:o.done?1:0});
+  const pr=diff((G.props||[]).filter(o=>near(me,o,AOI)||o.kind==='drop'||o.kind==='escort'),known.pr,prop);if(pr)out.pr=pr;
   /* Room-wide values. The banner is only sent when a new one appears, and the client counts it down. */
   const b=G.banner;if(b&&!b.t0){b.t0=b.t;b.bid=entId({})}
   const g={hour:Math.round(G.hour*20)/20,kills:G.killsStage,hope:G.hope,maxHope:G.hopeMax,obj:G.obj?JSON.stringify({i:G.obj.i,d:G.obj.done?1:0,h:(G.obj.steps[G.obj.i]||{}).have||0,n:(G.obj.steps[G.obj.i]||{}).need||0,l:(G.obj.steps[G.obj.i]||{}).label||''}):'',gate:G.gate.open?1:0,boss:G.boss?entId(G.boss):0,ban:b?JSON.stringify({a:b.a,b:b.b,t:b.t0,i:b.bid}):'',time:Math.floor(G.t/3)*3};

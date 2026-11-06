@@ -77,5 +77,5 @@ return{
   },
   saveOf(p){const o={};for(const k of SAVE_KEYS)o[k]=p[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,doTeam,chooseBoon,offerBoons,spawnMob,spawnRival,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc,addDecal,GORE,goreTrail,goreSpray,goreChunks,gorePool,ELEMENT,REACTIONS,REACT_NAME,REACT_FX,reactionOf,reactionCoverage}
+  test:{get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,doTeam,chooseBoon,offerBoons,spawnMob,spawnRival,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc,addDecal,GORE,goreTrail,goreSpray,goreChunks,gorePool,ELEMENT,REACTIONS,REACT_NAME,REACT_FX,reactionOf,reactionCoverage,objStep,resetStepState,objectiveSteps}
 };

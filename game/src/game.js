@@ -217,7 +217,7 @@ function recalc(){
   s.cdMul=Math.max(.6,Math.min(1,s.cdMul));
   p.s=s;p.hp=Math.min(p.hp,s.maxHp);p.mana=Math.min(p.mana,s.maxMana);dirty();
 }
-function baseState(demo){return{mode:'title',demo,mp:false,players:[],t:0,hour:6,p:null,enemies:[],npcs:[],shots:[],loot:[],fx:[],texts:[],log:[],shake:0,flowT:0,banner:null,boss:null,spawnT:0,killsStage:0,stage:1,w:null,quipT:3}}
+function baseState(demo){return{mode:'title',demo,mp:false,players:[],t:0,hour:6,p:null,enemies:[],npcs:[],shots:[],loot:[],fx:[],texts:[],log:[],shake:0,flowT:0,banner:null,boss:null,spawnT:0,killsStage:0,stage:1,w:null,quipT:3,props:[]}}
 /* Same seed gives the same map, so the server only has to send a number to draw the whole stage */
 function genCitySeeded(seed){const real=Math.random;let a=seed|0;Math.random=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};try{return genCity()}finally{Math.random=real}}
 function placeInStage(n){const w=G.w;G.safe={x:(w.start.x+6)*T,y:(w.start.y+5)*T};G.gate={x:(w.boss.x+6)*T,y:(w.boss.y+5)*T,open:G.killsStage>=quota(n)}}
@@ -226,24 +226,63 @@ function placeInStage(n){const w=G.w;G.safe={x:(w.start.x+6)*T,y:(w.start.y+5)*T
    step is done the boss gate opens and that becomes the checkpoint. Stages that have no steps yet
    fall back to the kill quota, so every stage still finishes. */
 const STAGE_STEPS={
-  1:[{kind:'kill',label:'Defeat the villains'},{kind:'revive',n:1,label:'Revive the wounded scout'}]
+  1:[{kind:'kill',label:'Defeat the villains'},{kind:'revive',n:1,label:'Revive the wounded scout'}],
+  2:[{kind:'kill',label:'Defeat the villains'},{kind:'hold',n:3,t:2.5,label:'Light the three beacons'}],
+  3:[{kind:'kill',label:'Defeat the villains'},{kind:'escort',t:60,label:'Escort the lantern boat'}],
+  4:[{kind:'kill',label:'Defeat the villains'}],
+  5:[{kind:'kill',label:'Defeat the villains'},{kind:'carry',n:3,label:'Carry the canisters to the vents'}],
+  6:[{kind:'kill',label:'Defeat the villains'},{kind:'hold',n:2,t:3,simul:true,label:'Hold both pressure plates'}],
+  7:[{kind:'kill',label:'Defeat the villains'}],
+  8:[{kind:'kill',label:'Defeat the villains'},{kind:'carry',n:2,label:'Carry the lanterns to the exit'}],
+  9:[{kind:'kill',label:'Defeat the villains'},{kind:'hold',n:3,t:4,simul:true,label:'Hold the three shrines'}],
+  10:[{kind:'kill',n:24,label:'Survive the trials'}]
 };
+/* Steps keep their own parameters. hold/carry/escort spawn their props when the step starts. */
 function objectiveSteps(n){
   const s=STAGE_STEPS[n];
-  if(s)return s.map(x=>({kind:x.kind,need:x.kind==='kill'?quota(n):(x.n||1),have:0,label:x.label||''}));
+  if(s)return s.map(x=>Object.assign({have:0},x,{need:x.kind==='kill'?(x.n||quota(n)):(x.n||1),label:x.label||''}));
   return[{kind:'kill',need:quota(n),have:0,label:'Defeat '+foeWord()}];
 }
 function startObjective(){const steps=objectiveSteps(G.stage);G.obj={i:0,done:false,steps};if(steps[0].kind==='kill')steps[0].have=G.killsStage;onStepStart(steps[0])}
-function onStepStart(st){if(!st)return;if(st.kind==='revive'&&!G.npcs.some(c=>c.wounded))spawnScout();st.have=0;if(st.label)G.banner={t:3,a:st.label,b:st.kind==='revive'?'Hold F beside the scout':'Boss gate opens when this is done'}}
+function onStepStart(st){if(!st)return;st.have=0;
+  if(st.kind==='revive'&&!G.npcs.some(c=>c.wounded))spawnScout();
+  else if(st.kind==='hold')spawnZones(st.need);
+  else if(st.kind==='carry')spawnCarries(st.need);
+  else if(st.kind==='escort')spawnEscort();
+  if(st.label)G.banner={t:3,a:st.label,b:st.kind==='revive'?'Hold F beside the scout':st.kind==='carry'?'Carriers cannot attack':st.kind==='escort'?'Stay close to keep it moving':'Boss gate opens when this is done'}}
 function openGate(){if(!G.gate||G.gate.open)return;G.gate.open=true;G.banner={t:3,a:'Boss gate open',b:'Choose a checkpoint boon in Skills'};sfx('level');addLog('The boss gate is open.');offerBoons()}
-function objStep(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='kill')st.have=G.killsStage;if(st.have<st.need)return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
+/* Hold, carry and escort steps all spawn props: one synced list, one renderer, one set of rules. */
+let propSeq=1;
+function addProp(kind,x,y,r,extra){const p=Object.assign({id:propSeq++,kind,x,y,r,t:0,by:0,done:false},extra||{});G.props.push(p);return p}
+function propSpot(minD,maxD){return randomOpen(minD,maxD)||{x:G.safe.x+rnd(-160,160),y:G.safe.y+rnd(-60,150)}}
+const playersNear=(o,r)=>G.players.some(q=>!(q.deadT>0)&&!(q.respawnT>0)&&dist(q,o)<=r);
+function spawnZones(n){const zs=[];for(let i=0;i<n;i++){const o=propSpot(360,1100);zs.push(addProp('zone',o.x,o.y,40))}G.obj.zones=zs}
+function spawnCarries(n){const items=[];for(let i=0;i<n;i++){const o=propSpot(300,800);items.push(addProp('canister',o.x,o.y,11))}const d=propSpot(600,1300);G.obj.drop=addProp('drop',d.x,d.y,46);G.obj.items=items}
+function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx=G.gate.x;e.ty=G.gate.y;G.obj.escort=e}
+/* A hold step either lights each zone in turn, or needs them all held at once. */
+function holdStep(st,dt){const zs=G.obj.zones||[];if(st.simul){const held=zs.filter(z=>playersNear(z,60)).length;st.have=held;st.holdT=held>=st.need?(st.holdT||0)+dt:0;if(st.holdT>=st.t){zs.forEach(z=>z.done=true);st.have=st.need}}
+  else{for(const z of zs){if(!z.done&&playersNear(z,60))z.t=Math.min(st.t,(z.t||0)+dt);if(z.t>=st.t)z.done=true}st.have=zs.filter(z=>z.done).length}}
+/* The escort only moves while somebody stays close. */
+function escortStep(st,dt){const e=G.obj.escort;if(!e)return;if(playersNear(e,220)){const dx=e.tx-e.x,dy=e.ty-e.y,d=Math.hypot(dx,dy)||1;if(d>30){e.x+=dx/d*Math.min(54*dt,d);e.y+=dy/d*Math.min(54*dt,d);e.t+=dt}else e.done=true}st.have=e.done?1:0}
+/* Anything dropped by a player who left, or a stale carrier id, is released. */
+function releaseCarries(){for(const c of (G.obj&&G.obj.items)||[])if(c.by&&!G.players.some(q=>(q.id||0)===c.by&&q.carry===c))c.by=0}
+/* A wipe sends the party back to the last finished step: finished steps stay, the current one starts over. */
+function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false});st.holdT=0;st.have=0}
+  else if(st.kind==='carry'){(o.items||[]).forEach(c=>{c.done=false;c.by=0});st.have=0;G.players.forEach(p=>p.carry=null)}
+  else if(st.kind==='escort'&&o.escort){o.escort.x=G.safe.x+90;o.escort.y=G.safe.y+70;o.escort.done=false;o.escort.t=0;st.have=0}}
+function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;
+  if(st.kind==='kill')st.have=G.killsStage;
+  else if(st.kind==='hold')holdStep(st,dt||0);
+  else if(st.kind==='carry'){releaseCarries();st.have=(o.items||[]).filter(c=>c.done).length}
+  else if(st.kind==='escort')escortStep(st,dt||0);
+  if(st.have<st.need)return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
 function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
 function enterStage(n,keepKills){
   const kept=keepKills?G.killsStage:0;
-  G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.boss=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
+  G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
   const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
-  G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0;q.boonPending=false;q.teamCd=0;q.breakReady=0;q.tauntGuard=0;q.mendT=0;q.deadT=0;q.respawnT=0;q.reviveHold=0;q.reviveTarget=0;q.reviveProgress=0;if(!keepKills){q.secondWind=false;q.downCount=0;q.lastDown=-100}});
+  G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0;q.boonPending=false;q.teamCd=0;q.breakReady=0;q.tauntGuard=0;q.mendT=0;q.deadT=0;q.respawnT=0;q.reviveHold=0;q.reviveTarget=0;q.reviveProgress=0;q.carry=null;if(!keepKills){q.secondWind=false;q.downCount=0;q.lastDown=-100}});
   G.cam={x:G.p.x,y:G.p.y};
   for(let i=0;i<12;i++)spawnNpc();
   G.villT=60;G.decals=[];G.hazards=[];
@@ -267,7 +306,7 @@ function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=m
 function playerDown(p,wind=false){p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
 function revive(p){p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
 function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
-function restartCheckpoint(){const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the safehouse'};writeSave()}
+function restartCheckpoint(){const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
 function bleedOut(p){p.deadT=0;p.respawnT=8;p.gold=Math.floor(p.gold*.8);p.moving=false;const wipe=G.mp&&!G.clearPending&&G.hope<=0&&!G.players.some(q=>q!==p&&q.deadT<=0&&q.respawnT<=0);if(G.mp&&G.hope>0){G.hopeSpent++;G.hope--;}addLog('You bled out and lost 20% of your gold.');if(wipe)restartCheckpoint();writeSave()}
 /* Hold to revive. A downed ally comes first; with none in reach, the same key picks a wounded NPC back up. */
 function updateRevive(p,dt){
@@ -426,6 +465,7 @@ function hurtPlayer(d){
   if(p.hp<=0){p.hp=0;if(G.players.length===1&&!p.secondWind){p.secondWind=true;playerDown(p,true);writeSave()}else if(G.mp)playerDown(p);else{p.gold=Math.floor(p.gold*.8);writeSave();setMode('dead')}}
 }
 function doAttack(){
+  if(G.p.carry)return;
   if(kitOf(G.p)){doMove('small');return}
   const p=G.p,id=p.weapon,W=WEAPONS[id];if(p.cd.slash>0||p.guard)return;
   if(W.m==='spell'&&p.mana<W.cost)return;
@@ -438,11 +478,11 @@ function doAttack(){
   if(n&&W.m==='heal'){const h=p.s.maxHp*.01*p.stats.hea*p.s.mendMul;p.hp=Math.min(p.s.maxHp,p.hp+h);burst(p.x,p.y-24,'#6fdca0',3)}
   if(n>2)shake(1.5);
 }
-function doSpell(){if(kitOf(G.p)){doMove('moderate');return}const p=G.p;if(p.guard||p.cd.bolt>0||p.mana<p.s.spellCost)return;p.mana-=p.s.spellCost;p.cd.bolt=.7*p.s.cdMul;p.castT=.3;sfx('bolt');const sk=1+(p.skills.spell||0)*.1;G.shots.push({x:p.x+Math.cos(p.face)*20,y:p.y-22+Math.sin(p.face)*20,vx:Math.cos(p.face)*410,vy:Math.sin(p.face)*410,r:7,from:'p',life:1.1,heavy:true,dmg:p.s.dmg*1.7*statMul(p,'mag')*sk*dmgMul(),fx:'comet',col:spellCol(p.char,'comet'),a:p.face})}
+function doSpell(){if(G.p.carry)return;if(kitOf(G.p)){doMove('moderate');return}const p=G.p;if(p.guard||p.cd.bolt>0||p.mana<p.s.spellCost)return;p.mana-=p.s.spellCost;p.cd.bolt=.7*p.s.cdMul;p.castT=.3;sfx('bolt');const sk=1+(p.skills.spell||0)*.1;G.shots.push({x:p.x+Math.cos(p.face)*20,y:p.y-22+Math.sin(p.face)*20,vx:Math.cos(p.face)*410,vy:Math.sin(p.face)*410,r:7,from:'p',life:1.1,heavy:true,dmg:p.s.dmg*1.7*statMul(p,'mag')*sk*dmgMul(),fx:'comet',col:spellCol(p.char,'comet'),a:p.face})}
 function explode(s){const p=G.p,R=s.blast||p.s.blast;impact(s,R);sfx('boom');shake(s.blast?.8:2);for(const c of G.npcs){if(!c.dead&&Math.hypot(c.x-s.x,c.y-22-s.y)<R)hitNpc(c,s.dmg,Math.atan2(c.y-s.y,c.x-s.x),true)}for(const e of G.enemies){if(!e.dead&&Math.hypot(e.x-s.x,e.y-22-s.y)<R+e.r)hitEnemy(e,s.dmg,Math.atan2(e.y-s.y,e.x-s.x),210,!!s.heavy)}}
 const TEAM_ABILITY={bruiser:{n:'Taunt',cd:14,d:'Draw nearby enemies and reduce damage taken.'},striker:{n:'Break',cd:12,d:'Your next hit breaks a target and can interrupt a cast.'},shooter:{n:'Mark',cd:10,d:'Mark an aimed enemy so the party deals more damage.'},medic:{n:'Mend Link',cd:8,d:'Heal the lowest-life nearby ally over time.'},scout:{n:'Rescue Dash',cd:12,d:'Dash to an ally and shield you both.'}};
 function chooseBoon(id){const p=G.p;if(!p.boonPending||(id!=='wide'&&id!=='opening'))return false;const b=p.runBoons||(p.runBoons={wide:0,opening:0});if((b[id]||0)>=3)return false;b[id]=(b[id]||0)+1;p.boonPending=false;addLog(id==='wide'?'Dodge protection increased.':'Dodge openings last longer.');writeSave();return true}
-function doTeam(){const p=G.p,k=archKey(p.char),ability=TEAM_ABILITY[k];if(!ability||p.teamCd>0||p.deadT>0||p.respawnT>0||G.mode!=='play')return false;
+function doTeam(){const p=G.p;if(p.carry)return false;const k=archKey(p.char),ability=TEAM_ABILITY[k];if(!ability||p.teamCd>0||p.deadT>0||p.respawnT>0||G.mode!=='play')return false;
   if(k==='bruiser'){for(const e of G.enemies)if(!e.dead&&dist(e,p)<220){e.tauntId=p.id||0;e.tauntT=4;e.aware=true}p.tauntGuard=4;G.fx.push({k:'ring',x:p.x,y:p.y,r:20,to:220,t:.5,m:.5,c:'#80caff'})}
   else if(k==='striker'){p.breakReady=6;text(p.x,p.y-80,'BREAK READY','#ffe27a',true)}
   else if(k==='shooter'){const candidates=G.enemies.filter(e=>!e.dead&&dist(e,p)<450&&los(p,e));if(!candidates.length)return false;const target=candidates.sort((a,b)=>Math.hypot(a.x-mouse.x,a.y-mouse.y)-Math.hypot(b.x-mouse.x,b.y-mouse.y))[0];target.markT=6;target.aware=true;text(target.x,target.y-100,'MARKED','#ffd860',true)}
@@ -616,6 +656,12 @@ function updatePlayer(p,dt){
   if(touchMode){const n=nearestEnemy();if(n)p.face=Math.atan2(n.y-p.y,n.x-p.x);else if(p.moving)p.face=Math.atan2(v.y,v.x)}else p.face=Math.atan2(mouse.y-(p.y-22),mouse.x-p.x);
   if(mouse.left||touchHold.slash)doAttack();
   tagOwned(p);
+  /* Carry steps: walk over an item to lift it, walk into the drop zone to deliver it. */
+  if(G.obj){const st=G.obj.steps[G.obj.i];
+    if(st&&st.kind==='carry'){const items=G.obj.items||[];
+      if(!p.carry){const c=items.find(c=>!c.done&&!c.by&&dist(p,c)<28);if(c){c.by=p.id||0;p.carry=c;text(p.x,p.y-70,'Carrying','#8fd6ff',true)}}
+      if(p.carry&&G.obj.drop&&dist(p,G.obj.drop)<G.obj.drop.r){p.carry.done=true;p.carry.by=0;p.carry=null;text(p.x,p.y-70,'Delivered','#8fd6ff',true);sfx('loot')}
+      else if(p.carry&&p.carry.done)p.carry=null}}
   p.nearSafe=dist(p,G.safe)<70;
   if(p.nearSafe)p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.08*dt);
 }
@@ -624,7 +670,7 @@ function tagOwned(p){for(const s of G.shots)if(s.from==='p'&&s.pid===undefined)s
 function update(dt){
   const real=dt;let slow=1;
   for(const p of G.players){G.p=p;if(p.ult){tickUlt(real);tagOwned(p);if(!G.mp&&p.ult)slow=p.ult.t<ULT_HITS[0]?.06:.45}else if(p.combo){p.comboT-=real;if(p.comboT<=0){p.combo=0;p.comboTier=null}}p.comboPop=Math.max(0,p.comboPop-real*4)}
-  dt*=slow;G.t+=dt;G.hour=(G.hour+dt/20)%24;objStep();
+  dt*=slow;G.t+=dt;G.hour=(G.hour+dt/20)%24;objStep(dt);
   for(const p of G.players)updatePlayer(p,dt);
   G.p=G.players[0];
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}

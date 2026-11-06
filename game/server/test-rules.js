@@ -229,6 +229,44 @@ const rAway=p=>{const c=G().w.open.find(c=>Math.hypot((c%78+.5)*40-G().safe.x,((
  for(let i=0;i<120&&!G().gate.open;i++){op.actions.push({n:'revive',v:true});s.step(or,1/30);or.ev.length=0}
  ok(!sc.wounded&&G().obj.done&&G().gate.open,'reviving the scout finishes the objective and opens the gate');
  ok(op.hp>0&&sc.hp===sc.maxHp,'the scout is back on their feet')}
-{const dr=mk(),dp=s.createRoom(dr,'Firefighter',{maxStage:2},'Default');T.enter(dr);
- ok(G().obj.steps.length===1&&G().obj.steps[0].kind==='kill','a stage with no steps yet falls back to the kill quota')}
-console.log('\n'+n+' checks passed');;;;
+{const dr=mk(),dp=s.createRoom(dr,'Firefighter',null,'Default');T.enter(dr);
+ const fb=T.objectiveSteps(99);ok(fb.length===1&&fb[0].kind==='kill','a stage with no steps defined falls back to the kill quota')}
+// C-18 hold, carry, escort and the checkpoint between steps.
+const stg=n=>{const r=mk(),p=s.createRoom(r,'Firefighter',{maxStage:n},'Obj');T.enter(r);G().enemies=[];G().spawnT=1e9;G().villT=1e9;return{r,p}};
+const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
+// Hold: three beacons, each lit by standing on it.
+{const {r,p}=stg(2);adv(r);
+ ok(G().obj.i===1&&G().obj.steps[1].kind==='hold'&&(G().obj.zones||[]).length===3,'stage 2 spawns three beacons');
+ for(const z of G().obj.zones){for(let i=0;i<90&&!z.done;i++){p.x=z.x;p.y=z.y;s.step(r,1/30);r.ev.length=0}}
+ ok(G().obj.zones.every(z=>z.done)&&G().obj.done&&G().gate.open,'lighting all three beacons finishes the objective')}
+// Hold at once: both plates, at the same time, from two players.
+{const rr=mk(),a=s.createRoom(rr,'Firefighter',{maxStage:6},'A'),b=s.addPlayer(rr,'Detective',null,'B');T.enter(rr);G().enemies=[];G().spawnT=1e9;G().villT=1e9;adv(rr);
+ const zs=G().obj.zones;ok(G().obj.steps[1].simul&&zs.length===2,'stage 6 needs both plates at once');
+ for(let i=0;i<120;i++){a.x=zs[0].x;a.y=zs[0].y;b.x=zs[1].x+900;b.y=zs[1].y;s.step(rr,1/30);rr.ev.length=0}
+ ok(!G().obj.done,'one plate alone is not enough');
+ for(let i=0;i<150&&!G().obj.done;i++){a.x=zs[0].x;a.y=zs[0].y;b.x=zs[1].x;b.y=zs[1].y;s.step(rr,1/30);rr.ev.length=0}
+ ok(G().obj.done,'both plates held at once finishes the objective')}
+// Carry: lift an item, a carrier cannot attack, delivering it counts.
+{const {r,p}=stg(5);adv(r);
+ const items=G().obj.items||[];ok(items.length===3&&!!G().obj.drop,'stage 5 spawns three canisters and a vent');
+ const c=items[0];p.x=c.x;p.y=c.y;s.step(r,1/30);r.ev.length=0;
+ ok(p.carry===c&&c.by===p.id,'walking over a canister picks it up');
+ p.weapon='pistol';p.cd.slash=0;const shots=G().shots.length;T.doAttack();
+ ok(G().shots.length===shots&&T.doTeam()===false,'a carrier cannot attack or use a team ability');
+ p.x=G().obj.drop.x;p.y=G().obj.drop.y;s.step(r,1/30);r.ev.length=0;s.step(r,1/30);r.ev.length=0;
+ ok(c.done&&!p.carry&&G().obj.steps[1].have===1,'delivering a canister counts one')}
+// Escort: moves while somebody stays close, stops when nobody does.
+{const {r,p}=stg(3);adv(r);
+ const e=G().obj.escort;ok(!!e&&G().obj.steps[1].kind==='escort','stage 3 spawns the lantern boat');
+ const x0=e.x,y0=e.y;
+ for(let i=0;i<60;i++){p.x=e.x;p.y=e.y+20;s.step(r,1/30);r.ev.length=0}
+ ok(Math.hypot(e.x-x0,e.y-y0)>5,'the boat moves while a player stays close');
+ const x1=e.x;p.x=e.x+2000;p.y=e.y;
+ for(let i=0;i<30;i++){s.step(r,1/30);r.ev.length=0}
+ ok(Math.abs(e.x-x1)<1,'the boat stops when nobody is close')}
+// A wipe restarts the current step but keeps finished steps.
+{const {r,p}=stg(2);adv(r);
+ const zs=G().obj.zones;zs[0].t=2.5;zs[0].done=true;G().obj.steps[1].have=1;
+ T.resetStepState();
+ ok(G().obj.i===1&&zs.every(z=>!z.done&&z.t===0)&&G().obj.steps[1].have===0,'a wipe restarts only the step in progress')}
+console.log('\n'+n+' checks passed');;;;;
