@@ -16,10 +16,12 @@ $('bag').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b
 $('rack').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b&&b.dataset.w){if(netOn())netAct('weapon',b.dataset.w);else equipWeapon(b.dataset.w)}});
 $('wearbest').addEventListener('click',()=>wearBest());
 function returnToMenu(){if(netOn()){netLeave();return}writeSave();demoScene();setMode('title')}
+const touchPointers=new Map();
+function resetTouch(){if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
 function setMode(m){
   setTimeout(()=>{menuMusic();gameAmbience()},0);
-  G.mode=m;mouse.left=mouse.right=false;touchHold.slash=false;touchHold.guard=false;touchHold.revive=false;keys.clear();const ov=$('ov'),c=$('card');
-  $('touch').hidden=!(touchMode&&m==='play');
+  resetTouch();G.mode=m;mouse.left=mouse.right=false;keys.clear();const ov=$('ov'),c=$('card');
+  $('touch').hidden=!(touchMode&&m==='play');$('screen').classList.toggle('touch-playing',touchMode&&m==='play');
   if(m==='play'){ov.hidden=true;return}
   ov.hidden=false;ov.classList.toggle('pick',m==='title'||m==='menu');c.classList.toggle('sel',m==='title'||m==='menu');
   if(m==='title')renderSelect();
@@ -88,13 +90,13 @@ const LOCAL_ACT={dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=
 function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
 function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}
-function setTouch(on){if(touchMode===on)return;touchMode=on;$('touch').hidden=!(on&&G.mode==='play')}
+function setTouch(on){if(touchMode===on)return;resetTouch();touchMode=on;$('touch').hidden=!(on&&G.mode==='play');$('screen').classList.toggle('touch-playing',on&&G.mode==='play')}
 function mouseButtons(ev){if(G.mode!=='play')return;mouse.left=!!(ev.buttons&1);mouse.right=!!(ev.buttons&2)}
-canvas.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch'){setTouch(true);if(G.mode!=='play')return;const r=canvas.getBoundingClientRect();if(!joy.on){joy.on=true;joy.id=ev.pointerId;joy.ox=ev.clientX-r.left;joy.oy=ev.clientY-r.top;joy.dx=0;joy.dy=0;canvas.setPointerCapture(ev.pointerId)}return}
+canvas.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch'){setTouch(true);if(G.mode!=='play')return;const r=canvas.getBoundingClientRect();if(!joy.on){joy.on=true;joy.id=ev.pointerId;joy.ox=ev.clientX-r.left;joy.oy=ev.clientY-r.top;joy.dx=0;joy.dy=0;const el=$('joystick');el.style.left=joy.ox+'px';el.style.top=joy.oy+'px';el.firstElementChild.style.transform='';el.hidden=false;canvas.setPointerCapture(ev.pointerId)}return}
   setTouch(false);trackMouse(ev);mouseButtons(ev);if(G.mode==='play')try{canvas.setPointerCapture(ev.pointerId)}catch(e){}});
-canvas.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'){if(joy.on&&ev.pointerId===joy.id){const r=canvas.getBoundingClientRect(),dx=ev.clientX-r.left-joy.ox,dy=ev.clientY-r.top-joy.oy,m=Math.max(1,Math.hypot(dx,dy)),k=Math.min(1,m/46);joy.dx=dx/m*k;joy.dy=dy/m*k}return}trackMouse(ev);mouseButtons(ev)});
-const up=ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===joy.id){joy.on=false;joy.id=null;joy.dx=0;joy.dy=0}return}mouseButtons(ev)};
-canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{if(G.mode!=='play')return;e.preventDefault();doAct('cycle',e.deltaY>0?1:-1)},{passive:false});
+canvas.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'){if(joy.on&&ev.pointerId===joy.id){const r=canvas.getBoundingClientRect(),dx=ev.clientX-r.left-joy.ox,dy=ev.clientY-r.top-joy.oy,m=Math.max(1,Math.hypot(dx,dy)),k=Math.min(1,m/46);joy.dx=dx/m*k;joy.dy=dy/m*k;$('joystick').firstElementChild.style.transform='translate('+joy.dx*46+'px,'+joy.dy*46+'px)'}return}trackMouse(ev);mouseButtons(ev)});
+const up=ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===joy.id){joy.on=false;joy.id=null;joy.dx=0;joy.dy=0;$('joystick').hidden=true}return}mouseButtons(ev)};
+canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('lostpointercapture',up);canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{if(G.mode!=='play')return;e.preventDefault();doAct('cycle',e.deltaY>0?1:-1)},{passive:false});
 const GAME_CODES=new Set(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
 addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyL'&&!ev.repeat&&ev.target.tagName!=='INPUT'){toggleFullscreen();return}
@@ -109,7 +111,7 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyT'){menuTab='skills';setMode('menu')}
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
 addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
-addEventListener('blur',()=>{keys.clear();touchHold.revive=false;mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
+addEventListener('blur',()=>{keys.clear();resetTouch();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
 function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';menuMusic();gameAmbience()}
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
 const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
@@ -186,9 +188,8 @@ document.addEventListener('fullscreenchange',onFullscreen);document.addEventList
 $('fsbtn').hidden=!canFullscreen;$('fsbtn').onclick=ev=>{ev.currentTarget.blur();toggleFullscreen()};
 $('menubtn').onclick=ev=>{ev.currentTarget.blur();if(G.mode==='play'){menuTab='skills';setMode('menu')}};
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
-  if(a==='slash'){touchHold.slash=true;b.setPointerCapture(ev.pointerId)}
-  if(a==='guard'){touchHold.guard=true;b.setPointerCapture(ev.pointerId)}if(a==='revive'){touchHold.revive=true;b.setPointerCapture(ev.pointerId);if(netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
-['pointerup','pointercancel'].forEach(n=>$('touch').addEventListener(n,ev=>{const b=ev.target.closest('button');if(b&&b.dataset.a==='slash')touchHold.slash=false;if(b&&b.dataset.a==='guard')touchHold.guard=false;if(b&&b.dataset.a==='revive'){touchHold.revive=false;if(netOn())netAct('revive',false)}}));
+  if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('touch').addEventListener(n,ev=>{const a=touchPointers.get(ev.pointerId);if(!a)return;touchPointers.delete(ev.pointerId);if(![...touchPointers.values()].includes(a)){touchHold[a]=false;const b=$('touch').querySelector('[data-a="'+a+'"]');if(b)b.classList.remove('held');if(a==='revive'&&netOn())netAct('revive',false)}}));
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.previousElementSibling,done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected';setTimeout(()=>b.textContent='Copy',1400)};try{navigator.clipboard.writeText(pre.textContent).then(done,sel)}catch(e){sel()}}));
 if('IntersectionObserver'in window)new IntersectionObserver(es=>{es.forEach(e=>{if(e.intersectionRatio<.35&&G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')})},{threshold:[.35]}).observe($('screen'));
 /* Select-screen preview cycles through every animation */

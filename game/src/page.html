@@ -92,8 +92,11 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .boon kbd{font:500 12px var(--mono);color:var(--lichen)}
 .boon strong{display:block;font-size:18px}
 .boon span{color:var(--mist);font-size:15px}
-.touch{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:8px;display:grid;grid-template-columns:repeat(3,54px);gap:6px;z-index:2}
-.touch button{height:54px;border-radius:50%;border:1px solid var(--foam);background:rgba(18,48,58,.72);font:500 11px var(--body);padding:0;touch-action:none}
+.touch{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,54px);gap:6px;z-index:2;pointer-events:none}
+.touch button{height:54px;border-radius:50%;border:1px solid var(--foam);background:rgba(18,48,58,.82);font:700 11px var(--body);padding:2px;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
+.touch button:active,.touch button.held{background:rgba(63,117,133,.95);border-color:var(--lichen)}
+.joystick{position:absolute;width:92px;height:92px;margin:-46px 0 0 -46px;border:2px solid rgba(190,225,244,.65);border-radius:50%;background:rgba(12,32,48,.25);pointer-events:none;z-index:2}
+.joystick i{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border-radius:50%;background:rgba(190,225,244,.7);border:2px solid #eef8ff}
 .touch .big{background:rgba(240,128,92,.55);border-color:var(--coral)}
 .fx3{z-index:1;pointer-events:none}
 .fx3b{top:calc(216px*var(--k,1))!important}
@@ -207,6 +210,8 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
 @media(max-width:640px){
   .sp-words{width:92%;top:40%}.sp-play{font-size:clamp(13px,3.6cqw,22px);top:70%}
 }
+@media(max-height:500px){.touch{grid-template-columns:repeat(4,48px);gap:4px}.touch button{height:48px;font-size:10px}}
+@media(max-height:500px){.screen.touch-playing .menub{display:none}.screen.touch-playing .sound{top:132px!important}.screen.touch-playing .fsb{right:95px}.screen.touch-playing .fx3b{right:185px}}
 @media(max-width:640px){
   .screen{aspect-ratio:auto}
   .mrow.weapon-row{grid-template-columns:minmax(0,1fr) auto}.weapon-row .weapon-choice{grid-column:1/-1}
@@ -239,7 +244,8 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
     <div class="screen" id="screen">
       <canvas id="c" aria-label="Game view"></canvas><canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas>
       <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button>
-      <div class="touch" id="touch" hidden>
+      <div class="joystick" id="joystick" aria-hidden="true" hidden><i></i></div>
+      <div class="touch" id="touch" aria-label="Touch controls" hidden>
         <button type="button" data-a="potion">Potion</button>
         <button type="button" data-a="revive">Hold to revive</button>
         <button type="button" data-a="fast">Fast</button>
@@ -252,8 +258,8 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
         <button type="button" data-a="ult" style="border-color:#ffd860;color:#ffd860">Ult</button>
         <button type="button" data-a="menu">Menu</button>
         <button type="button" data-a="dash">Dodge</button>
-        <button type="button" data-a="guard">Shield</button>
-        <button type="button" data-a="slash" class="big" style="grid-column:span 2;border-radius:27px">Attack</button>
+        <button type="button" data-a="guard" aria-label="Hold to shield">Shield</button>
+        <button type="button" data-a="slash" class="big" aria-label="Hold to attack" style="grid-column:span 2;border-radius:27px">Attack</button>
       </div>
       <div class="ov" id="ov"><div class="card" id="card"></div></div>
       <div class="splash" id="splash">
