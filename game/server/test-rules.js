@@ -7,6 +7,7 @@ const room=mk(),a=s.createRoom(room,'Detective',null,'A'),b=s.addPlayer(room,'Fi
 const openEast=()=>{const W=G().w;return W.open.find(c=>c%78<77&&!W.map[c+1]&&Math.hypot((c%78+.5)*40-G().safe.x,((c/78|0)+.5)*40-G().safe.y)>500)};
 const step=(k=1)=>{for(let i=0;i<k;i++){s.step(room,1/30);room.ev.length=0}};
 T.enter(room);
+const cityA=T.genCitySeeded(12345),cityB=T.genCitySeeded(12345);ok(cityA.boss.x===cityB.boss.x&&cityA.boss.y===cityB.boss.y&&Buffer.from(cityA.map).equals(Buffer.from(cityB.map)),'party runner reconstructs a seeded map deterministically');
 ok(new Set(G().players.map(p=>p.id)).size===2,'two players, different ids');
 const solo=mk(),sp=s.createRoom(solo,'Detective',null,'S');T.enter(solo);const soloHp=G().enemies[0].maxHp/ (G().enemies[0].mob==='strong'?3.2:.6);T.enter(room);
 // Membership changes rescale living enemies without changing their life percentage.
