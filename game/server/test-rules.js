@@ -276,6 +276,8 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  const x1=e.x;p.x=e.x+2000;p.y=e.y;
  for(let i=0;i<30;i++){s.step(r,1/30);r.ev.length=0}
  ok(Math.abs(e.x-x1)<1,'the boat stops when nobody is close')}
+// A killed objective scout is replaced so the stage can still be completed.
+{const {r,p}=stg(1);adv(r);const old=G().npcs.find(c=>c.wounded);G().p=p;T.hitNpc(old,1e9,0,true);s.step(r,1/30);r.ev.length=0;const replacement=G().npcs.find(c=>c.wounded&&!c.dead);ok(old.dead&&replacement&&replacement!==old&&G().obj.steps[1].have===0,'a killed wounded scout is replaced while the revive objective is active')}
 // A wipe restarts the current step but keeps finished steps.
 {const {r,p}=stg(2);adv(r);
  const zs=G().obj.zones;zs[0].t=2.5;zs[0].done=true;G().obj.steps[1].have=1;

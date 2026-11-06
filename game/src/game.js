@@ -310,6 +310,7 @@ function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.
   else if(st.kind==='escort'&&o.escort){o.escort.x=G.safe.x+90;o.escort.y=G.safe.y+70;o.escort.done=false;o.escort.t=0;st.have=0}}
 function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;
   if(st.kind==='kill')st.have=G.killsStage;
+  else if(st.kind==='revive'&&st.have<st.need&&!G.npcs.some(c=>c.wounded&&!c.dead))spawnScout();
   else if(st.kind==='hold')holdStep(st,dt||0);
   else if(st.kind==='carry'){releaseCarries();st.have=(o.items||[]).filter(c=>c.done).length}
   else if(st.kind==='escort')escortStep(st,dt||0);

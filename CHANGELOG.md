@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- A replacement wounded scout appears if the objective scout is killed.
 - Killing the wounded scout no longer closes an online room.
 - Online enemy target markers now receive the awareness state they need to appear.
 - Full Party healing no longer gives life to downed or respawning players without reviving them.
