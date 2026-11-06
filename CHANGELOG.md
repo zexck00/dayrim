@@ -25,6 +25,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 
 ### Added
+- A fully upgraded healing weapon restores a nearby injured ally on a successful hit, at most once per second.
 - A fully upgraded shield interrupts ordinary enemies when it strikes during their attack or healing wind-up.
 - Fully upgraded pistols and bows can pierce one additional enemy per shot.
 - The Weapons menu compares current and next upgrade effects, and upgraded attacks show a short tier-colored pulse.
