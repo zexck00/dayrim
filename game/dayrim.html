@@ -1000,7 +1000,7 @@ function updateRevive(p,dt){
   if(!holding){p.reviveTarget=0;p.reviveProgress=0;return}
   let q=G.players.find(x=>x.id===p.reviveTarget&&x!==p&&x.deadT>0&&dist(p,x)<=range);
   if(!q)q=G.players.filter(x=>x!==p&&x.deadT>0&&dist(p,x)<=range).sort((a,b)=>dist(p,a)-dist(p,b))[0];
-  if(q){p.reviveTarget=q.id;p.reviveProgress+=dt/(archKey(p.char)==='medic'?1.5:3);if(p.reviveProgress>=1){revive(q);threatHeal(q,q.s.maxHp*.35);p.reviveTarget=0;p.reviveProgress=0}return}
+  if(q){if(p.reviveTarget!==q.id)p.reviveProgress=0;p.reviveTarget=q.id;p.reviveProgress+=dt/(archKey(p.char)==='medic'?1.5:3);if(p.reviveProgress>=1){revive(q);threatHeal(q,q.s.maxHp*.35);p.reviveTarget=0;p.reviveProgress=0}return}
   p.reviveTarget=0;
   const c=G.npcs.find(x=>x.wounded&&!x.dead&&dist(p,x)<=range);
   if(!c){p.reviveProgress=0;return}
