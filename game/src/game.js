@@ -312,25 +312,54 @@ function text(x,y,s,c,big){G.texts.push({x:x+rnd(-8,8),y,s,c,t:.8,big})}
 function burst(x,y,c,n,sp=120){for(let i=0;i<n;i++){const a=rnd(TAU),v=rnd(sp*.3,sp);G.fx.push({k:'p',x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:rnd(.25,.55),m:.55,c,s:rnd(1.5,3.5)})}}
 function shake(v){if(!reduced)G.shake=Math.min(12,G.shake+v)}
 /* Each character's element, from GAME_DESIGN section 12. Reactions need two different elements from two different players. */
-const ELEMENT={Detective:'shock',Vigilante:'bleed',Guardian:'holy',Ranger:'toxin',Inventor:'shock',Firefighter:'soak',Shadow:'void',Prodigy:'shock',Sage:'holy',Patriot:'holy',Phantom:'void',Pyromancer:'burn',Chronomancer:'chill',Beastmaster:'bleed',Voidwalker:'void',Exorcist:'holy','Gravity Mage':'void',Druid:'toxin',Cyborg:'shock',Illusionist:'chill',Necromancer:'void','Blood Reaper':'bleed','Toxin Alchemist':'toxin','Soul Stealer':'void','Shadow Monarch':'bleed',Puppeteer:'shock','Void Empress':'void','Plague Doctor':'toxin','Mad Scientist':'shock','Mirror Jester':'bleed','Demon Knight':'burn','Gravity Weaver':'void','Mecha Tyrant':'shock','Chrono Thief':'chill','Swarm Queen':'toxin','Ice Archmage':'chill','Deep Siren':'soak','Ash Shaman':'burn','Soul Forger':'burn','Cyber Priest':'holy'};
+const ELEMENT={Detective:'shock',Vigilante:'bleed',Guardian:'holy',Ranger:'toxin',Inventor:'shock',Firefighter:'soak','Hero Shadow':'void',Prodigy:'shock',Sage:'holy',Patriot:'holy',Phantom:'void',Pyromancer:'burn',Chronomancer:'chill',Beastmaster:'bleed',Voidwalker:'void',Exorcist:'holy','Gravity Mage':'void',Druid:'toxin',Cyborg:'shock',Illusionist:'chill',Necromancer:'void','Blood Reaper':'bleed','Toxin Alchemist':'toxin','Soul Stealer':'void','Shadow Monarch':'bleed',Puppeteer:'shock','Void Empress':'void','Plague Doctor':'toxin','Mad Scientist':'shock','Mirror Jester':'bleed','Demon Knight':'burn','Gravity Weaver':'void','Mecha Tyrant':'shock','Chrono Thief':'chill','Swarm Queen':'toxin','Ice Archmage':'chill','Deep Siren':'soak','Ash Shaman':'burn','Soul Forger':'burn','Cyber Priest':'holy'};
 /* Section 5's reaction table. Order does not matter: the lookup sorts the two elements. */
-const REACTIONS=[{a:'burn',b:'toxin',id:'inferno',n:'INFERNO'},{a:'burn',b:'chill',id:'shatter',n:'SHATTER'},{a:'shock',b:'soak',id:'overload',n:'OVERLOAD'},{a:'chill',b:'soak',id:'freeze',n:'FREEZE'},{a:'toxin',b:'void',id:'rot',n:'ROT'},{a:'void',b:'shock',id:'collapse',n:'COLLAPSE'},{a:'bleed',b:'holy',id:'purge',n:'PURGE'},{a:'holy',b:'void',id:'eclipse',n:'ECLIPSE'}];
+const REACTIONS=[{a:'burn',b:'toxin',id:'inferno',n:'INFERNO'},{a:'burn',b:'chill',id:'shatter',n:'SHATTER'},{a:'shock',b:'soak',id:'overload',n:'OVERLOAD'},{a:'chill',b:'soak',id:'freeze',n:'FREEZE'},{a:'toxin',b:'void',id:'rot',n:'ROT'},{a:'void',b:'shock',id:'collapse',n:'COLLAPSE'},{a:'bleed',b:'holy',id:'purge',n:'PURGE'},{a:'holy',b:'void',id:'eclipse',n:'ECLIPSE'},{a:'bleed',b:'burn',id:'cauterise',n:'CAUTERISE'},{a:'bleed',b:'chill',id:'frostbite',n:'FROSTBITE'}];
 const REACT_NAME={},REACT_PAIR={};
 REACTIONS.forEach(r=>{REACT_NAME[r.id]=r.n;REACT_PAIR[[r.a,r.b].sort().join('+')]=r.id});
 const reactionOf=(a,b)=>(a&&b&&a!==b)?(REACT_PAIR[[a,b].sort().join('+')]||''):'';
-const REACTION_RAGE=12;
-/* Implemented effects. An id missing here simply does not fire yet, so a half-built reaction never fakes one. */
-const REACT_FX={overload:e=>{e.statusT=0;e.stunT=e.kind==='boss'?0:1;return G.players.length===1?1.15:1.3}};
+const REACTION_RAGE=12,REACT_SAME=1.1;
+/* Splash damage from a reaction. Kept apart from hitEnemy so a reaction can never trigger another reaction. */
+function reactHit(o,dmg,col){if(!o||o.dead||!(dmg>0))return;o.hp-=dmg;o.flash=Math.max(o.flash||0,.11);o.aware=true;burst(o.x,o.y-20,col||'#ffffff',3);if(o.hp<=0)killEnemy(o)}
+function reactSplash(e,dmg,r,col){for(const o of G.enemies){if(o.dead||o===e)continue;if(dist(o,e)<=r+o.r)reactHit(o,dmg,col)}}
+function reactChain(e,dmg,r,n){let c=0;for(const o of G.enemies){if(o.dead||o===e||c>=n)continue;if(dist(o,e)<=r+o.r){reactHit(o,dmg,'#8fe6ff');c++}}}
+/* Implemented effects. An id missing here does not fire at all, so a half-built reaction never fakes one. Each returns its damage multiplier. */
+const REACT_FX={
+  /* Section 5: Overload jumps to five nearby enemies. The original stun stays. */
+  overload:(e,p,b)=>{e.statusT=0;e.stunT=e.kind==='boss'?0:1;reactChain(e,b*.6,160,5);return G.players.length===1?1.15:1.3},
+  /* Section 5: 200% damage, 110 units. */
+  inferno:(e,p,b)=>{e.statusT=0;reactSplash(e,b,110,'#ff9a3c');G.fx.push({k:'ring',x:e.x,y:e.y,r:20,to:110,t:.35,m:.35,c:'#ff8a2c'});return 2},
+  /* Section 5: 150% damage and armor removed for 4 s. Shattered targets take 25% more while it lasts. */
+  shatter:(e,p,b)=>{e.statusT=0;e.shatterT=4;return 1.5},
+  /* Section 5: frozen 2 s; bosses are only slowed instead. */
+  freeze:(e,p,b)=>{e.statusT=0;if(e.kind==='boss')e.slowT=Math.max(e.slowT||0,2);else e.frozenT=2;return 1},
+  /* Section 5: 40% of missing life over 5 s, capped hard on bosses. */
+  rot:(e,p,b)=>{e.statusT=0;const missing=Math.max(0,e.maxHp-e.hp),total=Math.min(missing*.4,e.kind==='boss'?e.maxHp*.2:missing);e.rotT=5;e.rotRate=total/5;e.rotBy=p.id||0;return 1},
+  /* Section 5: pulls enemies in 160 units together, then a burst. */
+  collapse:(e,p,b)=>{e.statusT=0;for(const o of G.enemies){if(o.dead||o===e)continue;const d=dist(o,e);if(d>160)continue;const a=Math.atan2(e.y-o.y,e.x-o.x),step=Math.max(0,d-Math.max(24,e.r*.8));move(o,Math.cos(a)*step,Math.sin(a)*step);reactHit(o,b*.8,'#c8a4ff')}G.fx.push({k:'ring',x:e.x,y:e.y,r:20,to:160,t:.4,m:.4,c:'#b98cff'});return 1},
+  /* Section 5: nearby allies heal 10%. Solo uses half strength. */
+  purge:(e,p,b)=>{e.statusT=0;const share=G.players.length===1?.05:.1;for(const q of alivePlayers()){if(dist(q,e)>200)continue;const h=q.s.maxHp*share;q.hp=Math.min(q.s.maxHp,q.hp+h);text(q.x,q.y-72,'+'+Math.round(h),'#6fdca0',true)}return 1},
+  /* Section 5: everyone in 200 units is stunned 1.5 s. Bosses break instead of stunning, since their guard bar does not exist yet. */
+  eclipse:(e,p,b)=>{e.statusT=0;for(const o of G.enemies){if(o.dead||dist(o,e)>200)continue;if(o.kind==='boss'){o.exposedT=Math.max(o.exposedT||0,2);o.brokenT=Math.max(o.brokenT||0,2)}else o.stunT=Math.max(o.stunT||0,1.5)}G.fx.push({k:'ring',x:e.x,y:e.y,r:30,to:200,t:.5,m:.5,c:'#b0b8ff'});return 1},
+  /* Bleed plus Burn: the wound burns shut, so the damage lands now instead of bleeding. */
+  cauterise:(e,p,b)=>{e.statusT=0;for(const q of G.enemies)if(!q.dead&&q!==e&&dist(q,e)<90)reactHit(q,b*.5,'#ff7a3c');return 1.6},
+  /* Bleed plus Chill: frostbite slows the target 40% for 3 s. */
+  frostbite:(e,p,b)=>{e.statusT=0;e.slowT=Math.max(e.slowT||0,3);return 1.2}
+};
 /* Both players who built the reaction earn rage for it. */
 function reactRage(e,p){const other=G.players.find(q=>(q.id||0)===(e.statusBy||0))||p,me=G.p;for(const q of new Set([other,p])){if(!q)continue;G.p=q;addRage(REACTION_RAGE)}G.p=me}
 /* How much of the roster can actually react together. Same-element pairs can never react, so they are counted apart. */
-function reactionCoverage(){const names=Object.keys(ELEMENT),miss=[],same=[];for(let i=0;i<names.length;i++)for(let j=i+1;j<names.length;j++){const a=names[i],b=names[j],ea=ELEMENT[a],eb=ELEMENT[b];if(ea===eb){same.push([a,b]);continue}if(!reactionOf(ea,eb))miss.push([a,b])}const total=names.length*(names.length-1)/2;return{total,covered:total-miss.length-same.length,missing:miss,same,total40:total}}
+function reactionCoverage(){const names=Object.keys(ELEMENT),miss=[],same=[];for(let i=0;i<names.length;i++)for(let j=i+1;j<names.length;j++){const a=names[i],b=names[j],ea=ELEMENT[a],eb=ELEMENT[b];if(ea===eb){same.push([a,b]);continue}if(!reactionOf(ea,eb))miss.push([a,b])}const total=names.length*(names.length-1)/2;return{total,byElement:total-miss.length-same.length,byResonance:same.length,covered:total-miss.length,missing:miss,same}}
 function expose(e,duration=2){if(e.dead)return;e.exposedT=Math.max(e.exposedT||0,duration);text(e.x,e.y-100,'OPEN','#ffe27a',true)}
 function hitEnemy(e,base,ang,kb,heavy=false){
   if(e.dead)return;const p=G.p;let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
   if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
   const el=ELEMENT[p.char],prev=e.statusType,rid=(el&&e.statusT>0&&prev&&prev!==el&&(G.players.length===1||(e.statusBy||0)!==(p.id||0)))?reactionOf(prev,el):'';
-  if(rid&&REACT_FX[rid]){base*=REACT_FX[rid](e,p);text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p)}else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
+  const same=(el&&prev&&el===prev&&(e.statusBy||0)!==(p.id||0));
+  if(rid&&REACT_FX[rid]){base*=REACT_FX[rid](e,p,base);text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p)}
+  else if(same){base*=REACT_SAME;G.fx.push({k:'ring',x:e.x,y:e.y,r:6,to:36,t:.25,m:.25,c:'#8fd6ff'});e.statusT=4}
+  else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
+  if(e.shatterT>0)base*=1.25;
   base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),block=e.guarding?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
   e.hp-=d;e.flash=.11;e.aware=true;threatAdd(e,p.id||0,100*d/Math.max(1,e.maxHp));if(e.kind==='boss')e.recoil=.16;const res=e.kind==='boss'?.15:1;e.kx+=Math.cos(ang)*kb*res;e.ky+=Math.sin(ang)*kb*res;
   text(e.x,e.y-(e.kind==='boss'?e.ah*.7:66),Math.round(d)+(crit?'!':''),crit?'#ffd86b':'#fff',crit);if(crit||(e.exposedT||0)>0)G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:e.r*1.6,t:.22,m:.22,c:crit?'#ffd86b':'#f2ecd8'});goreSpray(e,ang,d/Math.max(1,e.maxHp),crit);burst(e.x,e.y-20,'#f0805c',crit?4:1);if(crit||heavy)goreChunks(e,ang,crit?2:1);
@@ -608,9 +637,12 @@ function tickFx(dt){for(const f of G.fx){f.t-=dt;if(f.k==='p'){f.x+=f.vx*dt;f.y+
   for(const f of G.fx){if(f.k==='g'){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.93;f.vy*=.93}else if(f.k==='blood'||f.k==='gib'){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vz+=760*dt;f.z+=f.vz*dt;if(f.spin)f.rot+=f.spin*dt;if(f.z>=0&&f.vz>0){if(f.k==='blood'){if(Math.random()<GORE.mark)addDecal(f.x,f.y,f.s*rnd(.9,2.2),false);f.t=0}else{addDecal(f.x,f.y,f.s*.8,false);f.vz*=-.32;f.vx*=.5;f.vy*=.5;f.spin*=.5;f.z=0}}}}
   for(const x of G.texts){x.t-=dt;x.y-=34*dt}G.texts=G.texts.filter(x=>x.t>0);G.shake*=Math.pow(.002,dt);
   const c=G.cam,p=G.p;c.x+=(p.x-c.x)*Math.min(1,dt*8);c.y+=(p.y-30-c.y)*Math.min(1,dt*8)}
-function steer(e,dt,sp,seen){const a=seen?Math.atan2(G.p.y-e.y,G.p.x-e.x):flowAngle(e);if(a===null||a===undefined)return;e.ang=a;move(e,Math.cos(a)*sp*dt,Math.sin(a)*sp*dt);e.walk=(e.walk||0)+dt*(sp/18);e.moving=true}
+function steer(e,dt,sp,seen){const a=seen?Math.atan2(G.p.y-e.y,G.p.x-e.x):flowAngle(e);if(a===null||a===undefined)return;const sp2=sp*(e.slowT>0?.6:1);e.ang=a;move(e,Math.cos(a)*sp2*dt,Math.sin(a)*sp2*dt);e.walk=(e.walk||0)+dt*(sp2/18);e.moving=true}
 function updateEnemy(e,dt){
-  if(e.dead)return;threatDecay(e,dt);const p=G.p;e.tauntT=Math.max(0,(e.tauntT||0)-dt);e.markT=Math.max(0,(e.markT||0)-dt);e.brokenT=Math.max(0,(e.brokenT||0)-dt);e.exposedT=Math.max(0,(e.exposedT||0)-dt);e.statusT=Math.max(0,(e.statusT||0)-dt);if(e.stunT>0){e.stunT=Math.max(0,e.stunT-dt);e.moving=false;return}e.moving=false;e.cd-=dt;e.flash=Math.max(0,e.flash-dt);e.atkShow=Math.max(0,e.atkShow-dt);e.castT=Math.max(0,(e.castT||0)-dt);
+  if(e.dead)return;threatDecay(e,dt);const p=G.p;e.tauntT=Math.max(0,(e.tauntT||0)-dt);e.markT=Math.max(0,(e.markT||0)-dt);e.brokenT=Math.max(0,(e.brokenT||0)-dt);e.exposedT=Math.max(0,(e.exposedT||0)-dt);e.statusT=Math.max(0,(e.statusT||0)-dt);e.shatterT=Math.max(0,(e.shatterT||0)-dt);e.slowT=Math.max(0,(e.slowT||0)-dt);
+  if(e.rotT>0){e.rotT=Math.max(0,e.rotT-dt);const rotBy=G.players.find(x=>(x.id||0)===(e.rotBy||0)),was=G.p;if(rotBy)G.p=rotBy;e.hp-=e.rotRate*dt;e.flash=Math.max(e.flash||0,.05);if(e.hp<=0){killEnemy(e);G.p=was;return}G.p=was}
+  if(e.frozenT>0){e.frozenT=Math.max(0,e.frozenT-dt);e.moving=false;return}
+  if(e.stunT>0){e.stunT=Math.max(0,e.stunT-dt);e.moving=false;return}e.moving=false;e.cd-=dt;e.flash=Math.max(0,e.flash-dt);e.atkShow=Math.max(0,e.atkShow-dt);e.castT=Math.max(0,(e.castT||0)-dt);
   if(e.kx||e.ky){move(e,e.kx*dt,e.ky*dt);const dec=Math.pow(.005,dt);e.kx*=dec;e.ky*=dec;if(Math.abs(e.kx)+Math.abs(e.ky)<4){e.kx=0;e.ky=0}}
   const d=dist(e,p);if(d>1400&&!e.aware)return;
   const seen=d<560&&los(e,p);

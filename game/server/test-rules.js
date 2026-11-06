@@ -134,23 +134,55 @@ T.enter(gr);gr.ev.length=0;gt.dead=false;gt.hp=gt.maxHp*.2;gt.moving=true;gt.gor
 const dTrail=gDecals().length;T.goreTrail(gt,.05);
 ok(dTrail===1&&gDecals().length===1,'a wounded enemy drips once per interval');
 gt.hp=gt.maxHp;T.goreTrail(gt,1);ok(gDecals().length===1,'a healthy enemy leaves no trail');
-// Elements and reactions: all 40 characters carry one, lookups ignore order, and coverage is measured.
+// Elements and reactions: all 40 carry one, every row in the table has an effect, and each fires.
 const eNames=Object.keys(T.ELEMENT);
-ok(eNames.length===40,'all 40 characters have an element');
+const eRoster=Object.keys(T.ROSTER.hero).concat(Object.keys(T.ROSTER.villain));
+ok(eRoster.length===40&&eRoster.every(n=>T.ELEMENT[n]),'every character in the roster has an element');
+ok(eNames.length===40&&eNames.every(n=>eRoster.includes(n)),'the element table names no character the roster lacks');
 ok(eNames.every(n=>['burn','toxin','chill','shock','soak','void','bleed','holy'].includes(T.ELEMENT[n])),'every element is one of the eight in the design');
-ok(T.reactionOf('soak','shock')==='overload'&&T.reactionOf('shock','soak')==='overload','reaction lookup ignores which element came first');
-ok(T.reactionOf('shock','shock')===''&&T.reactionOf('burn','void')==='','the same element or an unrelated pair does not react');
+ok(T.REACTIONS.length===10&&Object.keys(T.REACT_FX).length===10,'every reaction row has an implemented effect');
 const eCov=T.reactionCoverage();
-ok(eCov.total===780&&eCov.covered===219,'reaction coverage is pinned at '+eCov.covered+' of '+eCov.total+' character pairs');
-ok(eCov.same.length===92,'same-element pairs can never react: '+eCov.same.length);
-// Only the reaction in the table fires: Burn plus Toxin is Inferno, which is not built yet, so nothing stuns.
-const rr2=mk(),bn=s.createRoom(rr2,'Pyromancer',null,'Burn'),tx=s.addPlayer(rr2,'Ranger',null,'Toxin');T.enter(rr2);G().enemies=[];
-const be=T.spawnMob(0,{x:G().safe.x+300,y:G().safe.y},false);be.aware=true;be.hp=be.maxHp=10000;be.statusT=0;be.statusBy=0;
-G().p=bn;T.hitEnemy(be,10,0,0);const eFirst=be.statusType;G().p=tx;T.hitEnemy(be,10,0,0);
-ok(eFirst==='burn'&&be.statusType==='toxin'&&!be.stunT,'an unimplemented reaction sets the status instead of faking one');
-// Overload still fires, and pays rage to both players who built it.
-const ovr=mk(),f1=s.createRoom(ovr,'Firefighter',null,'Soak'),f2=s.addPlayer(ovr,'Prodigy',null,'Shock');T.enter(ovr);G().enemies=[];
-const oe=T.spawnMob(0,{x:G().safe.x+300,y:G().safe.y},false);oe.aware=true;oe.hp=oe.maxHp=10000;oe.statusT=0;oe.statusBy=0;
-f1.rage=0;f2.rage=0;G().p=f1;T.hitEnemy(oe,10,0,0);G().p=f2;T.hitEnemy(oe,10,0,0);
-ok(oe.stunT>0&&f1.rage>0&&f2.rage>0,'Overload stuns and pays rage to both players');
+ok(eCov.total===780&&eCov.byElement===259&&eCov.byResonance===92&&eCov.covered===351,'coverage is pinned: '+eCov.covered+' of '+eCov.total+' ('+eCov.byElement+' by element, '+eCov.byResonance+' by resonance)');
+const rx2=(ca,cb)=>{const r=mk(),a=s.createRoom(r,ca,null,'A'),b=s.addPlayer(r,cb,null,'B');T.enter(r);G().enemies=[];return[a,b]};
+const rxBy=()=>G().safe.x+300;
+const rxFoe=(x,y)=>{const e=T.spawnMob(0,{x,y},false);e.aware=true;e.hp=e.maxHp=10000;e.statusT=0;e.statusBy=0;e.cd=99;e.sp=0;e.kx=e.ky=0;return e};
+const rxPair=(a,b,e)=>{G().p=a;T.hitEnemy(e,10,0,0);G().p=b;T.hitEnemy(e,10,0,0)};
+// Inferno: burns the neighbours too.
+{const [a,b]=rx2('Pyromancer','Ranger'),x=rxBy(),y=G().safe.y,e=rxFoe(x,y),n=rxFoe(x+90,y);
+ G().enemies=[e,n];rxPair(a,b,e);ok(e.statusT===0&&n.hp<10000,'Inferno splashes onto a neighbour')}
+// Shatter: armour off for four seconds.
+{const [a,b]=rx2('Pyromancer','Chronomancer'),x=rxBy(),e=rxFoe(x,G().safe.y);
+ G().enemies=[e];rxPair(a,b,e);ok(e.statusT===0&&Math.abs(e.shatterT-4)<1e-9,'Shatter strips armour for four seconds')}
+// Freeze: a normal enemy is locked, a boss is only slowed.
+{const [a,b]=rx2('Chronomancer','Firefighter'),x=rxBy(),e=rxFoe(x,G().safe.y);
+ G().enemies=[e];rxPair(a,b,e);ok(e.frozenT>0,'Freeze locks a normal enemy')}
+{const [a,b]=rx2('Chronomancer','Firefighter'),x=rxBy(),e=rxFoe(x,G().safe.y);
+ e.kind='boss';e.hp=e.maxHp=40000;G().enemies=[e];rxPair(a,b,e);ok(e.frozenT===undefined&&e.slowT>0,'Freeze only slows a boss')}
+// Rot: missing life burns away over five seconds.
+{const [a,b]=rx2('Ranger','Hero Shadow'),x=rxBy(),e=rxFoe(x,G().safe.y);
+ e.hp=e.maxHp*.5;G().enemies=[e];rxPair(a,b,e);ok(Math.abs(e.rotT-5)<1e-9&&e.rotRate>0,'Rot starts a five second burn on missing life');
+ const hp0=e.hp;T.updateEnemy(e,.5);T.updateEnemy(e,.5);ok(e.hp<hp0,'Rot keeps eating life')}
+// Collapse: pulls the neighbours in.
+{const [a,b]=rx2('Hero Shadow','Detective'),x=rxBy(),y=G().safe.y,e=rxFoe(x,y),n=rxFoe(x+140,y);
+ G().enemies=[e,n];const before=Math.hypot(n.x-e.x,n.y-e.y);rxPair(a,b,e);
+ ok(Math.hypot(n.x-e.x,n.y-e.y)<before,'Collapse drags nearby enemies together')}
+// Purge: heals the party.
+{const [a,b]=rx2('Vigilante','Guardian'),x=rxBy(),e=rxFoe(x,G().safe.y);
+ a.x=x-40;a.y=G().safe.y;b.x=x-60;b.y=G().safe.y;b.hp=b.s.maxHp*.5;G().enemies=[e];const hp0=b.hp;
+ rxPair(a,b,e);ok(b.hp>hp0,'Purge heals nearby allies')}
+// Eclipse: stuns everything nearby.
+{const [a,b]=rx2('Guardian','Hero Shadow'),x=rxBy(),y=G().safe.y,e=rxFoe(x,y),n=rxFoe(x+150,y);
+ G().enemies=[e,n];rxPair(a,b,e);ok(n.stunT>0,'Eclipse stuns everything near the target')}
+// Cauterise and Frostbite: the two Bleed rows.
+{const [a,b]=rx2('Vigilante','Pyromancer'),x=rxBy(),y=G().safe.y,e=rxFoe(x,y),n=rxFoe(x+60,y);
+ G().enemies=[e,n];rxPair(a,b,e);ok(e.statusT===0&&n.hp<10000,'Cauterise burns the neighbours')}
+{const [a,b]=rx2('Vigilante','Chronomancer'),x=rxBy(),e=rxFoe(x,G().safe.y);
+ G().enemies=[e];rxPair(a,b,e);ok(Math.abs(e.slowT-3)<1e-9,'Frostbite slows for three seconds')}
+// Overload still stuns and now jumps.
+{const [a,b]=rx2('Firefighter','Detective'),x=rxBy(),y=G().safe.y,e=rxFoe(x,y),n=rxFoe(x+140,y);
+ G().enemies=[e,n];a.rage=0;b.rage=0;rxPair(a,b,e);ok(e.stunT>0&&n.hp<10000&&a.rage>0&&b.rage>0,'Overload stuns, jumps and pays rage to both')}
+// Same element from two players resonates instead of reacting.
+{const [a,b]=rx2('Detective','Inventor'),x=rxBy(),e=rxFoe(x,G().safe.y);
+ G().enemies=[e];G().fx=[];rxPair(a,b,e);
+ ok(e.statusT===4&&!e.stunT&&G().fx.some(f=>f.k==='ring'&&f.c==='#8fd6ff'),'two players with the same element resonate')}
 console.log('\n'+n+' checks passed');;
