@@ -43,6 +43,8 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 
 Touch controls appear on phones and tablets.
 
+At the safehouse, open the menu and choose **Weapons** to upgrade an owned weapon. The two upgrades cost 80 and 180 gold; the menu compares their effects before purchase. Necromancer, Void Empress and Toxin Alchemist upgrade their signature moves instead.
+
 ## How online play works
 
 The server runs the game rules. Browsers send only what the player presses, and draw what the server reports.

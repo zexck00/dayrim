@@ -1,6 +1,6 @@
 # Combat depth review: C-01–C-16
 
-Reviewed on `combat-depth-fixes` after the combat follow-up fixes. This is a follow-up inventory, not a balance sign-off. The latest full server run passed 283 rule checks, 42 networking checks and the script that exercises all 780 distinct-character reaction pairs. The [bot trial notes](playtests/2026-11-06-party-bot-smoke.md) distinguish invalid early runs from a later error-free but incomplete four-player trial. These checks do not replace a four-player, touch-device or human balance test. C-07–C-09 are not assigned in the task list.
+Reviewed on `combat-depth-fixes` after the combat follow-up fixes. This is a follow-up inventory, not a balance sign-off. The latest full server run passed 312 rule checks, 42 networking checks and the script that exercises all 780 distinct-character reaction pairs. The [bot trial notes](playtests/2026-11-06-party-bot-smoke.md) distinguish invalid early runs from a later error-free but incomplete four-player trial. These checks do not replace a four-player, touch-device or human balance test. C-07–C-09 are not assigned in the task list.
 
 ## Prioritized findings addressed
 

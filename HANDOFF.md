@@ -8,7 +8,7 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 
 | Area | Status |
 |---|---|
-| Latest rules and networking suite | 283 rule checks, 42 networking checks and all 780 reaction pairs passed after the combat feedback work |
+| Latest rules and networking suite | 312 rule checks, 42 networking checks and all 780 reaction pairs passed after the weapon upgrade work |
 | Server, rooms, saves, abuse limits | Tested over real WebSockets (`game/server/test.js`) |
 | Browser checks | Automated checks cover two tabs, solo/online G actions, a checkpoint boon, viewport layout, weapon icons and the optional 3D layer; not a substitute for human playtests |
 | Full stage to boss kill and next stage online | Tested by a bot, one player |
@@ -28,7 +28,7 @@ See [Combat depth review](docs/COMBAT_DEPTH_REVIEW.md) for C-01–C-16 findings 
 Nothing here is promised, and the owner sets priorities.
 
 - **Party runner:** `node game/tools/party-bot.js --url ws://127.0.0.1:8080/ws --players 4 --seconds 180` drives real clients and reports outcomes. Use an isolated server and data directory; one-, two- and four-bot samples cleared Stage 1; the three-bot sample timed out and none reached Stage 3. Further seeds and human playtests remain open.
-- **Co-op balance:** `PARTY_SCALE` in `game.js` holds provisional scaling; no one-to-four-player party-bot or human balance results are recorded. The ×8 four-player damage candidate can be punishing.
+- **Co-op balance:** `PARTY_SCALE` in `game.js` holds provisional scaling; initial one-to-four-player bot samples exist, but no human balance results are recorded. The ×8 four-player damage candidate can be punishing.
 - **Solo balance:** the latest single bot sample suggests Necromancer may struggle; random results vary, and the bot does not use team abilities, checkpoint boons or weapon upgrades.
 - **Asset villains:** walking, dodge, pill and heal poses need video from the owner. They are built from idle frames for now.
 - **Only 3 villains use videos:** the owner said "for now". The others still use the code-drawn rig.
@@ -111,7 +111,7 @@ So anything belonging to one player goes on the player object (`p.combo`, `p.ult
 - Every character has a role aura. G activates Taunt, Break, Mark, Mend Link or Rescue Dash. Rushers, brutes and healers have initial behavior; brutes can be exposed after a dodge and healer casts can be interrupted. Break Strike and all listed elemental reactions are implemented; other elemental pairs use resonance.
 - Gore (C-30) is code-only and needs Z's review: blood volume scales with damage as a share of the target's life, heavy hits and criticals add chunks, kills leave a pool, wounded enemies under 35% life leave a trail, and minion blood takes its family colour. Decals carry their own colour and the client caps them at `GORE.cap`; the cap matters because unbounded spray used to evict pools within seconds. Wound trails are throttled by `GORE.trailT`. Drop marks are probabilistic (`GORE.mark`) so spray does not carpet the ground.
 - Haste (C-29) shortens cooldowns. Levels and trained Agility shorten weapon, spell, heal, dash, team-ability and kit-special cooldowns through one `cdMul`, floored at 60% of base; passive regeneration and potion timers are deliberately excluded. Needs Z review and a balance pass.
-- Boss-gate checkpoints offer one personal dodge boon. Boons persist with the current character run and saves; the team still needs to decide and test the exact end-of-run reset. Safehouse weapon upgrades widen melee and ranged areas; video-based signature-move villains cannot upgrade those moves yet.
+- Boss-gate checkpoints offer one personal dodge boon. Boons persist with the current character run and saves; the team still needs to decide and test the exact end-of-run reset. Safehouse upgrades cost 80 and 180 gold. Ordinary weapons retain their melee, gun and spell progression; the three video-based villains can upgrade signature-move damage to 1.2× and 1.5×. Upgrades persist in `weaponUpgrades`, and the Weapons menu previews effects from the same tables the rules use. Short attack pulses are sent as visual events. Ultimate damage is unchanged.
 - The game fills the browser window. Menu → Skills describes the G ability and offers any pending boon; Menu → Weapons handles upgrades; Return to main menu leaves an online room. The optional 3D effects toggle is visual only. No background music is implemented, and final music and SFX are Z’s responsibility.
 - A local-network playtest server was verified at `http://192.168.1.10:8080` on 2026-11-06. It is a temporary process on this machine, not a public deployment or a stable address. The server caches the built page at startup; after changes, rebuild and restart it only when players will not be interrupted. Progress uses `game/data/` by default and must not be committed.
 
