@@ -264,14 +264,27 @@ function spawnZones(n){const zs=[],SEP=320;for(let i=0;i<n;i++){let o=null;for(l
 function spawnCarries(n){const items=[];for(let i=0;i<n;i++){const o=propSpot(300,800);items.push(addProp('canister',o.x,o.y,11))}const d=propSpot(600,1300);G.obj.drop=addProp('drop',d.x,d.y,46);G.obj.items=items}
 function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx=G.gate.x;e.ty=G.gate.y;G.obj.escort=e}
 /* A hold step either lights each zone in turn, or needs them all held at once. */
-function holdStep(st,dt){const zs=G.obj.zones||[];if(st.simul){const held=zs.filter(z=>playersNear(z,60)).length;st.have=held;st.holdT=held>=st.need?(st.holdT||0)+dt:0;if(st.holdT>=st.t){zs.forEach(z=>z.done=true);st.have=st.need}}
-  else{for(const z of zs){if(!z.done&&playersNear(z,60))z.t=Math.min(st.t,(z.t||0)+dt);if(z.t>=st.t)z.done=true}st.have=zs.filter(z=>z.done).length}}
+/* A hold step either lights each zone in turn, or needs them all held at once.
+   A party too small to split falls back to the timed version from the design: one
+   zone at a time, held longer, and it stays down once it is lit. */
+const HOLD_ALONE_T=8;
+/* How long the zone on screen needs to be held right now, for the ring on the ground. */
+const zoneNeed=()=>{const o=G.obj,st=o&&o.steps[o.i];return (st&&(st.aloneT||st.t))||2.5};
+function holdStep(st,dt){
+  const zs=G.obj.zones||[],split=st.simul&&partySize()>=st.need;
+  st.split=!!split;
+  if(split){const held=zs.filter(z=>playersNear(z,60)).length;st.holdT=held>=st.need?(st.holdT||0)+dt:0;st.met=st.holdT>=st.t;st.have=held;
+    for(const z of zs){z.t=st.met?st.t:st.holdT;if(st.met)z.done=true}}
+  else{const need=st.simul?HOLD_ALONE_T:st.t;
+    st.aloneT=need;
+    for(const z of zs){if(!z.done&&playersNear(z,60))z.t=Math.min(need,(z.t||0)+dt);if((z.t||0)>=need)z.done=true}
+    st.have=zs.filter(z=>z.done).length}}
 /* The escort only moves while somebody stays close. */
 function escortStep(st,dt){const e=G.obj.escort;if(!e)return;if(playersNear(e,220)){const dx=e.tx-e.x,dy=e.ty-e.y,d=Math.hypot(dx,dy)||1;if(d>30){e.x+=dx/d*Math.min(54*dt,d);e.y+=dy/d*Math.min(54*dt,d);e.t+=dt}else e.done=true}st.have=e.done?1:0}
 /* Anything dropped by a player who left, or a stale carrier id, is released. */
 function releaseCarries(){for(const c of (G.obj&&G.obj.items)||[])if(c.by&&!G.players.some(q=>(q.id||0)===c.by&&q.carry===c))c.by=0}
 /* A wipe sends the party back to the last finished step: finished steps stay, the current one starts over. */
-function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false});st.holdT=0;st.have=0}
+function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false});st.holdT=0;st.have=0;st.met=false}
   else if(st.kind==='carry'){(o.items||[]).forEach(c=>{c.done=false;c.by=0});st.have=0;G.players.forEach(p=>p.carry=null)}
   else if(st.kind==='escort'&&o.escort){o.escort.x=G.safe.x+90;o.escort.y=G.safe.y+70;o.escort.done=false;o.escort.t=0;st.have=0}}
 function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;
@@ -279,7 +292,8 @@ function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if
   else if(st.kind==='hold')holdStep(st,dt||0);
   else if(st.kind==='carry'){releaseCarries();st.have=(o.items||[]).filter(c=>c.done).length}
   else if(st.kind==='escort')escortStep(st,dt||0);
-  if(st.have<st.need)return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
+  /* A step is done when its own rule says so. Hold steps need the timer, not just bodies on the plates. */
+  if(!(st.met!==undefined?st.met:st.have>=st.need))return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
 function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
 function enterStage(n,keepKills){

@@ -404,6 +404,35 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  ok(plain>0&&Math.abs(linked/plain-1.4)<1e-9,'a Duo link multiplies the ultimate damage by 1.4: '+Math.round(plain)+' to '+Math.round(linked));
  const mob={kind:'rival',r:13,armor:0};ok(Math.abs(T.ultDmgFor(mob,pa,.4)/T.ultDmgFor(mob,pa,0)-1.4)<1e-9,'and the same on ordinary enemies');
  ok(Math.abs(T.bossUltDamage(bs,1)-bs.maxHp*.04/4)<1e-9,'boss ultimate damage is four percent divided by party size, before the link bonus')}
+// Split objectives hand a party too small to split the design's timed version instead.
+{const atStage=(n,chars)=>{const rr=mk(),list=[s.createRoom(rr,chars[0],null,'F'+n+chars.length)];
+  for(let i=1;i<chars.length;i++)list.push(s.addPlayer(rr,chars[i],null,'F'+n+chars.length+i));
+  T.enter(rr);const p=list[0];p.maxStage=10;p.nearSafe=true;s.hostAction(rr,p,'travel',String(n));T.enter(rr);
+  T.G.enemies=[];T.G.killsStage=999;T.G.spawnT=1e9;for(const q of T.G.players)q.inv=1e9;const step=(k=1)=>{for(let i=0;i<k;i++){s.step(rr,1/30);rr.ev.length=0}};
+  step(2);return {rr,list,p,step}};
+ // Solo, two plates: the fallback, one plate at a time for eight seconds each.
+ {const {list,p,step}=atStage(6,['Detective']);const o=T.G.obj,st=o.steps[o.i],zs=o.zones;
+  ok(st.kind==='hold'&&st.simul&&!st.split&&st.aloneT===T.HOLD_ALONE_T,'one player cannot split a two plate step, so it uses the timed version');
+  const stand=(z,n)=>{for(let i=0;i<n;i++){p.x=z.x;p.y=z.y;step(1)}};
+  stand(zs[0],90);ok(!zs[0].done,'three seconds is not enough on the solo version');
+  stand(zs[0],170);ok(zs[0].done&&zs[0].t>=T.HOLD_ALONE_T,'eight seconds lights the plate and it stays down');
+  stand(zs[1],260);ok(T.G.obj.done&&T.G.gate.open,'the solo player finishes the two plate objective and the gate opens')}
+ // Solo, three shrines: same fallback, and it also has to finish.
+ {const {p,step}=atStage(9,['Detective']);const o=T.G.obj,st=o.steps[o.i],zs=o.zones;
+  ok(zs.length===3&&!st.split&&st.aloneT===T.HOLD_ALONE_T,'a solo player lights three shrines one at a time');
+  for(const z of zs){for(let i=0;i<260;i++){p.x=z.x;p.y=z.y;step(1)}}
+  ok(T.G.obj.done&&T.G.gate.open,'three shrines are finishable alone')}
+ // Two players still split two plates at once, and releasing one resets the hold.
+ {const {list,step}=atStage(6,['Detective','Firefighter']);const o=T.G.obj,st=o.steps[o.i],zs=o.zones;
+  ok(st.split&&st.aloneT===undefined,'two players for two plates keep the simultaneous version');
+  const put=(a,b)=>{list[0].x=zs[0].x;list[0].y=zs[0].y;list[1].x=zs[1].x;list[1].y=zs[1].y};
+  put();step(60);ok(!T.G.obj.done,'a partial hold is not the objective');
+  for(let i=0;i<40;i++){put();step(1)}
+  ok(T.G.obj.done&&T.G.gate.open,'two players holding both plates finish it in three seconds')}
+ // Two players on three shrines is too few to split, so it falls back.
+ {const {step}=atStage(9,['Detective','Firefighter']);const o=T.G.obj,st=o.steps[o.i];
+  ok(T.G.obj.zones.length===3&&!st.split&&st.aloneT===T.HOLD_ALONE_T,'two players on three shrines fall back to one at a time')}}
 console.log('\n'+n+' checks passed');
+
 
 ;;;
