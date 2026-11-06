@@ -103,6 +103,22 @@ So anything belonging to one player goes on the player object (`p.combo`, `p.ult
 
 **Add a message type:** handle it in `handle` in `index.js` and `netMessage` in `net.js`. The server limit is 4 KB per message and 200 per second.
 
+## Sounds from the owner
+
+1. Put the original in `ASSETS/audio/` and never edit it.
+2. Add a line to `game/tools/make_sfx.sh` that writes a small copy to `game/sprites/sfx/`. AAC (`.m4a`) works in every major browser, and MP3 can be copied as is. Run `sh tools/make_sfx.sh` from `game/`. It needs macOS.
+3. List it in `SOUND_CLIPS` in `game/tools/build.py`, then play it with `playSound('name')` in `ui.js`. Music works like `menuMusic`.
+4. Every embedded sound makes the page bigger, as the 63-second menu loop adds about 1 MB. Long music should move to loading as needed (D-03, D-61).
+
+Browsers allow sound only after the player clicks or presses a key, so nothing plays on the first screen until then.
+
+**Where each sound is wired** (all in `game/src/ui.js` unless noted):
+- Footsteps: `footsteps()`, picked by the ground under each player. `STEP_OF` maps ground type to sound set. Ground 3 is water and 4 is wood, made by `pond()` in `genCity` (`game.js`).
+- Announcer: `announce(name, priority)`. One voice at a time, and a higher priority interrupts. Combo tiers go through `announceTier`, boss and down lines through `soundWatch()`, and start game through the Start buttons and `netJoined`.
+- Rule sounds with recordings: `ASSET_SFX` and `playAsset`, hooked from `sfx()` in `game.js`. `slash` uses melee, `pull` uses heal, and `rivalDown` uses the hero or villain down line.
+- Music: `menuMusic`, `gameAmbience` and `setBossMusic`.
+- `ASSETS/audio/villian:hero dead.wav` has a colon in its name, which Windows can't check out. Rename it if anyone works on Windows, and update `make_sfx.sh` to match.
+
 ## Balance bot
 
 The bot isn't in the page by default. Paste `tools/balance-bot.js` into the browser console on the game page, then run:

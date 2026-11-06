@@ -44,7 +44,7 @@ function netMessage(m){
   if(m.t==='host'){net.host=m.host;if(netIsHost())addLog('You are now the room host.');if(G.mode==='clear')setMode('clear');return}
   if(m.t==='left'){if(net.inRoom){net.err='This room closed.';netExit()}return}
 }
-function netJoined(m){
+function netJoined(m){if(typeof announce==='function')announce('start',2);
   net.lobby=false;net.you=m.you;net.host=m.host;net.code=m.code;net.err='';net.down=false;net.retry=0;net.wantRoom=null;net.seq=0;net.pending=[];net.bossId=0;
   if(!net.inRoom||!G.mp){G=baseState(false);G.mp=true;G.log=[]}
   const me=freshPlayer(m.char);me.id=m.you;me.pname=net.name;G.p=me;G.players=[me];me.x=m.x;me.y=m.y;recalc();net.inRoom=true;
