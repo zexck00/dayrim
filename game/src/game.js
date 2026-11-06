@@ -722,7 +722,7 @@ function ultHit(u,n){
   shake(12);tone(70,28,.5,'sawtooth',.09);noiseHit(.45,.13);
   if(n===0){G.shots=G.shots.filter(s=>s.from!=='e');G.hazards=(G.hazards||[]).filter(h=>h.from!=='e')}
   G.fx.push({k:'nova',x:p.x,y:p.y-30,r:ULT_RADIUS*(.45+n*.28),t:.5,m:.5,c:u.col,a:rnd(TAU)});
-  for(const e of G.enemies){if(e.dead||dist(e,p)>ULT_RADIUS)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);G.fx.push({k:'pillar',x:e.x,y:e.y,t:.4,m:.4,c:u.col,w:e.r*1.5});glowP(e.x,e.y-30,u.col,8,190,.5,4);hitEnemy(e,ultDmgFor(e,p,lb),a,260)}
+  for(const e of G.enemies){if(e.dead||dist(e,p)>ULT_RADIUS)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);G.fx.push({k:'pillar',x:e.x,y:e.y,t:.4,m:.4,c:u.col,w:e.r*1.5});glowP(e.x,e.y-30,u.col,8,190,.5,4);const hp=e.hp;hitEnemy(e,ultDmgFor(e,p,lb),a,260);if(G.link&&G.link.ids.includes(p.id)&&!e.dead)G.link.hits.push({e,p,base:(hp-e.hp)/(1+lb),bonus:lb})}
   for(const c of G.npcs)if(!c.dead&&dist(c,p)<ULT_RADIUS)hitNpc(c,d,Math.atan2(c.y-p.y,c.x-p.x),true);
 }
 /* ---------- Linked ultimates ---------- */
@@ -732,6 +732,8 @@ function linkTier(n){let t=null;for(const c of LINK_TIERS)if(n>=c[0]&&(!t||c[0]>
 const linkBonus=p=>{const L=G.link;return L&&L.t>0&&L.ids.indexOf(p.id)>=0?L.dmg:0};
 function linkClearFire(){G.shots=G.shots.filter(s=>s.from!=='e');G.hazards=(G.hazards||[]).filter(h=>h.from!=='e')}
 function linkEffect(L,t){
+  /* Credit earlier hits when another player joins after they landed. */
+  const me=G.p;for(const h of L.hits){if(h.e.dead||h.bonus>=t[1])continue;G.p=h.p;const dmg=h.base*(t[1]-h.bonus);h.bonus=t[1];h.e.hp-=dmg;threatAdd(h.e,h.p.id||0,100*dmg/Math.max(1,h.e.maxHp));bossPhaseCheck(h.e);if(h.e.hp<=0)killEnemy(h.e)}G.p=me;
   if(L.ids.length>=2)linkClearFire();
   if(L.ids.length>=3)for(const q of G.players)q.inv=Math.max(q.inv,ULT_LEN);
   if(L.ids.length>=4){for(const q of G.players)q.hp=q.s.maxHp;
@@ -748,7 +750,7 @@ function openLink(p){
     if(t&&t[1]>L.dmg){L.dmg=t[1];L.name=t[2];linkEffect(L,t)}
     return
   }
-  G.link={t:LINK_WINDOW,ids:[p.id],dmg:0,name:''};
+  G.link={t:LINK_WINDOW,ids:[p.id],dmg:0,name:'',hits:[]};
   for(const q of G.players)if(q.id!==p.id)text(q.x,q.y-118,'LINK NOW!','#8fe6ff',true);
 }
 function tickLink(dt){const L=G.link;if(!L)return;L.t-=dt;if(L.t<=0)G.link=null}
