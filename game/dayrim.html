@@ -924,12 +924,26 @@ function wearBest(){const p=G.p;let n=0;SLOTS.forEach(sl=>{p.bag.filter(i=>i.slo
 function text(x,y,s,c,big){G.texts.push({x:x+rnd(-8,8),y,s,c,t:.8,big})}
 function burst(x,y,c,n,sp=120){for(let i=0;i<n;i++){const a=rnd(TAU),v=rnd(sp*.3,sp);G.fx.push({k:'p',x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:rnd(.25,.55),m:.55,c,s:rnd(1.5,3.5)})}}
 function shake(v){if(!reduced)G.shake=Math.min(12,G.shake+v)}
-const ELEMENT={Firefighter:'soak','Deep Siren':'soak',Detective:'shock',Inventor:'shock',Prodigy:'shock',Cyborg:'shock',Puppeteer:'shock','Mecha Tyrant':'shock','Cyber Priest':'shock'};
+/* Each character's element, from GAME_DESIGN section 12. Reactions need two different elements from two different players. */
+const ELEMENT={Detective:'shock',Vigilante:'bleed',Guardian:'holy',Ranger:'toxin',Inventor:'shock',Firefighter:'soak',Shadow:'void',Prodigy:'shock',Sage:'holy',Patriot:'holy',Phantom:'void',Pyromancer:'burn',Chronomancer:'chill',Beastmaster:'bleed',Voidwalker:'void',Exorcist:'holy','Gravity Mage':'void',Druid:'toxin',Cyborg:'shock',Illusionist:'chill',Necromancer:'void','Blood Reaper':'bleed','Toxin Alchemist':'toxin','Soul Stealer':'void','Shadow Monarch':'bleed',Puppeteer:'shock','Void Empress':'void','Plague Doctor':'toxin','Mad Scientist':'shock','Mirror Jester':'bleed','Demon Knight':'burn','Gravity Weaver':'void','Mecha Tyrant':'shock','Chrono Thief':'chill','Swarm Queen':'toxin','Ice Archmage':'chill','Deep Siren':'soak','Ash Shaman':'burn','Soul Forger':'burn','Cyber Priest':'holy'};
+/* Section 5's reaction table. Order does not matter: the lookup sorts the two elements. */
+const REACTIONS=[{a:'burn',b:'toxin',id:'inferno',n:'INFERNO'},{a:'burn',b:'chill',id:'shatter',n:'SHATTER'},{a:'shock',b:'soak',id:'overload',n:'OVERLOAD'},{a:'chill',b:'soak',id:'freeze',n:'FREEZE'},{a:'toxin',b:'void',id:'rot',n:'ROT'},{a:'void',b:'shock',id:'collapse',n:'COLLAPSE'},{a:'bleed',b:'holy',id:'purge',n:'PURGE'},{a:'holy',b:'void',id:'eclipse',n:'ECLIPSE'}];
+const REACT_NAME={},REACT_PAIR={};
+REACTIONS.forEach(r=>{REACT_NAME[r.id]=r.n;REACT_PAIR[[r.a,r.b].sort().join('+')]=r.id});
+const reactionOf=(a,b)=>(a&&b&&a!==b)?(REACT_PAIR[[a,b].sort().join('+')]||''):'';
+const REACTION_RAGE=12;
+/* Implemented effects. An id missing here simply does not fire yet, so a half-built reaction never fakes one. */
+const REACT_FX={overload:e=>{e.statusT=0;e.stunT=e.kind==='boss'?0:1;return G.players.length===1?1.15:1.3}};
+/* Both players who built the reaction earn rage for it. */
+function reactRage(e,p){const other=G.players.find(q=>(q.id||0)===(e.statusBy||0))||p,me=G.p;for(const q of new Set([other,p])){if(!q)continue;G.p=q;addRage(REACTION_RAGE)}G.p=me}
+/* How much of the roster can actually react together. Same-element pairs can never react, so they are counted apart. */
+function reactionCoverage(){const names=Object.keys(ELEMENT),miss=[],same=[];for(let i=0;i<names.length;i++)for(let j=i+1;j<names.length;j++){const a=names[i],b=names[j],ea=ELEMENT[a],eb=ELEMENT[b];if(ea===eb){same.push([a,b]);continue}if(!reactionOf(ea,eb))miss.push([a,b])}const total=names.length*(names.length-1)/2;return{total,covered:total-miss.length-same.length,missing:miss,same,total40:total}}
 function expose(e,duration=2){if(e.dead)return;e.exposedT=Math.max(e.exposedT||0,duration);text(e.x,e.y-100,'OPEN','#ffe27a',true)}
 function hitEnemy(e,base,ang,kb,heavy=false){
   if(e.dead)return;const p=G.p;let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
   if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
-  const el=ELEMENT[p.char],prev=e.statusType;if(el&&e.statusT>0&&prev&&prev!==el&&(G.players.length===1||(e.statusBy||0)!==(p.id||0))){base*=G.players.length===1?1.15:1.3;e.statusT=0;e.stunT=e.kind==='boss'?0:1;text(e.x,e.y-110,'OVERLOAD','#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'})}else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
+  const el=ELEMENT[p.char],prev=e.statusType,rid=(el&&e.statusT>0&&prev&&prev!==el&&(G.players.length===1||(e.statusBy||0)!==(p.id||0)))?reactionOf(prev,el):'';
+  if(rid&&REACT_FX[rid]){base*=REACT_FX[rid](e,p);text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p)}else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
   base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),block=e.guarding?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
   e.hp-=d;e.flash=.11;e.aware=true;threatAdd(e,p.id||0,100*d/Math.max(1,e.maxHp));if(e.kind==='boss')e.recoil=.16;const res=e.kind==='boss'?.15:1;e.kx+=Math.cos(ang)*kb*res;e.ky+=Math.sin(ang)*kb*res;
   text(e.x,e.y-(e.kind==='boss'?e.ah*.7:66),Math.round(d)+(crit?'!':''),crit?'#ffd86b':'#fff',crit);if(crit||(e.exposedT||0)>0)G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:e.r*1.6,t:.22,m:.22,c:crit?'#ffd86b':'#f2ecd8'});goreSpray(e,ang,d/Math.max(1,e.maxHp),crit);burst(e.x,e.y-20,'#f0805c',crit?4:1);if(crit||heavy)goreChunks(e,ang,crit?2:1);

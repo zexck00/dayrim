@@ -134,4 +134,23 @@ T.enter(gr);gr.ev.length=0;gt.dead=false;gt.hp=gt.maxHp*.2;gt.moving=true;gt.gor
 const dTrail=gDecals().length;T.goreTrail(gt,.05);
 ok(dTrail===1&&gDecals().length===1,'a wounded enemy drips once per interval');
 gt.hp=gt.maxHp;T.goreTrail(gt,1);ok(gDecals().length===1,'a healthy enemy leaves no trail');
-console.log('\n'+n+' checks passed');
+// Elements and reactions: all 40 characters carry one, lookups ignore order, and coverage is measured.
+const eNames=Object.keys(T.ELEMENT);
+ok(eNames.length===40,'all 40 characters have an element');
+ok(eNames.every(n=>['burn','toxin','chill','shock','soak','void','bleed','holy'].includes(T.ELEMENT[n])),'every element is one of the eight in the design');
+ok(T.reactionOf('soak','shock')==='overload'&&T.reactionOf('shock','soak')==='overload','reaction lookup ignores which element came first');
+ok(T.reactionOf('shock','shock')===''&&T.reactionOf('burn','void')==='','the same element or an unrelated pair does not react');
+const eCov=T.reactionCoverage();
+ok(eCov.total===780&&eCov.covered===219,'reaction coverage is pinned at '+eCov.covered+' of '+eCov.total+' character pairs');
+ok(eCov.same.length===92,'same-element pairs can never react: '+eCov.same.length);
+// Only the reaction in the table fires: Burn plus Toxin is Inferno, which is not built yet, so nothing stuns.
+const rr2=mk(),bn=s.createRoom(rr2,'Pyromancer',null,'Burn'),tx=s.addPlayer(rr2,'Ranger',null,'Toxin');T.enter(rr2);G().enemies=[];
+const be=T.spawnMob(0,{x:G().safe.x+300,y:G().safe.y},false);be.aware=true;be.hp=be.maxHp=10000;be.statusT=0;be.statusBy=0;
+G().p=bn;T.hitEnemy(be,10,0,0);const eFirst=be.statusType;G().p=tx;T.hitEnemy(be,10,0,0);
+ok(eFirst==='burn'&&be.statusType==='toxin'&&!be.stunT,'an unimplemented reaction sets the status instead of faking one');
+// Overload still fires, and pays rage to both players who built it.
+const ovr=mk(),f1=s.createRoom(ovr,'Firefighter',null,'Soak'),f2=s.addPlayer(ovr,'Prodigy',null,'Shock');T.enter(ovr);G().enemies=[];
+const oe=T.spawnMob(0,{x:G().safe.x+300,y:G().safe.y},false);oe.aware=true;oe.hp=oe.maxHp=10000;oe.statusT=0;oe.statusBy=0;
+f1.rage=0;f2.rage=0;G().p=f1;T.hitEnemy(oe,10,0,0);G().p=f2;T.hitEnemy(oe,10,0,0);
+ok(oe.stunT>0&&f1.rage>0&&f2.rage>0,'Overload stuns and pays rage to both players');
+console.log('\n'+n+' checks passed');;
