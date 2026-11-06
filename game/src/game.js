@@ -509,7 +509,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){
   if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
   if(justBroke)bossGuard(e,BOSS_GUARD_GAIN.break);
   const el=ELEMENT[p.char],prev=e.statusType,rid=(el&&e.statusT>0&&prev&&prev!==el&&(G.players.length===1||(e.statusBy||0)!==(p.id||0)))?reactionOf(prev,el):'';
-  const same=(el&&prev&&el===prev&&(e.statusBy||0)!==(p.id||0));
+  const same=(el&&e.statusT>0&&prev&&el===prev&&(e.statusBy||0)!==(p.id||0));
   if(rid&&REACT_FX[rid]){base*=REACT_FX[rid](e,p,base);text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p);bossGuard(e,BOSS_GUARD_GAIN.reaction)}
   else if(same){base*=REACT_SAME;G.fx.push({k:'ring',x:e.x,y:e.y,r:6,to:36,t:.25,m:.25,c:'#8fd6ff'});e.statusT=4}
   else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
