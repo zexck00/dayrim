@@ -103,6 +103,15 @@ So anything belonging to one player goes on the player object (`p.combo`, `p.ult
 
 **Add a message type:** handle it in `handle` in `index.js` and `netMessage` in `net.js`. The server limit is 4 KB per message and 200 per second.
 
+## Sounds from the owner
+
+1. Put the original in `ASSETS/audio/` and never edit it.
+2. Add a line to `game/tools/make_sfx.sh` that writes a small copy to `game/sprites/sfx/`. AAC (`.m4a`) works in every major browser, and MP3 can be copied as is. Run `sh tools/make_sfx.sh` from `game/`. It needs macOS.
+3. List it in `SOUND_CLIPS` in `game/tools/build.py`, then play it with `playSound('name')` in `ui.js`. Music works like `menuMusic`.
+4. Every embedded sound makes the page bigger, as the 63-second menu loop adds about 1 MB. Long music should move to loading as needed (D-03, D-61).
+
+Browsers allow sound only after the player clicks or presses a key, so nothing plays on the first screen until then.
+
 ## Balance bot
 
 The bot isn't in the page by default. Paste `tools/balance-bot.js` into the browser console on the game page, then run:

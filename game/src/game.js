@@ -113,7 +113,7 @@ function clearSave(){try{localStorage.removeItem('dayrim-save')}catch(e){}}
 let ac=null,muted=false;
 const SFX={slash:[240,90,.07,'sawtooth'],hit:[150,70,.06,'square'],bolt:[540,170,.18,'sine'],loot:[660,1020,.16,'triangle'],hurt:[120,55,.16,'sawtooth'],level:[440,920,.35,'triangle'],dash:[280,720,.1,'sine'],pull:[90,300,.3,'sine'],boom:[110,40,.3,'square'],shot:[900,300,.06,'square']};
 function sfx(n){if(muted||!ac)return;try{const [a,b,d,t]=SFX[n],o=ac.createOscillator(),g=ac.createGain(),now=ac.currentTime;o.type=t;o.frequency.setValueAtTime(a,now);o.frequency.exponentialRampToValueAtTime(b,now+d);g.gain.setValueAtTime(.04,now);g.gain.exponentialRampToValueAtTime(.001,now+d);o.connect(g).connect(ac.destination);o.start(now);o.stop(now+d)}catch(e){}}
-function audioOn(){if(ac){if(ac.state==='suspended')ac.resume();return}try{ac=new (window.AudioContext||window.webkitAudioContext)();loadVoices()}catch(e){}}
+function audioOn(){if(ac){if(ac.state==='suspended')ac.resume();return}try{ac=new (window.AudioContext||window.webkitAudioContext)();loadVoices();if(typeof loadSounds==='function')loadSounds()}catch(e){}}
 
 /* ---------- Items ---------- */
 function makeItem(slot,ilvl,rar,owner){

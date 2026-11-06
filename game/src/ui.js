@@ -17,6 +17,7 @@ $('rack').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b
 $('wearbest').addEventListener('click',()=>wearBest());
 function returnToMenu(){writeSave();demoScene();setMode('title')}
 function setMode(m){
+  setTimeout(menuMusic,0);
   G.mode=m;mouse.left=mouse.right=false;touchHold.slash=false;touchHold.guard=false;keys.clear();const ov=$('ov'),c=$('card');
   $('touch').hidden=!(touchMode&&m==='play');
   if(m==='play'){ov.hidden=true;return}
@@ -40,8 +41,8 @@ function renderSelect(){
   (sv?'<div class="cont"><span>Saved: The '+esc(label(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
   '<div class="sel-body"><div class="roster">'+names.map((n,ri)=>'<button class="rc h" type="button" data-c="'+esc(n)+'" aria-pressed="'+(n===chosen)+'" aria-label="The '+esc(label(n))+', '+ARCH[ROSTER[selTab][n]].n+'"><i style="'+cardStyle(n)+'"></i><b>'+String(ri+1).padStart(2,'0')+'</b></button>').join('')+'</div>'+
   '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p><button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button>'+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
-  c.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{selTab=b.dataset.tab;renderSelect()});
-  c.querySelectorAll('.rc').forEach(b=>{b.onclick=()=>{chosen=b.dataset.c;confirmNew=false;try{localStorage.setItem('dayrim-char',chosen)}catch(e){}G.p.char=chosen;recalc();renderSelect()}});
+  c.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{selTab=b.dataset.tab;playSound(selTab==='hero'?'heroBrowse':'villainBrowse');renderSelect()});
+  c.querySelectorAll('.rc').forEach(b=>{b.onclick=()=>{chosen=b.dataset.c;playSound(factionOf(chosen)==='hero'?'heroBrowse':'villainBrowse');confirmNew=false;try{localStorage.setItem('dayrim-char',chosen)}catch(e){}G.p.char=chosen;recalc();renderSelect()}});
   $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();clearSave();newRun(chosen);addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
   const onl=$('online');if(onl)onl.onclick=()=>{audioOn();renderLobby()};
   const ct=$('cont');if(ct)ct.onclick=()=>{audioOn();loadRun(sv);addLog('Welcome back, '+esc(label(sv.char))+'.');setMode('play')};
@@ -89,7 +90,20 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
 addEventListener('keyup',ev=>keys.delete(ev.code));
 addEventListener('blur',()=>{keys.clear();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
-function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on'}
+function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';menuMusic()}
+/* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
+const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
+function loadSounds(){if(!ac)return;Object.entries(SOUND_CLIPS).forEach(([k,b64])=>{if(SOUND_BUF[k]||SOUND_WAIT[k]===-1)return;SOUND_WAIT[k]=SOUND_WAIT[k]||-1;try{const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k==='menu')menuMusic();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
+/* A browse sound cuts off the one before it, so clicking quickly through cards doesn't pile up */
+function playSound(k,v=.8){if(muted||!ac)return;const b=SOUND_BUF[k];if(!b){if(SOUND_WAIT[k]===-1)SOUND_WAIT[k]=performance.now();return}
+  try{if(browseSrc)browseSrc.stop()}catch(e){}try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;g.gain.value=v;s.connect(g).connect(ac.destination);s.start();browseSrc=s;(window.__soundLog=window.__soundLog||[]).push(k)}catch(e){}}
+/* Loops on the character and online screens, fades in and out, and respects Sound off */
+function menuMusic(){const want=!muted&&!!ac&&!!SOUND_BUF.menu&&!!G&&G.mode==='title';if(want===!!menuSrc)return;const now=ac?ac.currentTime:0;
+  if(want){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF.menu;s.loop=true;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(.5,now+1.2);s.connect(g).connect(ac.destination);s.start();menuSrc=s;menuGain=g}catch(e){}}
+  else{const s=menuSrc,g=menuGain;menuSrc=menuGain=null;try{g.gain.cancelScheduledValues(now);g.gain.setValueAtTime(g.gain.value,now);g.gain.linearRampToValueAtTime(0,now+.6);s.stop(now+.65)}catch(e){}}}
+/* Browsers only allow sound after the player interacts, so the first click or key turns it on */
+['pointerdown','keydown'].forEach(n=>addEventListener(n,()=>{audioOn();menuMusic()},{capture:true}));
 $('sound').onclick=ev=>{audioOn();toggleSound();ev.currentTarget.blur()};
 /* Fullscreen. Browsers keep Esc for themselves, so the game reacts to the change, not the key. */
 const SCREEN=$('screen'),canFullscreen=!!(SCREEN.requestFullscreen||SCREEN.webkitRequestFullscreen);
@@ -124,5 +138,5 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   requestAnimationFrame(tick)}
 if(matchMedia('(pointer:coarse)').matches)touchMode=true;
 demoScene();resize();setMode('title');
-window.__dayrim={get state(){return G},net,enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
+window.__dayrim={get state(){return G},net,get sound(){return{loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
 requestAnimationFrame(tick);

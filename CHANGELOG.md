@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Menu music on the character and online screens, which fades out when a game starts. Hero and villain browse sounds play when picking a card or switching tabs. All three are the owner's files from `ASSETS/audio`.
 - Return to menu button on the pause screen.
 - Fullscreen mode with a button and the L key. The cursor is replaced by a crosshair during play, and Esc brings it back.
 - HUD and on-screen buttons grow on taller screens, so they stay readable at Full HD and above.
