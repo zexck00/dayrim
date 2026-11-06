@@ -22,6 +22,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 
 ### Added
+- Mark, Mend Link and Rescue Dash show their current target beside the team ability.
 - Party and combat feedback now shows difficulty, Hope spent, retry location, revive target and range, chain time and bonuses, enemy status and Taunt duration, and citizen fear. The Skills menu explains reactions.
 - Solo players can trigger half-strength Resonance with a second hit on an active status.
 - A title poster before hero selection: the owner's poster art with the DAYRIM letters cut from the title art in the centre, slow drifting embers, and a small stone-lettered Play Game button (Enter also works) that leads to choosing a hero.
