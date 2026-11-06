@@ -43,9 +43,9 @@ function renderSelect(){
   '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p><button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button>'+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
   c.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{selTab=b.dataset.tab;playSound(selTab==='hero'?'heroBrowse':'villainBrowse');renderSelect()});
   c.querySelectorAll('.rc').forEach(b=>{b.onclick=()=>{chosen=b.dataset.c;playSound(factionOf(chosen)==='hero'?'heroBrowse':'villainBrowse');confirmNew=false;try{localStorage.setItem('dayrim-char',chosen)}catch(e){}G.p.char=chosen;recalc();renderSelect()}});
-  $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();clearSave();newRun(chosen);addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
+  $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();announce('start',2);clearSave();newRun(chosen);addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
   const onl=$('online');if(onl)onl.onclick=()=>{audioOn();renderLobby()};
-  const ct=$('cont');if(ct)ct.onclick=()=>{audioOn();loadRun(sv);addLog('Welcome back, '+esc(label(sv.char))+'.');setMode('play')};
+  const ct=$('cont');if(ct)ct.onclick=()=>{audioOn();announce('start',2);loadRun(sv);addLog('Welcome back, '+esc(label(sv.char))+'.');setMode('play')};
 }
 function renderMenu(){
   const c=$('card'),p=G.p,tabs=[['skills','Skills'],['gym','Gym'],['shop','Shop'],['travel','Travel']],safe=G.p.nearSafe;
@@ -94,7 +94,7 @@ function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'So
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
 const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
 function loadSounds(){if(!ac)return;Object.entries(SOUND_CLIPS).forEach(([k,b64])=>{if(SOUND_BUF[k]||SOUND_WAIT[k]===-1)return;SOUND_WAIT[k]=SOUND_WAIT[k]||-1;try{const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
-  ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k==='menu')menuMusic();else if(k==='ambA'||k==='ambB')gameAmbience();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
+  ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k.startsWith('an_')&&SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900){SOUND_WAIT[k]=0;announce(k.slice(3))}if(k==='menu')menuMusic();else if(k==='ambA'||k==='ambB')gameAmbience();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
 /* A browse sound cuts off the one before it, so clicking quickly through cards doesn't pile up */
 function playSound(k,v=.8){if(muted||!ac)return;const b=SOUND_BUF[k];if(!b){if(SOUND_WAIT[k]===-1)SOUND_WAIT[k]=performance.now();return}
   try{if(browseSrc)browseSrc.stop()}catch(e){}try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;g.gain.value=v;s.connect(g).connect(ac.destination);s.start();browseSrc=s;(window.__soundLog=window.__soundLog||[]).push(k)}catch(e){}}
@@ -108,9 +108,49 @@ function loopTrim(s,b){const d=b.getChannelData(0);let i=0,j=d.length-1;while(i<
    The "half volume" file is the loud one (about -22 dB) and the other is very quiet (about -51 dB),
    so these gains bring them to about -34 and -38 dB, a soft bed under the game at about -32 dB. */
 const AMB_MIX={ambB:.25,ambA:4.6};let ambSrcs=null,ambGain=null;
-function gameAmbience(){const want=!muted&&!!ac&&!!SOUND_BUF.ambA&&!!SOUND_BUF.ambB&&!!G&&G.mode!=='title';if(want===!!ambSrcs)return;const now=ac?ac.currentTime:0;
+function gameAmbience(){const want=!muted&&!!ac&&!!SOUND_BUF.ambA&&!!SOUND_BUF.ambB&&!!G&&G.mode!=='title'&&!G.boss;if(want===!!ambSrcs)return;const now=ac?ac.currentTime:0;
   if(want){try{const m=ac.createGain();m.gain.setValueAtTime(0,now);m.gain.linearRampToValueAtTime(1,now+2.5);m.connect(ac.destination);ambSrcs=Object.entries(AMB_MIX).map(([k,v])=>{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[k];const off=loopTrim(s,SOUND_BUF[k]);g.gain.value=v;s.connect(g).connect(m);s.start(now,off);return s});ambGain=m}catch(e){ambSrcs=null}}
   else{const ss=ambSrcs,m=ambGain;ambSrcs=ambGain=null;try{m.gain.cancelScheduledValues(now);m.gain.setValueAtTime(m.gain.value,now);m.gain.linearRampToValueAtTime(0,now+1);ss.forEach(s=>s.stop(now+1.05))}catch(e){}}}
+/* Footsteps. The ground under each player picks the sound, and each surface has several takes.
+   Grass uses the dirt takes (8 of them, as grass is walked on most), sandy paths use dirt v2,
+   stone clearings use stone, ponds use water and bridges use wood. Water and wood are boosted to match. */
+const STEP_OF={0:'dirt',1:'dirtv2',2:'stone',3:'water',4:'wood'},STEP_VOL={dirt:.3,dirtv2:.3,stone:.3,water:.75,wood:.42},stepLast={};
+function stepTakes(set){return Object.keys(SOUND_BUF).filter(k=>k.startsWith('step_'+set+'_'))}
+function playStep(set,vol){const ks=stepTakes(set);if(!ks.length)return;let k=ks[Math.floor(Math.random()*ks.length)];if(ks.length>1&&k===stepLast[set])k=ks[(ks.indexOf(k)+1)%ks.length];stepLast[set]=k;
+  try{const b=SOUND_BUF[k],d=b.getChannelData(0);let i=0;while(i<d.length&&Math.abs(d[i])<.003)i++;const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;s.playbackRate.value=.94+Math.random()*.12;g.gain.value=vol;s.connect(g).connect(ac.destination);s.start(0,i/b.sampleRate);(window.__stepLog=window.__stepLog||[]).push(set)}catch(e){}}
+function footsteps(){if(muted||!ac||!G||!G.w||G.mode!=='play')return;const me=G.p;
+  for(const q of G.players){const st=Math.floor((q.walk||0)/3);if(!q.moving||q.deadT>0||q.dashT>0||q.downed){q._st=st;continue}if(q._st===undefined||st===q._st){q._st=st;continue}q._st=st;
+    const d=q===me?0:dist(q,me);if(d>650)continue;const g=G.w.ground[idx(clamp(q.x/T|0,0,MW-1),clamp(q.y/T|0,0,MH-1))]||0,set=STEP_OF[g]||'dirt';playStep(set,STEP_VOL[set]*(q===me?1:.5*(1-d/650)))}}
+/* The owner's announcer lines share one voice, so they never talk over each other. A more important line interrupts a less important one. */
+let annPrio=0,annUntil=0;
+function announce(k,prio=2,vol=.8){if(muted||!ac)return false;const b=SOUND_BUF['an_'+k];if(!b){if(SOUND_WAIT['an_'+k]===-1)SOUND_WAIT['an_'+k]=performance.now();return false}
+  const now=performance.now();if(now<annUntil&&prio<annPrio)return true;try{if(voiceSrc)voiceSrc.stop()}catch(e){}
+  try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;g.gain.value=vol;s.connect(g).connect(ac.destination);s.start();voiceSrc=s;annPrio=prio;annUntil=now+b.duration*1000;(window.__annLog=window.__annLog||[]).push(k)}catch(e){}return true}
+/* Combo tiers in order: Double Kill is kill 1, up to Legendary as kill 9 */
+function announceTier(text){const i=COMBO_TIERS.findIndex(c=>c[1]===text);return i>=0&&announce('kill_'+(i+1),2)}
+/* Rule sounds that have the owner's recording. Anything else falls back to the synth. */
+const ASSET_SFX={slash:{keys:['sfx_melee_1','sfx_melee_2','sfx_melee_3'],vol:.45},pull:{keys:['sfx_heal_1','sfx_heal_2','sfx_heal_3'],vol:.3}};
+let rivalAnnT=0;
+function playAsset(n){if(n==='rivalDown'){if(performance.now()-rivalAnnT>6000){rivalAnnT=performance.now();announce('rival_down',1)}return true}
+  const a=ASSET_SFX[n];if(!a)return false;const ks=a.keys.filter(k=>SOUND_BUF[k]);if(!ks.length)return false;
+  try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[ks[Math.floor(Math.random()*ks.length)]];s.playbackRate.value=.95+Math.random()*.1;g.gain.value=a.vol;s.connect(g).connect(ac.destination);s.start()}catch(e){}return true}
+/* Boss music: the entrance track for the first minute, then the "not defeated yet" track, back to ambience after */
+const BOSS_MUS={mus_boss:.35,mus_boss_late:.3};let bossMus=null,bossT0=0,bossSeen=null,bossLastHp=1,downSeen={},stageSeen=0;
+function setBossMusic(k){if(bossMus&&bossMus.k===k)return;const now=ac.currentTime;if(bossMus){const o=bossMus;try{o.g.gain.cancelScheduledValues(now);o.g.gain.setValueAtTime(o.g.gain.value,now);o.g.gain.linearRampToValueAtTime(0,now+1.5);o.s.stop(now+1.55)}catch(e){}bossMus=null}
+  if(k&&SOUND_BUF[k]){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[k];loopTrim(s,SOUND_BUF[k]);g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(BOSS_MUS[k],now+1.5);s.connect(g).connect(ac.destination);s.start();bossMus={k,s,g}}catch(e){}}}
+const isDown=q=>q.deadT>0||q.downed||q.hp<=0;
+/* Watches the game each frame for moments that have a sound: a boss arriving or falling, and players going down */
+function soundWatch(){if(!ac||!G||!G.p||G.mode==='title'){if(bossMus&&ac)setBossMusic(null);bossSeen=null;downSeen={};return}
+  if(G.stage!==stageSeen){stageSeen=G.stage;bossSeen=null}
+  const b=G.boss;if(b&&b!==bossSeen){bossSeen=b;bossT0=G.t;announce('boss_fight',3)}
+  if(b){bossLastHp=b.hp/(b.maxHp||1);setBossMusic(muted?null:(G.t-bossT0<60?'mus_boss':'mus_boss_late'))}
+  else{if(bossSeen&&(bossSeen.dead||bossSeen.hp<=bossSeen.maxHp*.25||bossLastHp<.25))announce('boss_defeated',4);bossSeen=null;if(bossMus)setBossMusic(null)}
+  gameAmbience();
+  const me=G.p,ps=G.players||[me];for(const q of ps){const d=isDown(q),was=!!downSeen[q.id||0];downSeen[q.id||0]=d;if(!d||was)continue;
+    const all=ps.every(isDown),others=ps.filter(o=>o!==q);
+    if(q===me)announce(all&&others.length?'all_down':'you_down',4);
+    else if(!isDown(me)&&others.filter(o=>o!==me).every(isDown))announce(others.length>1?'friends_all_down':'friend_down',4);
+    else if(all)announce('all_down',5);else announce('friend_down',3)}}
 /* Browsers only allow sound after the player interacts, so the first click or key turns it on */
 ['pointerdown','keydown'].forEach(n=>addEventListener(n,()=>{audioOn();menuMusic();gameAmbience()},{capture:true}));
 $('sound').onclick=ev=>{audioOn();toggleSound();ev.currentTarget.blur()};
@@ -142,10 +182,11 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   else if(G.mode==='play'){if(!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}update(dt)}
   else if(G.mode==='title'||G.mode==='menu'){G.t+=dt;if(G.mode==='title')drawPreview(now)}
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
+  footsteps();soundWatch();
   try{render()}catch(err){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}
 if(matchMedia('(pointer:coarse)').matches)touchMode=true;
 demoScene();resize();setMode('title');
-window.__dayrim={get state(){return G},net,get sound(){return{loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
+window.__dayrim={get state(){return G},net,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
 requestAnimationFrame(tick);

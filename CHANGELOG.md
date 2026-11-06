@@ -5,6 +5,11 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Footsteps that change with the ground: grass, sandy paths, stone, water and wood, using the owner's step recordings.
+- Shallow ponds you can wade through, with wooden bridges where paths cross them. Their colors follow each stage's theme.
+- Announcer lines from the owner's recordings: start game, the 9 combo tiers (replacing the temporary computer voice for combos), boss fight, boss defeated, enemy hero or villain down, you down, a friend down, all friends down and all down.
+- Boss music: an entrance theme, then a more urgent track if the boss is still alive after a minute. It replaces the ambience during the fight.
+- Melee swing and heal sounds from the owner's recordings.
 - Background ambience throughout the game, mixed from the owner's two ambience tracks and kept soft. It fades in when play starts, and gives way to the menu music on the character screen.
 - Menu music on the character and online screens, which fades out when a game starts. Hero and villain browse sounds play when picking a card or switching tabs. All three are the owner's files from `ASSETS/audio`.
 - Return to menu button on the pause screen.

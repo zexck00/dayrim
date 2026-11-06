@@ -112,6 +112,13 @@ So anything belonging to one player goes on the player object (`p.combo`, `p.ult
 
 Browsers allow sound only after the player clicks or presses a key, so nothing plays on the first screen until then.
 
+**Where each sound is wired** (all in `game/src/ui.js` unless noted):
+- Footsteps: `footsteps()`, picked by the ground under each player. `STEP_OF` maps ground type to sound set. Ground 3 is water and 4 is wood, made by `pond()` in `genCity` (`game.js`).
+- Announcer: `announce(name, priority)`. One voice at a time, and a higher priority interrupts. Combo tiers go through `announceTier`, boss and down lines through `soundWatch()`, and start game through the Start buttons and `netJoined`.
+- Rule sounds with recordings: `ASSET_SFX` and `playAsset`, hooked from `sfx()` in `game.js`. `slash` uses melee, `pull` uses heal, and `rivalDown` uses the hero or villain down line.
+- Music: `menuMusic`, `gameAmbience` and `setBossMusic`.
+- `ASSETS/audio/villian:hero dead.wav` has a colon in its name, which Windows can't check out. Rename it if anyone works on Windows, and update `make_sfx.sh` to match.
+
 ## Balance bot
 
 The bot isn't in the page by default. Paste `tools/balance-bot.js` into the browser console on the game page, then run:

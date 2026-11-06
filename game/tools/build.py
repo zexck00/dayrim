@@ -14,7 +14,7 @@ data+='const MOVES='+(mv/'moves.json').read_text()+';\nconst MOVE_URLS={'+','.jo
 vo=root/'sprites'/'voice'
 data+='const VOICE_CLIPS={'+','.join('"'+f.stem+'":"'+base64.b64encode(f.read_bytes()).decode()+'"' for f in sorted(vo.glob('*.wav')))+'};\n'
 sx=root/'sprites'/'sfx'
-data+='const SOUND_CLIPS={'+','.join(f'{k}:"'+base64.b64encode((sx/f).read_bytes()).decode()+'"' for k,f in [('menu','menu.m4a'),('heroBrowse','hero-browse.m4a'),('villainBrowse','villain-browse.mp3'),('ambA','ambience-a.m4a'),('ambB','ambience-b.m4a')])+'};\n'
+data+='const SOUND_CLIPS={'+','.join(f'{k}:"'+base64.b64encode((sx/f).read_bytes()).decode()+'"' for k,f in [('menu','menu.m4a'),('heroBrowse','hero-browse.m4a'),('villainBrowse','villain-browse.mp3'),('ambA','ambience-a.m4a'),('ambB','ambience-b.m4a')]+[(f.stem.replace('-','_'),f.name) for p in ('step-','an-','sfx-','mus-') for f in sorted(sx.glob(p+'*.m4a'))])+'};\n'
 js=data+''.join((root/'src'/f).read_text()+'\n' for f in ['rig.js','game.js','render.js','net.js','ui.js'])
 page=(root/'src/page.html').read_text()
 assert '/*GAME*/' in page
