@@ -279,6 +279,15 @@ function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx
 /* A hold step either lights each zone in turn, or needs them all held at once.
    A party too small to split falls back to the timed version from the design: one
    zone at a time, held longer, and it stays down once it is lit. */
+/* Where the current objective actually is. One list for every step kind, so the HUD can point at it. */
+function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;const st=o.steps&&o.steps[o.i];if(!st)return out;
+  if(st.kind==='revive'){for(const c of G.npcs)if(c.wounded&&!c.dead)out.push({x:c.x,y:c.y,label:'Scout'})}
+  else if(st.kind==='hold'){for(const z of (o.zones||[]))if(!z.done)out.push({x:z.x,y:z.y,label:'Zone'})}
+  else if(st.kind==='carry'){const held=G.players.some(q=>q.carry&&!q.carry.done);
+    if(held&&o.drop)out.push({x:o.drop.x,y:o.drop.y,label:'Drop'});
+    else for(const c of (o.items||[]))if(!c.done&&!c.by)out.push({x:c.x,y:c.y,label:'Canister'})}
+  else if(st.kind==='escort'&&o.escort)out.push({x:o.escort.x,y:o.escort.y,label:'Boat'});
+  return out}
 const HOLD_ALONE_T=8;
 /* How long the zone on screen needs to be held right now, for the ring on the ground. */
 const zoneNeed=()=>{const o=G.obj,st=o&&o.steps[o.i];return (st&&(st.aloneT||st.t))||2.5};
@@ -307,7 +316,7 @@ function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if
   /* A step is done when its own rule says so. Hold steps need the timer, not just bodies on the plates. */
   if(!(st.met!==undefined?st.met:st.have>=st.need))return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
-function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
+function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
 function enterStage(n,keepKills){
   const kept=keepKills?G.killsStage:0;
   G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;

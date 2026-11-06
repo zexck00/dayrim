@@ -634,7 +634,7 @@ function buildFrame(sp,dir,anim,f){
 }
 function shade(hex){if(hex.length!==7)return hex;const n=parseInt(hex.slice(1),16),f=.72,r=(n>>16)*f|0,g=((n>>8)&255)*f|0,b=(n&255)*f|0;return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1)}
 const FRAMES=new Map();
-function frame(name,dir,anim,f,wpn){const k=name+'|'+dir+'|'+anim+'|'+f+'|'+(wpn||'');let c=FRAMES.get(k);if(!c){let sp=SPECS[name];if(wpn){const rw=wpn==='fists'?'fist':wpn;sp=Object.assign({},sp,{w:rw,wc:sp.w===rw?sp.wc:undefined})}c=buildFrame(sp,dir,anim,f);FRAMES.set(k,c)}return c}
+function frame(name,dir,anim,f,wpn){const k=name+'|'+dir+'|'+anim+'|'+f+'|'+(wpn||'');let c=FRAMES.get(k);if(!c){let sp=SPECS[name]||SPECS.Tourist;if(wpn){const rw=wpn==='fists'?'fist':wpn;sp=Object.assign({},sp,{w:rw,wc:sp.w===rw?sp.wc:undefined})}c=buildFrame(sp,dir,anim,f);FRAMES.set(k,c)}return c}
 const dirOf=a=>{const c=Math.cos(a),s=Math.sin(a);return Math.abs(c)>=Math.abs(s)*.9?2:(s<0?1:0)};
 const PS=1.6;
 function blit(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn){
@@ -925,6 +925,15 @@ function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx
 /* A hold step either lights each zone in turn, or needs them all held at once.
    A party too small to split falls back to the timed version from the design: one
    zone at a time, held longer, and it stays down once it is lit. */
+/* Where the current objective actually is. One list for every step kind, so the HUD can point at it. */
+function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;const st=o.steps&&o.steps[o.i];if(!st)return out;
+  if(st.kind==='revive'){for(const c of G.npcs)if(c.wounded&&!c.dead)out.push({x:c.x,y:c.y,label:'Scout'})}
+  else if(st.kind==='hold'){for(const z of (o.zones||[]))if(!z.done)out.push({x:z.x,y:z.y,label:'Zone'})}
+  else if(st.kind==='carry'){const held=G.players.some(q=>q.carry&&!q.carry.done);
+    if(held&&o.drop)out.push({x:o.drop.x,y:o.drop.y,label:'Drop'});
+    else for(const c of (o.items||[]))if(!c.done&&!c.by)out.push({x:c.x,y:c.y,label:'Canister'})}
+  else if(st.kind==='escort'&&o.escort)out.push({x:o.escort.x,y:o.escort.y,label:'Boat'});
+  return out}
 const HOLD_ALONE_T=8;
 /* How long the zone on screen needs to be held right now, for the ring on the ground. */
 const zoneNeed=()=>{const o=G.obj,st=o&&o.steps[o.i];return (st&&(st.aloneT||st.t))||2.5};
@@ -953,7 +962,7 @@ function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if
   /* A step is done when its own rule says so. Hold steps need the timer, not just bodies on the plates. */
   if(!(st.met!==undefined?st.met:st.have>=st.need))return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
-function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
+function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
 function enterStage(n,keepKills){
   const kept=keepKills?G.killsStage:0;
   G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
@@ -1753,7 +1762,7 @@ function drawBossDeath(f){
   if(sn){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55*q/.28;paintBossCells(ctx,f.art,f.ah,st,G.t,P,1);ctx.globalCompositeOperation='source-over'}
   ctx.globalAlpha=1;ctx.restore();
 }
-function drawNpc(c){shadow(c.x,c.y,9);const a=(c.dx||c.dy)?Math.atan2(c.dy,c.dx):Math.PI/2,dir=dirOf(a),walking=c.dx||c.dy,hurt=c.flash>0;blit(ctx,c.name,c.x,c.y,dir,hurt?'hit':walking?'walk':'idle',hurt?0:walking?Math.floor(c.walk)%4:Math.floor(G.t*2)%2,dir===2&&c.dx<0);
+function drawNpc(c){shadow(c.x,c.y,9);const a=(c.dx||c.dy)?Math.atan2(c.dy,c.dx):Math.PI/2,dir=dirOf(a),walking=c.dx||c.dy,hurt=c.flash>0;blit(ctx,c.art||c.name,c.x,c.y,dir,hurt?'hit':walking?'walk':'idle',hurt?0:walking?Math.floor(c.walk)%4:Math.floor(G.t*2)%2,dir===2&&c.dx<0);
   if(c.hp<c.maxHp){const w=24,y=c.y-74;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(c.x-w/2,y,w,3);ctx.fillStyle='#6fdca0';ctx.fillRect(c.x-w/2,y,w*Math.max(0,c.hp/c.maxHp),3)}
   if(c.qt>0){ctx.font='600 12px Barlow,sans-serif';ctx.textAlign='center';const tw=ctx.measureText(c.quip).width;ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(c.x-tw/2-5,c.y-90,tw+10,17);ctx.fillStyle='#20242e';ctx.fillText(c.quip,c.x,c.y-77)}}
 function drawShot(s){
@@ -1857,6 +1866,32 @@ function drawUlt(u){
 }
 function bar(x,y,w,h,v,c,label){ctx.fillStyle='rgba(5,10,20,.82)';ctx.fillRect(x,y,w,h);ctx.fillStyle=c;ctx.fillRect(x+2,y+2,(w-4)*clamp(v,0,1),h-4);if(label){ctx.font='500 11px "IBM Plex Mono",monospace';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';ctx.fillText(label,x+7,y+h-5)}}
 /* The HUD is laid out for about 640 tall and grows on larger screens, so it stays readable at Full HD and above */
+
+/* Points at the current objective: a marker when it is in view, an arrow on the screen edge when it is not. */
+function drawObjPointer(){
+  if(!G.p)return;const list=objTargets();if(!list.length)return;
+  const cam=G.cam,z=zoom/hudK,m=52,pad=74;
+  for(const o of list){
+    let sx=W/2+(o.x-cam.x)*z,sy=H/2+(o.y-cam.y)*z;
+    const on=sx>m&&sx<W-m&&sy>m&&sy<H-m,d=Math.round(Math.hypot(o.x-G.p.x,o.y-G.p.y)/40),pulse=.55+.45*Math.sin(G.t*4),col='#8fe6b8';
+    ctx.save();ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.92)';ctx.font='700 12px "IBM Plex Mono",monospace';ctx.textAlign='center';
+    if(on){
+      const y=sy-40-5*Math.sin(G.t*3);
+      ctx.globalAlpha=.9;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(sx,y-8);ctx.lineTo(sx+7,y+1);ctx.lineTo(sx-7,y+1);ctx.closePath();ctx.fill();
+      ctx.globalAlpha=.35+.45*pulse;ctx.beginPath();ctx.arc(sx,sy,Math.max(o.r||10,12),0,TAU);ctx.lineWidth=2;ctx.stroke();
+      ctx.globalAlpha=1;const t=o.label+'  '+d+'m';ctx.strokeText(t,sx,y-13);ctx.fillStyle='#e6fff0';ctx.fillText(t,sx,y-13);
+    }else{
+      const cx=W/2,cy=H/2,a=Math.atan2(sy-cy,sx-cx),hw=W/2-pad,hh=H/2-pad;
+      const k=Math.min(hw/Math.max(Math.abs(Math.cos(a)),1e-6),hh/Math.max(Math.abs(Math.sin(a)),1e-6));
+      const ex=cx+Math.cos(a)*k,ey=cy+Math.sin(a)*k;
+      ctx.translate(ex,ey);ctx.rotate(a);ctx.globalAlpha=.6+.4*pulse;ctx.fillStyle=col;
+      ctx.beginPath();ctx.moveTo(15,0);ctx.lineTo(-7,9);ctx.lineTo(-7,-9);ctx.closePath();ctx.fill();
+      ctx.rotate(-a);ctx.globalAlpha=1;const t=d+'m';ctx.strokeText(t,0,-16);ctx.fillStyle='#e6fff0';ctx.fillText(t,0,-16);
+    }
+    ctx.restore();
+  }
+}
+
 let hudK=1;
 function hud(){const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
 function hudBody(){
@@ -1906,6 +1941,8 @@ function hudBody(){
     if(!small){ctx.font='700 12px Barlow,sans-serif';if((e.staggerT||0)>0){ctx.fillStyle='#ffd860';ctx.fillText('STAGGERED '+Math.ceil(e.staggerT)+'s',W/2,gy+22)}else if(e.enraged){ctx.fillStyle='#ff8f80';ctx.fillText('ENRAGED',W/2,gy+22)}else{const pu=pillarsUp();if(pu){ctx.fillStyle='#8fd6ff';ctx.fillText('PILLARS '+pu,W/2,gy+22)}}}}
   if(G.mp)netHud(small);
   if(G.banner){ctx.globalAlpha=clamp(G.banner.t/.5,0,1);ctx.textAlign='center';ctx.font='700 '+(small?24:40)+'px "Pixelify Sans",monospace';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.85)';ctx.strokeText(G.banner.a,W/2,H*.3);ctx.fillStyle='#f2ecd8';ctx.fillText(G.banner.a,W/2,H*.3);ctx.font='600 '+(small?13:16)+'px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(G.banner.b,W/2,H*.3+24);ctx.fillStyle='#f0c23c';ctx.fillText(G.banner.b,W/2,H*.3+24);ctx.globalAlpha=1}
+  /* Where the objective is, drawn last so it sits over the HUD */
+  drawObjPointer();
 }
 
 /* ---------- Online play. The server runs the world. This file sends what you press and draws what it reports. ---------- */
@@ -2311,7 +2348,7 @@ function splashTick(now){if(!splashOn())return;const dt=Math.min(.05,(now-(spLas
   drawEmbers($('spfx'),spEmbers,dt);requestAnimationFrame(splashTick)}
 demoScene();resize();setMode('title');
 initSplash();
-window.__dayrim={get state(){return G},net,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
+window.__dayrim={get state(){return G},net,objTargets,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
 requestAnimationFrame(tick);
 
 })();

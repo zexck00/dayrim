@@ -454,7 +454,27 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  const d0=avg(0),d1=avg(1),d2=avg(2);Math.random=rnd0;
  ok(T.MELEE_UP[0]===1&&T.MELEE_UP[1]===1.2&&T.MELEE_UP[2]===1.5,'the swing table is exactly 1, 1.2 and 1.5');
  ok(d0>0&&d1/d0>1.1&&d1/d0<1.33&&d2/d0>1.36&&d2/d0<1.66,'a melee upgrade adds damage in the same 1.2 and 1.5 steps a ranged upgrade gives (hit variance allowed): '+Math.round(d0)+' '+Math.round(d1)+' '+Math.round(d2))}
+// The HUD pointer knows where every kind of objective is.
+{const go=(n,chars)=>{const rr=mk(),list=[s.createRoom(rr,chars[0],null,'O'+n+chars.length)];
+  for(let i=1;i<chars.length;i++)list.push(s.addPlayer(rr,chars[i],null,'O'+n+chars.length+i));
+  T.enter(rr);const p=list[0];p.maxStage=10;p.nearSafe=true;s.hostAction(rr,p,'travel',String(n));T.enter(rr);
+  T.G.enemies=[];T.G.killsStage=999;s.step(rr,1/30);rr.ev.length=0;T.enter(rr);return {rr,p,list}};
+ {const {rr,p}=go(1,['Detective']);const o=T.G.obj,st=o.steps[o.i],tg=T.objTargets(),scout=T.G.npcs.find(c=>c.wounded);
+  ok(st.kind==='revive'&&tg.length===1&&tg[0].label==='Scout'&&tg[0].x===scout.x&&tg[0].y===scout.y,'the revive step points at the wounded scout')}
+ {const {rr,p}=go(6,['Detective']);const o=T.G.obj,st=o.steps[o.i],zs=o.zones;
+  ok(st.kind==='hold'&&T.objTargets().length===2,'a two plate step points at both plates');
+  zs[0].done=true;zs[0].t=99;ok(T.objTargets().length===1,'and stops pointing at the plate that is already down');
+  p.x=zs[1].x;p.y=zs[1].y;for(let i=0;i<260;i++){p.x=zs[1].x;p.y=zs[1].y;s.step(rr,1/30);rr.ev.length=0}
+  ok(T.G.obj.done&&T.objTargets().length===0,'a finished objective leaves nothing to point at')}
+ {const {rr,p}=go(5,['Detective']);const o=T.G.obj,st=o.steps[o.i];
+  ok(st.kind==='carry'&&T.objTargets().length===3&&T.objTargets().every(t=>t.label==='Canister'),'a carry step points at every canister still on the ground');
+  p.carry={x:0,y:0,done:false,by:p.id};ok(T.objTargets().length===1&&T.objTargets()[0].label==='Drop','and switches to the drop once somebody is carrying');p.carry=null}
+ {const {rr,p}=go(3,['Detective']);const o=T.G.obj,st=o.steps[o.i];
+  ok(st.kind==='escort'&&T.objTargets().length===1&&T.objTargets()[0].label==='Boat','an escort step points at the boat')}
+ {const {rr,p}=go(2,['Detective']);const o=T.G.obj,st=o.steps[o.i];
+  ok(T.objTargets().length>=1,'a beacon step points at the beacons that are still dark')}}
 console.log('\n'+n+' checks passed');
+
 
 
 

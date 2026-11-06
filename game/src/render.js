@@ -201,7 +201,7 @@ function drawBossDeath(f){
   if(sn){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55*q/.28;paintBossCells(ctx,f.art,f.ah,st,G.t,P,1);ctx.globalCompositeOperation='source-over'}
   ctx.globalAlpha=1;ctx.restore();
 }
-function drawNpc(c){shadow(c.x,c.y,9);const a=(c.dx||c.dy)?Math.atan2(c.dy,c.dx):Math.PI/2,dir=dirOf(a),walking=c.dx||c.dy,hurt=c.flash>0;blit(ctx,c.name,c.x,c.y,dir,hurt?'hit':walking?'walk':'idle',hurt?0:walking?Math.floor(c.walk)%4:Math.floor(G.t*2)%2,dir===2&&c.dx<0);
+function drawNpc(c){shadow(c.x,c.y,9);const a=(c.dx||c.dy)?Math.atan2(c.dy,c.dx):Math.PI/2,dir=dirOf(a),walking=c.dx||c.dy,hurt=c.flash>0;blit(ctx,c.art||c.name,c.x,c.y,dir,hurt?'hit':walking?'walk':'idle',hurt?0:walking?Math.floor(c.walk)%4:Math.floor(G.t*2)%2,dir===2&&c.dx<0);
   if(c.hp<c.maxHp){const w=24,y=c.y-74;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(c.x-w/2,y,w,3);ctx.fillStyle='#6fdca0';ctx.fillRect(c.x-w/2,y,w*Math.max(0,c.hp/c.maxHp),3)}
   if(c.qt>0){ctx.font='600 12px Barlow,sans-serif';ctx.textAlign='center';const tw=ctx.measureText(c.quip).width;ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(c.x-tw/2-5,c.y-90,tw+10,17);ctx.fillStyle='#20242e';ctx.fillText(c.quip,c.x,c.y-77)}}
 function drawShot(s){
@@ -305,6 +305,32 @@ function drawUlt(u){
 }
 function bar(x,y,w,h,v,c,label){ctx.fillStyle='rgba(5,10,20,.82)';ctx.fillRect(x,y,w,h);ctx.fillStyle=c;ctx.fillRect(x+2,y+2,(w-4)*clamp(v,0,1),h-4);if(label){ctx.font='500 11px "IBM Plex Mono",monospace';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';ctx.fillText(label,x+7,y+h-5)}}
 /* The HUD is laid out for about 640 tall and grows on larger screens, so it stays readable at Full HD and above */
+
+/* Points at the current objective: a marker when it is in view, an arrow on the screen edge when it is not. */
+function drawObjPointer(){
+  if(!G.p)return;const list=objTargets();if(!list.length)return;
+  const cam=G.cam,z=zoom/hudK,m=52,pad=74;
+  for(const o of list){
+    let sx=W/2+(o.x-cam.x)*z,sy=H/2+(o.y-cam.y)*z;
+    const on=sx>m&&sx<W-m&&sy>m&&sy<H-m,d=Math.round(Math.hypot(o.x-G.p.x,o.y-G.p.y)/40),pulse=.55+.45*Math.sin(G.t*4),col='#8fe6b8';
+    ctx.save();ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.92)';ctx.font='700 12px "IBM Plex Mono",monospace';ctx.textAlign='center';
+    if(on){
+      const y=sy-40-5*Math.sin(G.t*3);
+      ctx.globalAlpha=.9;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(sx,y-8);ctx.lineTo(sx+7,y+1);ctx.lineTo(sx-7,y+1);ctx.closePath();ctx.fill();
+      ctx.globalAlpha=.35+.45*pulse;ctx.beginPath();ctx.arc(sx,sy,Math.max(o.r||10,12),0,TAU);ctx.lineWidth=2;ctx.stroke();
+      ctx.globalAlpha=1;const t=o.label+'  '+d+'m';ctx.strokeText(t,sx,y-13);ctx.fillStyle='#e6fff0';ctx.fillText(t,sx,y-13);
+    }else{
+      const cx=W/2,cy=H/2,a=Math.atan2(sy-cy,sx-cx),hw=W/2-pad,hh=H/2-pad;
+      const k=Math.min(hw/Math.max(Math.abs(Math.cos(a)),1e-6),hh/Math.max(Math.abs(Math.sin(a)),1e-6));
+      const ex=cx+Math.cos(a)*k,ey=cy+Math.sin(a)*k;
+      ctx.translate(ex,ey);ctx.rotate(a);ctx.globalAlpha=.6+.4*pulse;ctx.fillStyle=col;
+      ctx.beginPath();ctx.moveTo(15,0);ctx.lineTo(-7,9);ctx.lineTo(-7,-9);ctx.closePath();ctx.fill();
+      ctx.rotate(-a);ctx.globalAlpha=1;const t=d+'m';ctx.strokeText(t,0,-16);ctx.fillStyle='#e6fff0';ctx.fillText(t,0,-16);
+    }
+    ctx.restore();
+  }
+}
+
 let hudK=1;
 function hud(){const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
 function hudBody(){
@@ -354,4 +380,6 @@ function hudBody(){
     if(!small){ctx.font='700 12px Barlow,sans-serif';if((e.staggerT||0)>0){ctx.fillStyle='#ffd860';ctx.fillText('STAGGERED '+Math.ceil(e.staggerT)+'s',W/2,gy+22)}else if(e.enraged){ctx.fillStyle='#ff8f80';ctx.fillText('ENRAGED',W/2,gy+22)}else{const pu=pillarsUp();if(pu){ctx.fillStyle='#8fd6ff';ctx.fillText('PILLARS '+pu,W/2,gy+22)}}}}
   if(G.mp)netHud(small);
   if(G.banner){ctx.globalAlpha=clamp(G.banner.t/.5,0,1);ctx.textAlign='center';ctx.font='700 '+(small?24:40)+'px "Pixelify Sans",monospace';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.85)';ctx.strokeText(G.banner.a,W/2,H*.3);ctx.fillStyle='#f2ecd8';ctx.fillText(G.banner.a,W/2,H*.3);ctx.font='600 '+(small?13:16)+'px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(G.banner.b,W/2,H*.3+24);ctx.fillStyle='#f0c23c';ctx.fillText(G.banner.b,W/2,H*.3+24);ctx.globalAlpha=1}
+  /* Where the objective is, drawn last so it sits over the HUD */
+  drawObjPointer();
 }
