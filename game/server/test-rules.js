@@ -194,6 +194,8 @@ const rxPair=(a,b,e)=>{G().p=a;T.hitEnemy(e,10,0,0);G().p=b;T.hitEnemy(e,10,0,0)
  ok(e.statusT===0&&a.rage>0&&b.rage>0,'two players with the same element resonate and both gain rage')}
 // A player's own attacks cannot trigger resonance in an online party.
 {const [a,b]=rx2('Detective','Inventor'),e=rxFoe(rxBy(),G().safe.y);G().enemies=[e];a.rage=0;G().p=a;T.hitEnemy(e,10,0,0);T.hitEnemy(e,10,0,0);ok(e.statusT>0&&a.rage===0,'repeated hits from the same player do not react online')}
+// Solo characters can trigger half-strength resonance with consecutive attacks.
+{const r=mk(),a=s.createRoom(r,'Detective',null,'Solo reaction');T.enter(r);G().mp=false;G().enemies=[];const e=rxFoe(rxBy(),G().safe.y);G().enemies=[e];a.rage=0;G().p=a;T.hitEnemy(e,10,0,0);T.hitEnemy(e,10,0,0);ok(e.statusT===0&&a.rage===6,'solo second hit consumes status and grants half reaction rage');const online=rx2('Detective','Inventor'),q=rxFoe(rxBy(),G().safe.y);G().enemies=[q];G().p=online[0];T.hitEnemy(q,10,0,0);T.hitEnemy(q,10,0,0);ok(q.statusT>0&&online[0].rage===0,'solo reaction cannot be used in a party')}
 // C-19: roles follow the weapon, guards block only the front, casters leave zones, shooters keep distance.
 const c19=mk(),c1=s.createRoom(c19,'Firefighter',null,'Roles');T.enter(c19);G().enemies=[];
 const roleWant={heal:'healer',shield:'guard',spell:'caster',shoot:'shooter'},badRole=[];
