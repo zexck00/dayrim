@@ -17,7 +17,7 @@ $('rack').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b
 $('wearbest').addEventListener('click',()=>wearBest());
 function returnToMenu(){writeSave();demoScene();setMode('title')}
 function setMode(m){
-  setTimeout(menuMusic,0);
+  setTimeout(()=>{menuMusic();gameAmbience()},0);
   G.mode=m;mouse.left=mouse.right=false;touchHold.slash=false;touchHold.guard=false;keys.clear();const ov=$('ov'),c=$('card');
   $('touch').hidden=!(touchMode&&m==='play');
   if(m==='play'){ov.hidden=true;return}
@@ -90,20 +90,29 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
 addEventListener('keyup',ev=>keys.delete(ev.code));
 addEventListener('blur',()=>{keys.clear();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
-function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';menuMusic()}
+function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';menuMusic();gameAmbience()}
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
 const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
 function loadSounds(){if(!ac)return;Object.entries(SOUND_CLIPS).forEach(([k,b64])=>{if(SOUND_BUF[k]||SOUND_WAIT[k]===-1)return;SOUND_WAIT[k]=SOUND_WAIT[k]||-1;try{const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
-  ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k==='menu')menuMusic();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
+  ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k==='menu')menuMusic();else if(k==='ambA'||k==='ambB')gameAmbience();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
 /* A browse sound cuts off the one before it, so clicking quickly through cards doesn't pile up */
 function playSound(k,v=.8){if(muted||!ac)return;const b=SOUND_BUF[k];if(!b){if(SOUND_WAIT[k]===-1)SOUND_WAIT[k]=performance.now();return}
   try{if(browseSrc)browseSrc.stop()}catch(e){}try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;g.gain.value=v;s.connect(g).connect(ac.destination);s.start();browseSrc=s;(window.__soundLog=window.__soundLog||[]).push(k)}catch(e){}}
 /* Loops on the character and online screens, fades in and out, and respects Sound off */
 function menuMusic(){const want=!muted&&!!ac&&!!SOUND_BUF.menu&&!!G&&G.mode==='title';if(want===!!menuSrc)return;const now=ac?ac.currentTime:0;
-  if(want){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF.menu;s.loop=true;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(.5,now+1.2);s.connect(g).connect(ac.destination);s.start();menuSrc=s;menuGain=g}catch(e){}}
+  if(want){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF.menu;loopTrim(s,SOUND_BUF.menu);g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(.5,now+1.2);s.connect(g).connect(ac.destination);s.start();menuSrc=s;menuGain=g}catch(e){}}
   else{const s=menuSrc,g=menuGain;menuSrc=menuGain=null;try{g.gain.cancelScheduledValues(now);g.gain.setValueAtTime(g.gain.value,now);g.gain.linearRampToValueAtTime(0,now+.6);s.stop(now+.65)}catch(e){}}}
+/* Encoders add a sliver of silence at each end, so loops skip it to avoid a gap */
+function loopTrim(s,b){const d=b.getChannelData(0);let i=0,j=d.length-1;while(i<j&&Math.abs(d[i])<1e-4)i++;while(j>i&&Math.abs(d[j])<1e-4)j--;s.loop=true;s.loopStart=i/b.sampleRate;s.loopEnd=(j+1)/b.sampleRate;return i/b.sampleRate}
+/* In-game background: both ambience tracks loop at their own lengths, so the mix keeps shifting.
+   The "half volume" file is the loud one (about -22 dB) and the other is very quiet (about -51 dB),
+   so these gains bring them to about -34 and -38 dB, a soft bed under the game at about -32 dB. */
+const AMB_MIX={ambB:.25,ambA:4.6};let ambSrcs=null,ambGain=null;
+function gameAmbience(){const want=!muted&&!!ac&&!!SOUND_BUF.ambA&&!!SOUND_BUF.ambB&&!!G&&G.mode!=='title';if(want===!!ambSrcs)return;const now=ac?ac.currentTime:0;
+  if(want){try{const m=ac.createGain();m.gain.setValueAtTime(0,now);m.gain.linearRampToValueAtTime(1,now+2.5);m.connect(ac.destination);ambSrcs=Object.entries(AMB_MIX).map(([k,v])=>{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[k];const off=loopTrim(s,SOUND_BUF[k]);g.gain.value=v;s.connect(g).connect(m);s.start(now,off);return s});ambGain=m}catch(e){ambSrcs=null}}
+  else{const ss=ambSrcs,m=ambGain;ambSrcs=ambGain=null;try{m.gain.cancelScheduledValues(now);m.gain.setValueAtTime(m.gain.value,now);m.gain.linearRampToValueAtTime(0,now+1);ss.forEach(s=>s.stop(now+1.05))}catch(e){}}}
 /* Browsers only allow sound after the player interacts, so the first click or key turns it on */
-['pointerdown','keydown'].forEach(n=>addEventListener(n,()=>{audioOn();menuMusic()},{capture:true}));
+['pointerdown','keydown'].forEach(n=>addEventListener(n,()=>{audioOn();menuMusic();gameAmbience()},{capture:true}));
 $('sound').onclick=ev=>{audioOn();toggleSound();ev.currentTarget.blur()};
 /* Fullscreen. Browsers keep Esc for themselves, so the game reacts to the change, not the key. */
 const SCREEN=$('screen'),canFullscreen=!!(SCREEN.requestFullscreen||SCREEN.webkitRequestFullscreen);
@@ -138,5 +147,5 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   requestAnimationFrame(tick)}
 if(matchMedia('(pointer:coarse)').matches)touchMode=true;
 demoScene();resize();setMode('title');
-window.__dayrim={get state(){return G},net,get sound(){return{loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
+window.__dayrim={get state(){return G},net,get sound(){return{loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
 requestAnimationFrame(tick);

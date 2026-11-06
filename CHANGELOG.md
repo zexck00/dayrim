@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Background ambience throughout the game, mixed from the owner's two ambience tracks and kept soft. It fades in when play starts, and gives way to the menu music on the character screen.
 - Menu music on the character and online screens, which fades out when a game starts. Hero and villain browse sounds play when picking a card or switching tabs. All three are the owner's files from `ASSETS/audio`.
 - Return to menu button on the pause screen.
 - Fullscreen mode with a button and the L key. The cursor is replaced by a crosshair during play, and Esc brings it back.
