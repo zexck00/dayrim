@@ -242,7 +242,7 @@ function buildFrame(sp,dir,anim,f){
 }
 function shade(hex){if(hex.length!==7)return hex;const n=parseInt(hex.slice(1),16),f=.72,r=(n>>16)*f|0,g=((n>>8)&255)*f|0,b=(n&255)*f|0;return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1)}
 const FRAMES=new Map();
-function frame(name,dir,anim,f,wpn){const k=name+'|'+dir+'|'+anim+'|'+f+'|'+(wpn||'');let c=FRAMES.get(k);if(!c){let sp=SPECS[name];if(wpn){const rw=wpn==='fists'?'fist':wpn;sp=Object.assign({},sp,{w:rw,wc:sp.w===rw?sp.wc:undefined})}c=buildFrame(sp,dir,anim,f);FRAMES.set(k,c)}return c}
+function frame(name,dir,anim,f,wpn){const k=name+'|'+dir+'|'+anim+'|'+f+'|'+(wpn||'');let c=FRAMES.get(k);if(!c){let sp=SPECS[name]||SPECS.Tourist;if(wpn){const rw=wpn==='fists'?'fist':wpn;sp=Object.assign({},sp,{w:rw,wc:sp.w===rw?sp.wc:undefined})}c=buildFrame(sp,dir,anim,f);FRAMES.set(k,c)}return c}
 const dirOf=a=>{const c=Math.cos(a),s=Math.sin(a);return Math.abs(c)>=Math.abs(s)*.9?2:(s<0?1:0)};
 const PS=1.6;
 function blit(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn){

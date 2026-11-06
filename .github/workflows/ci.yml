@@ -1,0 +1,50 @@
+name: CI
+
+# Every push and every pull request: the server tests, and proof that the
+# committed dayrim.html still matches its sources. This is D-02's gate.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Server tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: game/server/package-lock.json
+      - name: Install
+        working-directory: game/server
+        run: npm ci
+      - name: Rules and networking
+        working-directory: game/server
+        run: npm test
+
+  page-in-sync:
+    name: dayrim.html matches sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild the page
+        run: python3 game/tools/build.py
+      - name: Fail if the committed page is stale
+        run: |
+          if ! git diff --quiet -- game/dayrim.html; then
+            echo "::error file=game/dayrim.html::dayrim.html is out of date. Run python3 game/tools/build.py and commit the result."
+            git --no-pager diff --stat -- game/dayrim.html
+            exit 1
+          fi
+          echo "dayrim.html is in sync with its sources."

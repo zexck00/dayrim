@@ -1,0 +1,43 @@
+# Production: dayrim.calypso.dedyn.io, image built from main.
+#
+# Run from the repo root, with the env file outside the repo:
+#   docker compose -p dayrim-prod -f deploy/compose.prod.yml --env-file ~/dayrim/prod.env up -d --no-build
+#
+# The image is built and pushed by .github/workflows/release.yml; the box only
+# pulls (deploy/watch.sh). Do not add `build:` here.
+
+name: dayrim-prod
+
+services:
+  dayrim:
+    image: ${DAYRIM_IMAGE:-ghcr.io/zexck00/dayrim:latest}
+    container_name: dayrim-prod
+    restart: unless-stopped
+    environment:
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://${DAYRIM_HOST:-}}
+      MAX_ROOMS: ${MAX_ROOMS:-50}
+      MAX_PLAYERS_PER_ROOM: ${MAX_PLAYERS_PER_ROOM:-4}
+      MAX_CONNECTIONS: ${MAX_CONNECTIONS:-400}
+      MAX_CONNECTIONS_PER_IP: ${MAX_CONNECTIONS_PER_IP:-12}
+    # Player saves. The volume keeps the name the pre-CI stack used, so profiles
+    # survive the cutover.
+    volumes:
+      - dayrim-prod-data:/data
+    networks:
+      - traefik_default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_default"
+      - "traefik.http.routers.dayrim.rule=Host(`${DAYRIM_HOST:-dayrim.calypso.dedyn.io}`)"
+      - "traefik.http.routers.dayrim.entrypoints=websecure"
+      - "traefik.http.routers.dayrim.middlewares=basic-security@file"
+      - "traefik.http.services.dayrim.loadbalancer.server.port=8080"
+
+volumes:
+  dayrim-prod-data:
+    name: dayrim_dayrim-data
+
+networks:
+  traefik_default:
+    external: true
