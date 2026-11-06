@@ -1,0 +1,14 @@
+[Unit]
+Description=Dayrim deploy watcher (pull GHCR, recreate, health check)
+Documentation=file:///home/calypso/workspace/dayrim/deploy/README.md
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/calypso/workspace/dayrim
+ExecStart=/home/calypso/workspace/dayrim/deploy/watch.sh all
+TimeoutStartSec=300
+# A failed deploy must not stop the timer from trying again after a human clears
+# the hold file; the script already exits 0 in every expected case.
+SuccessExitStatus=0
