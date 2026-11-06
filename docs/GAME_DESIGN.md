@@ -102,7 +102,7 @@ Attacks apply a status for 4 seconds. When a **different player** hits that targ
 | Bleed | Holy | **Purge** | Allies nearby heal 10% |
 | Holy | Void | **Eclipse** | Everyone in 200 units is stunned 1.5 s (bosses: guard break) |
 
-Each character's element is in section 12. Not every pair of elements reacts in this table. C-14 must check every pair of characters and add reactions, or team-ability elements, until each pair has at least one.
+Each character's element is in section 12. Pairs without a named reaction create Resonance: 10% extra damage on the triggering hit and rage for both players. Same-element pairs also resonate.
 
 ## 6. Party chain and linked ultimates
 

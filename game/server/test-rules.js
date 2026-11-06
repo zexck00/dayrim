@@ -142,9 +142,9 @@ const eRoster=Object.keys(T.ROSTER.hero).concat(Object.keys(T.ROSTER.villain));
 ok(eRoster.length===40&&eRoster.every(n=>T.ELEMENT[n]),'every character in the roster has an element');
 ok(eNames.length===40&&eNames.every(n=>eRoster.includes(n)),'the element table names no character the roster lacks');
 ok(eNames.every(n=>['burn','toxin','chill','shock','soak','void','bleed','holy'].includes(T.ELEMENT[n])),'every element is one of the eight in the design');
-ok(T.REACTIONS.length===10&&Object.keys(T.REACT_FX).length===10,'every reaction row has an implemented effect');
+ok(T.REACTIONS.length===10&&Object.keys(T.REACT_FX).length===11,'every reaction row has an implemented effect');
 const eCov=T.reactionCoverage();
-ok(eCov.total===780&&eCov.byElement===259&&eCov.byResonance===92&&eCov.covered===351,'coverage is pinned: '+eCov.covered+' of '+eCov.total+' ('+eCov.byElement+' by element, '+eCov.byResonance+' by resonance)');
+ok(eCov.total===780&&eCov.byElement===259&&eCov.byResonance===521&&eCov.covered===780,'coverage is pinned: '+eCov.covered+' of '+eCov.total+' ('+eCov.byElement+' by element, '+eCov.byResonance+' by resonance)');
 const rx2=(ca,cb)=>{const r=mk(),a=s.createRoom(r,ca,null,'A'),b=s.addPlayer(r,cb,null,'B');T.enter(r);G().enemies=[];return[a,b]};
 const rxBy=()=>G().safe.x+300;
 const rxFoe=(x,y)=>{const e=T.spawnMob(0,{x,y},false);e.aware=true;e.hp=e.maxHp=10000;e.statusT=0;e.statusBy=0;e.cd=99;e.sp=0;e.kx=e.ky=0;return e};
@@ -188,7 +188,9 @@ const rxPair=(a,b,e)=>{G().p=a;T.hitEnemy(e,10,0,0);G().p=b;T.hitEnemy(e,10,0,0)
 // Same element from two players resonates instead of reacting.
 {const [a,b]=rx2('Detective','Inventor'),x=rxBy(),e=rxFoe(x,G().safe.y);
  G().enemies=[e];G().fx=[];rxPair(a,b,e);
- ok(e.statusT===4&&!e.stunT&&G().fx.some(f=>f.k==='ring'&&f.c==='#8fd6ff'),'two players with the same element resonate')}
+ ok(e.statusT===0&&a.rage>0&&b.rage>0,'two players with the same element resonate and both gain rage')}
+// A player's own attacks cannot trigger resonance in an online party.
+{const [a,b]=rx2('Detective','Inventor'),e=rxFoe(rxBy(),G().safe.y);G().enemies=[e];a.rage=0;G().p=a;T.hitEnemy(e,10,0,0);T.hitEnemy(e,10,0,0);ok(e.statusT>0&&a.rage===0,'repeated hits from the same player do not react online')}
 // C-19: roles follow the weapon, guards block only the front, casters leave zones, shooters keep distance.
 const c19=mk(),c1=s.createRoom(c19,'Firefighter',null,'Roles');T.enter(c19);G().enemies=[];
 const roleWant={heal:'healer',shield:'guard',spell:'caster',shoot:'shooter'},badRole=[];
