@@ -276,7 +276,7 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
 // Hold: three beacons, each lit by standing on it.
 {const {r,p}=stg(2);adv(r);
  ok(G().obj.i===1&&G().obj.steps[1].kind==='hold'&&(G().obj.zones||[]).length===3,'stage 2 spawns three beacons');
- for(const z of G().obj.zones){for(let i=0;i<90&&!z.done;i++){p.x=z.x;p.y=z.y;s.step(r,1/30);r.ev.length=0}}
+ for(const z of G().obj.zones){for(let i=0;i<200&&!z.done;i++){p.x=z.x;p.y=z.y;G().enemies=[];s.step(r,1/30);r.ev.length=0}}
  ok(G().obj.zones.every(z=>z.done)&&G().obj.done&&G().gate.open,'lighting all three beacons finishes the objective')}
 // Hold at once: both plates, at the same time, from two players.
 {const rr=mk(),a=s.createRoom(rr,'Firefighter',{maxStage:6},'A'),b=s.addPlayer(rr,'Detective',null,'B');T.enter(rr);G().enemies=[];G().spawnT=1e9;G().villT=1e9;adv(rr);
@@ -558,6 +558,25 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  T.hitEnemy(e,10,0,0);T.hitEnemy(e,10,0,0);ok(a.rage===6,'the second hit reacts');for(let i=0;i<8;i++)T.hitEnemy(e,10,0,0);ok(a.rage===6&&e.statusT>0,'further hits only refresh the status during the cooldown');
  G().t+=2.01;T.hitEnemy(e,10,0,0);ok(a.rage===12,'the next reaction fires once the cooldown ends');
  const b=rxFoe(rxBy()+40,G().safe.y);G().enemies.push(b);T.hitEnemy(b,10,0,0);T.hitEnemy(b,10,0,0);ok(a.rage===18,'the cooldown belongs to each target')}
+// C-22 Stage 2: the thicket hides enemies, Stalkers ambush from it, and beacons need defending.
+{const go=(n,chars=['Detective'])=>{const rr=mk(),list=[s.createRoom(rr,chars[0],null,'T'+n)];for(let i=1;i<chars.length;i++)list.push(s.addPlayer(rr,chars[i],null,'T'+n+i));T.enter(rr);const p=list[0];p.maxStage=10;p.nearSafe=true;s.hostAction(rr,p,'travel',String(n));T.enter(rr);T.G.enemies=[];T.G.killsStage=999;T.G.spawnT=1e9;for(const q of T.G.players)q.inv=1e9;const step=(k=1)=>{for(let i=0;i<k;i++){s.step(rr,1/30);rr.ev.length=0}T.enter(rr)};step(1);T.G.enemies=[];return{rr,p,list,step}};
+ const coverAt=()=>{const W=T.G.w,c=W.cover.find(c=>Math.hypot((c%78+.5)*40-T.G.safe.x,((c/78|0)+.5)*40-T.G.safe.y)>600);return{x:(c%78+.5)*40,y:((c/78|0)+.5)*40}};
+ const clearTo=(a,b)=>{const W=T.G.w;for(let k=0;k<=20;k++){const x=(a.x+(b.x-a.x)*k/20)/40|0,y=(a.y+(b.y-a.y)*k/20)/40|0;W.map[y*78+x]=0}};
+ {go(2);const a=T.G.w,c=T.genCitySeeded(777),d=T.genCitySeeded(777);ok(a.cover.length>=30&&a.props.some(o=>o.t==='thicket'),'stage 2 grows thicket patches: '+a.cover.length+' tiles');ok(c.cover.length===d.cover.length&&c.cover.every((v,i)=>v===d.cover[i]),'the same seed grows the same thicket, so client and server agree');go(1);ok(T.G.w.cover.length===0&&!T.G.w.props.some(o=>o.t==='thicket'),'other stages have none')}
+ {const {p}=go(2),o=coverAt(),e=T.spawnMob(0,o,false);p.x=o.x+200;p.y=o.y;e.flash=0;ok(T.inThicket(e)&&T.concealed(e,p),'an enemy in the thicket is hidden beyond 120 units');p.x=o.x+100;ok(!T.concealed(e,p),'and shows inside 120 units');p.x=o.x+200;e.markT=2;ok(!T.concealed(e,p),'a marked enemy shows through the thicket');e.markT=0;e.flash=.1;ok(!T.concealed(e,p),'so does one that was just hit');e.flash=0;e.kind='boss';ok(!T.concealed(e,p),'a boss never hides');e.kind='rival';
+  clearTo(o,{x:p.x,y:p.y});T.G.p=p;ok(T.teamTarget(p,'shooter',{x:o.x,y:o.y})===null,'Mark cannot pick an enemy the player cannot see');p.x=o.x+100;ok(T.teamTarget(p,'shooter',{x:o.x,y:o.y})===e,'but can once it is in sight')}
+ {const {p,step}=go(2),o=coverAt();p.x=T.G.safe.x;p.y=T.G.safe.y;const made=[];for(let i=0;i<40&&made.length<2;i++){const e=T.spawnStalker();if(e)made.push(e)}ok(made.length>=1&&made.every(e=>e.role==='stalker'&&e.lurk&&T.inThicket(e)&&Math.hypot(e.x-p.x,e.y-p.y)>=300),'Stalkers spawn lurking in cover, away from players');T.G.enemies=[];
+  const e=T.spawnStalker();e.x=o.x;e.y=o.y;e.cd=99;p.x=o.x+600;p.y=o.y;p.inv=1e9;step(30);ok(e.lurk&&e.x===o.x&&!(e.aimT>0),'a Stalker waits while nobody is near');
+  const q={x:o.x+180,y:o.y};clearTo(o,q);p.x=q.x;p.y=q.y;step(1);ok(e.aimT>0&&!T.concealed(e,p),'a player in range sets off a visible warning first');
+  const hp=p.hp;for(let i=0;i<30&&!(e.pounceT>0);i++){p.inv=0;p.x=q.x;p.y=q.y;step(1)}ok(e.pounceT>0&&!e.lurk,'then it lunges');for(let i=0;i<30&&e.pounceT>0;i++){p.inv=0;p.x=q.x;p.y=q.y;step(1)}ok(p.hp<hp&&!(e.exposedT>0),'a lunge that lands hurts');
+  e.lurk=true;e.pounceT=0;e.aimT=0;e.x=o.x;e.y=o.y;e.kx=e.ky=0;p.x=q.x;p.y=q.y;p.inv=1e9;for(let i=0;i<60&&!(e.exposedT>0);i++){p.x=q.x;p.y=q.y;step(1)}ok(e.exposedT>0,'a lunge that is dodged leaves it open')}
+ {const {p,step}=go(2),st=T.G.obj.steps[T.G.obj.i],zs=T.G.obj.zones;ok(st.guard&&zs.length===3&&T.objTargets()[0].label==='Beacon','Stage 2 asks for three guarded beacons');const z=zs[0],hold=k=>{for(let i=0;i<k;i++){p.x=z.x;p.y=z.y;step(1)}};
+  T.G.w.cover.length=0;const before=T.G.enemies.length;hold(1);ok(T.G.enemies.length-before===2&&z.alarm,'starting a beacon draws a wave at the lighter');hold(30);ok(T.G.enemies.length-before===2,'but only one wave per beacon');
+  T.G.enemies=[];p.x=z.x;p.y=z.y;const lit=z.t;p.inv=0;T.G.p=p;T.hurtPlayer(1);ok(Math.abs(z.t-(lit-1))<1e-9,'a hit on the lighter sets the beacon back a second');p.inv=1e9;
+  const t0=z.t;p.x=z.x+300;p.y=z.y;p.inv=0;T.G.p=p;T.hurtPlayer(1);ok(z.t===t0,'a hit away from the beacon does not');p.inv=1e9;
+  T.resetStepState();ok(!z.alarm&&z.t===0,'a wipe resets the beacon and its wave');for(const y of zs){for(let i=0;i<200&&!y.done;i++){p.x=y.x;p.y=y.y;T.G.enemies=[];step(1)}}step(1);ok(T.G.obj.done&&T.G.gate.open,'a solo player can light all three and open the gate')}
+ {const {list,step}=go(2,['Detective','Firefighter']),z=T.G.obj.zones[0],before=T.G.enemies.length;list[0].x=z.x;list[0].y=z.y;step(1);ok(T.G.enemies.length-before===Math.round(2*1.3),'the wave grows with the party')}
+ {const {snapshot,newClient}=require('./sync'),{rr,p}=go(2);s.step(rr,1/30);T.enter(rr);const w=JSON.parse(snapshot(rr,p,newClient(),1).g.obj);ok(w.hn===5&&w.tg.length===3&&w.tg[0][2]==='Beacon','online clients get the beacon names and the five second ring')}}
 console.log('\n'+n+' checks passed');
 
 
