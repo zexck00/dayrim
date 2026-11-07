@@ -89,7 +89,7 @@ Stats keep their current meaning. The ability's strength scales with the matchin
 
 ## 5. Status reactions
 
-Attacks apply a status for 4 seconds. When a **different player** hits that target with a status that reacts, the reaction fires and both players gain extra rage. Your own attacks cannot trigger reactions in a party. When alone, a second hit on an active status triggers Resonance at half strength: 5% extra damage and 6 rage, with half the usual boss guard gain.
+Attacks apply a status for 4 seconds. When a **different player** hits that target with a status that reacts, the reaction fires and both players gain extra rage. Your own attacks cannot trigger reactions in a party. When alone, a second hit on an active status triggers Resonance at half strength: 5% extra damage and 6 rage, with half the usual boss guard gain. In the prototype, one target can react once every 2 seconds; other hits during that time only refresh the status.
 
 | First status | Second status | Reaction | Effect |
 |---|---|---|---|
