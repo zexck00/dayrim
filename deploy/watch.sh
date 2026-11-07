@@ -38,13 +38,21 @@ config() {
   HOLD="${ENV_DIR}/${PROJECT}.hold"
 }
 
+# Put the previous image back. The hold file is already written by this point.
+rollback() {
+  [ -n "$RUNNING" ] || return 0
+  docker tag "$RUNNING" "$IMAGE" || log "$STACK: could not retag the old image"
+  docker compose -p "$PROJECT" -f "$REPO_DIR/$COMPOSE" --env-file "$ENV_FILE" up -d --no-build >>"$ENV_DIR/${PROJECT}.deploy.log" 2>&1 \
+    || log "$STACK: rollback recreate failed, see ${ENV_DIR}/${PROJECT}.deploy.log"
+}
+
 for STACK in $(stacks "${1:-all}"); do
   config "$STACK"
 
   [ -f "$ENV_FILE" ] || { log "$STACK: no $ENV_FILE, skipping"; continue; }
 
-  # A hold file means a deploy was rolled back and must not be retried until a
-  # human looks. It contains the image id that failed.
+  # A hold file means a deploy failed or was interrupted and must not be retried
+  # until a human looks. It contains the image id that failed.
   if [ -f "$HOLD" ]; then
     log "$STACK: held at $(cat "$HOLD") — remove $HOLD to resume deploys"
     continue
@@ -63,9 +71,13 @@ for STACK in $(stacks "${1:-all}"); do
 
   log "$STACK: new image ${WANT:7:12} (was ${RUNNING:7:12}), recreating $CONTAINER"
 
+  # Hold first: if this run is killed part way, the next one must not treat a
+  # half-finished deploy as current. Only a healthy check clears it.
+  printf '%s\n' "${WANT:-unknown}" > "$HOLD"
+
   if ! docker compose -p "$PROJECT" -f "$REPO_DIR/$COMPOSE" --env-file "$ENV_FILE" up -d --no-build >>"$ENV_DIR/${PROJECT}.deploy.log" 2>&1; then
-    log "$STACK: compose failed, see ${ENV_DIR}/${PROJECT}.deploy.log"
-    printf '%s\n' "${WANT:-unknown}" > "$HOLD"
+    log "$STACK: compose failed, see ${ENV_DIR}/${PROJECT}.deploy.log — rolling back to ${RUNNING:7:12} and holding"
+    rollback
     continue
   fi
 
@@ -81,11 +93,6 @@ for STACK in $(stacks "${1:-all}"); do
     rm -f "$HOLD"
   else
     log "$STACK: unhealthy after ${HEALTH_TRIES} tries — rolling back to ${RUNNING:7:12} and holding"
-    if [ -n "$RUNNING" ]; then
-      docker tag "$RUNNING" "$IMAGE" || log "$STACK: could not retag the old image"
-      docker compose -p "$PROJECT" -f "$REPO_DIR/$COMPOSE" --env-file "$ENV_FILE" up -d --no-build >>"$ENV_DIR/${PROJECT}.deploy.log" 2>&1 \
-        || log "$STACK: rollback recreate failed, see ${ENV_DIR}/${PROJECT}.deploy.log"
-    fi
-    printf '%s\n' "${WANT:-unknown}" > "$HOLD"
+    rollback
   fi
 done
