@@ -8,7 +8,8 @@ Wants=network-online.target
 Type=oneshot
 WorkingDirectory=/home/calypso/workspace/dayrim
 ExecStart=/home/calypso/workspace/dayrim/deploy/watch.sh all
-TimeoutStartSec=300
+# Two stacks can each spend minutes on a pull, 150 s of health checks and a rollback.
+TimeoutStartSec=900
 # A failed deploy must not stop the timer from trying again after a human clears
 # the hold file; the script already exits 0 in every expected case.
 SuccessExitStatus=0

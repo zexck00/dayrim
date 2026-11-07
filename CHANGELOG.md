@@ -4,7 +4,16 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Changed
+- A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
+
 ### Fixed
+- Hold objectives can no longer get stuck: after a party wipe, when a party shrinks mid-step, or when someone joins or leaves during a hold. A zone that is already lit stays lit.
+- The objective pointer now works online, including for targets far off screen.
+- The zone ring online fills to the real hold time.
+- The difficulty notice no longer draws over the retry line.
+- The party chain HUD reads its bonuses from the rules, so the two can't disagree.
+- A deploy that fails to start now rolls back to the previous image, and an interrupted deploy leaves a hold instead of looking current.
 - The mobile party panel no longer overlaps the player status bars, and the linked-ultimate prompt names the touch control.
 - Touch movement and held actions clear when interrupted, including when a menu opens or the game loses focus.
 - The online Skills menu updates when the server confirms training or a checkpoint choice.
