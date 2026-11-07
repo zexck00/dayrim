@@ -5,6 +5,11 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Gloom Eye, the Stage 2 boss: a sweeping gaze beam, triple tentacle slams, a blinding pulse at 60% and a second sweep at 25%. When it locks its gaze on you, face away; its back eye then opens and hits from behind it break its guard. Solo, dodging through the beam also opens the eye.
+- Duskwater Fen, Stage 3: the water rises and falls, and it slows you off the islands. Lurkers grab and drag a player until an ally hits them; solo, your own hits free you.
+- Banshee Phantasm, the Stage 3 boss: a wail ring with a gap to step through, untouchable drifts and, at half life, a possess that slows and pulls one player. She can only be hurt in lantern light. Carry a lantern and hold F to set it down.
+- A red edge at low life, arrows for off-screen enemies about to hit you, and a mark showing where a hit came from.
+- Brighter attacks: swing crescents and tip flares, glowing bullets and muzzle flashes, hit sparks with bigger bursts on critical hits, a flash on kills, and pulsing enemy wind-ups.
 - Stage 2 has tall thicket that hides enemies until they are within 120 units. Marked enemies and ones just hit still show.
 - Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
 
@@ -17,6 +22,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
 
 ### Fixed
+- Objective props such as plates, beacons, canisters, the drop zone, pillars and the escort boat now draw in single-player.
 - Hold objectives can no longer get stuck: after a party wipe, when a party shrinks mid-step, or when someone joins or leaves during a hold. A zone that is already lit stays lit.
 - The objective pointer now works online, including for targets far off screen.
 - The zone ring online fills to the real hold time.
