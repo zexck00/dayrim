@@ -4,7 +4,16 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Added
+- Stage 2 has tall thicket that hides enemies until they are within 120 units. Marked enemies and ones just hit still show.
+- Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
+
 ### Changed
+- Enemies are smarter. Only two press one player at a time while the rest circle, aim follows you until late in a wind-up, attacks can chain, and healing or reviving draws a rush.
+- Shooters lead and strafe, guards turn slowly, packs alert each other, and enemies wait outside the safehouse instead of forgetting you.
+- Bosses can chain attacks and react to healing. Every attack keeps its warning.
+- Enemy hits are stronger on early stages: a weak hit now takes about 10, 8 and 7 hits to down you on Stages 1, 2 and 3, down from over 20.
+- Stage 2 beacons now take 5 seconds to light. Starting one draws a wave, and hits on the lighter set the beacon back.
 - A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
 
 ### Fixed
