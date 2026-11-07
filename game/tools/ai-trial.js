@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+'use strict';
+/* Plays the real rules at high speed to compare enemy AI changes. Bots are at the recommended level with no upgrades, so compare runs with each other, not with human play.
+   node game/tools/ai-trial.js --stages 1,2,3 --players 1,2,4 --bot plain,skilled --seeds 8 --seconds 300 */
+const path=require('path'),s=require(path.join(__dirname,'..','server','sim')),T=s.test;
+const args=process.argv.slice(2),arg=(k,d)=>{const i=args.indexOf(k);return i<0?d:args[i+1]},list=(k,d)=>String(arg(k,d)).split(',');
+const stages=list('--stages','1,2,3').map(Number),sizes=list('--players','1,2,4').map(Number),bots=list('--bot','plain,skilled'),seeds=Number(arg('--seeds','8')),limit=Number(arg('--seconds','300')),roster=['Detective','Firefighter','Prodigy','Exorcist'],dt=1/30,W=78,H=55;
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function field(G,t){const d=new Int16Array(W*H).fill(-1),q=[Math.min(H-1,t.y/40|0)*W+Math.min(W-1,t.x/40|0)];d[q[0]]=0;for(let h=0;h<q.length;h++){const c=q[h],x=c%W;for(const n of[x>0?c-1:-1,x<W-1?c+1:-1,c-W,c+W])if(n>=0&&n<W*H&&d[n]<0&&!G.w.map[n]){d[n]=d[c]+1;q.push(n)}}return d}
+function steer(G,p,t,want,cache){if(dist(p,t)<=want)return{x:0,y:0};const key=(t.x/40|0)+','+(t.y/40|0);if(cache.key!==key||cache.age-->0===false){cache.key=key;cache.age=15;cache.d=field(G,t)}const d=cache.d,tx=p.x/40|0,ty=p.y/40|0;let b=Infinity,o=null;for(const[a,c]of[[1,0],[-1,0],[0,1],[0,-1]]){const v=d[(ty+c)*W+tx+a];if(v>=0&&v<b){b=v;o={x:(tx+a+.5)*40-p.x,y:(ty+c+.5)*40-p.y}}}if(!o)o={x:t.x-p.x,y:t.y-p.y};const L=Math.hypot(o.x,o.y)||1;return{x:o.x/L,y:o.y/L}}
+/* The next thing this bot should do. Objectives come first, as players are told. */
+function goal(G,p,i){const down=G.players.find(q=>q!==p&&q.deadT>0&&!q.windDown&&dist(q,p)<400);if(down)return{o:down,revive:true,want:40};const live=G.enemies.filter(e=>!e.dead),near=live.slice().sort((a,b)=>dist(a,p)-dist(b,p))[0],melee=['Firefighter','Prodigy'].includes(p.char);
+ if(G.boss&&!G.boss.dead)return{o:G.boss,fight:true,want:melee?G.boss.r+34:230};if(near&&dist(near,p)<230)return{o:near,fight:true,want:melee?38:190};if(G.gate.open)return{o:G.gate,want:20};const t=T.objTargets()[0];if(t&&t.label==='Scout')return{o:t,revive:true,want:34};if(t)return{o:t,want:24};return near?{o:near,fight:true,want:melee?38:190}:null}
+function threat(G,p){for(const e of G.enemies){if(e.dead)continue;const d=dist(e,p);if((e.wind>0&&e.wind<.28&&d<e.a.range+e.r+p.r+50)||(e.aimT>0&&d<280)||(e.pounceT>0&&d<170)||(e.tel&&e.actT<.3&&d<(e.tel.r||0)+e.r+70))return e}for(const q of G.shots)if(q.from==='e'&&dist(q,p)<70)return q;return null}
+function play(stage,size,bot,seed){const room={clients:new Map(),ev:null},list=[s.createRoom(room,roster[0],null,'B0')];for(let i=1;i<size;i++)list.push(s.addPlayer(room,roster[i],null,'B'+i));T.enter(room);const host=list[0];host.maxStage=10;host.nearSafe=true;s.hostAction(room,host,'travel',String(stage));T.enter(room);const G=T.G,caches=list.map(()=>({}));
+ for(const p of list){p.lvl=T.recLevel(stage);T.recalc(p);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.gold=0}
+ const r={clear:false,t:0,downs:0,wipes:0,damage:0,dodges:0,bossT:0};let was=list.map(p=>p.hp),dn=list.map(()=>false),ban=null,seq=0;const maxHp=list.reduce((a,p)=>a+p.s.maxHp,0)/size;
+ for(let k=0;k<limit/dt&&!room.cleared;k++){T.enter(room);const g=T.G;
+  list.forEach((p,i)=>{if(p.deadT>0||p.respawnT>0){p.input.x=p.input.y=0;p.input.l=false;return}const a=goal(g,p,i);let v=a?steer(g,p,a.o,a.want,caches[i]):{x:0,y:0};if(a&&a.fight&&dist(p,a.o)<(a.want-40)&&!['Firefighter','Prodigy'].includes(p.char)){const L=dist(p,a.o)||1;v={x:(p.x-a.o.x)/L,y:(p.y-a.o.y)/L}}
+   if(p.hp<p.s.maxHp*.4&&p.potions>0&&(p.cd.potion||0)<=0)p.actions.push({n:'potion'});if(bot==='skilled'){const t=threat(g,p);if(t&&(p.cd.dash||0)<=0){const L=dist(p,t)||1,sgn=seq++%2?1:-1;v={x:(p.x-t.x)/L*.6-(p.y-t.y)/L*.8*sgn,y:(p.y-t.y)/L*.6+(p.x-t.x)/L*.8*sgn};p.actions.push({n:'dash'});r.dodges++}if(p.rage>=100&&a&&a.fight)p.actions.push({n:'ult'})}
+   p.input.x=v.x;p.input.y=v.y;p.input.s=k;const f=a&&a.fight;p.input.l=!!f;if(f){p.input.ax=a.o.x;p.input.ay=a.o.y-20}if(a&&a.revive&&dist(p,a.o)<=a.want+30)p.actions.push({n:'revive',v:true})});
+  const bb=g.banner&&g.banner.a;if(bb==='Party wiped'&&ban!==bb)r.wipes++;ban=bb;
+  s.step(room,dt);room.ev.length=0;T.enter(room);r.t+=dt;if(T.G.boss)r.bossT+=dt;
+  list.forEach((p,i)=>{if(p.hp<was[i])r.damage+=was[i]-p.hp;was[i]=p.hp;const d=p.deadT>0;if(d&&!dn[i])r.downs++;dn[i]=d})}
+ r.clear=!!room.cleared;{const g=T.G,o=g.obj,st=o&&o.steps[o.i];r.end=r.clear?'':g.boss?'boss '+Math.round(100*g.boss.hp/g.boss.maxHp)+'%':g.gate.open?'gate':st?st.kind+' '+st.have+'/'+st.need:'?'}r.hitsPerMin=r.damage/size/maxHp/Math.max(1/60,r.t/60);return r}
+const avg=(a,k)=>a.reduce((x,y)=>x+y[k],0)/a.length;const out=[];
+for(const st of stages)for(const n of sizes)for(const b of bots){const rs=[];for(let i=0;i<seeds;i++)rs.push(play(st,n,b,i));const c=rs.filter(x=>x.clear);out.push({stage:st,players:n,bot:b,clear:c.length+'/'+seeds,time:c.length?Math.round(avg(c,'t')):null,downs:+avg(rs,'downs').toFixed(1),wipes:+avg(rs,'wipes').toFixed(1),lifePerMin:+avg(rs,'hitsPerMin').toFixed(2),dodges:Math.round(avg(rs,'dodges')),stuck:rs.filter(x=>!x.clear).map(x=>x.end).join(';')})}
+console.table(out);

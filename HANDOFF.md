@@ -146,7 +146,13 @@ Browsers allow sound only after the player clicks or presses a key, so nothing p
 - Music: `menuMusic`, `gameAmbience` and `setBossMusic`.
 - `ASSETS/audio/villian:hero dead.wav` has a colon in its name, which Windows can't check out. Rename it if anyone works on Windows, and update `make_sfx.sh` to match.
 
+## AI trial
+
+`node game/tools/ai-trial.js --stages 1,2,3 --players 1,2,4 --bot plain,skilled --seeds 8` plays the real rules at high speed. Bots play at the recommended level with no upgrades and the `skilled` bot reads wind-ups perfectly, so compare runs with each other, not with human play. It handles kill, revive, hold and escort steps, but not carry steps. Enemy behaviour is tuned in the `AI` table in `game.js`.
+
 ## Balance bot
+
+The balance bot predates objective steps and does not play them, so it now clears no stages. Use the AI trial until it is updated.
 
 The bot isn't in the page by default. Paste `tools/balance-bot.js` into the browser console on the game page, then run:
 
