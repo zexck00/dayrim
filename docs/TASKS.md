@@ -110,7 +110,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 |---|---|---|---|---|---|
 | C-20 | C | M | Stage 1 Sunrise Hollow, with its objective | Prototype: the objective line, the marker and the edge arrow point a solo player at the wounded scout, and the scout no longer crashes the renderer when it is on screen. | C-10, C-18 |
 | C-21 | C | M | Boss: Crystal Scurrier (Pillar Break) | Prototype: Skitter Rush and Shard Spray at full life, Burrow and two crystal pillars at half life. Pillars heal the boss; solo breaks one with a charged move, a party breaks one with two hits inside 2s. Rules tests cover both, human tests open. | Human playtest, pillar art and the asset animations are open. |
-| C-22 | C | M | Stage 2 Noonshade Thicket: thicket, beacons, Stalker | Objective done | C-18 |
+| C-22 | C | M | Stage 2 Noonshade Thicket: thicket, beacons, Stalker | Prototype: seeded thicket hides enemies beyond 120 units for each player, Stalkers ambush from it with a warning and a dodge opening, and each beacon draws a wave and is set back when the lighter is hit. Rule tests pass. | Stalker art (Z-12), balance and human playtests are open. The balance bot does not play objectives, so it cannot clear this stage. |
 | C-23 | C | M | Boss: Gloom Eye (Look Away) | As above | C-17 |
 | C-24 | C | L | Stage 3 Duskwater Fen: rising water, escort boat, Lurker | Objective done | C-18 |
 | C-25 | C | M | Boss: Banshee Phantasm (Lantern Anchor) | As above | C-17 |

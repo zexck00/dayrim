@@ -4,7 +4,12 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Added
+- Stage 2 has tall thicket that hides enemies until they are within 120 units. Marked enemies and ones just hit still show.
+- Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
+
 ### Changed
+- Stage 2 beacons now take 5 seconds to light. Starting one draws a wave, and hits on the lighter set the beacon back.
 - A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
 
 ### Fixed
