@@ -5,15 +5,42 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Fixed
+- The mobile party panel no longer overlaps the player status bars, and the linked-ultimate prompt names the touch control.
+- Touch movement and held actions clear when interrupted, including when a menu opens or the game loses focus.
+- The online Skills menu updates when the server confirms training or a checkpoint choice.
+- The online Weapons menu updates when the server confirms a purchase or changes safehouse access.
+- Signature moves can hit crystal pillars without closing the room.
+- A replacement wounded scout appears if the objective scout is killed.
+- Killing the wounded scout no longer closes an online room.
+- Online enemy target markers now receive the awareness state they need to appear.
+- Full Party healing no longer gives life to downed or respawning players without reviving them.
+- Healing generates enemy attention only for life actually restored, credited to the healer.
+- Online linked-ultimate feedback now shows its damage bonus.
+- Linked ultimates now increase damage already dealt when an ally joins late.
+- Revive progress resets when switching allies, expired statuses no longer resonate, and healing threat follows the healer.
 - Citizens now fear the player responsible for a civilian death, rather than every party member.
 
 ### Changed
-- Elements now come from the design for all 40 characters. Ten pairs react: Inferno, Shatter, Overload, Freeze, Rot, Collapse, Purge, Eclipse, Cauterise and Frostbite. Two players with the same element resonate for a small damage bonus instead. Only the listed pairs react, so Burn plus Toxin no longer reports an Overload stun, and both players who build a reaction earn rage.
+- Touch buttons show ability cooldowns, ultimate charge and common reasons an item or ability is unavailable.
+- Touch controls fit short landscape screens, show held actions and a movement stick, and keep utility buttons clear of the action grid.
+- Skills are grouped by purpose and show rank progress and current and next bonuses; descriptions clarify which attacks and healing they affect.
+- Weapon upgrade cards show tier progress, current and next effects, and why an upgrade is unavailable. Piercing, shield interrupts and ally heals have distinct combat cues.
+- Ultimate hits deal the designed 4% of boss life divided by party size before link bonuses, even for high-damage builds.
+- Every character pair can trigger a reaction: combinations without a named reaction now create resonance, granting both players rage and a small damage bonus.
+- Elements now come from the design for all 40 characters. Ten pairs react: Inferno, Shatter, Overload, Freeze, Rot, Collapse, Purge, Eclipse, Cauterise and Frostbite. Two players with the same element resonate for a small damage bonus instead. Other pairs create resonance, and both players who build a reaction earn rage.
 - Enemies now build threat from the damage and the healing they take and go for the player who earned the most attention, instead of always walking at the nearest one. Taunt still overrides it, and bosses are unchanged for now.
 - The game now fills the browser window. The in-game menu includes a return to main menu button and a weapons tab with distinct weapon icons.
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 
 ### Added
+- A fully upgraded healing weapon restores a nearby injured ally on a successful hit, at most once per second.
+- A fully upgraded shield interrupts ordinary enemies when it strikes during their attack or healing wind-up.
+- Fully upgraded pistols and bows can pierce one additional enemy per shot.
+- The Weapons menu compares current and next upgrade effects, and upgraded attacks show a short tier-colored pulse.
+- Necromancer, Void Empress and Toxin Alchemist can upgrade their signature moves twice at the safehouse, with stronger damage and a visual pulse.
+- Mark, Mend Link and Rescue Dash show their current target beside the team ability.
+- Party and combat feedback now shows difficulty, Hope spent, retry location, revive target and range, chain time and bonuses, enemy status and Taunt duration, and citizen fear. The Skills menu explains reactions.
+- Solo players can trigger half-strength Resonance with a second hit on an active status.
 - A title poster before hero selection: the owner's poster art with the DAYRIM letters cut from the title art in the centre, slow drifting embers, and a small stone-lettered Play Game button (Enter also works) that leads to choosing a hero.
 - Footsteps that change with the ground: grass, sandy paths, stone, water and wood, using the owner's step recordings.
 - Shallow ponds you can wade through, with wooden bridges where paths cross them. Their colors follow each stage's theme.

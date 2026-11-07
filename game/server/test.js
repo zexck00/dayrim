@@ -5,7 +5,7 @@ const WebSocket=require('ws');
 const PORT=18000+Math.floor(Math.random()*1000),DATA=fs.mkdtempSync(path.join(os.tmpdir(),'dayrim-test-'));
 let srv,passed=0;const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const ok=(c,m)=>{assert.ok(c,m);passed++;console.log('  ok  '+m)};
-function start(){srv=spawn(process.execPath,['index.js'],{cwd:__dirname,env:{...process.env,PORT,HOST:'127.0.0.1',DATA_DIR:DATA,MAX_ROOMS:'3'},stdio:['ignore','pipe','inherit']});return new Promise(res=>srv.stdout.once('data',res))}
+function start(){srv=spawn(process.execPath,['index.js'],{cwd:__dirname,env:{...process.env,PORT,HOST:'127.0.0.1',DATA_DIR:DATA,MAX_ROOMS:'3'},stdio:['ignore','pipe','inherit']});return new Promise((resolve,reject)=>{const cleanup=()=>{srv.stdout.removeListener('data',ready);srv.removeListener('exit',exited);srv.removeListener('error',failed)},ready=()=>{cleanup();resolve()},exited=(code,signal)=>{cleanup();reject(new Error('Test server exited before listening: '+(signal||code)))},failed=e=>{cleanup();reject(e)};srv.stdout.once('data',ready);srv.once('exit',exited);srv.once('error',failed)})}
 const stop=()=>new Promise(res=>{srv.once('exit',res);srv.kill('SIGTERM')});
 const get=(p,h={})=>new Promise((res,rej)=>http.get({port:PORT,host:'127.0.0.1',path:p,headers:h},r=>{const b=[];r.on('data',d=>b.push(d));r.on('end',()=>res({status:r.statusCode,headers:r.headers,body:Buffer.concat(b)}))}).on('error',rej));
 class Bot{
@@ -59,6 +59,7 @@ class Bot{
   console.log('      '+Math.round((a.bytes-bb)/sec/1024*10)/10+' KB/s before compression per player, '+Math.round((a.snaps-sn)/sec)+' snapshots/s, '+a.ents.e.size+' enemies in view');
   ok(a.ents.e.size>=0&&a.snaps>sn+50,'snapshots keep flowing during a fight');
   ok(a.world.ch!==undefined&&a.world.ch===b.world.ch,'both players see the same party chain: '+(a.world.ch||0));
+  ok(Number.isFinite(a.world.ct)&&Number.isFinite(a.world.hopeSpent),'chain timer and Hope spent reach real clients');
   ok(a.world.lk!==undefined&&a.world.lk===b.world.lk,'the link window is on the wire and empty when nobody links');
 
   console.log('Host and leaving');

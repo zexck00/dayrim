@@ -89,7 +89,7 @@ Stats keep their current meaning. The ability's strength scales with the matchin
 
 ## 5. Status reactions
 
-Attacks apply a status for 4 seconds. When a **different player** hits that target with a status that reacts, the reaction fires and both players gain extra rage. Your own attacks can't trigger reactions, unless you are alone (solo uses half strength), so teamwork is what makes them strong.
+Attacks apply a status for 4 seconds. When a **different player** hits that target with a status that reacts, the reaction fires and both players gain extra rage. Your own attacks cannot trigger reactions in a party. When alone, a second hit on an active status triggers Resonance at half strength: 5% extra damage and 6 rage, with half the usual boss guard gain.
 
 | First status | Second status | Reaction | Effect |
 |---|---|---|---|
@@ -101,8 +101,10 @@ Attacks apply a status for 4 seconds. When a **different player** hits that targ
 | Void | Shock | **Collapse** | Pulls enemies in 160 units together, then a burst |
 | Bleed | Holy | **Purge** | Allies nearby heal 10% |
 | Holy | Void | **Eclipse** | Everyone in 200 units is stunned 1.5 s (bosses: guard break) |
+| Bleed | Burn | **Cauterise** | 160% hit damage and a nearby burst |
+| Bleed | Chill | **Frostbite** | 120% hit damage and 40% slow for 3 s |
 
-Each character's element is in section 12. Not every pair of elements reacts in this table. C-14 must check every pair of characters and add reactions, or team-ability elements, until each pair has at least one.
+Each character's element is in section 12. In the current prototype, pairs without a named reaction create Resonance: 10% extra damage on the triggering hit and rage for both players. Same-element pairs also resonate.
 
 ## 6. Party chain and linked ultimates
 
@@ -117,13 +119,13 @@ Each character's element is in section 12. Not every pair of elements reacts in 
 
 **Rage:** each kill gives the killer full rage and everyone else within 500 units 35%.
 
-**Linked ultimates:** when a player fires an ultimate, a 3-second window opens and allies see **"Link now!"**.
+**Linked ultimates:** when a player fires an ultimate, a 3-second window opens and allies see **"Link now!"**. The current prototype refreshes the window as each new player joins, and applies tier increases to earlier hits on surviving targets.
 
 | Linked | Effect |
 |---|---|
 | 2 players | **Duo:** both ultimates +40% damage, and enemy shots are cleared across the area |
 | 3 players | **Trio:** +70% damage, and party is invulnerable for the full length |
-| 4 players | **Full Party:** +100% damage, full heal, boss staggered 5 s |
+| 4 players | **Full Party:** +100% damage, full heal for standing players, boss staggered 5 s |
 
 **Ultimates online:** the fullscreen effect plays fully for the caster, and allies see a shorter version so that they can still dodge. Boss damage becomes `4% of max life ÷ party size` per hit, before the link bonus.
 
@@ -366,6 +368,7 @@ Elements below are a first pass. Z may change any of them to match the final art
 - **New team skills:** a third skill group gives Faster Revive, Longer Link Window, Stronger Reactions and Share Potion.
 - **Stage unlocks:** clearing with a party unlocks that stage for all its members.
 - **Equipment and weapon drops stay off**, as the owner decided. Z decides whether they return.
+- **Weapon upgrade prototype:** two safehouse tiers cost 80 and 180 gold. At the second tier, pistols and bows pierce one additional enemy; shields interrupt ordinary enemy attack or healing wind-ups; healing weapons restore 2% of the lowest-health nearby standing ally’s maximum life on a successful enemy hit, at most once per second. Boss moves are not interrupted. These values need playtesting.
 
 ## 14. Communication
 

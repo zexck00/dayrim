@@ -68,15 +68,15 @@ function applyList(rec,map,kind){if(!rec)return false;const [upd,rm]=rec;let cha
 function netSnapshot(m){
   if(!net.inRoom||!net.ents)return;const E=net.ents,me=G.p;
   if(m.p){const [upd,rm]=m.p,others=[];
-    for(const d of upd){if(d.id===me.id){const was=me.s&&me.s.maxHp;patch(me,d,true,true);if(d.lvl!==undefined||d.gold!==undefined||d.potions!==undefined||d.sp!==undefined||d.weapon!==undefined||was!==me.s.maxHp)dirty()}else others.push(d)}
-    if(applyList([others,rm],E.p,'p'))G.players=[...E.p.values()]}
+    for(const d of upd){if(d.id===me.id){const was=me.s&&me.s.maxHp;patch(me,d,true,true);if(d.lvl!==undefined||d.gold!==undefined||d.potions!==undefined||d.sp!==undefined||d.weapon!==undefined||was!==me.s.maxHp)dirty();if(G.mode==='menu'&&menuTab==='weapons'&&(d.gold!==undefined||d.weapon!==undefined||d.weapons!==undefined||d.weaponUpgrades!==undefined||d.nearSafe!==undefined))refreshProgressMenu();if(G.mode==='menu'&&menuTab==='skills'&&(d.sp!==undefined||d.skills!==undefined||d.boonPending!==undefined||d.runBoons!==undefined))refreshProgressMenu()}else others.push(d)}
+    if(applyList([others,rm],E.p,'p')){const before=G.players.length;G.players=[...E.p.values()];if(before!==G.players.length&&before>0)net.scaleNotice=performance.now()+4000}}
   if(applyList(m.e,E.e,'e'))G.enemies=[...E.e.values()];
   if(applyList(m.n,E.n,'n'))G.npcs=[...E.n.values()];
   if(applyList(m.h,E.h,'h'))G.shots=[...E.h.values()];
   if(applyList(m.z,E.z,'z'))G.hazards=[...E.z.values()];
   if(applyList(m.l,E.l,'l'))G.loot=[...E.l.values()];
   if(applyList(m.pr,E.pr,'pr'))G.props=[...E.pr.values()];
-  const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.hope!==undefined)G.hope=g.hope;if(g.obj!==undefined){try{const o=JSON.parse(g.obj);G.obj={i:o.i,done:!!o.d,steps:[],cur:{have:o.h,need:o.n,label:o.l}}}catch(e){}}if(g.maxHope!==undefined)G.hopeMax=g.maxHope;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;if(g.ch!==undefined&&(!G.chain||G.chain.n!==g.ch))G.chain={n:g.ch,t:6,tier:null};if(g.lk!==undefined){try{const L=g.lk?JSON.parse(g.lk):null;G.link=L?{n:L.n,t:L.t,dmg:0,name:'',ids:L.in?[G.p.id]:[]}:null}catch(e){}}
+  const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.hope!==undefined)G.hope=g.hope;if(g.hopeSpent!==undefined)G.hopeSpent=g.hopeSpent;if(g.obj!==undefined){try{const o=JSON.parse(g.obj);G.obj={i:o.i,done:!!o.d,steps:[],cur:{have:o.h,need:o.n,label:o.l}}}catch(e){}}if(g.maxHope!==undefined)G.hopeMax=g.maxHope;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;if(g.ch!==undefined){if(!G.chain)G.chain={n:0,t:0,tier:null};G.chain.n=g.ch}if(g.ct!==undefined){if(!G.chain)G.chain={n:0,t:0,tier:null};G.chain.t=g.ct}if(g.lk!==undefined){try{const L=g.lk?JSON.parse(g.lk):null;G.link=L?{n:L.n,t:L.t,dmg:(linkTier(L.n)||[0,0])[1],name:'',ids:L.in?[G.p.id]:[]}:null}catch(e){}}
     if(g.ban!==undefined){if(g.ban){const b=JSON.parse(g.ban);G.banner={a:b.a,b:b.b,t:b.t}}else G.banner=null}
     if(g.boss!==undefined)net.bossId=g.boss}
   G.boss=net.bossId?E.e.get(net.bossId)||null:null;
@@ -150,14 +150,15 @@ function renderLobby(){
   paintRooms();clearInterval(lobbyPoll);const poll=()=>{if(!net.lobby){clearInterval(lobbyPoll);return}netConnect(()=>netSend({t:'rooms'}))};poll();lobbyPoll=setInterval(poll,3000);
 }
 function paintRooms(){const el=$('rl');if(!el)return;
-  el.innerHTML=net.rooms.length?'<p class="mhead">Open rooms</p>'+net.rooms.map(r=>'<div class="mrow"><div><strong>'+esc(r.host)+'</strong><span>'+(r.side==='hero'?'Heroes':'Villains')+' · Stage '+r.stage+'</span></div><em>'+r.count+'/'+r.max+'</em><button type="button" class="buy" data-room="'+esc(r.code)+'"'+(r.side!==factionOf(chosen)?' disabled title="Choose a character from this side to join"':'')+'>Join</button></div>').join(''):'<p class="mhead">No open rooms right now. Create one.</p>';
+  el.innerHTML=net.rooms.length?'<p class="mhead">Open rooms</p>'+net.rooms.map(r=>'<div class="mrow"><div><strong>'+esc(r.host)+'</strong><span>'+(r.side==='hero'?'Heroes':'Villains')+' · Stage '+r.stage+' · Difficulty ×'+PARTY_SCALE[Math.max(0,Math.min(3,r.count-1))].difficulty+'</span></div><em>'+r.count+'/'+r.max+'</em><button type="button" class="buy" data-room="'+esc(r.code)+'"'+(r.side!==factionOf(chosen)?' disabled title="Choose a character from this side to join"':'')+'>Join</button></div>').join(''):'<p class="mhead">No open rooms right now. Create one.</p>';
   el.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>{const nm=$('nm');net.name=nm?nm.value.slice(0,16):net.name;store.set('dayrim-name',net.name);net.err='';netConnect(()=>{netSend({t:'name',name:net.name});netSend({t:'join',code:b.dataset.room,char:chosen})})})}
 /* Party list, room code and the respawn message, drawn over the game */
 function netHud(small){
-  const me=G.p,x=12;let y=small?116:70;ctx.textAlign='left';
-  ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?150:190,18+G.players.length*17);
-  ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+' · Hope '+(G.hope??0)+'/'+(G.hopeMax??0),x,y);y+=16;
+  const me=G.p,x=12;let y=touchMode?(H<500?220:195):(small?116:70);ctx.textAlign='left';
+  ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?180:225,66+G.players.length*17);
+  ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+' · Hope '+(G.hope??0)+'/'+(G.hopeMax??0),x,y);y+=15;ctx.fillText('Difficulty ×'+partyScale().difficulty+' · Spent '+(G.hopeSpent||0),x,y);y+=15;ctx.fillText('Retry: '+(G.gate&&G.gate.open?'boss gate':'objective checkpoint'),x,y,small?168:210);y+=16;if(net.scaleNotice>performance.now()){ctx.fillStyle='#8fe6ff';ctx.fillText('Difficulty changed',x+75,y-16)}
   for(const q of G.players){const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';const rev=G.players.find(z=>z.reviveTarget===q.id&&z.reviveProgress>0),status=q.respawnT>0?' · '+Math.ceil(q.respawnT)+'s':q.deadT>0?(rev?' · '+Math.round(rev.reviveProgress*100)+'%':' · down '+Math.ceil(q.deadT)+'s'):'';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player')+status,x+(small?55:76),y);y+=17}
+  const selected=G.players.find(q=>q.id===me.reviveTarget&&q.deadT>0);if(selected){ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#8fe6ff';ctx.fillText('Reviving '+(selected.pname||label(selected.char))+' · '+Math.round(me.reviveProgress*100)+'%',x,y);y+=16}else if(G.players.some(q=>q!==me&&q.deadT>0)){ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#d8e9ff';ctx.fillText((touchMode?'Hold revive':'Hold F')+' near an ally ('+(archKey(me.char)==='medic'?120:60)+')',x,y);y+=16}
   const big=(a,b)=>{ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.font='700 '+(small?26:42)+'px "Pixelify Sans",monospace';ctx.strokeText(a,W/2,H*.45);ctx.fillStyle='#ff8f80';ctx.fillText(a,W/2,H*.45);ctx.font='600 15px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(b,W/2,H*.45+26);ctx.fillStyle='#f2ecd8';ctx.fillText(b,W/2,H*.45+26)};
   if(net.down)big('Reconnecting','Trying to get back to room '+net.code);
   else if(me.respawnT>0)big('You bled out','Waking at the safehouse in '+Math.ceil(me.respawnT));else if(me.deadT>0)big('You are down',me.windDown?'Second Wind in '+Math.ceil(me.deadT):'Crawl to an ally · Bleeding out in '+Math.ceil(me.deadT));
