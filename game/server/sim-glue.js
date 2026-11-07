@@ -65,6 +65,8 @@ return{
     G=room.G;EV=room.ev;CUR=room;
     for(const p of G.players)p.ack=p.input.s;
     update(dt);
+    /* Far zones and the scout may be outside a client's view, so the server names the objective's targets and hold time. */
+    if(G.obj){const st=G.obj.steps[G.obj.i];G.obj.wire={tg:objTargets().map(t=>[Math.round(t.x/10)*10,Math.round(t.y/10)*10,t.label]),hn:st&&st.kind==='hold'?zoneNeed():0}}
     for(const f of G.fx){roundDeep(f);ev(['f',f],f.x,f.y)}G.fx=[];G.texts=[];
     G.p=G.players[0];
   },

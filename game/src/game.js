@@ -283,7 +283,7 @@ function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx
    A party too small to split falls back to the timed version from the design: one
    zone at a time, held longer, and it stays down once it is lit. */
 /* Where the current objective actually is. One list for every step kind, so the HUD can point at it. */
-function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;const st=o.steps&&o.steps[o.i];if(!st)return out;
+function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;if(o.tg)return o.tg.map(t=>({x:t[0],y:t[1],label:t[2]}));const st=o.steps&&o.steps[o.i];if(!st)return out;
   if(st.kind==='revive'){for(const c of G.npcs)if(c.wounded&&!c.dead)out.push({x:c.x,y:c.y,label:'Scout'})}
   else if(st.kind==='hold'){for(const z of (o.zones||[]))if(!z.done)out.push({x:z.x,y:z.y,label:'Zone'})}
   else if(st.kind==='carry'){const held=G.players.some(q=>q.carry&&!q.carry.done);
@@ -293,22 +293,25 @@ function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;const st=o.s
   return out}
 const HOLD_ALONE_T=8;
 /* How long the zone on screen needs to be held right now, for the ring on the ground. */
-const zoneNeed=()=>{const o=G.obj,st=o&&o.steps[o.i];return (st&&(st.aloneT||st.t))||2.5};
+const zoneNeed=()=>{const o=G.obj;if(!o)return 2.5;if(o.holdNeed)return o.holdNeed;const st=o.steps[o.i];return (st&&(st.split?st.t:(st.aloneT||st.t)))||2.5};
 function holdStep(st,dt){
-  const zs=G.obj.zones||[],split=st.simul&&partySize()>=st.need;
+  const zs=G.obj.zones||[];
+  /* A zone lit alone stays lit, so someone joining mid-step cannot undo it: the step finishes one zone at a time. */
+  if(zs.some(z=>z.done))st.alone=true;
+  const split=st.simul&&!st.alone&&partySize()>=st.need;
   st.split=!!split;
   if(split){const held=zs.filter(z=>playersNear(z,60)).length;st.holdT=held>=st.need?(st.holdT||0)+dt:0;st.met=st.holdT>=st.t;st.have=held;
     for(const z of zs){z.t=st.met?st.t:st.holdT;if(st.met)z.done=true}}
   else{const need=st.simul?HOLD_ALONE_T:st.t;
     st.aloneT=need;
     for(const z of zs){if(!z.done&&playersNear(z,60))z.t=Math.min(need,(z.t||0)+dt);if((z.t||0)>=need)z.done=true}
-    st.have=zs.filter(z=>z.done).length}}
+    st.have=zs.filter(z=>z.done).length;st.met=st.have>=st.need}}
 /* The escort only moves while somebody stays close. */
 function escortStep(st,dt){const e=G.obj.escort;if(!e)return;if(playersNear(e,220)){const dx=e.tx-e.x,dy=e.ty-e.y,d=Math.hypot(dx,dy)||1;if(d>30){e.x+=dx/d*Math.min(54*dt,d);e.y+=dy/d*Math.min(54*dt,d);e.t+=dt}else e.done=true}st.have=e.done?1:0}
 /* Anything dropped by a player who left, or a stale carrier id, is released. */
 function releaseCarries(){for(const c of (G.obj&&G.obj.items)||[])if(c.by&&!G.players.some(q=>(q.id||0)===c.by&&q.carry===c))c.by=0}
 /* A wipe sends the party back to the last finished step: finished steps stay, the current one starts over. */
-function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false});st.holdT=0;st.have=0;st.met=false}
+function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false});st.holdT=0;st.have=0;st.met=false;st.alone=false}
   else if(st.kind==='carry'){(o.items||[]).forEach(c=>{c.done=false;c.by=0});st.have=0;G.players.forEach(p=>p.carry=null)}
   else if(st.kind==='escort'&&o.escort){o.escort.x=G.safe.x+90;o.escort.y=G.safe.y+70;o.escort.done=false;o.escort.t=0;st.have=0}}
 function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;
@@ -476,7 +479,8 @@ const REACT_NAME={},REACT_PAIR={};
 REACTIONS.forEach(r=>{REACT_NAME[r.id]=r.n;REACT_PAIR[[r.a,r.b].sort().join('+')]=r.id});
 const reactionOf=(a,b)=>(a&&b)?(REACT_PAIR[[a,b].sort().join('+')]||'resonance'):'';
 REACT_NAME.resonance='RESONANCE';
-const REACTION_RAGE=12,REACT_SAME=1.1;
+/* One reaction per target every REACT_CD seconds, so fast weapons cannot turn every second hit into rage and boss guard. */
+const REACTION_RAGE=12,REACT_SAME=1.1,REACT_CD=2;
 /* Splash damage from a reaction. Kept apart from hitEnemy so a reaction can never trigger another reaction. */
 function reactHit(o,dmg,col){if(!o||o.dead||!(dmg>0))return;o.hp-=dmg;o.flash=Math.max(o.flash||0,.11);o.aware=true;burst(o.x,o.y-20,col||'#ffffff',3);if(o.hp<=0)killEnemy(o)}
 function reactSplash(e,dmg,r,col){for(const o of G.enemies){if(o.dead||o===e)continue;if(dist(o,e)<=r+o.r)reactHit(o,dmg,col)}}
@@ -515,8 +519,8 @@ function hitEnemy(e,base,ang,kb,heavy=false){
   if(e.dead||e.buried)return;const p=G.p;let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
   if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
   if(justBroke)bossGuard(e,BOSS_GUARD_GAIN.break);
-  const el=ELEMENT[p.char],prev=e.statusType,solo=G.players.length===1,rid=(el&&e.statusT>0&&prev&&(solo||(e.statusBy||0)!==(p.id||0)))?(solo?'resonance':reactionOf(prev,el)):'';
-  if(rid&&REACT_FX[rid]){const mult=REACT_FX[rid](e,p,base);base*=solo?1+(mult-1)*.5:mult;text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p,solo?.5:1);bossGuard(e,BOSS_GUARD_GAIN.reaction*(solo?.5:1))}
+  const el=ELEMENT[p.char],prev=e.statusType,solo=G.players.length===1,rid=(el&&e.statusT>0&&prev&&G.t>=(e.reactAt||0)&&(solo||(e.statusBy||0)!==(p.id||0)))?(solo?'resonance':reactionOf(prev,el)):'';
+  if(rid&&REACT_FX[rid]){e.reactAt=G.t+REACT_CD;const mult=REACT_FX[rid](e,p,base);base*=solo?1+(mult-1)*.5:mult;text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p,solo?.5:1);bossGuard(e,BOSS_GUARD_GAIN.reaction*(solo?.5:1))}
   else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
   if(e.shatterT>0)base*=1.25;if((e.staggerT||0)>0)base*=BOSS_STAGGER_DMG;
   base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),facing=Math.abs(Math.atan2(Math.sin(ang-e.ang-Math.PI),Math.cos(ang-e.ang-Math.PI))),block=(e.guarding&&facing<1.05)?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;

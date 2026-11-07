@@ -88,7 +88,7 @@ G().p=markman;ok(T.teamTarget(markman,'shooter',{x:brute.x,y:brute.y})===brute,'
 G().p=tank;ok(T.doTeam()&&brute.tauntId===tank.id&&brute.tauntT===4&&tank.tauntGuard>0,'Bruiser taunts and gains protection');
 G().p=striker;ok(T.doTeam()&&striker.breakReady>0,'Striker primes Break');brute.healWind=.8;T.hitEnemy(brute,1,0,0);ok(brute.healWind===0&&brute.healT===3&&brute.exposedT>0&&brute.brokenT>0,'Break interrupts a healer and exposes the target');
 const oldHp=brute.hp;markman.s.crit=0;G().p=markman;T.hitEnemy(brute,100,0,0,true);ok(oldHp-brute.hp>140&&brute.brokenT===0,'an ally heavy hit triggers Break Strike');
-brute.statusT=0;G().p=tank;T.hitEnemy(brute,1,0,0);G().p=striker;T.hitEnemy(brute,1,0,0);ok(brute.stunT>0&&brute.statusT===0,'Soak and Shock from different allies cause Overload');
+brute.statusT=0;brute.reactAt=0;G().p=tank;T.hitEnemy(brute,1,0,0);G().p=striker;T.hitEnemy(brute,1,0,0);ok(brute.stunT>0&&brute.statusT===0,'Soak and Shock from different allies cause Overload');
 markman.hp=markman.s.maxHp*.25;G().p=medic;ok(T.teamTarget(medic,'medic')===markman,'Mend Link previews the lowest-health ally');ok(T.doTeam()&&markman.mendT>0,'Medic links the lowest-health nearby ally');const beforeMend=markman.hp;for(let i=0;i<30;i++)s.step(depth,1/30);ok(markman.hp>beforeMend,'Mend Link heals over time');
 T.enter(depth);brute.stunT=0;brute.role='brute';brute.wind=.01;brute.aware=true;brute.x=tank.x+30;brute.y=tank.y;tank.dashT=.2;tank.inv=1;G().p=tank;T.updateEnemy(brute,.02);ok(brute.exposedT>0,'dodging a brute wind-up creates an opening');
 T.enter(depth);markman.boonPending=false;markman.actions.push({n:'boon',v:'wide'});s.step(depth,1/30);ok(!markman.runBoons.wide,'unearned boon is rejected');T.enter(depth);T.offerBoons();markman.actions.push({n:'boon',v:'__proto__'},{n:'boon',v:'wide'},{n:'boon',v:'opening'});s.step(depth,1/30);ok(markman.runBoons.wide===1&&!markman.runBoons.opening&&!markman.boonPending,'checkpoint permits exactly one valid choice');ok(s.saveOf(markman).runBoons.wide===1,'checkpoint choice survives save round trip');
@@ -485,6 +485,25 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
   put();step(60);ok(!T.G.obj.done,'a partial hold is not the objective');
   for(let i=0;i<40;i++){put();step(1)}
   ok(T.G.obj.done&&T.G.gate.open,'two players holding both plates finish it in three seconds')}
+ // A wipe restarts the step, and the step can still be finished afterwards.
+ for(const [stage,name] of [[2,'beacons'],[6,'solo plates'],[9,'solo shrines']]){const {p,step}=atStage(stage,['Detective']);const zs=T.G.obj.zones;
+  const light=z=>{for(let i=0;i<260&&!z.done;i++){p.x=z.x;p.y=z.y;step(1)}};
+  light(zs[0]);ok(zs[0].done,stage+': first zone lit before the wipe');T.resetStepState();ok(!zs[0].done&&!T.G.obj.done,stage+': the wipe relights nothing');
+  for(const z of zs)light(z);step(1);ok(T.G.obj.done&&T.G.gate.open,'a wipe does not soft-lock the '+name)}
+ // A party that shrinks mid-step finishes with the fallback.
+ {const {rr,list,p,step}=atStage(6,['Detective','Firefighter']);const zs=T.G.obj.zones,st=T.G.obj.steps[T.G.obj.i];ok(st.split&&st.met===false,'two players start on the simultaneous plates');
+  s.removePlayer(rr,list[1]);T.enter(rr);for(const z of zs){for(let i=0;i<260&&!z.done;i++){p.x=z.x;p.y=z.y;step(1)}}step(1);
+  ok(T.G.obj.done&&T.G.gate.open,'the player left behind can still finish both plates')}
+ // Someone joining a fallback hold keeps the zone that is already lit.
+ {const {rr,p,step}=atStage(6,['Detective']);const zs=T.G.obj.zones,st=T.G.obj.steps[T.G.obj.i];for(let i=0;i<260&&!zs[0].done;i++){p.x=zs[0].x;p.y=zs[0].y;step(1)}
+  const j=s.addPlayer(rr,'Firefighter',null,'Late');T.enter(rr);j.inv=1e9;j.x=zs[0].x+900;j.y=zs[0].y;step(2);
+  ok(zs[0].done&&!st.split&&T.objTargets().length===1,'a late joiner does not undo a lit plate, and the pointer stays on the other');
+  for(let i=0;i<260&&!zs[1].done;i++){p.x=zs[1].x;p.y=zs[1].y;step(1)}step(1);ok(T.G.obj.done&&T.G.gate.open,'and the party finishes one plate at a time');
+  const {rr:r2,step:st2,p:p2}=atStage(6,['Detective']);const z2=T.G.obj.zones;for(let i=0;i<260&&!z2[0].done;i++){p2.x=z2[0].x;p2.y=z2[0].y;st2(1)}const late=s.addPlayer(r2,'Firefighter',null,'Late2');T.enter(r2);late.inv=1e9;st2(2);s.removePlayer(r2,late);T.enter(r2);for(let i=0;i<260&&!z2[1].done;i++){p2.x=z2[1].x;p2.y=z2[1].y;st2(1)}st2(1);
+  ok(T.G.obj.done&&T.G.gate.open,'joining and leaving during a hold cannot soft-lock it')}
+ // The ring fills to the time the step really needs, on the server and from the wire.
+ {const {step}=atStage(6,['Detective']);ok(T.zoneNeed()===T.HOLD_ALONE_T&&T.G.obj.wire.hn===T.HOLD_ALONE_T,'a fallback plate ring needs eight seconds');T.G.obj.holdNeed=T.G.obj.wire.hn;ok(T.zoneNeed()===8,'an online client reads the hold time it was sent');delete T.G.obj.holdNeed}
+ {const {step}=atStage(6,['Detective','Firefighter']);ok(T.zoneNeed()===3&&T.G.obj.wire.hn===3,'a split plate ring needs three seconds')}
  // Two players on three shrines is too few to split, so it falls back.
  {const {step}=atStage(9,['Detective','Firefighter']);const o=T.G.obj,st=o.steps[o.i];
   ok(T.G.obj.zones.length===3&&!st.split&&st.aloneT===T.HOLD_ALONE_T,'two players on three shrines fall back to one at a time')}}
@@ -529,6 +548,16 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
   ok(st.kind==='escort'&&T.objTargets().length===1&&T.objTargets()[0].label==='Boat','an escort step points at the boat')}
  {const {rr,p}=go(2,['Detective']);const o=T.G.obj,st=o.steps[o.i];
   ok(T.objTargets().length>=1,'a beacon step points at the beacons that are still dark')}}
+// An online client cannot see the objective's rules or far props, so the snapshot carries where to point.
+{const {snapshot,newClient}=require('./sync');const rr=mk(),p=s.createRoom(rr,'Detective',null,'Wire');T.enter(rr);p.maxStage=10;p.nearSafe=true;s.hostAction(rr,p,'travel','1');T.enter(rr);T.G.enemies=[];T.G.killsStage=999;T.G.spawnT=1e9;p.inv=1e9;s.step(rr,1/30);rr.ev.length=0;T.enter(rr);
+ const scout=T.G.npcs.find(c=>c.wounded);scout.x=p.x+5000;scout.y=p.y;s.step(rr,1/30);rr.ev.length=0;T.enter(rr);
+ const m=snapshot(rr,p,newClient(),1),o=JSON.parse(m.g.obj);ok(o.tg.length===1&&o.tg[0][2]==='Scout'&&Math.abs(o.tg[0][0]-scout.x)<=5&&!(m.n&&m.n[0].some(c=>c.wounded)),'the snapshot names a target the client has not been sent');
+ const client={i:o.i,done:false,steps:[],cur:{have:o.h,need:o.n,label:o.l},tg:o.tg,holdNeed:o.hn},real=T.G.obj;T.G.obj=client;const out=T.objTargets();T.G.obj=real;ok(out.length===1&&out[0].label==='Scout'&&out[0].x===o.tg[0][0],'the client turns it into a pointer without the step list')}
+// Reactions are limited per target, so fast weapons cannot turn every second hit into rage and boss guard.
+{const r=mk(),a=s.createRoom(r,'Detective',null,'Rate');T.enter(r);G().mp=false;G().enemies=[];const e=rxFoe(rxBy(),G().safe.y);G().enemies=[e];a.rage=0;G().p=a;
+ T.hitEnemy(e,10,0,0);T.hitEnemy(e,10,0,0);ok(a.rage===6,'the second hit reacts');for(let i=0;i<8;i++)T.hitEnemy(e,10,0,0);ok(a.rage===6&&e.statusT>0,'further hits only refresh the status during the cooldown');
+ G().t+=2.01;T.hitEnemy(e,10,0,0);ok(a.rage===12,'the next reaction fires once the cooldown ends');
+ const b=rxFoe(rxBy()+40,G().safe.y);G().enemies.push(b);T.hitEnemy(b,10,0,0);T.hitEnemy(b,10,0,0);ok(a.rage===18,'the cooldown belongs to each target')}
 console.log('\n'+n+' checks passed');
 
 
