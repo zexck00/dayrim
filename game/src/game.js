@@ -72,7 +72,7 @@ const upgradeLevel=(p,id)=>Math.max(0,Math.min(2,Number.isInteger((p.weaponUpgra
 function upgradeWeapon(id){const p=G.p,kit=kitOf(p);if(typeof id!=='string'||!p.nearSafe)return false;if(kit?id!=='signature':(!Object.prototype.hasOwnProperty.call(WEAPONS,id)||!p.weapons.includes(id)))return false;const n=upgradeLevel(p,id),cost=upgradeCost(n);if(!cost||p.gold<cost)return false;p.gold-=cost;p.weaponUpgrades=p.weaponUpgrades||{};p.weaponUpgrades[id]=n+1;dirty();writeSave();return true}
 const STAGES=[
  {n:'Sunrise Hollow',h:6,boss:'Crystal Scurrier',ah:96,r:30,biome:0},
- {n:'Noonshade Thicket',h:11,boss:'Gloom Eye',ah:100,r:30,biome:1},
+ {n:'Noonshade Thicket',h:11,boss:'Gloom Eye',ah:100,r:30,biome:1,thicket:9},
  {n:'Duskwater Fen',h:17,boss:'Banshee Phantasm',ah:124,r:30,biome:2},
  {n:'Webbed Barrow',h:21,boss:'Chitin Horror',ah:112,r:38,biome:3},
  {n:'Sporefall Marsh',h:5,boss:'Spore Brute',ah:130,r:40,biome:2},
@@ -199,10 +199,14 @@ function genCity(){
   // ruins and braziers in the two main clearings, torches along the way
   [s,e].forEach(n=>{for(let a=0;a<6;a++){const an=a/6*TAU,px=n.x+Math.cos(an)*6.5,py=n.y+Math.sin(an)*4.5;if(!map[idx(Math.round(px),Math.round(py))]){const l={t:a%2?'ruin':'lamp',x:(px+.5)*T,y:(py+.5)*T,v:a%3};props.push(l);if(!(a%2))lamps.push(l)}}});
   nodes.slice(1,-1).forEach(n=>{if(!map[idx(n.x,n.y)]){const l={t:'lamp',x:(n.x+.5)*T,y:(n.y+.5)*T};props.push(l);lamps.push(l)}});
+  /* Stage rule: patches of tall thicket on plain ground. Seeded like the rest of the map, so client and server agree. */
+  const thicket=new Uint8Array(N),cover=[];
+  for(let k=STAGES[((G&&G.stage)||1)-1].thicket||0;k>0;k--){let c=null;for(let t=0;t<30&&!c;t++){const x=irnd(5,MW-6),y=irnd(4,MH-5);if(!map[idx(x,y)]&&!ground[idx(x,y)]&&Math.hypot(x-s.x,y-s.y)>10&&Math.hypot(x-e.x,y-e.y)>8)c={x,y}}if(!c)continue;
+    const rx=irnd(3,5),ry=irnd(2,4);for(let y=Math.max(2,c.y-ry-1);y<=Math.min(MH-3,c.y+ry+1);y++)for(let x=Math.max(2,c.x-rx-1);x<=Math.min(MW-3,c.x+rx+1);x++){const i=idx(x,y);if(map[i]||ground[i]||thicket[i]||((x-c.x)/rx)**2+((y-c.y)/ry)**2+rnd(-.2,.2)>=1)continue;thicket[i]=1;cover.push(i);for(let b=0;b<3;b++)put('thicket',x,y,b)}}
   const openList=[];for(let i=0;i<N;i++)if(!map[i])openList.push(i);
   mctx.fillStyle='#14181c';mctx.fillRect(0,0,MW,MH);
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=idx(x,y);if(map[i])continue;mctx.fillStyle=ground[i]===1?biome.d:ground[i]===2?'#a89a7c':ground[i]===3?biome.wa[1]:ground[i]===4?'#7a5a38':biome.g[0];mctx.fillRect(x,y,1,1)}
-  return{map,ground,deco,bld,props,lamps,cars:[],open:openList,biome,start:{x:s.x-6,y:s.y-5},boss:{x:e.x-6,y:e.y-5},flow:new Int16Array(N),queue:new Int32Array(N)};
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=idx(x,y);if(map[i])continue;mctx.fillStyle=thicket[i]?biome.leaf[0]:ground[i]===1?biome.d:ground[i]===2?'#a89a7c':ground[i]===3?biome.wa[1]:ground[i]===4?'#7a5a38':biome.g[0];mctx.fillRect(x,y,1,1)}
+  return{map,ground,deco,bld,props,lamps,thicket,cover,cars:[],open:openList,biome,start:{x:s.x-6,y:s.y-5},boss:{x:e.x-6,y:e.y-5},flow:new Int16Array(N),queue:new Int32Array(N)};
 }
 const wall=(tx,ty)=>tx<0||ty<0||tx>=MW||ty>=MH||G.w.map[idx(tx,ty)]===1;
 function blocked(x,y,r){const a=r*.8;return wall((x-a)/T|0,(y-a)/T|0)||wall((x+a)/T|0,(y-a)/T|0)||wall((x-a)/T|0,(y+a)/T|0)||wall((x+a)/T|0,(y+a)/T|0)}
@@ -245,7 +249,7 @@ function placeInStage(n){const w=G.w;G.safe={x:(w.start.x+6)*T,y:(w.start.y+5)*T
    fall back to the kill quota, so every stage still finishes. */
 const STAGE_STEPS={
   1:[{kind:'kill',label:'Defeat the villains'},{kind:'revive',n:1,label:'Revive the wounded scout'}],
-  2:[{kind:'kill',label:'Defeat the villains'},{kind:'hold',n:3,t:2.5,label:'Light the three beacons'}],
+  2:[{kind:'kill',label:'Defeat the villains'},{kind:'hold',n:3,t:5,guard:true,mark:'Beacon',label:'Light the three beacons'}],
   3:[{kind:'kill',label:'Defeat the villains'},{kind:'escort',t:60,label:'Escort the lantern boat'}],
   4:[{kind:'kill',label:'Defeat the villains'}],
   5:[{kind:'kill',label:'Defeat the villains'},{kind:'carry',n:3,label:'Carry the canisters to the vents'}],
@@ -267,7 +271,7 @@ function onStepStart(st){if(!st)return;st.have=0;
   else if(st.kind==='hold')spawnZones(st.need);
   else if(st.kind==='carry')spawnCarries(st.need);
   else if(st.kind==='escort')spawnEscort();
-  if(st.label)G.banner={t:3,a:st.label,b:st.kind==='revive'?'Hold F beside the scout':st.kind==='carry'?'Carriers cannot attack':st.kind==='escort'?'Stay close to keep it moving':'Boss gate opens when this is done'}}
+  if(st.label)G.banner={t:3,a:st.label,b:st.kind==='revive'?'Hold F beside the scout':st.kind==='carry'?'Carriers cannot attack':st.kind==='escort'?'Stay close to keep it moving':st.guard?'Hits on the lighter set a beacon back':'Boss gate opens when this is done'}}
 function openGate(){if(!G.gate||G.gate.open)return;G.gate.open=true;G.banner={t:3,a:'Boss gate open',b:'Choose a checkpoint boon in Skills'};sfx('level');addLog('The boss gate is open.');offerBoons()}
 /* Hold, carry and escort steps all spawn props: one synced list, one renderer, one set of rules. */
 let propSeq=1;
@@ -285,7 +289,7 @@ function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx
 /* Where the current objective actually is. One list for every step kind, so the HUD can point at it. */
 function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;if(o.tg)return o.tg.map(t=>({x:t[0],y:t[1],label:t[2]}));const st=o.steps&&o.steps[o.i];if(!st)return out;
   if(st.kind==='revive'){for(const c of G.npcs)if(c.wounded&&!c.dead)out.push({x:c.x,y:c.y,label:'Scout'})}
-  else if(st.kind==='hold'){for(const z of (o.zones||[]))if(!z.done)out.push({x:z.x,y:z.y,label:'Zone'})}
+  else if(st.kind==='hold'){for(const z of (o.zones||[]))if(!z.done)out.push({x:z.x,y:z.y,label:st.mark||'Zone'})}
   else if(st.kind==='carry'){const held=G.players.some(q=>q.carry&&!q.carry.done);
     if(held&&o.drop)out.push({x:o.drop.x,y:o.drop.y,label:'Drop'});
     else for(const c of (o.items||[]))if(!c.done&&!c.by)out.push({x:c.x,y:c.y,label:'Canister'})}
@@ -294,6 +298,11 @@ function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;if(o.tg)retu
 const HOLD_ALONE_T=8;
 /* How long the zone on screen needs to be held right now, for the ring on the ground. */
 const zoneNeed=()=>{const o=G.obj;if(!o)return 2.5;if(o.holdNeed)return o.holdNeed;const st=o.steps[o.i];return (st&&(st.split?st.t:(st.aloneT||st.t)))||2.5};
+/* Starting a beacon draws one wave at whoever is lighting it, once per beacon. */
+const BEACON_WAVE=2,BEACON_KNOCK=1;
+function beaconAlarm(z){for(let i=Math.round(BEACON_WAVE*partyCrowd());i>0;i--){const a=rnd(TAU),o={x:z.x+Math.cos(a)*220,y:z.y+Math.sin(a)*220},at=blocked(o.x,o.y,12)?{x:z.x,y:z.y}:o,e=spawnMob(0,at,false);if(e)e.aware=true}G.banner={t:2.4,a:'Protect the lighter',b:'Enemies are coming to the beacon'}}
+/* A hit on someone lighting a beacon sets that beacon back. Rules only: an online client has no step list. */
+function beaconHit(p){const o=G.obj,st=o&&!o.done&&o.steps[o.i];if(!st||!st.guard)return;for(const z of o.zones||[])if(!z.done&&z.t>0&&dist(p,z)<=60)z.t=Math.max(0,z.t-BEACON_KNOCK)}
 function holdStep(st,dt){
   const zs=G.obj.zones||[];
   /* A zone lit alone stays lit, so someone joining mid-step cannot undo it: the step finishes one zone at a time. */
@@ -304,14 +313,14 @@ function holdStep(st,dt){
     for(const z of zs){z.t=st.met?st.t:st.holdT;if(st.met)z.done=true}}
   else{const need=st.simul?HOLD_ALONE_T:st.t;
     st.aloneT=need;
-    for(const z of zs){if(!z.done&&playersNear(z,60))z.t=Math.min(need,(z.t||0)+dt);if((z.t||0)>=need)z.done=true}
+    for(const z of zs){if(!z.done&&playersNear(z,60)){if(st.guard&&!z.alarm){z.alarm=true;beaconAlarm(z)}z.t=Math.min(need,(z.t||0)+dt)}if((z.t||0)>=need)z.done=true}
     st.have=zs.filter(z=>z.done).length;st.met=st.have>=st.need}}
 /* The escort only moves while somebody stays close. */
 function escortStep(st,dt){const e=G.obj.escort;if(!e)return;if(playersNear(e,220)){const dx=e.tx-e.x,dy=e.ty-e.y,d=Math.hypot(dx,dy)||1;if(d>30){e.x+=dx/d*Math.min(54*dt,d);e.y+=dy/d*Math.min(54*dt,d);e.t+=dt}else e.done=true}st.have=e.done?1:0}
 /* Anything dropped by a player who left, or a stale carrier id, is released. */
 function releaseCarries(){for(const c of (G.obj&&G.obj.items)||[])if(c.by&&!G.players.some(q=>(q.id||0)===c.by&&q.carry===c))c.by=0}
 /* A wipe sends the party back to the last finished step: finished steps stay, the current one starts over. */
-function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false});st.holdT=0;st.have=0;st.met=false;st.alone=false}
+function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false;z.alarm=false});st.holdT=0;st.have=0;st.met=false;st.alone=false}
   else if(st.kind==='carry'){(o.items||[]).forEach(c=>{c.done=false;c.by=0});st.have=0;G.players.forEach(p=>p.carry=null)}
   else if(st.kind==='escort'&&o.escort){o.escort.x=G.safe.x+90;o.escort.y=G.safe.y+70;o.escort.done=false;o.escort.t=0;st.have=0}}
 function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;
@@ -550,7 +559,7 @@ function gainXp(x){const p=G.p;p.xp+=x;let up=false;
   while(p.xp>=xpNeed(p.lvl)){p.xp-=xpNeed(p.lvl);p.lvl++;p.sp++;up=true}
   if(up){recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana;sfx('level');burst(p.x,p.y-20,'#e8c95c',28,220);text(p.x,p.y-74,'Level '+p.lvl,'#e8c95c',true);addLog('Level '+p.lvl+'. Skill point earned (press T).');writeSave()}}
 function hurtPlayer(d){
-  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;p.hitT=.18;shake(5);sfx('hurt');
+  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;beaconHit(p);p.hitT=.18;shake(5);sfx('hurt');
   text(p.x,p.y-72,'-'+Math.round(v),'#ff6a5f');burst(p.x,p.y-20,'#f0805c',8);if(!p.guard)bleed(p.x,p.y-24,rnd(-1,1),rnd(-1,1),clamp(Math.round(v/Math.max(1,p.s.maxHp)*60),3,22));
   if(p.hp<=0){p.hp=0;if(G.players.length===1&&!p.secondWind){p.secondWind=true;playerDown(p,true);writeSave()}else if(G.mp)playerDown(p);else{p.gold=Math.floor(p.gold*.8);writeSave();setMode('dead')}}
 }
@@ -583,7 +592,7 @@ function explode(s){const p=G.p,R=s.blast||p.s.blast;impact(s,R);sfx('boom');sha
 const TEAM_ABILITY={bruiser:{n:'Taunt',cd:14,d:'Draw nearby enemies and reduce damage taken.'},striker:{n:'Break',cd:12,d:'Your next hit breaks a target and can interrupt a cast.'},shooter:{n:'Mark',cd:10,d:'Mark an aimed enemy so the party deals more damage.'},medic:{n:'Mend Link',cd:8,d:'Heal the lowest-life nearby ally over time.'},scout:{n:'Rescue Dash',cd:12,d:'Dash to an ally and shield you both.'}};
 function chooseBoon(id){const p=G.p;if(!p.boonPending||(id!=='wide'&&id!=='opening'))return false;const b=p.runBoons||(p.runBoons={wide:0,opening:0});if((b[id]||0)>=3)return false;b[id]=(b[id]||0)+1;p.boonPending=false;addLog(id==='wide'?'Dodge protection increased.':'Dodge openings last longer.');writeSave();return true}
 /* One target rule for both the action and the player's target preview. */
-function teamTarget(p,k,aim=mouse){if(k==='shooter')return G.enemies.filter(e=>!e.dead&&dist(e,p)<450&&los(p,e)).sort((a,b)=>Math.hypot(a.x-aim.x,a.y-aim.y)-Math.hypot(b.x-aim.x,b.y-aim.y))[0]||null;
+function teamTarget(p,k,aim=mouse){if(k==='shooter')return G.enemies.filter(e=>!e.dead&&dist(e,p)<450&&los(p,e)&&!concealed(e,p)).sort((a,b)=>Math.hypot(a.x-aim.x,a.y-aim.y)-Math.hypot(b.x-aim.x,b.y-aim.y))[0]||null;
   if(k==='medic')return G.players.filter(q=>!q.deadT&&!q.respawnT&&dist(q,p)<400).sort((a,b)=>a.hp/a.s.maxHp-b.hp/b.s.maxHp)[0]||null;
   if(k==='scout')return G.players.filter(q=>q!==p&&!q.respawnT&&dist(q,p)<350).sort((a,b)=>a.hp/a.s.maxHp-b.hp/b.s.maxHp)[0]||null;return null}
 function doTeam(){const p=G.p;if(p.carry)return false;const k=archKey(p.char),ability=TEAM_ABILITY[k];if(!ability||p.teamCd>0||p.deadT>0||p.respawnT>0||G.mode!=='play')return false;
@@ -796,7 +805,7 @@ function stash(it){const p=G.p;p.bag.unshift(it);if(p.bag.length>12){const w=p.b
 function stageCleared(){const n=G.stage;for(const p of G.players){if(n>=p.maxStage)p.maxStage=Math.min(10,n+1);p.beaten=Math.max(p.beaten,n)}G.clearPending=1.6;writeSave()}
 
 /* ---------- Update ---------- */
-function nearestEnemy(){let b=null,bd=380;for(const e of G.enemies){if(e.dead)continue;const d=dist(e,G.p);if(d<bd&&los(e,G.p)){bd=d;b=e}}return b}
+function nearestEnemy(){let b=null,bd=380;for(const e of G.enemies){if(e.dead||concealed(e,G.p))continue;const d=dist(e,G.p);if(d<bd&&los(e,G.p)){bd=d;b=e}}return b}
 function updatePlayer(p,dt){
   G.p=p;applyInput(p);if(p.respawnT>0){p.respawnT-=dt;p.moving=false;if(p.respawnT<=0)respawn(p);return}if(p.deadT>0){p.inv=Math.max(0,p.inv-dt);p.deadT-=dt;if(p.deadT<=0){if(p.windDown){p.windDown=false;revive(p)}else bleedOut(p);return}const v=moveVec();move(p,v.x*p.s.speed*.25*dt,v.y*p.s.speed*.25*dt);p.moving=!!(v.x||v.y);if(p.moving){p.walk+=dt*5;p.moveA=Math.atan2(v.y,v.x)}return}
   updateRevive(p,dt);
@@ -835,7 +844,7 @@ function update(dt){
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
   // keep the streets populated: more rivals at night, more citizens by day
   const n=nightness(G.hour);G.spawnT-=dt;
-  if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending)useMobs()?spawnMob(520):spawnRival(520);
+  if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue())useMobs()?spawnMob(520):spawnRival(520);
     const wantN=Math.round(14*(1-n)+3);if(G.npcs.length<wantN)spawnNpc();else if(G.npcs.length>wantN)G.npcs.splice(G.npcs.findIndex(c=>dist(c,nearestPlayer(c))>500)>>>0,1)}
   if(useMobs()&&!G.clearPending){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
   updateNpcs(dt);tickHazards(dt);G.p=G.players[0];
@@ -876,6 +885,23 @@ function tickFx(dt){for(const f of G.fx){f.t-=dt;if(f.k==='p'){f.x+=f.vx*dt;f.y+
   for(const x of G.texts){x.t-=dt;x.y-=34*dt}G.texts=G.texts.filter(x=>x.t>0);G.shake*=Math.pow(.002,dt);
   const c=G.cam,p=G.p;c.x+=(p.x-c.x)*Math.min(1,dt*8);c.y+=(p.y-30-c.y)*Math.min(1,dt*8)}
 function steer(e,dt,sp,seen){const a=seen?Math.atan2(G.p.y-e.y,G.p.x-e.x):flowAngle(e);if(a===null||a===undefined)return;const sp2=sp*(e.slowT>0?.6:1);e.ang=a;move(e,Math.cos(a)*sp2*dt,Math.sin(a)*sp2*dt);e.walk=(e.walk||0)+dt*(sp2/18);e.moving=true}
+/* Stage rule: an enemy in the thicket stays hidden from a viewer beyond THICKET_SEE, unless it is marked, just hit or springing. */
+const THICKET_SEE=120;
+const inThicket=o=>!!G.w.thicket[idx(clamp(o.x/T|0,0,MW-1),clamp(o.y/T|0,0,MH-1))];
+const concealed=(e,v)=>e.kind==='rival'&&!(e.markT>0)&&!(e.flash>0)&&!(e.aimT>0)&&!(e.pounceT>0)&&inThicket(e)&&dist(e,v)>THICKET_SEE;
+/* Stalker: waits in cover, shows a short warning, then lunges. Dodging the lunge leaves it open. Afterwards it fights as a rusher. */
+const STALKER_CAP=2,STALKER_SPRING=220,STALKER_AIM=.45,STALKER_LUNGE=.55;
+function spawnStalker(){const W=G.w;for(let t=0;t<40;t++){const c=pick(W.cover),o={x:(c%MW+.5)*T,y:((c/MW|0)+.5)*T};if(dist(o,G.safe)<=240||G.players.some(q=>dist(o,q)<300))continue;const e=spawnMob(0,o,false);if(!e)return null;e.role='stalker';e.lurk=true;e.hp*=2.2;e.maxHp*=2.2;e.dmg*=1.6;e.sp*=1.15;e.xp*=2;e.gold*=2;return e}return null}
+const stalkerDue=()=>G.w.cover.length&&G.enemies.filter(e=>!e.dead&&e.role==='stalker').length<Math.round(STALKER_CAP*partyCrowd())&&spawnStalker();
+function stalkerAct(e,dt,d,seen){const p=G.p;
+  if(e.pounceT>0){e.pounceT-=dt;move(e,Math.cos(e.ang)*e.sp*3.6*dt,Math.sin(e.ang)*e.sp*3.6*dt);e.walk+=dt*14;e.moving=true;
+    if(!e.struck&&dist(e,p)<e.r+p.r+14){const was=p.hp;hurtPlayer(e.dmg*1.5);e.atkShow=.2;e.struck=p.hp<was?1:-1;e.pounceT=0}
+    if(e.pounceT<=0){if(e.struck!==1)expose(e,2);e.struck=0;e.cd=1.2}return true}
+  if(e.aimT>0){e.aimT-=dt;e.ang=Math.atan2(p.y-e.y,p.x-e.x);if(e.aimT<=0){e.aimT=0;e.lurk=false;e.pounceT=STALKER_LUNGE;e.aware=true}return true}
+  if(!e.lurk)return false;
+  if(seen&&d<STALKER_SPRING&&dist(p,G.safe)>110){e.aimT=STALKER_AIM;text(e.x,e.y-88,'AMBUSH','#ff8f80',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:10,to:60,t:STALKER_AIM,m:STALKER_AIM,c:'#ff8f80'});return true}
+  if(e.flash>0){e.lurk=false;e.aware=true;return false}
+  return true}
 function updateEnemy(e,dt){
   if(e.dead)return;threatDecay(e,dt);const p=G.p;e.tauntT=Math.max(0,(e.tauntT||0)-dt);e.markT=Math.max(0,(e.markT||0)-dt);e.brokenT=Math.max(0,(e.brokenT||0)-dt);e.exposedT=Math.max(0,(e.exposedT||0)-dt);e.statusT=Math.max(0,(e.statusT||0)-dt);e.shatterT=Math.max(0,(e.shatterT||0)-dt);e.slowT=Math.max(0,(e.slowT||0)-dt);
   if(e.rotT>0){e.rotT=Math.max(0,e.rotT-dt);const rotBy=G.players.find(x=>(x.id||0)===(e.rotBy||0)),was=G.p;if(rotBy)G.p=rotBy;e.hp-=e.rotRate*dt;e.flash=Math.max(e.flash||0,.05);if(e.hp<=0){killEnemy(e);G.p=was;return}G.p=was}
@@ -887,6 +913,7 @@ function updateEnemy(e,dt){
   if(!e.aware&&d<360&&seen&&dist(p,G.safe)>110)e.aware=true;
   if(e.aware&&d>900&&e.kind!=='boss')e.aware=false;
   if(e.kind==='boss')return updateBoss(e,dt,d,seen);
+  if(e.role==='stalker'&&stalkerAct(e,dt,d,seen))return;
   if(!e.aware){let tg=null,bd=170;for(const c of G.npcs){const dd=dist(c,e);if(!c.dead&&dd<bd){bd=dd;tg=c}}if(tg){e.ang=Math.atan2(tg.y-e.y,tg.x-e.x);if(bd>e.r+14){move(e,Math.cos(e.ang)*e.sp*.8*dt,Math.sin(e.ang)*e.sp*.8*dt);e.walk+=dt*7;e.moving=true}else if(e.cd<=0){e.cd=1.1;e.atkShow=.2;hitNpc(tg,e.dmg*1.4,e.ang,false)}return}e.wander-=dt;if(e.wander<=0){e.wander=rnd(1.5,4);e.wa=rnd(TAU);e.still=Math.random()<.35}if(!e.still){const h=move(e,Math.cos(e.wa)*e.sp*.4*dt,Math.sin(e.wa)*e.sp*.4*dt);e.ang=e.wa;e.walk+=dt*6;e.moving=true;if(h)e.wander=0}return}
   const a=e.a;
   if(dist(p,G.safe)<70){e.aware=false;return}
