@@ -592,6 +592,8 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  {const {p,step}=arena(),e=foe(p,60,0);e.method='shield';e.cd=9;e.ang=0;e.a.melee=true;p.x=e.x-60;p.y=e.y;step(1);ok(Math.abs(e.ang)<.2,'a guard turns slowly, so flanking it works')}
  {const {rr,p,step}=arena(),o=T.G.safe;T.G.w.cover=[Math.floor((p.y+200)/40)*78+Math.floor((p.x+300)/40)];T.G.w.thicket[T.G.w.cover[0]]=1;const e=foe(p,300,100,'stalker');e.lurk=false;e.tok=0;e.cd=9;e.hideT=99;T.G.p=p;for(let i=0;i<200&&!e.lurk;i++){e.cd=9;T.updateEnemy(e,.05)}ok(e.lurk&&!e.aware,'a Stalker slips back into cover after a while')}
  {const {p,step}=arena();T.summonBoss();const b=T.G.boss;b.x=p.x+80;b.y=p.y;T.G.p=p;b.act='walk';b.actT=5;b.cd=9;p.healFx=.8;T.updateEnemy(b,.01);ok(b.actT<=.1&&b.cd<=.1,'a boss punishes healing by acting sooner');p.healFx=0;b.act='slam';b.actT=.001;b.cd=0;b.tel={k:'circle',r:50};const bc=[T.AI.bossChain,T.AI.bossChainLow];T.AI.bossChain=T.AI.bossChainLow=1;T.updateEnemy(b,.01);[T.AI.bossChain,T.AI.bossChainLow]=bc;ok(b.act==='slam'&&b.tel&&b.actT>=.6,'a boss can chain attacks, and each keeps its full warning')}}
+// Enemy damage is set in hits to down a player at the recommended level.
+{const rr=mk(),p=s.createRoom(rr,'Detective',null,'Hits');T.enter(rr);const want=[10,8,7,7,7,7,7,7,7,7],got=[];for(let st=1;st<=10;st++){p.lvl=T.recLevel(st);T.recalc(p);const ar=p.s.armor,h=p.s.maxHp/(T.mobHit(st)*.7*(1-ar/(ar+60)));got.push(+h.toFixed(1));ok(h<=want[st-1]+.01,'stage '+st+': a weak hit takes at most '+want[st-1]+' to down a player at the recommended level: '+h.toFixed(1))}ok(got[0]>=got[1]&&got[1]>=got[2],'and Stage 1 stays the gentlest')}
 console.log('\n'+n+' checks passed');
 
 

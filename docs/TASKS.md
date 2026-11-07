@@ -124,6 +124,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | C-28 | C | M | Review boss-gate boon choices and their run/save lifecycle | Choices are discoverable, meaningful and reset at the agreed end of a run; tested solo and online | C-18 |
 | C-29 | C | S | **Haste:** levels and trained Agility shorten every cooldown through one `cdMul`, floored at 60% of base | Rule tests cover the curve, the floor and that dash and team abilities use it; sheet shows Haste | |
 | C-30 | C | S | **Gore pass:** damage-scaled blood, chunks on heavy hits and kills, pools, wound trails, per-family blood colour | Works solo and online, decal list capped, tests added; Z review | |
+| C-86 | C | L | **Enemy AI overhaul:** attack slots and circling, tracked wind-ups, combos, delayed swings, punishes, leading shots, role behaviour, boss chains and a hits-to-down damage curve | Prototype: tuned from the `AI` table and `WEAK_HITS_TO_DOWN` in `game.js`, with rule tests and `game/tools/ai-trial.js` samples. Changes how solo plays, so it needs Z's approval. | Human playtests, kit villain behaviour and Z's review of the ×8 party stack with stronger enemies |
 | D-26 | D | M | Measure and polish the optional bundled Three.js r187 effects layer | Offline fallback, context loss, reduced motion and performance tested on target devices | D-09 |
 
 ### Minions, day and night, power-ups

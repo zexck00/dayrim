@@ -779,6 +779,9 @@ const GUN_UP=[{angles:[0],damage:1},{angles:[-.18,0,.18],damage:.4},{angles:[-.3
 const SPELL_UP=[{angles:[0],damage:1,blast:44},{angles:[-.18,0,.18],damage:.45,blast:56},{angles:[-.36,0,.36],damage:.45,blast:68}];
 const recDamage=s=>11+2.6*recLevel(s);
 const mobUnit=s=>recDamage(s)*REC_HITS/.6;
+/* Enemy damage is set in hits to down a player at the recommended level, like enemy life is set in hits to kill. The old curve left 20 or more weak hits on early stages. Later stages keep the old curve where it is already harsher. Life and armor follow recalc. */
+const WEAK_HITS_TO_DOWN=[10,8,7];
+const mobHit=s=>{const L=recLevel(s),hp=95+L*18,ar=L*1.6,hits=WEAK_HITS_TO_DOWN[Math.min(s,WEAK_HITS_TO_DOWN.length)-1];return Math.max(11*Math.pow(1.36,s-1),hp/((1-ar/(ar+60))*.7*hits))};
 const bossHp=s=>3600*Math.pow(1.47,s-1),bossDmg=s=>36*Math.pow(1.33,s-1);
 const xpNeed=l=>Math.round(34*Math.pow(1.17,l-1));
 
@@ -1060,7 +1063,7 @@ function spawnMob(minD=500,at=null,forceStrong=null){
   const o=at||randomOpen(minD,1500);if(!o)return null;
   const s=G.stage,strong=forceStrong===null?Math.random()<.14+s*.018:forceStrong,own=pick(ENEMY_VILLAINS),m=MINIONS[own][strong?1:0],night=nightness(G.hour)>.5?1.15:1;
   const a={melee:true,range:strong?30:18,atk:strong?1.5:1.05,r:strong?20:12};
-  const e={role:strong?'brute':'rusher',kind:'rival',mob:strong?'strong':'weak',owner:own,name:m.n,art:m.n,ah:m.ah,a,method:'melee',healT:9,castT:0,guarding:false,x:o.x,y:o.y,r:a.r,hp:mobUnit(s)*(strong?3.2:.6),maxHp:mobUnit(s)*(strong?3.2:.6),dmg:11*Math.pow(1.36,s-1)*(strong?1.7:.7)*night,sp:(strong?60:92)*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(strong?2.4:.65),gold:rnd(2,6)*Math.pow(1.22,s-1)*(strong?2.5:.6),elite:false,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU),fs:1};
+  const e={role:strong?'brute':'rusher',kind:'rival',mob:strong?'strong':'weak',owner:own,name:m.n,art:m.n,ah:m.ah,a,method:'melee',healT:9,castT:0,guarding:false,x:o.x,y:o.y,r:a.r,hp:mobUnit(s)*(strong?3.2:.6),maxHp:mobUnit(s)*(strong?3.2:.6),dmg:mobHit(s)*(strong?1.7:.7)*night,sp:(strong?60:92)*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(strong?2.4:.65),gold:rnd(2,6)*Math.pow(1.22,s-1)*(strong?2.5:.6),elite:false,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU),fs:1};
   if(!strong&&G.stage===1&&G.enemies.filter(x=>x.role==='healer').length===0&&G.enemies.length>=2){e.role='healer';e.method='heal';e.a.melee=false;e.a.atk=1.8;e.healT=2}
   partyToughen(e);G.enemies.push(e);return e;
 }
@@ -1074,7 +1077,7 @@ function spawnRival(minD=500,elite=null,at=null,force=null){
   if(method==='unarmed'){a.atk*=.75;a.dmg*=.85}
   const el=elite===null?Math.random()<.06+s*.008:elite,m=el?2.5:1;
   const night=nightness(G.hour)>.5?1.15:1;
-  const e={role:METHOD_ROLE[method]||(a.melee?'rusher':'shooter'),kind:'rival',name,a,w,method,healT:rnd(1,3),castT:0,guarding:false,x:o.x,y:o.y,r:a.r*(el?1.1:1),hp:mobUnit(s)*a.hp*m,maxHp:mobUnit(s)*a.hp*m,dmg:11*a.dmg*Math.pow(1.36,s-1)*(el?1.3:1)*night,sp:a.sp*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(el?3:1),gold:rnd(2,6)*Math.pow(1.22,s-1)*(el?3:1),elite:el,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU)};
+  const e={role:METHOD_ROLE[method]||(a.melee?'rusher':'shooter'),kind:'rival',name,a,w,method,healT:rnd(1,3),castT:0,guarding:false,x:o.x,y:o.y,r:a.r*(el?1.1:1),hp:mobUnit(s)*a.hp*m,maxHp:mobUnit(s)*a.hp*m,dmg:mobHit(s)*a.dmg*(el?1.3:1)*night,sp:a.sp*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(el?3:1),gold:rnd(2,6)*Math.pow(1.22,s-1)*(el?3:1),elite:el,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU)};
   partyToughen(e);G.enemies.push(e);return e;
 }
 function spawnNpc(){const o=randomOpen(0,5000);if(!o)return;const hp=26*stageScale(G.stage);G.npcs.push({name:pick(NPC_NAMES),x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:rnd(9),quip:null,qt:0,sp:rnd(34,56),hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0})}

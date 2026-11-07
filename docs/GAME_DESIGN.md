@@ -323,6 +323,8 @@ Every enemy has one job, so that a party has to prioritize.
 | Healer | Heals nearby enemies | Kill first, or Mark | Heal users |
 | Stage specials | See section 8 | Team action | One per stage |
 
+**Behaviour prototype:** two melee enemies press one player at a time and the rest circle. Aim follows the player until late in a wind-up, so a late dodge works. Attacks can chain, brutes can delay a swing, and healing, pills or reviving draw a rush. Shooters lead and strafe. Enemies wait outside the safehouse. Bosses can chain attacks, always with their full telegraph.
+
 **Director:** spawns follow a "pressure" score so that fights come in waves with short breaks. It tracks party life, Hope and time since the last hard fight. It replaces the current spawn timer, but the rule of minions first and 2 villains per minute stays.
 
 ## 12. Characters
