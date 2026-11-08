@@ -19,7 +19,7 @@ trail=()=>{};tickFx=()=>{};dirty=()=>{};audioOn=()=>{};writeSave=()=>{};
 function setMode(m){if(m==='clear'&&CUR){CUR.cleared=true;ev(['clear',G.stage])}}
 
 const roundDeep=o=>{for(const k in o){const v=o[k];if(typeof v==='number')o[k]=Math.round(v*100)/100}return o};
-const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','weaponUpgrades','runBoons','skills','train','sp','kills','rage','bestCombo','maxStage','beaten'];
+const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','weaponUpgrades','runBoons','skills','train','sp','kills','rage','bestCombo','maxStage','beaten','swarmBest'];
 
 /* Input and actions from the network take effect at the start of that player's own turn */
 applyInput=p=>{const i=p.input;joy.on=true;joy.dx=i.x;joy.dy=i.y;mouse.x=i.ax;mouse.y=i.ay;mouse.left=i.l;mouse.right=i.r;
@@ -50,14 +50,15 @@ function afterStage(room){for(const q of G.players){freshHealth(q);q.deadT=0;q.r
 
 return{
   charExists:n=>typeof n==='string'&&Object.prototype.hasOwnProperty.call(STATS,n)&&!!archKey(n),factionOf,SAVE_KEYS,
-  createRoom(room,char,save,pname){
+  createRoom(room,char,save,pname,opts){
     G=baseState(false);G.mp=true;G.mode='play';EV=[];CUR=room;
     const id=nextId++,p=makePlayer(char,save,pname,id);G.p=p;G.players=[p];room.G=G;room.ev=EV;
-    recalc();enterStage(Math.min(10,Math.max(1,p.maxStage||1)));afterStage(room);room.stageChanged=false;
+    const top=Math.min(10,Math.max(1,p.maxStage||1)),swarm=!!(opts&&opts.mode==='swarm');
+    recalc();enterStage(swarm?Math.min(top,Math.max(1,(opts.stage|0)||1)):top);afterStage(room);if(swarm){room.mode='swarm';startSwarm()}room.stageChanged=false;
     return p;
   },
   addPlayer(room,char,save,pname){
-    G=room.G;EV=room.ev;CUR=room;const id=nextId++,p=makePlayer(char,save,pname,id);G.players.push(p);rescaleParty();freshHealth(p);p.x=G.safe.x+60-(G.players.length-1)*30;p.y=G.safe.y+30;
+    G=room.G;EV=room.ev;CUR=room;const id=nextId++,p=makePlayer(char,save,pname,id);G.players.push(p);rescaleParty();freshHealth(p);if(G.swarm)p.swarmSave=swarmSnap(p);p.x=G.safe.x+60-(G.players.length-1)*30;p.y=G.safe.y+30;
     return p;
   },
   removePlayer(room,p){G=room.G;const i=G.players.indexOf(p);if(i>=0){G.players.splice(i,1);rescaleParty()}G.p=G.players[0]||null},
@@ -72,12 +73,12 @@ return{
   },
   /* Room-wide choices. The caller has already checked this player is the host. */
   hostAction(room,p,n,v){
-    G=room.G;EV=room.ev;CUR=room;G.p=p;
+    G=room.G;EV=room.ev;CUR=room;G.p=p;if(G.swarm)return;
     if(n==='travel'){const t=+v;if(!Number.isInteger(t)||t<1||t>10||t>p.maxStage||t===G.stage||!p.nearSafe)return;enterStage(t);afterStage(room)}
     else if(n==='next'){if(!room.cleared||G.stage>=10)return;enterStage(G.stage+1);afterStage(room)}
     else if(n==='stay'){if(!room.cleared)return;room.cleared=false;G.gate.open=true;ev(['clearDone'])}
   },
-  saveOf(p){const o={};for(const k of SAVE_KEYS)o[k]=p[k];return JSON.parse(JSON.stringify(o))},
+  saveOf(p){const o={},src=p.swarmSave?Object.assign({},p.swarmSave,{swarmBest:p.swarmBest||0}):p;for(const k of SAVE_KEYS)o[k]=src[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{restartCheckpoint,GLOOM,BANSHEE,TIDE,tideAt,envSpeed,dryAt,spawnLurker,lurkRelease,bossWarded,spawnLanterns,lanternLit,inBeam,mobHit,AI,concealed,inThicket,spawnStalker,genCitySeeded,get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,teamTarget,doTeam,chooseBoon,offerBoons,spawnMob,spawnRival,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc,addDecal,GORE,goreTrail,goreSpray,goreChunks,gorePool,ELEMENT,REACTIONS,REACT_NAME,REACT_FX,reactionOf,reactionCoverage,objStep,resetStepState,objectiveSteps,updateBoss,bossGuard,bossTelegraph,bossPhaseCheck,BOSS_TELEGRAPH,BOSS_STAGGER,ultHit,ultDmgFor,ULT_LEN,openLink,linkBonus,linkTier,tickLink,LINK_TIERS,LINK_WINDOW,weaponDamage,moveDamage,upgradeLevel,recDamage,mobUnit,REC_HITS,MELEE_UP,WEAPONS,statMul,stageScale,recLevel,objTargets,holdStep,zoneNeed,HOLD_ALONE_T,chainAdd,chainBonus,chainReset,chainTick,cdMulOf,CHAIN_BONUS,CHAIN_WINDOW,rageShare,RAGE_SHARE_RANGE,pillarHit,spawnPillars,pillarsUp,breakPillar,startBurrow,startSpray,bossPick}
+  test:{SWARM,startSwarm,nextWave,swarmTick,endSwarm,restartSwarm,restartCheckpoint,GLOOM,BANSHEE,TIDE,tideAt,envSpeed,dryAt,spawnLurker,lurkRelease,bossWarded,spawnLanterns,lanternLit,inBeam,mobHit,AI,concealed,inThicket,spawnStalker,genCitySeeded,get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,teamTarget,doTeam,chooseBoon,offerBoons,spawnMob,spawnRival,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc,addDecal,GORE,goreTrail,goreSpray,goreChunks,gorePool,ELEMENT,REACTIONS,REACT_NAME,REACT_FX,reactionOf,reactionCoverage,objStep,resetStepState,objectiveSteps,updateBoss,bossGuard,bossTelegraph,bossPhaseCheck,BOSS_TELEGRAPH,BOSS_STAGGER,ultHit,ultDmgFor,ULT_LEN,openLink,linkBonus,linkTier,tickLink,LINK_TIERS,LINK_WINDOW,weaponDamage,moveDamage,upgradeLevel,recDamage,mobUnit,REC_HITS,MELEE_UP,WEAPONS,statMul,stageScale,recLevel,objTargets,holdStep,zoneNeed,HOLD_ALONE_T,chainAdd,chainBonus,chainReset,chainTick,cdMulOf,CHAIN_BONUS,CHAIN_WINDOW,rageShare,RAGE_SHARE_RANGE,pillarHit,spawnPillars,pillarsUp,breakPillar,startBurrow,startSpray,bossPick}
 };

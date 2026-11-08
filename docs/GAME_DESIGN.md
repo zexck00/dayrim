@@ -586,6 +586,16 @@ Hero parties and villain parties hear the same stage themes, with a different in
 - **A graphics setting:** Full, Medium or Low, to keep weaker laptops and phones smooth.
 - **GPU drawing (WebGL)** if many HD sprites slow the canvas down. D-09 measures this first, since it's a larger change.
 
+## 21. The Swarm
+
+An endless mode on any stage map the character has reached, alone or in a room. The stage keeps its rule, such as the Fen's water or the Thicket's cover.
+
+- **Waves:** wave n sends 8 + 4n enemies, scaled by party size. At most 50 are alive at once; from wave 6 enemies gain life and damage instead of only numbers. Stalkers, Lurkers and rival heroes or villains join from waves 3 and 4.
+- **Bosses:** every fifth wave a boss joins with half the usual enemies, rotating the Crystal Scurrier, Gloom Eye and Banshee Phantasm.
+- **Breaks:** 15 seconds between waves. Downed players are revived, everyone heals 30% and gets a potion, Hope refills, and the safehouse shop is open. During a wave the safehouse gives no shelter or healing.
+- **The end:** a wipe, or a solo death after Second Wind, ends the run. The best wave is kept and a new run starts.
+- **Rewards:** nothing earned in the Swarm carries back to the story character.
+
 ## 20. Questions for Z
 
 1. Keep the "protect or terrorize NPCs" difference between sides?

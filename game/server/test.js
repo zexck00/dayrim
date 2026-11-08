@@ -83,6 +83,12 @@ class Bot{
   const lst=new Bot();await lst.open();await lst.hello('Zed');lst.send({t:'rooms'});ok(!(await lst.wait('rooms')).rooms.some(x=>x.code===r.code),'private room stays out of the list');
   const dup=new Bot();await dup.open();await dup.hello('Ana',a.token);await sleep(200);ok(again.closed===4001,'signing in twice closes the older connection');
 
+  console.log('The Swarm');
+  const sw=new Bot();await sw.open();await sw.hello('Swarmer');sw.send({t:'create',char:'Detective',mode:'swarm',stage:7});const sj=await sw.wait('joined');sw.id=sj.you;ok(sj.stage===1,'a Swarm room is clamped to the furthest stage the character has reached');
+  await sleep(400);const swo=JSON.parse(sw.world.sw||'null');ok(swo&&swo.w===0&&swo.b>0,'clients get the wave state before the first wave');
+  const look=new Bot();await look.open();await look.hello('Look');look.send({t:'rooms'});const sr=(await look.wait('rooms')).rooms.find(x=>x.code===sj.code);ok(sr&&sr.mode==='swarm'&&sr.wave===0,'the room list shows a Swarm room and its wave');
+  sw.close();look.close();await sleep(200);
+
   console.log('Bad origins and floods');
   const evil=new Bot();const refused=await evil.open({Origin:'https://evil.example'}).then(()=>false,()=>true);ok(refused,'another website cannot open a connection');
   const fl=new Bot();await fl.open();await fl.hello('F');for(let i=0;i<500;i++)fl.send({t:'ping',c:i});await sleep(400);ok(fl.closed===1008,'message floods are disconnected');

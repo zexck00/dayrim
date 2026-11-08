@@ -37,9 +37,9 @@ The split below assumes these strengths. I don't know each person's skills, so s
 | C-26–C-28, D-26 | Prototype: role auras, weapon upgrades, checkpoint boons and optional Three.js effects are present. | Balance, readability, asset-character coverage and performance work listed below. |
 | D-10–D-12, D-17–D-18 | Partial: recovery and prototype combat fields sync, revive/team touch buttons and placeholder party feedback exist. | Four-player, lag, bandwidth, accessibility and real-phone checks remain open. |
 
-**Latest verification:** on `enemy-ai-overhaul`, which stacks PRs #9, #10 and #11, the full server suite passed **415 rule checks, 42 networking checks and all 780 reaction pairs**. C played that branch on 2026-11-07 and reported that it feels good; this is one person's first impression, with no recorded stages, party size or numbers. The balance bot predates objective steps and now clears no stages, so the older bot results below are historical; use `game/tools/ai-trial.js` for comparisons. Earlier, on `combat-depth-fixes`, the suite passed 333 rule checks, 42 networking checks and all 780 reaction pairs. Chromium checked a solo boon and G action and an online G action; these are automated checks, not a four-person playtest. One 25-minute solo bot sample cleared ten stages with Firefighter and Detective in about 16 game minutes each; Necromancer cleared three stages with one death. The bot does not use team abilities or checkpoint boons, and single random runs are not a balance verdict. The [party bot samples](playtests/2026-11-06-party-bot-smoke.md) include Stage 1 clears for one, two and four players, but no Stage 3 results; human balance results remain outstanding.
+**Latest verification:** on the Swarm branch (2026-11-08), the full server suite passed **470 rule checks, 45 networking checks and all 780 reaction pairs**, and headless Chromium showed the Swarm picker and wave HUD. Earlier, on `enemy-ai-overhaul`, which stacked PRs #9, #10 and #11, it passed 415 rule checks, 42 networking checks and all 780 reaction pairs. C played that branch on 2026-11-07 and reported that it feels good; this is one person's first impression, with no recorded stages, party size or numbers. The balance bot predates objective steps and now clears no stages, so the older bot results below are historical; use `game/tools/ai-trial.js` for comparisons. Earlier, on `combat-depth-fixes`, the suite passed 333 rule checks, 42 networking checks and all 780 reaction pairs. Chromium checked a solo boon and G action and an online G action; these are automated checks, not a four-person playtest. One 25-minute solo bot sample cleared ten stages with Firefighter and Detective in about 16 game minutes each; Necromancer cleared three stages with one death. The bot does not use team abilities or checkpoint boons, and single random runs are not a balance verdict. The [party bot samples](playtests/2026-11-06-party-bot-smoke.md) include Stage 1 clears for one, two and four players, but no Stage 3 results; human balance results remain outstanding.
 
-**Milestone 1 (2026-11-08):** Stages 1 to 3 and their three bosses now have prototype rules, objectives and team mechanics. The remaining M1 items are human: a recorded co-op playtest and the first outside playtest (Z-14).
+**Milestone 1 (2026-11-08):** Stages 1 to 3 and their three bosses now have prototype rules, objectives and team mechanics. The Swarm is also in (see below). The remaining M1 items are human: a recorded co-op playtest and the first outside playtest (Z-14).
 
 **Next work:** (1) record a human Stage 1 solo/co-op session, including readability of brute warnings, healer interrupts, rescue, reactions and boon discovery; (2) improve and validate the D-06 runner with one to four players; (3) complete the remaining usability checks in [Combat depth review](COMBAT_DEPTH_REVIEW.md) and playtest reactions; (4) get Z’s decisions on Hope, wipes, combat feel and balance. Final music and SFX remain Z-owned, with D responsible for the audio engine.
 
@@ -184,6 +184,18 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | Z-13 | Z | M | First sounds: revive, ping, reactions and links (section 18) | Delivered as licensed files | Z-50 |
 | Z-14 | Z | M | **Run the first playtest** with 4 outside players, using a simple form: what was fun, confusing or unfair | Results shared in `docs/playtests/` | D-01, C-25 |
 | D-19 | D | M | Import tool: turns delivered art into game sheets automatically and reports what's missing | One command imports a character | D-03 |
+
+## The Swarm
+
+An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from the `SWARM` table in `game.js`, and `node game/tools/ai-trial.js --mode swarm` measures it.
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-90 | C | M | **Wave director:** wave n sends base + step × n enemies scaled by party size, at most 50 alive, with tougher and harder-hitting enemies from wave 6 and Stalkers, Lurkers and rivals mixed in | Prototype with rule tests | |
+| C-91 | C | S | **Boss waves:** every fifth wave rotates the Crystal Scurrier, Gloom Eye and Banshee on any map | Prototype with rule tests | |
+| C-92 | C | S | **Runs:** breaks revive, heal and hand out a potion; a wipe or solo death ends the run, keeps the best wave and starts a new run; nothing else reaches the story save | Prototype with rule tests | |
+| C-93 | C | S | **Entry:** a Swarm picker in single-player and a Swarm option when creating a room, clamped to the furthest stage reached; the room list shows the wave | Prototype with networking tests | |
+| C-94 | C | M | **Balance:** human runs solo and in parties; set the growth curve | Bot samples only. A perfect-dodging bot reached wave 28 alone without falling, so human results decide the curve. | C-90 |
 
 ## M2 Middle game
 

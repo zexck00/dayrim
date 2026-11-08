@@ -1,6 +1,6 @@
 # Handoff
 
-For the next person or agent working on Dayrim. State as of 2026-11-06: unreleased work on top of version 0.1.0, local branch `combat-depth-fixes` after C-01–C-16 review fixes and C-14 coverage. The task and design documents distinguish prototypes from the target design.
+For the next person or agent working on Dayrim. State as of 2026-11-08: unreleased work on top of version 0.1.0, on `dev` with the enemy AI overhaul, Milestone 1 (Stages 1 to 3 and their bosses) and The Swarm. The task and design documents distinguish prototypes from the target design.
 
 ## Where things stand
 
@@ -8,7 +8,7 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 
 | Area | Status |
 |---|---|
-| Latest rules and networking suite | 333 rule checks, 42 networking checks and all 780 reaction pairs passed after the weapon visual work |
+| Latest rules and networking suite | 470 rule checks, 45 networking checks and all 780 reaction pairs passed on the Swarm branch (2026-11-08) |
 | Server, rooms, saves, abuse limits | Tested over real WebSockets (`game/server/test.js`) |
 | Browser checks | Automated checks cover two tabs, solo/online G actions, a checkpoint boon, viewport layout, weapon icons and the optional 3D layer; not a substitute for human playtests |
 | Full stage to boss kill and next stage online | Tested by a bot, one player |
@@ -19,6 +19,7 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 | systemd, Caddy, nginx samples | **Never run** |
 | Touch controls, phones | Emulated portrait and landscape touch gestures checked in Chromium; no real-phone playtest yet |
 | Voice lines | Decoded and triggered by code. **Nobody has listened to them.** |
+| The Swarm | Bots only: a perfect-dodging bot reached wave 28 alone, others waves 19–24, and none wiped in 25 minutes. Nobody has played it, so the growth curve is a guess. |
 | Human playtest results | No results recorded; ask players about danger, role abilities, reactions, recovery and boon discovery |
 
 ## Open work
@@ -96,6 +97,9 @@ So anything belonging to one player goes on the player object (`p.combo`, `p.ult
 
 ## Current prototypes
 
+- Enemy AI (`game.js`, tuned from the `AI` table): at most two enemies press one player (`aiToken`) while the rest orbit (`aiOrbit`); aim follows the target until late in a wind-up (`aiWindUp`), attacks can chain (`aiAfterSwing`), a missed swing leaves the enemy open (`aiPunish`, `aiOpen`), and shooters lead their shots (`aiLead`). Healing or reviving draws a rush. Guards turn slowly. Awareness uses a leash and `lostT`, and packs alert each other. Enemy damage comes from `mobHit(stage)`, set by `WEAK_HITS_TO_DOWN` (10, 8, 7 weak hits to down you). `node game/tools/ai-trial.js` measures it. Kit villains still use their old move logic.
+- Milestone 1: bosses carry `e.kit` (1 to 3), separate from `G.stage`, so any map can field any boss. `BOSS_PHASES` sets the phase triggers. The Gloom Eye (`pickGloom`, `openEye`) and the Banshee (`pickBanshee`, `bossWarded`, lanterns) run through `bossActStage`. Stage 3 is the Fen: `tideTick`/`dryAt` flood the map, `envSpeed(p)` slows players off the islands (the client prediction in `net.js` calls it too), and Lurkers (`lurkerAct`) grab a player until an ally hits them. Stage 2's thicket hides enemies (`concealed`) and Stalkers lunge from it (`stalkerAct`). Status timers (stun, blind, possess) are in `playerStatus`.
+- The Swarm: the `SWARM` table sets wave size, caps, tougher scaling and breaks. `startSwarm`, `nextWave`, `swarmSpawn`, `swarmTick`, `waveCleared` and `endSwarm` run it; `G.swarm` is the state and the server syncs it as `g.sw`. Swarm enemies carry `e.swarm` and ignore the leash. A boss comes every `bossEvery` waves via `summonBoss`. Story saves must never see a run: `writeSave` returns early when `G.swarm` or `saveHold` is set, and only `swarmBest` is kept (`SAVE_KEYS`). Online, `createRoom(..., {mode:'swarm', stage})` clamps the stage; `hostAction` is ignored in a run. The safehouse shelters and heals only between waves.
 - Party-size scaling, recovery, shared Hope and wipe retries are provisional. A retry uses the stage start or open boss gate; bosses restart at full health until phase checkpoints exist.
 - Objectives point at themselves: `objTargets()` (game.js) returns `{x,y,label}` for whatever the current step needs, and `drawObjPointer()` (render.js, last thing in `hudBody`) draws a marker in view or an edge arrow with distance out of view. Unit distance is 40 world units per metre, the tile size. A new objective kind needs one branch in `objTargets()` and nothing else.
 - `frame()` in rig.js falls back to `SPECS.Tourist` when a name has no spec, and `drawNpc` draws `c.art||c.name`. The wounded scout had `name:'Scout'`, which had no spec, so every frame with the scout in view threw inside `buildFrame` and the render guard skipped the whole frame: the screen froze near the scout. Any new NPC or entity must have a spec or an `art` that has one.
@@ -148,7 +152,7 @@ Browsers allow sound only after the player clicks or presses a key, so nothing p
 
 ## AI trial
 
-`node game/tools/ai-trial.js --stages 1,2,3 --players 1,2,4 --bot plain,skilled --seeds 8` plays the real rules at high speed. Bots play at the recommended level with no upgrades and the `skilled` bot reads wind-ups perfectly, so compare runs with each other, not with human play. It handles kill, revive, hold and escort steps, but not carry steps. Enemy behaviour is tuned in the `AI` table in `game.js`.
+`node game/tools/ai-trial.js --stages 1,2,3 --players 1,2,4 --bot plain,skilled --seeds 8` plays the real rules at high speed. Bots play at the recommended level with no upgrades and the `skilled` bot reads wind-ups perfectly, so compare runs with each other, not with human play. It handles kill, revive, hold and escort steps, but not carry steps. Add `--mode swarm` to measure the Swarm; it reports the wave each run reached. Enemy behaviour is tuned in the `AI` table in `game.js`.
 
 ## Balance bot
 
@@ -178,6 +182,11 @@ It plays solo using the real rules and returns results per stage. It takes about
 - **Hero portraits:** enlarged heads looked broken to the owner. Use normal proportions, and use their supplied cards where they exist.
 - **Browser speech:** it can report 0 voices, which is why the voice lines are recorded and built in. Speech is only a backup.
 - **Art pipeline tools:** they need Python with pillow, numpy, scipy, opencv and onnxruntime. There is no requirements file yet. `make_voice.py` needs macOS, and ffmpeg isn't used.
+
+- **Test stubs inside the VM:** stubbing `Math.random` from a test does not reach the rules, because the server runs them in their own context. Tune through exported tables such as `T.AI` instead.
+- **Swarm and the story save:** `newRun` and `enterStage` write a save, so starting a Swarm run overwrote the story character until saving was held with `saveHold`. Check a fresh browser has no save after a run starts.
+- **Safehouse camping:** the safehouse used to stop enemies and heal 8% a second, which made the Swarm unlosable. Both are off during a wave.
+- **Canisters in the drop zone:** carry canisters could spawn on the drop zone and be delivered on pickup; they now spawn at least 140 units away.
 
 ## Owner preferences seen so far
 
