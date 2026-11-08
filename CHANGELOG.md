@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Chitin Horror, the Stage 4 boss: flank its armored front, dodge its bouncing charge, cut allies free from web spit, and burst egg sacs before they hatch. It sheds its armor and speeds up at low life.
 - Webbed Barrow: cut four egg clusters before they hatch, and rescue allies caught by ranged Webbers. A player alone breaks free after five seconds.
 - The Swarm: an endless mode on any stage you have reached, alone or online. Every wave is bigger, a boss joins every fifth wave, and the safehouse only shelters you between waves. Nothing you earn carries back to your saved character; your best wave is kept.
 - Gloom Eye, the Stage 2 boss: a sweeping gaze beam, triple tentacle slams, a blinding pulse at 60% and a second sweep at 25%. When it locks its gaze on you, face away; its back eye then opens and hits from behind it break its guard. Solo, dodging through the beam also opens the eye.

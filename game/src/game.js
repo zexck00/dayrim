@@ -383,7 +383,7 @@ function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=m
 function playerDown(p,wind=false){p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
 function revive(p){p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
 function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;if(G.boss&&G.arena){const a=Math.atan2(G.safe.y-G.arena.y,G.safe.x-G.arena.x);p.x=G.arena.x+Math.cos(a)*(G.arena.r-45);p.y=G.arena.y+Math.sin(a)*(G.arena.r-45)}p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
-function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;clearLanterns();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
+function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;clearLanterns();clearBossEggs();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
 function bleedOut(p){p.deadT=0;p.respawnT=8;p.gold=Math.floor(p.gold*.8);p.moving=false;const wipe=G.mp&&!G.clearPending&&G.hope<=0&&!G.players.some(q=>q!==p&&q.deadT<=0&&q.respawnT<=0);if(G.mp&&G.hope>0){G.hopeSpent++;G.hope--;}addLog('You bled out and lost 20% of your gold.');if(wipe)restartCheckpoint();writeSave()}
 /* Hold to revive. A downed ally comes first; with none in reach, the same key picks a wounded NPC back up. */
 function updateRevive(p,dt){
@@ -446,7 +446,7 @@ function spawnNpc(){const o=randomOpen(0,5000);if(!o)return;const hp=26*stageSca
    Every boss shares a guard bar, a stagger, an enrage clock, phase changes and a telegraph on every big
    attack. The numbers live here so one balance pass moves all ten bosses. */
 const BOSS_GUARD_MAX=100,BOSS_STAGGER=5,BOSS_TELEGRAPH=.6,BOSS_ENRAGE_BASE=240,BOSS_ENRAGE_STEP=30,BOSS_ENRAGE_RATE=.66,BOSS_STAGGER_DMG=1.5;
-const BOSS_PHASES={1:[.5],2:[.6,.25],3:[.5]};
+const BOSS_PHASES={1:[.5],2:[.6,.25],3:[.5],4:[.6,.3]};
 const BOSS_GUARD_GAIN={break:34,reaction:22,special:10,eye:30};
 function bossGuard(e,amt){if(!e||e.kind!=='boss'||e.staggerT>0)return;e.guard=Math.min(e.guardMax||BOSS_GUARD_MAX,(e.guard||0)+amt);if(e.guard>=(e.guardMax||BOSS_GUARD_MAX)){e.guard=0;e.staggerT=BOSS_STAGGER;e.tel=null;e.act='walk';e.actT=BOSS_STAGGER;text(e.x,e.y-e.ah*.8,'STAGGERED','#ffd860',true);shake(8);sfx('boom');addLog('The boss is staggered.')}}
 function bossTelegraph(e,kind,r,dur){e.tel={k:kind,r,r2:r,dur:Math.max(BOSS_TELEGRAPH,dur)};e.actT=e.tel.dur;return e.tel}
@@ -514,8 +514,18 @@ function lanternStep(p){const ls=G.props.filter(o=>o.kind==='lantern');if(!ls.le
   if(!p.carry){const l=ls.find(l=>!l.by&&!(l.cool>0)&&l.dropBy!==(p.id||1)&&dist(p,l)<28);if(l){l.by=p.id||1;l.x=p.x;l.y=p.y;p.carry=l;text(p.x,p.y-70,'Hold F to set the lantern down','#ffe2a0',true)}return}
   const f=G.mp?p.reviveHold>0:(keys.has('KeyF')||touchHold.revive);
   if(p.carry.kind==='lantern'&&f&&!G.players.some(q=>q!==p&&q.deadT>0&&dist(q,p)<120)){const l=p.carry;l.by=0;l.t=G.players.length===1?999:BANSHEE.lanternLit;l.cool=1;l.dropBy=p.id||1;p.carry=null;text(p.x,p.y-70,'Lantern set','#ffe2a0',true)}}
+/* Stage 4: the shell protects the front until the molt. */
+const CHITIN={sacT:10,chargeT:1.6,chargeSp:480,stumble:3};
+function shellBlock(e,p){return e.kind==='boss'&&(e.kit||G.stage)===4&&(e.phase||0)<2&&angGap(Math.atan2(p.y-e.y,p.x-e.x),e.ang)<Math.PI/2?.1:1}
+function clearBossEggs(){G.props=G.props.filter(o=>!o.bossEgg)}
+function spawnBossEggs(e){clearBossEggs();for(const a of [0,TAU/3,2*TAU/3]){let x=e.x+Math.cos(a)*120,y=e.y+Math.sin(a)*120;if(blocked(x,y,18)){x=e.x;y=e.y}addProp('egg',x,y,18,{t:CHITIN.sacT,bossEgg:true})}G.banner={t:3,a:'Egg sacs',b:'Burst the eggs before they hatch'}}
+function bossEggTick(dt){for(const o of G.props){if(!o.bossEgg||o.done)continue;o.t-=dt;if(o.t<=0){o.done=true;const m=spawnMob(0,{x:o.x,y:o.y},false);if(m){m.aware=true;m.minion=true}text(o.x,o.y-55,'HATCHED','#ffb080',true)}}}
+function pickChitin(e){if(Math.random()<.6){e.act='chitinAim';bossTelegraph(e,'line',e.r+230,.8)}else{e.act='webSpit';bossTelegraph(e,'line',400,.7)}}
 /* Stage 2 and 3 boss acts. Returns true when it handled this frame. */
 function bossActStage(e,dt,d,seen,p,n){const a=e.act;
+  if(a==='chitinAim'){if(e.actT>.2)e.ang=Math.atan2(p.y-e.y,p.x-e.x);if(e.actT<=0){e.tel=null;e.act='chitinCharge';e.actT=CHITIN.chargeT;e.chargeHits=[];sfx('dash')}return true}
+  if(a==='chitinCharge'){const dx=Math.cos(e.ang)*CHITIN.chargeSp*((e.phase||0)>=2?1.5:1)*dt,dy=Math.sin(e.ang)*CHITIN.chargeSp*((e.phase||0)>=2?1.5:1)*dt,x=e.x,y=e.y;move(e,dx,dy);let bx=Math.abs(e.x-x)<Math.abs(dx)*.5,by=Math.abs(e.y-y)<Math.abs(dy)*.5;if(G.arena){const ar=G.arena,ad=Math.hypot(e.x-ar.x,e.y-ar.y);if(ad>ar.r-e.r){const normal=Math.atan2(e.y-ar.y,e.x-ar.x);e.x=ar.x+Math.cos(normal)*(ar.r-e.r);e.y=ar.y+Math.sin(normal)*(ar.r-e.r);e.ang=2*normal+Math.PI-e.ang;bx=by=false}}if(bx)e.ang=Math.PI-e.ang;if(by)e.ang=-e.ang;bossHurtWhere(q=>{if(e.chargeHits.includes(q.id||1)||dist(e,q)>=e.r+q.r+4)return false;if(G.players.filter(v=>!(v.deadT>0||v.respawnT>0)).length===1&&q.dashT>0){e.act='walk';e.actT=CHITIN.stumble;e.staggerT=CHITIN.stumble;text(e.x,e.y-e.ah,'STUMBLED','#ffd860',true);return false}e.chargeHits.push(q.id||1);return true},e.dmg*((e.phase||0)>=2?1.6:1.15));if(e.actT<=0&&e.act==='chitinCharge'){e.act='walk';e.actT=rnd(1.4,2.2)}return true}
+  if(a==='webSpit'){if(e.actT>.2)e.ang=Math.atan2(p.y-e.y,p.x-e.x);if(e.actT<=0){e.tel=null;const a=e.ang;G.shots.push({x:e.x,y:e.y-22,vx:Math.cos(a)*260,vy:Math.sin(a)*260,r:8,from:'e',life:3,dmg:e.dmg*.7,web:true,fx:'orb',col:'230,230,200',a});e.act='walk';e.actT=rnd(1.2,2)}return true}
   if(a==='beamAim'){if(e.actT<=0){e.tel=null;e.act='beam';e.actT=GLOOM.beamT;sfx('bolt')}return true}
   if(a==='beam'){e.beamA+=e.beamDir*GLOOM.beamSweep/GLOOM.beamT*dt;e.ang=e.beamA;bossHurtWhere(q=>inBeam(e,q,e.beamA,GLOOM.beamLen,GLOOM.beamW),e.dmg*.9);
     if(G.players.length===1&&!(e.eyeT>0)&&p.dashT>0&&inBeam(e,p,e.beamA,GLOOM.beamLen,GLOOM.beamW+30))openEye(e,Math.atan2(p.y-e.y,p.x-e.x));
@@ -530,18 +540,18 @@ function bossActStage(e,dt,d,seen,p,n){const a=e.act;
   return false}
 /* Attack choice per boss; stages 1 to 3 have their own kits, the rest keep the shared one. */
 function bossPick(e,n,low){const r=Math.random();
-  if(n===2)return pickGloom(e);if(n===3)return pickBanshee(e);
+  if(n===4)return pickChitin(e);if(n===2)return pickGloom(e);if(n===3)return pickBanshee(e);
   if(n===1){if((e.phase||0)>=1&&r<.22){startBurrow(e);return}
     if(r<.6){e.act='aim';bossTelegraph(e,'line',e.r+230,.62)}else startSpray(e);return}
   if(r<.42){e.act='aim';bossTelegraph(e,'line',e.r+230,Math.max(.45,.8-n*.03))}else if(r<.8){e.act='nova';bossTelegraph(e,'circle',150,.6)}else{e.act='call';e.actT=.5}}
-const BOSS_PHASE_FX={1:()=>spawnPillars(2)};
+const BOSS_PHASE_FX={1:()=>spawnPillars(2),4:e=>{if(e.phase===1)spawnBossEggs(e);else {text(e.x,e.y-e.ah,'MOLTED','#ffd860',true)}}};
 function summonBoss(kit,at){
   const n=G.stage,k=kit||n,st=STAGES[k-1],g=G.gate,o=at||{x:g.x,y:g.y-40};
   const e={kind:'boss',kit:k,name:st.label||st.boss,art:st.boss,ah:st.ah,x:o.x,y:o.y,r:st.r,hp:bossHp(n),maxHp:bossHp(n),dmg:bossDmg(n),sp:58+n*3,xp:xpNeed(recLevel(n)),gold:40*Math.pow(1.25,n-1),cd:1,ang:0,aware:true,flash:0,kx:0,ky:0,ph:rnd(TAU),act:'rise',actT:.95,hitCd:0,atkShow:0,wind:0,walk:0,fs:1,recover:0,recoil:0,release:0,trail:[],guard:0,guardMax:BOSS_GUARD_MAX,staggerT:0,phase:0,breatherT:0,enrageT:BOSS_ENRAGE_BASE+BOSS_ENRAGE_STEP*n,tel:null};
   partyToughen(e);G.enemies.push(e);G.boss=e;G.arena=at?null:{x:G.gate.x,y:G.gate.y-40,r:430};shake(10);sfx('boom');
   if(k===3)spawnLanterns();
   const rec=recLevel(n),lv=G.p.lvl;
-  G.banner={t:3.2,a:e.name,b:lv<rec?'Recommended level '+rec+'. You are level '+lv+'. Train more if you fall.':'Final boss of stage '+n};
+  G.banner={t:3.2,a:e.name,b:k===4?'Crack the shell: attack its green back':lv<rec?'Recommended level '+rec+'. You are level '+lv+'. Train more if you fall.':'Final boss of stage '+n};
 }
 
 /* ---------- Combat ---------- */
@@ -566,7 +576,7 @@ REACT_NAME.resonance='RESONANCE';
 /* One reaction per target every REACT_CD seconds, so fast weapons cannot turn every second hit into rage and boss guard. */
 const REACTION_RAGE=12,REACT_SAME=1.1,REACT_CD=2;
 /* Splash damage from a reaction. Kept apart from hitEnemy so a reaction can never trigger another reaction. */
-function reactHit(o,dmg,col){if(!o||o.dead||!(dmg>0)||bossWarded(o))return;o.hp-=dmg;o.flash=Math.max(o.flash||0,.11);o.aware=true;burst(o.x,o.y-20,col||'#ffffff',3);if(o.hp<=0)killEnemy(o)}
+function reactHit(o,dmg,col){if(!o||o.dead||!(dmg>0)||bossWarded(o))return;o.hp-=dmg*shellBlock(o,G.p);o.flash=Math.max(o.flash||0,.11);o.aware=true;burst(o.x,o.y-20,col||'#ffffff',3);if(o.hp<=0)killEnemy(o)}
 function reactSplash(e,dmg,r,col){for(const o of G.enemies){if(o.dead||o===e)continue;if(dist(o,e)<=r+o.r)reactHit(o,dmg,col)}}
 function reactChain(e,dmg,r,n){let c=0;for(const o of G.enemies){if(o.dead||o===e||c>=n)continue;if(dist(o,e)<=r+o.r){reactHit(o,dmg,'#8fe6ff');c++}}}
 /* Implemented effects. An id missing here does not fire at all, so a half-built reaction never fakes one. Each returns its damage multiplier. */
@@ -607,7 +617,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){
   if(rid&&REACT_FX[rid]){e.reactAt=G.t+REACT_CD;const mult=REACT_FX[rid](e,p,base);base*=solo?1+(mult-1)*.5:mult;text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p,solo?.5:1);bossGuard(e,BOSS_GUARD_GAIN.reaction*(solo?.5:1))}
   else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
   if(e.shatterT>0)base*=1.25;if((e.staggerT||0)>0)base*=BOSS_STAGGER_DMG;
-  base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),facing=Math.abs(Math.atan2(Math.sin(ang-e.ang-Math.PI),Math.cos(ang-e.ang-Math.PI))),block=(e.guarding&&facing<1.05)?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
+  base*=shellBlock(e,p);base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),facing=Math.abs(Math.atan2(Math.sin(ang-e.ang-Math.PI),Math.cos(ang-e.ang-Math.PI))),block=(e.guarding&&facing<1.05)?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
   e.hp-=d;e.flash=.11;e.aware=true;threatAdd(e,p.id||0,100*d/Math.max(1,e.maxHp));bossPhaseCheck(e);if(e.kind==='boss')e.recoil=.16;const res=e.kind==='boss'?.15:1;e.kx+=Math.cos(ang)*kb*res;e.ky+=Math.sin(ang)*kb*res;
   G.fx.push({k:'spark',x:e.x,y:e.y-24,a:ang,t:crit?.26:.18,m:crit?.26:.18,crit:crit?1:0,c:heavy||crit?'255,220,120':'255,250,235'});
   text(e.x,e.y-(e.kind==='boss'?e.ah*.7:66),Math.round(d)+(crit?'!':''),crit?'#ffd86b':'#fff',crit);if(crit||(e.exposedT||0)>0)G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:e.r*1.6,t:.22,m:.22,c:crit?'#ffd86b':'#f2ecd8'});goreSpray(e,ang,d/Math.max(1,e.maxHp),crit);burst(e.x,e.y-20,'#f0805c',crit?4:1);if(crit||heavy)goreChunks(e,ang,crit?2:1);
@@ -620,7 +630,7 @@ function killEnemy(e){
   const night=nightness(G.hour)>.5?1.25:1;
   if(!boss&&e.kind==='rival'&&!e.minion)G.killsStage++;
   dropLoot(e,night);shareXp(e.xp*night);
-  if(boss){shake(12);sfx('boom');G.boss=null;G.arena=null;clearLanterns();G.players.forEach(q=>{q.sp+=2;q.possT=0});G.enemies.forEach(o=>{if(o.minion)o.dead=true});if(!G.swarm)stageCleared()}
+  if(boss){clearBossEggs();shake(12);sfx('boom');G.boss=null;G.arena=null;clearLanterns();G.players.forEach(q=>{q.sp+=2;q.possT=0});G.enemies.forEach(o=>{if(o.minion)o.dead=true});if(!G.swarm)stageCleared()}
   dirty();
 }
 function dropLoot(e,night){
@@ -915,7 +925,7 @@ function update(dt){
   const real=dt;let slow=1;
   chainTick(real);tickLink(real);
   for(const p of G.players){G.p=p;if(p.ult){tickUlt(real);tagOwned(p);if(!G.mp&&p.ult)slow=p.ult.t<ULT_HITS[0]?.06:.45}else if(p.combo){p.comboT-=real;if(p.comboT<=0){p.combo=0;p.comboTier=null}}p.comboPop=Math.max(0,p.comboPop-real*4)}
-  dt*=slow;G.t+=dt;G.hour=(G.hour+dt/20)%24;objStep(dt);
+  dt*=slow;bossEggTick(dt);G.t+=dt;G.hour=(G.hour+dt/20)%24;objStep(dt);
   for(const p of G.players)updatePlayer(p,dt);
   G.p=G.players[0];
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
@@ -1108,13 +1118,13 @@ function updateBoss(e,dt,d,seen){
   e.punishCd=Math.max(0,(e.punishCd||0)-dt);
   if(e.act==='walk'){
     if(e.punishCd<=0&&seen&&aiOpen(p)){e.punishCd=AI.bossPunishCd;e.actT=Math.min(e.actT,.1);e.cd=Math.min(e.cd,.1)}
-    if(d>e.r+p.r+6)steer(e,dt,e.sp*(low?1.25:1),seen);
+    if(d>e.r+p.r+6)steer(e,dt,e.sp*(n===4?(e.phase>=2?1.5:1):(low?1.25:1)),seen);
     const after=Math.sin((e.walk||0)*BOSS_RATE(e));
     if(e.moving&&before*after<0&&BOSS_STYLE[STYLE_OF[e.art]].step>=6){burst(e.x+(after>0?-1:1)*e.r*.6,e.y,'#8a8478',4,70);shake(.7)}
     if(d<e.r+p.r+14&&e.cd<=0){e.act='slam';bossTelegraph(e,'circle',e.r+52,Math.max(.34,.6-n*.02));return}
     if(e.actT<=0&&seen)bossPick(e,n,low);else if(e.actT<=0)e.actT=.6;
   }else if(e.act==='slam'){
-    if(e.actT<=0){e.tel=null;if(d<e.r+p.r+52)hurtPlayer(e.dmg*1.2);G.fx.push({k:'ring',x:e.x,y:e.y,r:12,to:e.r+50,t:.22,m:.22,c:'#f0805c'});burst(e.x,e.y,'#8a8478',12,160);e.recover=.3;shake(4);sfx('boom');e.cd=Math.max(.9,1.8-n*.07)*bossCd(e);e.act='walk';e.actT=rnd(1,2);if(bossChains(low)&&dist(e,p)<e.r+p.r+120){e.cd=0;e.act='slam';bossTelegraph(e,'circle',e.r+52,BOSS_TELEGRAPH)}}
+    if(e.actT<=0){e.tel=null;if(d<e.r+p.r+52)hurtPlayer(e.dmg*(n===4&&e.phase>=2?1.6:1.2));G.fx.push({k:'ring',x:e.x,y:e.y,r:12,to:e.r+50,t:.22,m:.22,c:'#f0805c'});burst(e.x,e.y,'#8a8478',12,160);e.recover=.3;shake(4);sfx('boom');e.cd=Math.max(.9,1.8-n*.07)*bossCd(e);e.act='walk';e.actT=rnd(1,2);if(bossChains(low)&&dist(e,p)<e.r+p.r+120){e.cd=0;e.act='slam';bossTelegraph(e,'circle',e.r+52,BOSS_TELEGRAPH)}}
   }else if(e.act==='aim'){if(e.actT>.2)e.ang=aiLead(e,p,430+n*14);if(e.actT<=0){e.act='charge';e.actT=.85;sfx('dash')}
   }else if(e.act==='charge'){const hit=move(e,Math.cos(e.ang)*(430+n*14)*dt,Math.sin(e.ang)*(430+n*14)*dt);if(dist(e,p)<e.r+p.r+2&&e.hitCd<=0){hurtPlayer(e.dmg*1.15);e.hitCd=.6}if(hit||e.actT<=0){if(hit){shake(6);sfx('boom');e.recover=.3}e.tel=null;e.act='walk';e.actT=rnd(1.4,2.6);if(bossChains(low)&&seen){e.act='aim';bossTelegraph(e,'line',e.r+230,BOSS_TELEGRAPH)}}
   }else if(e.act==='nova'){if(e.actT<=0){e.tel=null;const c=(low?16:10)+n,o=rnd(TAU);for(let i=0;i<c;i++){const a=o+i/c*TAU;G.shots.push({x:e.x,y:e.y-30,vx:Math.cos(a)*(170+n*4),vy:Math.sin(a)*(170+n*4),r:7,from:'e',life:3.2,dmg:e.dmg*.7,fx:'orb',col:'255,110,90',a})}sfx('bolt');e.release=.25;e.act='walk';e.actT=rnd(1.5,2.8)}

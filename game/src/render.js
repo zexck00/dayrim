@@ -188,6 +188,7 @@ function drawBossSprite(c,e,t,only){
 }
 function drawBoss(e){
   if(!e.buried)shadow(e.x,e.y,(e.r+8)*(e.act==='rise'?clamp(1-e.actT/.95,.2,1):1));
+  if((e.kit||G.stage)===4&&(e.phase||0)<2){const a=e.ang||0,r=e.r+18;ctx.save();ctx.strokeStyle='#f6ca83';ctx.lineWidth=5;ctx.beginPath();ctx.arc(e.x,e.y,r,a-Math.PI/2,a+Math.PI/2);ctx.stroke();ctx.strokeStyle='#8ff0b0';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,r,a+Math.PI/2,a+3*Math.PI/2);ctx.stroke();ctx.restore()}
   /* One telegraph renderer for every boss attack: the marked area fills as the timer runs out. */
   if(e.tel){const q=clamp(1-(e.actT||0)/e.tel.dur,0,1);
     if(e.tel.k==='cone'){ctx.save();ctx.globalAlpha=.16+.3*q;ctx.fillStyle='#90e0ff';ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.arc(e.x,e.y,e.tel.r,e.ang-.5,e.ang+.5);ctx.closePath();ctx.fill();ctx.restore();
