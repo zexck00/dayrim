@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Flesh Amalgam, the Stage 6 boss: pull its two bodies apart to stop them healing, and bring a downed body’s partner down before it revives. The bodies rejoin for the final phase.
 - Ruined Vale: avoid warned floor collapses and flank Shieldbearers. Hold both pressure plates to open the boss gate; a solo player can hold them one at a time.
 - Spore Brute, the Stage 5 boss: share Toxic Load with nearby allies, use the purifier or clean vents, destroy healing mushrooms, and reach a clean zone before Toxic Storm.
 - Sporefall Marsh: manage toxin, carry three purifier canisters to separate vents, and avoid the spore clouds released by Bloaters. The safehouse and activated vents clear toxin.
