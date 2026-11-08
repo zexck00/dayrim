@@ -185,6 +185,18 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | Z-14 | Z | M | **Run the first playtest** with 4 outside players, using a simple form: what was fun, confusing or unfair | Results shared in `docs/playtests/` | D-01, C-25 |
 | D-19 | D | M | Import tool: turns delivered art into game sheets automatically and reports what's missing | One command imports a character | D-03 |
 
+## The Swarm
+
+An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from the `SWARM` table in `game.js`, and `node game/tools/ai-trial.js --mode swarm` measures it.
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-90 | C | M | **Wave director:** wave n sends base + step × n enemies scaled by party size, at most 50 alive, with tougher and harder-hitting enemies from wave 6 and Stalkers, Lurkers and rivals mixed in | Prototype with rule tests | |
+| C-91 | C | S | **Boss waves:** every fifth wave rotates the Crystal Scurrier, Gloom Eye and Banshee on any map | Prototype with rule tests | |
+| C-92 | C | S | **Runs:** breaks revive, heal and hand out a potion; a wipe or solo death ends the run, keeps the best wave and starts a new run; nothing else reaches the story save | Prototype with rule tests | |
+| C-93 | C | S | **Entry:** a Swarm picker in single-player and a Swarm option when creating a room, clamped to the furthest stage reached; the room list shows the wave | Prototype with networking tests | |
+| C-94 | C | M | **Balance:** human runs solo and in parties; set the growth curve | Bot samples only. A perfect-dodging bot reached wave 28 alone without falling, so human results decide the curve. | C-90 |
+
 ## M2 Middle game
 
 | ID | Owner | Size | Task | Done when | Needs |

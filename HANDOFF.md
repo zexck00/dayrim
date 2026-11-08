@@ -148,7 +148,7 @@ Browsers allow sound only after the player clicks or presses a key, so nothing p
 
 ## AI trial
 
-`node game/tools/ai-trial.js --stages 1,2,3 --players 1,2,4 --bot plain,skilled --seeds 8` plays the real rules at high speed. Bots play at the recommended level with no upgrades and the `skilled` bot reads wind-ups perfectly, so compare runs with each other, not with human play. It handles kill, revive, hold and escort steps, but not carry steps. Enemy behaviour is tuned in the `AI` table in `game.js`.
+`node game/tools/ai-trial.js --stages 1,2,3 --players 1,2,4 --bot plain,skilled --seeds 8` plays the real rules at high speed. Bots play at the recommended level with no upgrades and the `skilled` bot reads wind-ups perfectly, so compare runs with each other, not with human play. It handles kill, revive, hold and escort steps, but not carry steps. Add `--mode swarm` to measure the Swarm; it reports the wave each run reached. Enemy behaviour is tuned in the `AI` table in `game.js`.
 
 ## Balance bot
 
