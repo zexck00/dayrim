@@ -204,7 +204,7 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 | C-30B | C | L | Stage 4 Webbed Barrow: webs, egg clusters, Webber | Prototype: four egg clusters hatch enemies until cut; ranged Webbers root players until rescued, with a five-second solo escape. Tests cover attacks, retries and sync. Placeholder art and human balance/playtests remain open. | C-18 |
 | C-31 | C | M | Boss: Chitin Horror (Crack the Shell) | Prototype: shell, charge, web spit, egg sacs and molt have solo and party rule coverage. Human playtesting, balance and final art remain open. | C-17 |
 | C-32 | C | L | Stage 5 Sporefall Marsh: Toxin meter, canisters, Bloater | Prototype: per-player toxin, three purifier vents and exploding Bloaters work in solo and online rules. Placeholder art, balance and human playtests remain open. | C-18 |
-| C-33 | C | M | Boss: Spore Brute (Share the Poison) | As above | C-17 |
+| C-33 | C | M | Boss: Spore Brute (Share the Poison) | Prototype: solo and party Toxic Load, purifier, clean vents, mushrooms and all phases have rule coverage. Balance, readability and final art need human review. | C-17 |
 | C-34 | C | L | Stage 6 Ruined Vale: collapse, two-plate gates, Shieldbearer | Done | C-18 |
 | C-35 | C | L | Boss: Flesh Amalgam (Keep Them Apart). Hardest so far, as it needs two bodies. | As above | C-17 |
 | C-36 | C | L | Stage 7 Rustleaf Woods: rust, generator, Scrap Golem | Done | C-18 |

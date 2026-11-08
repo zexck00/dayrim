@@ -384,7 +384,7 @@ function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=m
 function playerDown(p,wind=false){if(p.carry&&p.carry.kind==='canister'){p.carry.by=0;p.carry=null}p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
 function revive(p){p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
 function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;if(G.boss&&G.arena){const a=Math.atan2(G.safe.y-G.arena.y,G.safe.x-G.arena.x);p.x=G.arena.x+Math.cos(a)*(G.arena.r-45);p.y=G.arena.y+Math.sin(a)*(G.arena.r-45)}p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
-function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;clearLanterns();clearBossEggs();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
+function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;clearLanterns();clearBossEggs();clearSporeBoss();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
 function bleedOut(p){p.deadT=0;p.respawnT=8;p.gold=Math.floor(p.gold*.8);p.moving=false;const wipe=G.mp&&!G.clearPending&&G.hope<=0&&!G.players.some(q=>q!==p&&q.deadT<=0&&q.respawnT<=0);if(G.mp&&G.hope>0){G.hopeSpent++;G.hope--;}addLog('You bled out and lost 20% of your gold.');if(wipe)restartCheckpoint();writeSave()}
 /* Hold to revive. A downed ally comes first; with none in reach, the same key picks a wounded NPC back up. */
 function updateRevive(p,dt){
@@ -447,7 +447,7 @@ function spawnNpc(){const o=randomOpen(0,5000);if(!o)return;const hp=26*stageSca
    Every boss shares a guard bar, a stagger, an enrage clock, phase changes and a telegraph on every big
    attack. The numbers live here so one balance pass moves all ten bosses. */
 const BOSS_GUARD_MAX=100,BOSS_STAGGER=5,BOSS_TELEGRAPH=.6,BOSS_ENRAGE_BASE=240,BOSS_ENRAGE_STEP=30,BOSS_ENRAGE_RATE=.66,BOSS_STAGGER_DMG=1.5;
-const BOSS_PHASES={1:[.5],2:[.6,.25],3:[.5],4:[.6,.3]};
+const BOSS_PHASES={1:[.5],2:[.6,.25],3:[.5],4:[.6,.3],5:[.6,.3]};
 const BOSS_GUARD_GAIN={break:34,reaction:22,special:10,eye:30};
 function bossGuard(e,amt){if(!e||e.kind!=='boss'||e.staggerT>0)return;e.guard=Math.min(e.guardMax||BOSS_GUARD_MAX,(e.guard||0)+amt);if(e.guard>=(e.guardMax||BOSS_GUARD_MAX)){e.guard=0;e.staggerT=BOSS_STAGGER;e.tel=null;e.act='walk';e.actT=BOSS_STAGGER;text(e.x,e.y-e.ah*.8,'STAGGERED','#ffd860',true);shake(8);sfx('boom');addLog('The boss is staggered.')}}
 function bossTelegraph(e,kind,r,dur){e.tel={k:kind,r,r2:r,dur:Math.max(BOSS_TELEGRAPH,dur)};e.actT=e.tel.dur;return e.tel}
@@ -507,7 +507,7 @@ function pickBanshee(e){const r=Math.random(),ph=e.phase||0;
   e.act='aim';bossTelegraph(e,'line',e.r+230,.7)}
 const lanternLit=l=>!!(l.by||l.t>0);
 const bossWarded=e=>e.kind==='boss'&&((e.ghostT||0)>0||((e.kit||G.stage)===3&&G.props.some(l=>l.kind==='lantern')&&!G.props.some(l=>l.kind==='lantern'&&lanternLit(l)&&dist(l,e)<BANSHEE.lanternR)));
-function clearEncounterStatus(p){p.grabT=p.stunT=p.blindT=p.possT=p.webT=p.toxin=p.toxinTick=0}
+function clearEncounterStatus(p){p.grabT=p.stunT=p.blindT=p.possT=p.webT=p.toxin=p.toxinTick=p.toxicLoad=p.loadMark=0}
 function clearLanterns(){G.props=G.props.filter(o=>o.kind!=='lantern');for(const q of G.players)if(q.carry&&q.carry.kind==='lantern')q.carry=null}
 function spawnLanterns(){clearLanterns();const o=G.arena||G.boss||G.gate;for(const s of[-1,1]){let x=o.x+s*150,y=o.y+60;if(blocked(x,y,12)){x=o.x;y=o.y}addProp('lantern',x,y,12)}G.banner={t:3.2,a:'Lantern Anchor',b:G.players.length===1?'Carry a lantern to her and hold F to set it down':'Only lantern light lets you hurt her. Hold F to set one down'}}
 function lanternTick(dt){for(const l of G.props){if(l.kind!=='lantern')continue;l.cool=Math.max(0,(l.cool||0)-dt);if(l.dropBy){const d=G.players.find(q=>(q.id||1)===l.dropBy);if(!d||dist(d,l)>40)l.dropBy=0}if(l.by){const c=G.players.find(q=>(q.id||1)===l.by);if(!c||c.carry!==l||c.deadT>0||c.respawnT>0){l.by=0;l.t=G.players.length===1?999:BANSHEE.lanternLit;if(c&&c.carry===l)c.carry=null}else{l.x=c.x;l.y=c.y}}else if(l.t>0&&l.t<900)l.t=Math.max(0,l.t-dt)}}
@@ -522,8 +522,27 @@ function clearBossEggs(){G.props=G.props.filter(o=>!o.bossEgg)}
 function spawnBossEggs(e){clearBossEggs();for(const a of [0,TAU/3,2*TAU/3]){let x=e.x+Math.cos(a)*120,y=e.y+Math.sin(a)*120;if(blocked(x,y,18)){x=e.x;y=e.y}addProp('egg',x,y,18,{t:CHITIN.sacT,bossEgg:true})}G.banner={t:3,a:'Egg sacs',b:'Burst the eggs before they hatch'}}
 function bossEggTick(dt){for(const o of G.props){if(!o.bossEgg||o.done)continue;o.t-=dt;if(o.t<=0){o.done=true;const m=spawnMob(0,{x:o.x,y:o.y},false);if(m){m.aware=true;m.minion=true}text(o.x,o.y-55,'HATCHED','#ffb080',true)}}}
 function pickChitin(e){if(Math.random()<.6){e.act='chitinAim';bossTelegraph(e,'line',e.r+230,.8)}else{e.act='webSpit';bossTelegraph(e,'line',400,.7)}}
+/* Stage 5 boss: the load is separate from the marsh toxin meter. */
+const SPORE_BOSS={loadRate:5,soloRate:2.5,shareRate:12,shareR:135,cleanRate:18,ventR:110,blastR:125,markEvery:18,regen:.008,cloudT:14,stormT:1.4};
+function sporeSpot(a,r){const o=G.arena||G.boss,tx=o.x+Math.cos(a)*r,ty=o.y+Math.sin(a)*r;let best=null,bd=Infinity;for(const c of G.w.open){const x=(c%MW+.5)*T,y=((c/MW|0)+.5)*T,d=Math.hypot(x-tx,y-ty);if(d<bd&&Math.hypot(x-o.x,y-o.y)<350&&!blocked(x,y,18)){best={x,y};bd=d}}return best||{x:o.x,y:o.y}}
+function clearSporeBoss(){G.props=G.props.filter(o=>!o.sporeBoss);for(const q of G.players){if(q.carry&&q.carry.kind==='purifier')q.carry=null;q.toxicLoad=0;q.loadMark=0}G.hazards=(G.hazards||[]).filter(h=>!h.bossSpore)}
+function spawnSporeArena(){clearSporeBoss();for(const a of [0,Math.PI]){const o=sporeSpot(a,260);addProp('sporeVent',o.x,o.y,SPORE_BOSS.ventR,{sporeBoss:true})}if(G.players.length>1){const o=sporeSpot(Math.PI/2,190);addProp('purifier',o.x,o.y,12,{sporeBoss:true})}G.boss.loadCd=2}
+function spawnMushrooms(e){for(const a of [0,TAU/3,2*TAU/3]){const o=sporeSpot(a+.7,210),m=spawnMob(0,o,false);if(!m)continue;m.role='mushroom';m.minion=true;m.aware=true;m.sp=0;m.hp*=2;m.maxHp*=2;m.xp=0;m.gold=0}}
+function pickSpore(e){const r=Math.random();if((e.phase||0)>=2&&r<.3){e.act='toxicStorm';const t=bossTelegraph(e,'storm',(G.arena&&G.arena.r)||430,SPORE_BOSS.stormT);t.x=G.arena?G.arena.x:e.x;t.y=G.arena?G.arena.y:e.y;G.banner={t:1.3,a:'Toxic storm',b:'Stand in a clean zone'};return}if(r<.65){e.act='sporeCast';bossTelegraph(e,'spots',SPORE.cloudR,.8).spots=[{x:G.p.x,y:G.p.y}];return}e.act='sporeSlam';bossTelegraph(e,'circle',e.r+100,.9)}
+function cleanSporeAt(q){return G.props.some(v=>v.kind==='sporeVent'&&dist(q,v)<v.r)}
+function purifierTick(dt){for(const c of G.props){if(c.kind!=='purifier')continue;c.cool=Math.max(0,(c.cool||0)-dt);if(c.dropBy){const q=G.players.find(p=>(p.id||1)===c.dropBy);if(!q||dist(q,c)>40)c.dropBy=0}if(c.by){const q=G.players.find(p=>(p.id||1)===c.by);if(!q||q.carry!==c||q.deadT>0||q.respawnT>0){c.by=0;if(q&&q.carry===c)q.carry=null}else{c.x=q.x;c.y=q.y;const f=G.mp?q.reviveHold>0:(keys.has('KeyF')||touchHold.revive);if(f&&!G.players.some(p=>p!==q&&p.deadT>0&&dist(p,q)<120)){q.carry=null;c.by=0;c.cool=1;c.dropBy=q.id||1}}}else if(!c.cool){const q=G.players.find(p=>!p.carry&&!p.mv&&!p.ult&&!(p.deadT>0||p.respawnT>0)&&(p.id||1)!==c.dropBy&&dist(p,c)<28);if(q){q.carry=c;c.by=q.id||1;text(q.x,q.y-70,'Purifier: hold F to drop','#b8ec72',true)}}}}
+function sporeBossTick(dt){const e=G.boss;if(!e||(e.kit||G.stage)!==5)return;if(G.players.length>1&&!G.props.some(c=>c.kind==='purifier')){const o=sporeSpot(Math.PI/2,190);addProp('purifier',o.x,o.y,12,{sporeBoss:true})}purifierTick(dt);const live=G.players.filter(p=>!(p.deadT>0||p.respawnT>0));if(!live.length)return;
+  const shrooms=G.enemies.filter(m=>m.role==='mushroom'&&!m.dead).length;if(shrooms)e.hp=Math.min(e.maxHp,e.hp+e.maxHp*SPORE_BOSS.regen*shrooms*dt);
+  e.loadCd=(e.loadCd||0)-dt;let mark=live.find(p=>(p.id||1)===e.loadId);if(!mark||e.loadCd<=0){mark=live.find(p=>!(p.toxicLoad>0))||live[0];e.loadId=mark.id||1;e.loadCd=SPORE_BOSS.markEvery;text(mark.x,mark.y-90,'TOXIC LOAD','#b8ec72',true)}
+  for(const q of G.players)q.loadMark=q===mark?1:0;
+  for(const q of live){for(const other of live){if(q===other||dist(q,other)>SPORE_BOSS.shareR)continue;const gap=(q.toxicLoad||0)-(other.toxicLoad||0);if(gap>0){const moved=Math.min(gap/2,SPORE_BOSS.shareRate*dt/(live.length-1||1));q.toxicLoad-=moved;other.toxicLoad=(other.toxicLoad||0)+moved}}}
+  mark.toxicLoad=Math.min(100,(mark.toxicLoad||0)+(live.length===1?SPORE_BOSS.soloRate:SPORE_BOSS.loadRate)*dt);
+  for(const q of live){if((q.carry&&q.carry.kind==='purifier')||(live.length===1&&cleanSporeAt(q)))q.toxicLoad=Math.max(0,(q.toxicLoad||0)-SPORE_BOSS.cleanRate*dt);if(q.toxicLoad>=100){q.toxicLoad=0;G.fx.push({k:'ring',x:q.x,y:q.y,r:10,to:SPORE_BOSS.blastR,t:.4,m:.4,c:'#b8ec72'});bossHurtWhere(p=>dist(p,q)<SPORE_BOSS.blastR,e.dmg*1.2);text(q.x,q.y-80,'LOAD BURST','#b8ec72',true)}}}
 /* Stage 2 and 3 boss acts. Returns true when it handled this frame. */
 function bossActStage(e,dt,d,seen,p,n){const a=e.act;
+  if(a==='sporeSlam'){if(e.actT<=0){e.tel=null;bossHurtWhere(q=>dist(q,e)<e.r+100+q.r,e.dmg*1.2);G.fx.push({k:'ring',x:e.x,y:e.y,r:10,to:e.r+100,t:.3,m:.3,c:'#b8ec72'});e.act='walk';e.actT=1.5;e.cd=1.5;sfx('boom')}return true}
+  if(a==='sporeCast'){if(e.actT<=0){const spots=(e.tel&&e.tel.spots)||[];e.tel=null;for(const o of spots)G.hazards.push({x:o.x,y:o.y,r:SPORE.cloudR,t:SPORE_BOSS.cloudT,dps:e.dmg*.25,from:'e',col:'130,200,65',bossSpore:true});e.act='walk';e.actT=1.5;sfx('bolt')}return true}
+  if(a==='toxicStorm'){if(e.actT<=0){e.tel=null;bossHurtWhere(q=>!cleanSporeAt(q),e.dmg*1.4);G.fx.push({k:'ring',x:e.x,y:e.y,r:20,to:(G.arena&&G.arena.r)||430,t:.5,m:.5,c:'#b8ec72'});e.act='walk';e.actT=2;sfx('boom')}return true}
   if(a==='chitinAim'){if(e.actT>.2)e.ang=Math.atan2(p.y-e.y,p.x-e.x);if(e.actT<=0){e.tel=null;e.act='chitinCharge';e.actT=CHITIN.chargeT;e.chargeHits=[];sfx('dash')}return true}
   if(a==='chitinCharge'){const dx=Math.cos(e.ang)*CHITIN.chargeSp*((e.phase||0)>=2?1.5:1)*dt,dy=Math.sin(e.ang)*CHITIN.chargeSp*((e.phase||0)>=2?1.5:1)*dt,x=e.x,y=e.y;move(e,dx,dy);let bx=Math.abs(e.x-x)<Math.abs(dx)*.5,by=Math.abs(e.y-y)<Math.abs(dy)*.5;if(G.arena){const ar=G.arena,ad=Math.hypot(e.x-ar.x,e.y-ar.y);if(ad>ar.r-e.r){const normal=Math.atan2(e.y-ar.y,e.x-ar.x);e.x=ar.x+Math.cos(normal)*(ar.r-e.r);e.y=ar.y+Math.sin(normal)*(ar.r-e.r);e.ang=2*normal+Math.PI-e.ang;bx=by=false}}if(bx)e.ang=Math.PI-e.ang;if(by)e.ang=-e.ang;bossHurtWhere(q=>{if(e.chargeHits.includes(q.id||1)||dist(e,q)>=e.r+q.r+4)return false;if(G.players.filter(v=>!(v.deadT>0||v.respawnT>0)).length===1&&q.dashT>0){e.act='walk';e.actT=CHITIN.stumble;e.staggerT=CHITIN.stumble;text(e.x,e.y-e.ah,'STUMBLED','#ffd860',true);return false}e.chargeHits.push(q.id||1);return true},e.dmg*((e.phase||0)>=2?1.6:1.15));if(e.actT<=0&&e.act==='chitinCharge'){e.act='walk';e.actT=rnd(1.4,2.2)}return true}
   if(a==='webSpit'){if(e.actT>.2)e.ang=Math.atan2(p.y-e.y,p.x-e.x);if(e.actT<=0){e.tel=null;const a=e.ang;G.shots.push({x:e.x,y:e.y-22,vx:Math.cos(a)*260,vy:Math.sin(a)*260,r:8,from:'e',life:3,dmg:e.dmg*.7,web:true,fx:'orb',col:'230,230,200',a});e.act='walk';e.actT=rnd(1.2,2)}return true}
@@ -541,18 +560,18 @@ function bossActStage(e,dt,d,seen,p,n){const a=e.act;
   return false}
 /* Attack choice per boss; stages 1 to 3 have their own kits, the rest keep the shared one. */
 function bossPick(e,n,low){const r=Math.random();
-  if(n===4)return pickChitin(e);if(n===2)return pickGloom(e);if(n===3)return pickBanshee(e);
+  if(n===5)return pickSpore(e);if(n===4)return pickChitin(e);if(n===2)return pickGloom(e);if(n===3)return pickBanshee(e);
   if(n===1){if((e.phase||0)>=1&&r<.22){startBurrow(e);return}
     if(r<.6){e.act='aim';bossTelegraph(e,'line',e.r+230,.62)}else startSpray(e);return}
   if(r<.42){e.act='aim';bossTelegraph(e,'line',e.r+230,Math.max(.45,.8-n*.03))}else if(r<.8){e.act='nova';bossTelegraph(e,'circle',150,.6)}else{e.act='call';e.actT=.5}}
-const BOSS_PHASE_FX={1:()=>spawnPillars(2),4:e=>{if(e.phase===1)spawnBossEggs(e);else {text(e.x,e.y-e.ah,'MOLTED','#ffd860',true)}}};
+const BOSS_PHASE_FX={1:()=>spawnPillars(2),5:e=>{if(e.phase===1)spawnMushrooms(e)},4:e=>{if(e.phase===1)spawnBossEggs(e);else {text(e.x,e.y-e.ah,'MOLTED','#ffd860',true)}}};
 function summonBoss(kit,at){
   const n=G.stage,k=kit||n,st=STAGES[k-1],g=G.gate,o=at||{x:g.x,y:g.y-40};
   const e={kind:'boss',kit:k,name:st.label||st.boss,art:st.boss,ah:st.ah,x:o.x,y:o.y,r:st.r,hp:bossHp(n),maxHp:bossHp(n),dmg:bossDmg(n),sp:58+n*3,xp:xpNeed(recLevel(n)),gold:40*Math.pow(1.25,n-1),cd:1,ang:0,aware:true,flash:0,kx:0,ky:0,ph:rnd(TAU),act:'rise',actT:.95,hitCd:0,atkShow:0,wind:0,walk:0,fs:1,recover:0,recoil:0,release:0,trail:[],guard:0,guardMax:BOSS_GUARD_MAX,staggerT:0,phase:0,breatherT:0,enrageT:BOSS_ENRAGE_BASE+BOSS_ENRAGE_STEP*n,tel:null};
   partyToughen(e);G.enemies.push(e);G.boss=e;G.arena=at?null:{x:G.gate.x,y:G.gate.y-40,r:430};shake(10);sfx('boom');
-  if(k===3)spawnLanterns();
+  if(k===3)spawnLanterns();if(k===5)spawnSporeArena();
   const rec=recLevel(n),lv=G.p.lvl;
-  G.banner={t:3.2,a:e.name,b:k===4?'Crack the shell: attack its green back':lv<rec?'Recommended level '+rec+'. You are level '+lv+'. Train more if you fall.':'Final boss of stage '+n};
+  G.banner={t:3.2,a:e.name,b:k===5?(G.players.length===1?'Clean Toxic Load at the vents.':'Share Toxic Load or carry the purifier to clean it.'):k===4?'Crack the shell: attack its green back':lv<rec?'Recommended level '+rec+'. You are level '+lv+'. Train more if you fall.':'Final boss of stage '+n};
 }
 
 /* ---------- Combat ---------- */
@@ -631,7 +650,7 @@ function killEnemy(e){
   const night=nightness(G.hour)>.5?1.25:1;
   if(!boss&&e.kind==='rival'&&!e.minion)G.killsStage++;
   dropLoot(e,night);shareXp(e.xp*night);
-  if(boss){clearBossEggs();shake(12);sfx('boom');G.boss=null;G.arena=null;clearLanterns();G.players.forEach(q=>{q.sp+=2;q.possT=0});G.enemies.forEach(o=>{if(o.minion)o.dead=true});if(!G.swarm)stageCleared()}
+  if(boss){clearBossEggs();clearSporeBoss();shake(12);sfx('boom');G.boss=null;G.arena=null;clearLanterns();G.players.forEach(q=>{q.sp+=2;q.possT=0});G.enemies.forEach(o=>{if(o.minion)o.dead=true});if(!G.swarm)stageCleared()}
   dirty();
 }
 function dropLoot(e,night){
@@ -937,7 +956,7 @@ function update(dt){
   if(useMobs()&&!G.clearPending&&!G.swarm){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
   updateNpcs(dt);tickHazards(dt);G.p=G.players[0];
   for(const c of G.w.cars){if(c.v){c.y+=c.s*dt;if(c.y<-60)c.y=MH*T+60;if(c.y>MH*T+60)c.y=-60}else{c.x+=c.s*dt;if(c.x<-60)c.x=MW*T+60;if(c.x>MW*T+60)c.x=-60}}
-  tideTick(dt);lanternTick(dt);for(const q of G.players){playerStatus(q,dt);toxinStep(q,dt)}
+  tideTick(dt);lanternTick(dt);sporeBossTick(dt);for(const q of G.players){playerStatus(q,dt);toxinStep(q,dt)}
   for(const q of G.players){if(q.lx!==undefined&&dt>0){q.vx=(q.x-q.lx)/dt;q.vy=(q.y-q.ly)/dt}q.lx=q.x;q.ly=q.y}
   for(const e of G.enemies){G.p=threatTarget(e);e.targetId=G.p?(G.p.id||0):0;const a0=e.ang;updateEnemy(e,dt);if(e.method==='shield'&&!e.dead)e.ang=turnTo(a0||0,e.ang||0,AI.guardTurn*dt);goreTrail(e,dt)}
   for(let i=0;i<G.enemies.length;i++){const a=G.enemies[i];if(a.dead||!a.aware)continue;for(let j=i+1;j<G.enemies.length;j++){const b=G.enemies[j];if(b.dead)continue;const dx=b.x-a.x,dy=b.y-a.y,m=a.r+b.r,d2=dx*dx+dy*dy;if(d2<m*m&&d2>.01){const d=Math.sqrt(d2),o=(m-d)*.5,ox=dx/d*o,oy=dy/d*o;if(a.kind!=='boss')move(a,-ox,-oy);if(b.kind!=='boss')move(b,ox,oy)}}}
@@ -1027,7 +1046,7 @@ function startSwarmRun(char,stage){const sv=readSave();saveHold=true;try{if(sv&&
 /* Stage 5: spores build toxin outside the safehouse and active vents. Clouds build it faster. */
 const SPORE={fill:1.25,cloudFill:8,clean:14,drain:.04,cloudT:8,cloudR:95,bloaterCap:2,fuse:1.2};
 function sporeCloud(e){G.hazards.push({x:e.x,y:e.y,r:SPORE.cloudR,t:SPORE.cloudT,from:'e',col:'130,200,65',spore:true});G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:SPORE.cloudR,t:.4,m:.4,c:'#a8e668'});sfx('boom')}
-function toxinStep(p,dt){if(G.stage!==5||p.deadT>0||p.respawnT>0||G.clearPending)return;const clean=dist(p,G.safe)<100&&!(G.swarm&&G.swarm.breakT<=0)||(G.props||[]).some(v=>v.kind==='vent'&&v.done&&dist(p,v)<110);const inCloud=(G.hazards||[]).some(h=>h.spore&&h.t>0&&dist(p,h)<h.r+p.r),before=p.toxin||0;p.toxin=clamp((p.toxin||0)+(clean?-SPORE.clean:SPORE.fill+(inCloud?SPORE.cloudFill:0))*dt,0,100);if(p.toxin>=100){if(before<100)text(p.x,p.y-80,'TOXIN FULL','#b8ec72',true);p.toxinTick=(p.toxinTick||0)-dt;if(p.toxinTick<=0){p.toxinTick=1;const me=G.p;G.p=p;hurtPlayer(p.s.maxHp*SPORE.drain);G.p=me}}else p.toxinTick=0}
+function toxinStep(p,dt){if(G.stage!==5||p.deadT>0||p.respawnT>0||G.clearPending)return;const clean=dist(p,G.safe)<100&&!(G.swarm&&G.swarm.breakT<=0)||(G.props||[]).some(v=>v.kind==='vent'&&v.done&&dist(p,v)<110)||(G.boss&&(G.boss.kit||G.stage)===5&&cleanSporeAt(p));const inCloud=(G.hazards||[]).some(h=>h.spore&&h.t>0&&dist(p,h)<h.r+p.r),before=p.toxin||0;p.toxin=clamp((p.toxin||0)+(clean?-SPORE.clean:SPORE.fill+(inCloud?SPORE.cloudFill:0))*dt,0,100);if(p.toxin>=100){if(before<100)text(p.x,p.y-80,'TOXIN FULL','#b8ec72',true);p.toxinTick=(p.toxinTick||0)-dt;if(p.toxinTick<=0){p.toxinTick=1;const me=G.p;G.p=p;hurtPlayer(p.s.maxHp*SPORE.drain);G.p=me}}else p.toxinTick=0}
 function spawnBloater(){const e=spawnMob(500,null,false);if(!e)return null;e.role='bloater';e.hp*=2;e.maxHp*=2;e.sp*=.8;e.aware=true;return e}
 const bloaterDue=()=>G.stage===5&&G.enemies.filter(e=>!e.dead&&e.role==='bloater').length<Math.round(SPORE.bloaterCap*partyCrowd())&&spawnBloater();
 function bloaterAct(e,dt,d,seen){if(e.fuseT>0){e.fuseT-=dt;e.moving=false;if(e.fuseT<=0){sporeCloud(e);e.dead=true}return true}if(seen&&d<e.r+G.p.r+55&&dist(G.p,G.safe)>110){e.fuseT=SPORE.fuse;text(e.x,e.y-90,'SPORES','#b8ec72',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:SPORE.cloudR,t:SPORE.fuse,m:SPORE.fuse,c:'#a8e668'});return true}return false}
@@ -1079,6 +1098,7 @@ function updateEnemy(e,dt){
   e.lostT=seen?0:(e.lostT||0)+dt;if(e.aware&&e.kind!=='boss'&&!e.swarm&&(d>AI.leash||e.lostT>AI.forget)){e.aware=false;e.alerted=false}
   if(e.aware&&!e.alerted&&e.kind!=='boss'){e.alerted=true;for(const o of G.enemies)if(o!==e&&!o.dead&&!o.lurk&&dist(o,e)<AI.alert)o.aware=true}
   if(e.kind==='boss')return updateBoss(e,dt,d,seen);
+  if(e.role==='mushroom')return;
   if(e.role==='stalker'&&stalkerAct(e,dt,d,seen))return;
   if(e.role==='lurker'&&lurkerAct(e,dt,d,seen))return;
   if(e.role==='bloater'&&bloaterAct(e,dt,d,seen))return;
@@ -1130,7 +1150,7 @@ function updateBoss(e,dt,d,seen){
     if(d>e.r+p.r+6)steer(e,dt,e.sp*(n===4?(e.phase>=2?1.5:1):(low?1.25:1)),seen);
     const after=Math.sin((e.walk||0)*BOSS_RATE(e));
     if(e.moving&&before*after<0&&BOSS_STYLE[STYLE_OF[e.art]].step>=6){burst(e.x+(after>0?-1:1)*e.r*.6,e.y,'#8a8478',4,70);shake(.7)}
-    if(d<e.r+p.r+14&&e.cd<=0){e.act='slam';bossTelegraph(e,'circle',e.r+52,Math.max(.34,.6-n*.02));return}
+    if(d<e.r+p.r+14&&e.cd<=0){e.act=n===5?'sporeSlam':'slam';bossTelegraph(e,'circle',e.r+(n===5?100:52),n===5?.9:Math.max(.34,.6-n*.02));return}
     if(e.actT<=0&&seen)bossPick(e,n,low);else if(e.actT<=0)e.actT=.6;
   }else if(e.act==='slam'){
     if(e.actT<=0){e.tel=null;if(d<e.r+p.r+52)hurtPlayer(e.dmg*(n===4&&e.phase>=2?1.6:1.2));G.fx.push({k:'ring',x:e.x,y:e.y,r:12,to:e.r+50,t:.22,m:.22,c:'#f0805c'});burst(e.x,e.y,'#8a8478',12,160);e.recover=.3;shake(4);sfx('boom');e.cd=Math.max(.9,1.8-n*.07)*bossCd(e);e.act='walk';e.actT=rnd(1,2);if(bossChains(low)&&dist(e,p)<e.r+p.r+120){e.cd=0;e.act='slam';bossTelegraph(e,'circle',e.r+52,BOSS_TELEGRAPH)}}
