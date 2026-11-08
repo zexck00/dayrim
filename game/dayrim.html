@@ -793,7 +793,7 @@ const playersNear=(o,r)=>G.players.some(q=>!(q.deadT>0)&&!(q.respawnT>0)&&dist(q
 /* Zones must be far enough apart that holding one never holds two. */
 function spawnZones(n){const zs=[],SEP=320;for(let i=0;i<n;i++){let o=null;for(let t=0;t<60;t++){const c=propSpot(360,1100);if(zs.every(z=>Math.hypot(z.x-c.x,z.y-c.y)>=SEP)){o=c;break}}if(!o)o=propSpot(360,1100);zs.push(addProp('zone',o.x,o.y,40))}G.obj.zones=zs}
 /* Canisters never start inside the drop zone, or they would be delivered the moment they are picked up. */
-function spawnCarries(n){const d=propSpot(600,1300),items=[];for(let i=0;i<n;i++){let o=propSpot(300,800);for(let t=0;t<20&&Math.hypot(o.x-d.x,o.y-d.y)<140;t++)o=propSpot(300,800);items.push(addProp('canister',o.x,o.y,11))}G.obj.drop=addProp('drop',d.x,d.y,46);G.obj.items=items}
+function spawnCarries(n){const ds=[];for(let i=0;i<(G.stage===5?n:1);i++){let d=propSpot(600,1300);for(let t=0;t<60&&ds.some(q=>dist(q,d)<180);t++)d=propSpot(600,1300);ds.push(addProp(G.stage===5?'vent':'drop',d.x,d.y,46))}const items=[];for(let i=0;i<n;i++){let o=propSpot(300,800);for(let t=0;t<60&&ds.some(d=>dist(o,d)<140);t++)o=propSpot(300,800);items.push(addProp('canister',o.x,o.y,11,{startX:o.x,startY:o.y}))}G.obj.drop=ds[0];G.obj.vents=G.stage===5?ds:null;G.obj.items=items}
 const WEBBED={eggHatch:25,webTime:5,webberCap:2,webberCd:4};
 function spawnEggs(n){const eggs=[];for(let i=0;i<n;i++){let o=propSpot(360,1100);for(let t=0;t<60&&eggs.some(e=>dist(e,o)<180);t++)o=propSpot(360,1100);eggs.push(addProp('egg',o.x,o.y,18,{t:WEBBED.eggHatch}))}G.obj.eggs=eggs}
 function eggHit(e){if(e.kind!=='egg'||e.done)return false;e.done=true;text(e.x,e.y-55,'EGGS CUT','#e6e6c8',true);burst(e.x,e.y-15,'#e6e6c8',8);return true}
@@ -812,7 +812,8 @@ function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;if(o.tg)retu
   if(st.kind==='revive'){for(const c of G.npcs)if(c.wounded&&!c.dead)out.push({x:c.x,y:c.y,label:'Scout'})}
   else if(st.kind==='hold'){for(const z of (o.zones||[]))if(!z.done)out.push({x:z.x,y:z.y,label:st.mark||'Zone'})}
   else if(st.kind==='carry'){const held=G.players.some(q=>q.carry&&!q.carry.done);
-    if(held&&o.drop)out.push({x:o.drop.x,y:o.drop.y,label:'Drop'});
+    if(held&&o.vents){for(const v of o.vents)if(!v.done)out.push({x:v.x,y:v.y,label:'Vent'})}
+    else if(held&&o.drop)out.push({x:o.drop.x,y:o.drop.y,label:'Drop'});
     else for(const c of (o.items||[]))if(!c.done&&!c.by)out.push({x:c.x,y:c.y,label:'Canister'})}
   else if(st.kind==='eggs'){for(const e of o.eggs||[])if(!e.done)out.push({x:e.x,y:e.y,label:'Eggs'})}
   else if(st.kind==='escort'&&o.escort)out.push({x:o.escort.x,y:o.escort.y,label:'Boat'});
@@ -840,10 +841,10 @@ function holdStep(st,dt){
 /* The escort only moves while somebody stays close. */
 function escortStep(st,dt){const e=G.obj.escort;if(!e)return;if(playersNear(e,220)){const dx=e.tx-e.x,dy=e.ty-e.y,d=Math.hypot(dx,dy)||1;if(d>30){e.x+=dx/d*Math.min(54*dt,d);e.y+=dy/d*Math.min(54*dt,d);e.t+=dt}else e.done=true}st.have=e.done?1:0}
 /* Anything dropped by a player who left, or a stale carrier id, is released. */
-function releaseCarries(){for(const c of (G.obj&&G.obj.items)||[])if(c.by&&!G.players.some(q=>(q.id||0)===c.by&&q.carry===c))c.by=0}
+function releaseCarries(){for(const c of (G.obj&&G.obj.items)||[])if(c.by&&!G.players.some(q=>(q.id||0)===c.by&&q.carry===c&&!(q.deadT>0||q.respawnT>0)))c.by=0}
 /* A wipe sends the party back to the last finished step: finished steps stay, the current one starts over. */
 function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false;z.alarm=false});st.holdT=0;st.have=0;st.met=false;st.alone=false}
-  else if(st.kind==='carry'){(o.items||[]).forEach(c=>{c.done=false;c.by=0});st.have=0;G.players.forEach(p=>p.carry=null)}
+  else if(st.kind==='carry'){(o.items||[]).forEach(c=>{c.done=false;c.by=0;c.x=c.startX;c.y=c.startY});(o.vents||[]).forEach(v=>v.done=false);st.have=0;G.players.forEach(p=>p.carry=null)}
   else if(st.kind==='eggs'){for(const e of o.eggs||[]){e.done=false;e.t=WEBBED.eggHatch}st.have=0}
   else if(st.kind==='escort'&&o.escort){o.escort.x=G.safe.x+90;o.escort.y=G.safe.y+70;o.escort.done=false;o.escort.t=0;st.have=0}}
 function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;
@@ -867,7 +868,7 @@ function enterStage(n,keepKills){
   G.villT=60;G.decals=[];G.hazards=[];
   const start=Math.round((8+n)*partyCrowd());for(let i=0;i<start;i++)useMobs()?spawnMob(380):spawnRival(380,null,null,n===1&&i===2?'Exorcist':null);
   startObjective();
-  G.banner={t:3.4,a:'Stage '+n+': '+st.n,b:(G.obj.steps[0]&&G.obj.steps[0].label)||('Defeat '+quota(n)+' '+foeWord())};
+  G.banner={t:3.4,a:'Stage '+n+': '+st.n,b:n===5?'Spores raise toxin. Clean up at the safehouse or active vents.':(G.obj.steps[0]&&G.obj.steps[0].label)||('Defeat '+quota(n)+' '+foeWord())};
   updateFlow();dirty();writeSave();
 }
 /* Prototype party scaling; tune after party and human playtests. */
@@ -882,7 +883,7 @@ function rusherTarget(e){if(e.role!=='rusher'||!e.aware)return null;const a=G.pl
 function nearestPlayer(o){let b=null,bd=Infinity;for(const q of alivePlayers()){const d=dist(q,o);if(d<bd){bd=d;b=q}}return b}
 const ownerOf=s=>G.players.find(q=>q.id===s.pid)||G.players[0];
 function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=me}
-function playerDown(p,wind=false){p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
+function playerDown(p,wind=false){if(p.carry&&p.carry.kind==='canister'){p.carry.by=0;p.carry=null}p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
 function revive(p){p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
 function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;if(G.boss&&G.arena){const a=Math.atan2(G.safe.y-G.arena.y,G.safe.x-G.arena.x);p.x=G.arena.x+Math.cos(a)*(G.arena.r-45);p.y=G.arena.y+Math.sin(a)*(G.arena.r-45)}p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
 function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;clearLanterns();clearBossEggs();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
@@ -1008,7 +1009,7 @@ function pickBanshee(e){const r=Math.random(),ph=e.phase||0;
   e.act='aim';bossTelegraph(e,'line',e.r+230,.7)}
 const lanternLit=l=>!!(l.by||l.t>0);
 const bossWarded=e=>e.kind==='boss'&&((e.ghostT||0)>0||((e.kit||G.stage)===3&&G.props.some(l=>l.kind==='lantern')&&!G.props.some(l=>l.kind==='lantern'&&lanternLit(l)&&dist(l,e)<BANSHEE.lanternR)));
-function clearEncounterStatus(p){p.grabT=p.stunT=p.blindT=p.possT=p.webT=0}
+function clearEncounterStatus(p){p.grabT=p.stunT=p.blindT=p.possT=p.webT=p.toxin=p.toxinTick=0}
 function clearLanterns(){G.props=G.props.filter(o=>o.kind!=='lantern');for(const q of G.players)if(q.carry&&q.carry.kind==='lantern')q.carry=null}
 function spawnLanterns(){clearLanterns();const o=G.arena||G.boss||G.gate;for(const s of[-1,1]){let x=o.x+s*150,y=o.y+60;if(blocked(x,y,12)){x=o.x;y=o.y}addProp('lantern',x,y,12)}G.banner={t:3.2,a:'Lantern Anchor',b:G.players.length===1?'Carry a lantern to her and hold F to set it down':'Only lantern light lets you hurt her. Hold F to set one down'}}
 function lanternTick(dt){for(const l of G.props){if(l.kind!=='lantern')continue;l.cool=Math.max(0,(l.cool||0)-dt);if(l.dropBy){const d=G.players.find(q=>(q.id||1)===l.dropBy);if(!d||dist(d,l)>40)l.dropBy=0}if(l.by){const c=G.players.find(q=>(q.id||1)===l.by);if(!c||c.carry!==l||c.deadT>0||c.respawnT>0){l.by=0;l.t=G.players.length===1?999:BANSHEE.lanternLit;if(c&&c.carry===l)c.carry=null}else{l.x=c.x;l.y=c.y}}else if(l.t>0&&l.t<900)l.t=Math.max(0,l.t-dt)}}
@@ -1127,7 +1128,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){
   if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){
-  if(e.grab)lurkRelease(e,false);e.dead=true;const p=G.p,boss=e.kind==='boss';p.kills++;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:8,to:boss?170:58,t:.3,m:.3,c:'#fff2d0'});onKill(e);if(e.vill||e.elite)sfx('rivalDown');burst(e.x,e.y-20,e.elite?'#e8c95c':'#c8c8d0',boss?70:12,boss?300:150);
+  if(e.grab)lurkRelease(e,false);if(e.role==='bloater')sporeCloud(e);e.dead=true;const p=G.p,boss=e.kind==='boss';p.kills++;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:8,to:boss?170:58,t:.3,m:.3,c:'#fff2d0'});onKill(e);if(e.vill||e.elite)sfx('rivalDown');burst(e.x,e.y-20,e.elite?'#e8c95c':'#c8c8d0',boss?70:12,boss?300:150);
   const ga=(e.kx||e.ky)?Math.atan2(e.ky,e.kx):rnd(TAU);goreSpray(e,ga,.6,boss);goreChunks(e,ga,boss?26:(e.mob?6:10));gorePool(e,boss?3:1);if(e.vill)G.fx.push({k:'kitdie',key:KIT_OF[e.name],x:e.x,y:e.y,mir:G.p.x>e.x,t:6,m:6});else if(boss||e.art)G.fx.push({k:'bossdie',art:e.art,ah:e.ah,x:e.x,y:e.y,fs:e.fs||1,t:boss?1.5:.8,m:boss?1.5:.8});else G.fx.push({k:'ko',name:e.name,x:e.x,y:e.y,t:.7,m:.7});
   const night=nightness(G.hour)>.5?1.25:1;
   if(!boss&&e.kind==='rival'&&!e.minion)G.killsStage++;
@@ -1236,7 +1237,7 @@ function killNpc(c,a,byPlayer){
   if(byPlayer){G.p.killerT=45;addLog('You killed a '+esc(c.name.toLowerCase())+'. Witnesses scatter.')}
 }
 function addDecal(x,y,r,pool,col){const d=G.decals||(G.decals=[]);d.push({x,y,r,pool,col,seed:Math.random()*99|0});if(d.length>GORE.cap)d.shift()}
-function tickHazards(dt){(G.hazards||[]).forEach(h=>{h.t-=dt;h.tk=(h.tk||0)-dt;if(h.tk<=0){h.tk=.45;if(h.from==='e'){for(const q of G.players){G.p=q;if(dist(q,h)<h.r+q.r)hurtPlayer(h.dps)}}else{G.p=ownerOf(h);for(const e of G.enemies)if(!e.dead&&dist(e,h)<h.r+e.r)hitEnemy(e,h.dps,0,0)}for(const c of G.npcs)if(!c.dead&&dist(c,h)<h.r)hitNpc(c,h.dps,rnd(TAU),h.from!=='e')}});if(G.hazards)G.hazards=G.hazards.filter(h=>h.t>0)}
+function tickHazards(dt){(G.hazards||[]).forEach(h=>{h.t-=dt;if(h.spore)return;h.tk=(h.tk||0)-dt;if(h.tk<=0){h.tk=.45;if(h.from==='e'){for(const q of G.players){G.p=q;if(dist(q,h)<h.r+q.r)hurtPlayer(h.dps)}}else{G.p=ownerOf(h);for(const e of G.enemies)if(!e.dead&&dist(e,h)<h.r+e.r)hitEnemy(e,h.dps,0,0)}for(const c of G.npcs)if(!c.dead&&dist(c,h)<h.r)hitNpc(c,h.dps,rnd(TAU),h.from!=='e')}});if(G.hazards)G.hazards=G.hazards.filter(h=>h.t>0)}
 /* ---------- Asset-driven villains: Necromancer, Void Empress, Toxin Alchemist ---------- */
 const KIT_OF={Necromancer:'necro','Void Empress':'void','Toxin Alchemist':'toxic'};
 const MOVE_IMG={};Object.keys(MOVE_URLS).forEach(k=>{const im=new Image();im.src=MOVE_URLS[k];MOVE_IMG[k]=im});
@@ -1275,7 +1276,7 @@ function fireMove(a,mv,hitN){
   }
 }
 function updateMove(a,dt){const mv=a.mv;if(!mv)return;mv.t+=dt;const M=KIT[mv.key][mv.id];while(mv.hit<M.hits.length&&mv.t>=M.hits[mv.hit]*mv.dur){fireMove(a,mv,mv.hit);mv.hit++}if(mv.t>=mv.dur)a.mv=null}
-function doMove(id){const p=G.p;if(!kitOf(p)||p.guard||p.mv||p.stunT>0)return;if(id==='special'){if((p.specT||0)>0)return;p.specT=SPECIAL_CD*cdMulOf(p);G.banner=null}startMove(p,id,mouseAimX());if(id==='special')addLog('Special attack used. Ready again in '+Math.round(SPECIAL_CD*p.s.cdMul)+' seconds.')}
+function doMove(id){const p=G.p;if(p.carry||!kitOf(p)||p.guard||p.mv||p.stunT>0)return;if(id==='special'){if((p.specT||0)>0)return;p.specT=SPECIAL_CD*cdMulOf(p);G.banner=null}startMove(p,id,mouseAimX());if(id==='special')addLog('Special attack used. Ready again in '+Math.round(SPECIAL_CD*p.s.cdMul)+' seconds.')}
 const mouseAimX=()=>{const p=G.p;return touchMode?p.x+Math.cos(p.face):mouse.x};
 /* ---------- Voice-over: the browser's built-in speech, plus a synth stinger that always plays ---------- */
 let VOICE=null;
@@ -1323,7 +1324,7 @@ const ULT_BY_STAT={pow:['Earthshatter','255,140,50'],aim:['Bullet Storm','255,22
 const ULT_BY_KIT={necro:['Army of the Dead','110,255,170'],void:['Event Horizon','190,110,255'],toxic:['Plague Bloom','140,240,70']};
 function ultOf(p){const k=kitOf(p);if(k)return ULT_BY_KIT[k];let b='pow';for(const s in p.stats)if(p.stats[s]>p.stats[b])b=s;return ULT_BY_STAT[b]}
 function doUlt(){
-  const p=G.p;if(G.p.ult||p.rage<100||G.mode!=='play'||G.clearPending)return false;
+  const p=G.p;if(p.carry||G.p.ult||p.rage<100||G.mode!=='play'||G.clearPending)return false;
   if(G.players.length>1)openLink(p);
   const [name,col]=ultOf(p);p.rage=0;p.guard=false;p.mv=null;G.p.ult={t:0,hit:0,name,col,seed:Math.random()*99};p.inv=ULT_LEN;
   const k=kitOf(p);if(k)p.mv={id:'special',key:k,t:0,dur:KIT[k].special.dur,hit:99,side:Math.cos(p.face)>=0?1:-1,mirror:KIT[k].special.face!==0&&(Math.cos(p.face)>=0?1:-1)!==KIT[k].special.face};
@@ -1415,9 +1416,9 @@ function updatePlayer(p,dt){
   /* Carry steps: walk over an item to lift it, walk into the drop zone to deliver it. */
   if(G.obj){const st=G.obj.steps[G.obj.i];
     if(st&&st.kind==='carry'){const items=G.obj.items||[];
-      if(!p.carry){const c=items.find(c=>!c.done&&!c.by&&dist(p,c)<28);if(c){c.by=p.id||0;p.carry=c;text(p.x,p.y-70,'Carrying','#8fd6ff',true)}}
-      if(p.carry&&G.obj.drop&&dist(p,G.obj.drop)<G.obj.drop.r){p.carry.done=true;p.carry.by=0;p.carry=null;text(p.x,p.y-70,'Delivered','#8fd6ff',true);sfx('loot')}
-      else if(p.carry&&p.carry.done)p.carry=null}}
+      if(!p.carry&&!p.mv&&!p.ult){const c=items.find(c=>!c.done&&!c.by&&dist(p,c)<28);if(c){c.by=p.id||0;p.carry=c;text(p.x,p.y-70,'Carrying','#8fd6ff',true)}}
+      if(p.carry){p.carry.x=p.x;p.carry.y=p.y;const d=G.obj.vents?G.obj.vents.find(v=>!v.done&&dist(p,v)<v.r):G.obj.drop&&dist(p,G.obj.drop)<G.obj.drop.r?G.obj.drop:null;if(d){if(G.obj.vents)d.done=true;p.carry.done=true;p.carry.by=0;p.carry=null;text(p.x,p.y-70,'Delivered','#8fd6ff',true);sfx('loot')}}
+      if(p.carry&&p.carry.done)p.carry=null}}
   p.nearSafe=dist(p,G.safe)<70;
   if(p.nearSafe&&!(G.swarm&&G.swarm.breakT<=0))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.08*dt);
 }
@@ -1433,12 +1434,12 @@ function update(dt){
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
   // keep the streets populated: more rivals at night, more citizens by day
   const n=nightness(G.hour);G.spawnT-=dt;
-  if(G.swarm)swarmTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue())useMobs()?spawnMob(520):spawnRival(520);
+  if(G.swarm)swarmTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue()&&!bloaterDue())useMobs()?spawnMob(520):spawnRival(520);
     const wantN=Math.round(14*(1-n)+3);if(G.npcs.length<wantN)spawnNpc();else if(G.npcs.length>wantN)G.npcs.splice(G.npcs.findIndex(c=>dist(c,nearestPlayer(c))>500)>>>0,1)}
   if(useMobs()&&!G.clearPending&&!G.swarm){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
   updateNpcs(dt);tickHazards(dt);G.p=G.players[0];
   for(const c of G.w.cars){if(c.v){c.y+=c.s*dt;if(c.y<-60)c.y=MH*T+60;if(c.y>MH*T+60)c.y=-60}else{c.x+=c.s*dt;if(c.x<-60)c.x=MW*T+60;if(c.x>MW*T+60)c.x=-60}}
-  tideTick(dt);lanternTick(dt);for(const q of G.players)playerStatus(q,dt);
+  tideTick(dt);lanternTick(dt);for(const q of G.players){playerStatus(q,dt);toxinStep(q,dt)}
   for(const q of G.players){if(q.lx!==undefined&&dt>0){q.vx=(q.x-q.lx)/dt;q.vy=(q.y-q.ly)/dt}q.lx=q.x;q.ly=q.y}
   for(const e of G.enemies){G.p=threatTarget(e);e.targetId=G.p?(G.p.id||0):0;const a0=e.ang;updateEnemy(e,dt);if(e.method==='shield'&&!e.dead)e.ang=turnTo(a0||0,e.ang||0,AI.guardTurn*dt);goreTrail(e,dt)}
   for(let i=0;i<G.enemies.length;i++){const a=G.enemies[i];if(a.dead||!a.aware)continue;for(let j=i+1;j<G.enemies.length;j++){const b=G.enemies[j];if(b.dead)continue;const dx=b.x-a.x,dy=b.y-a.y,m=a.r+b.r,d2=dx*dx+dy*dy;if(d2<m*m&&d2>.01){const d=Math.sqrt(d2),o=(m-d)*.5,ox=dx/d*o,oy=dy/d*o;if(a.kind!=='boss')move(a,-ox,-oy);if(b.kind!=='boss')move(b,ox,oy)}}}
@@ -1506,7 +1507,7 @@ function nextWave(){const S=G.swarm;S.wave++;S.spawned=0;S.spawnT=0;const boss=S
   if(boss){const kit=((S.wave/SWARM.bossEvery-1)%3)+1,at=randomOpen(450,800)||randomOpen(250,1400)||{x:G.p.x+400,y:G.p.y};summonBoss(kit,at);const b=G.boss,k=1+SWARM.bossLife*(S.wave/SWARM.bossEvery-1);b.hp*=k;b.maxHp*=k}
   G.banner={t:2.6,a:'Wave '+S.wave,b:boss?(G.boss?G.boss.name:'A boss')+' joins the swarm':S.total+' enemies'}}
 function swarmSpawn(){const w=G.swarm.wave,r=Math.random();let e=null;
-  if(w>=SWARM.specialFrom&&r<.08)e=G.w.cover.length?spawnStalker():G.w.isle?spawnLurker():null;
+  if(w>=SWARM.specialFrom&&r<.08)e=G.stage===5?spawnBloater():G.w.cover.length?spawnStalker():G.w.isle?spawnLurker():null;
   if(!e&&w>=SWARM.rivalFrom&&r<Math.min(.25,.03*w)&&!useMobs())e=spawnRival(520);
   if(!e)e=spawnMob(520,null,Math.random()<Math.min(SWARM.strongMax,.05+.025*w));
   if(!e)return false;if(e.role!=='stalker'&&e.role!=='lurker')e.aware=true;const late=Math.max(0,w-SWARM.toughFrom);e.hp*=1+SWARM.tough*late;e.maxHp*=1+SWARM.tough*late;e.dmg*=1+SWARM.hurt*late;e.swarm=true;return true}
@@ -1525,6 +1526,13 @@ function endSwarm(){const S=G.swarm;if(!S||S.over)return;S.over=true;S.overT=SWA
 function restartSwarm(){for(const q of G.players){if(q.swarmSave)Object.assign(q,JSON.parse(JSON.stringify(q.swarmSave)));q.carry=null;q.secondWind=false;q.windDown=false;clearEncounterStatus(q);for(const k of ['deadT','respawnT','downCount','fastT','magicT','dashT','combo','comboT','comboPop','weaponHealCd','teamCd','breakReady','tauntGuard','mendT','reviveHold','reviveTarget','reviveProgress','killerT','specT','healFx','pillT','swing','atkT','pickT','hitT','castT'])q[k]=0;for(const k in q.cd)q.cd[k]=0;q.lastDown=-100;q.ult=q.mv=q.comboTier=null;q.guard=q.moving=false;q.inv=2;q.x=G.safe.x+60-G.players.indexOf(q)*30;q.y=G.safe.y+30;const me=G.p;G.p=q;recalc();q.hp=q.s.maxHp;q.mana=q.s.maxMana;G.p=me}
   if(G.mp){G.hopeSpent=0;G.hope=G.hopeMax}startSwarm()}
 function startSwarmRun(char,stage){const sv=readSave();saveHold=true;try{if(sv&&sv.char===char)loadRun(sv);else newRun(char);enterStage(stage);startSwarm()}finally{saveHold=false}setMode('play')}
+/* Stage 5: spores build toxin outside the safehouse and active vents. Clouds build it faster. */
+const SPORE={fill:1.25,cloudFill:8,clean:14,drain:.04,cloudT:8,cloudR:95,bloaterCap:2,fuse:1.2};
+function sporeCloud(e){G.hazards.push({x:e.x,y:e.y,r:SPORE.cloudR,t:SPORE.cloudT,from:'e',col:'130,200,65',spore:true});G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:SPORE.cloudR,t:.4,m:.4,c:'#a8e668'});sfx('boom')}
+function toxinStep(p,dt){if(G.stage!==5||p.deadT>0||p.respawnT>0||G.clearPending)return;const clean=dist(p,G.safe)<100&&!(G.swarm&&G.swarm.breakT<=0)||(G.props||[]).some(v=>v.kind==='vent'&&v.done&&dist(p,v)<110);const inCloud=(G.hazards||[]).some(h=>h.spore&&h.t>0&&dist(p,h)<h.r+p.r),before=p.toxin||0;p.toxin=clamp((p.toxin||0)+(clean?-SPORE.clean:SPORE.fill+(inCloud?SPORE.cloudFill:0))*dt,0,100);if(p.toxin>=100){if(before<100)text(p.x,p.y-80,'TOXIN FULL','#b8ec72',true);p.toxinTick=(p.toxinTick||0)-dt;if(p.toxinTick<=0){p.toxinTick=1;const me=G.p;G.p=p;hurtPlayer(p.s.maxHp*SPORE.drain);G.p=me}}else p.toxinTick=0}
+function spawnBloater(){const e=spawnMob(500,null,false);if(!e)return null;e.role='bloater';e.hp*=2;e.maxHp*=2;e.sp*=.8;e.aware=true;return e}
+const bloaterDue=()=>G.stage===5&&G.enemies.filter(e=>!e.dead&&e.role==='bloater').length<Math.round(SPORE.bloaterCap*partyCrowd())&&spawnBloater();
+function bloaterAct(e,dt,d,seen){if(e.fuseT>0){e.fuseT-=dt;e.moving=false;if(e.fuseT<=0){sporeCloud(e);e.dead=true}return true}if(seen&&d<e.r+G.p.r+55&&dist(G.p,G.safe)>110){e.fuseT=SPORE.fuse;text(e.x,e.y-90,'SPORES','#b8ec72',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:SPORE.cloudR,t:SPORE.fuse,m:SPORE.fuse,c:'#a8e668'});return true}return false}
 /* ---------- Stage 3: Duskwater Fen (C-24) ----------
    The water rises and falls on a cycle. Off the islands, the clearings and bridges, it slows players. Lurkers wait
    under the water, grab a player and drag them away until an ally hits the Lurker. Solo, your own hits free you. */
@@ -1575,6 +1583,7 @@ function updateEnemy(e,dt){
   if(e.kind==='boss')return updateBoss(e,dt,d,seen);
   if(e.role==='stalker'&&stalkerAct(e,dt,d,seen))return;
   if(e.role==='lurker'&&lurkerAct(e,dt,d,seen))return;
+  if(e.role==='bloater'&&bloaterAct(e,dt,d,seen))return;
   if(!e.aware){let tg=null,bd=170;for(const c of G.npcs){const dd=dist(c,e);if(!c.dead&&dd<bd){bd=dd;tg=c}}if(tg){e.ang=Math.atan2(tg.y-e.y,tg.x-e.x);if(bd>e.r+14){move(e,Math.cos(e.ang)*e.sp*.8*dt,Math.sin(e.ang)*e.sp*.8*dt);e.walk+=dt*7;e.moving=true}else if(e.cd<=0){e.cd=1.1;e.atkShow=.2;hitNpc(tg,e.dmg*1.4,e.ang,false)}return}e.wander-=dt;if(e.wander<=0){e.wander=rnd(1.5,4);e.wa=rnd(TAU);e.still=Math.random()<.35}if(!e.still){const h=move(e,Math.cos(e.wa)*e.sp*.4*dt,Math.sin(e.wa)*e.sp*.4*dt);e.ang=e.wa;e.walk+=dt*6;e.moving=true;if(h)e.wander=0}return}
   const a=e.a;
   e.rushT=Math.max(0,(e.rushT||0)-dt);e.punishCd=Math.max(0,(e.punishCd||0)-dt);
@@ -1678,6 +1687,7 @@ function drawProp2(o){const tm=G.t;if(o.k==='zone'){const q=clamp((o.t||0)/zoneN
   else if(o.k==='egg'){if(o.d)return;ctx.fillStyle='#e6e6c8';for(const [x,y] of [[-9,-8],[0,-15],[9,-8]]){ctx.beginPath();ctx.ellipse(o.x+x,o.y+y,8,12,0,0,TAU);ctx.fill()}ctx.strokeStyle='#a6b0a3';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(o.x-20,o.y);ctx.lineTo(o.x+20,o.y-22);ctx.moveTo(o.x+20,o.y);ctx.lineTo(o.x-20,o.y-22);ctx.stroke();ctx.fillStyle='#fff';ctx.font='600 11px Barlow,sans-serif';ctx.textAlign='center';ctx.fillText(Math.ceil(o.t)+'s',o.x,o.y-34)}
   else if(o.k==='canister'){if(o.d)return;const lift=o.by?4:0;ctx.fillStyle='rgba(10,18,26,.35)';ctx.beginPath();ctx.ellipse(o.x,o.y+3,o.r,o.r*.45,0,0,TAU);ctx.fill();ctx.fillStyle='#8fd6ff';ctx.fillRect(o.x-6,o.y-16-lift,12,16);ctx.fillStyle='#2b4a63';ctx.fillRect(o.x-6,o.y-11-lift,12,3);ctx.fillStyle='#d8f2ff';ctx.fillRect(o.x-2,o.y-18-lift,4,3)}
   else if(o.k==='lantern'){const lit=o.by||o.t>0,fl=.85+.15*Math.sin(tm*13+o.x);if(lit){ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(o.x,o.y,8,o.x,o.y,BANSHEE.lanternR);g.addColorStop(0,'rgba(255,214,140,'+(.32*fl).toFixed(3)+')');g.addColorStop(1,'rgba(255,214,140,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,BANSHEE.lanternR,0,TAU);ctx.fill();ctx.restore();ctx.strokeStyle='rgba(255,214,140,.35)';ctx.setLineDash([6,8]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(o.x,o.y,BANSHEE.lanternR,0,TAU);ctx.stroke();ctx.setLineDash([])}ctx.fillStyle='#3a3020';ctx.fillRect(o.x-6,o.y-26,12,4);ctx.fillStyle=lit?'#ffe0a0':'#6a6050';ctx.fillRect(o.x-5,o.y-22,10,14);ctx.fillStyle='#3a3020';ctx.fillRect(o.x-6,o.y-8,12,3);if(!o.by&&o.t>0&&o.t<900){ctx.fillStyle='#ffe0a0';ctx.font='600 11px Barlow,sans-serif';ctx.textAlign='center';ctx.fillText(Math.ceil(o.t)+'s',o.x,o.y-32)}}
+  else if(o.k==='vent'){ctx.save();ctx.strokeStyle=o.d?'#8ff0b0':'#d4e59a';ctx.lineWidth=3;ctx.setLineDash(o.d?[]:[7,7]);ctx.beginPath();ctx.arc(o.x,o.y,o.d?110:o.r,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=o.d?'#72ca88':'#83935d';ctx.fillRect(o.x-14,o.y-13,28,17);ctx.fillStyle='#263b28';for(let i=-9;i<=9;i+=6)ctx.fillRect(o.x+i,o.y-10,3,11);ctx.restore()}
   else if(o.k==='drop'){ctx.save();ctx.globalAlpha=.35+.2*Math.sin(tm*2.5);ctx.strokeStyle='#8fd6ff';ctx.lineWidth=3;ctx.setLineDash([7,7]);ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,TAU);ctx.stroke();ctx.restore()}
   else if(o.k==='pillar'){if(o.done){ctx.globalAlpha=.35;ctx.fillStyle='#5a7a8c';ctx.fillRect(o.x-9,o.y-8,18,8);ctx.globalAlpha=1;return}
     ctx.fillStyle='rgba(10,18,26,.4)';ctx.beginPath();ctx.ellipse(o.x,o.y+3,o.r*.9,o.r*.4,0,0,TAU);ctx.fill();
@@ -1755,7 +1765,7 @@ function drawMob(e){
   drawBossSprite(ctx,e,G.t,P);
   if(e.hp<e.maxHp||e.aware){const w=e.r*2.8,y=e.y-e.ah-6;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(e.x-w/2,y,w,4);ctx.fillStyle=e.mob==='strong'?'#e8c95c':'#e8463f';ctx.fillRect(e.x-w/2,y,w*Math.max(0,e.hp/e.maxHp),4)}
 }
-function drawCombatMarker(e){const status=e.healWind>0?'HEALING · Q TO INTERRUPT':e.exposedT>0?'OPEN':e.brokenT>0?'BROKEN':e.markT>0?'MARKED':e.role==='healer'?'HEALER':e.role==='brute'?'BRUTE':e.role==='rusher'?'RUSHER':e.role==='shooter'?'SHOOTER':e.role==='caster'?'CASTER':e.role==='guard'?'GUARD':e.role==='webber'?'WEBBER':e.role==='stalker'?'STALKER':e.statusT>0?'STATUS':e.tauntT>0?'TAUNTED':'';if(!status)return;ctx.textAlign='center';ctx.font='700 12px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(status,e.x,e.y-(e.ah||74)-20);ctx.fillStyle=e.healWind>0?'#80e5aa':e.exposedT>0?'#ffe27a':'#bcd9ee';ctx.fillText(status,e.x,e.y-(e.ah||74)-20);if(e.statusT>0&&e.statusType){const t=e.statusType+' '+Math.ceil(e.statusT)+'s';ctx.font='600 10px Barlow,sans-serif';ctx.fillStyle='#80eaff';ctx.fillText(t,e.x,e.y-(e.ah||74)-8)}if(e.tauntT>0){ctx.fillStyle='#ffd166';ctx.fillText('Taunted '+Math.ceil(e.tauntT)+'s',e.x,e.y-(e.ah||74)-48)}}
+function drawCombatMarker(e){const status=e.healWind>0?'HEALING · Q TO INTERRUPT':e.exposedT>0?'OPEN':e.brokenT>0?'BROKEN':e.markT>0?'MARKED':e.role==='healer'?'HEALER':e.role==='brute'?'BRUTE':e.role==='rusher'?'RUSHER':e.role==='shooter'?'SHOOTER':e.role==='caster'?'CASTER':e.role==='guard'?'GUARD':e.role==='bloater'?(e.fuseT>0?'SPORES':'BLOATER'):e.role==='webber'?'WEBBER':e.role==='stalker'?'STALKER':e.statusT>0?'STATUS':e.tauntT>0?'TAUNTED':'';if(!status)return;ctx.textAlign='center';ctx.font='700 12px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(status,e.x,e.y-(e.ah||74)-20);ctx.fillStyle=e.healWind>0?'#80e5aa':e.exposedT>0?'#ffe27a':'#bcd9ee';ctx.fillText(status,e.x,e.y-(e.ah||74)-20);if(e.statusT>0&&e.statusType){const t=e.statusType+' '+Math.ceil(e.statusT)+'s';ctx.font='600 10px Barlow,sans-serif';ctx.fillStyle='#80eaff';ctx.fillText(t,e.x,e.y-(e.ah||74)-8)}if(e.tauntT>0){ctx.fillStyle='#ffd166';ctx.fillText('Taunted '+Math.ceil(e.tauntT)+'s',e.x,e.y-(e.ah||74)-48)}}
 /* Who an enemy is coming for. Red means you, pale with a party number means an ally. */
 function drawTargetMark(e){if(!e.aware||!e.targetId)return;const idx=G.players.findIndex(q=>(q.id||0)===e.targetId);if(idx<0)return;const mine=!!G.p&&(G.p.id||0)===e.targetId,x=e.x,y=e.y-(e.ah||74)-38+Math.sin(G.t*7+e.x*.3)*1.5;ctx.beginPath();ctx.moveTo(x-6,y-4);ctx.lineTo(x+6,y-4);ctx.lineTo(x,y+4);ctx.closePath();ctx.globalAlpha=mine?.95:.5;ctx.fillStyle=mine?'#ff5a4a':'#8fd4ff';ctx.fill();ctx.globalAlpha=1;if(!mine&&G.players.length>1){ctx.font='700 10px Barlow,sans-serif';ctx.textAlign='center';ctx.fillStyle='#8fd4ff';ctx.fillText(String(idx+1),x,y-6)}}
 function drawRival(e){
@@ -2013,7 +2023,7 @@ function hudPortrait(){
   label(G.banner&&H<700?(G.banner.b||G.banner.a):obj,left,42,13,'#d0d8e8',statsW);
   bar(left,52,statsW,19,p.hp/p.s.maxHp,'#c0392f','Life '+Math.ceil(p.hp)+'/'+Math.round(p.s.maxHp));
   bar(left,74,statsW,16,p.mana/p.s.maxMana,'#2d6fc0','Mana '+Math.floor(p.mana));
-  bar(left,94,statsW,5,p.xp/xpNeed(p.lvl),'#e8c02a','');
+  if(G.stage===5)bar(left,94,statsW,14,(p.toxin||0)/100,(p.toxin||0)>=100?'#e8463f':'#91b842','Toxin '+Math.floor(p.toxin||0)+'%');else bar(left,94,statsW,5,p.xp/xpNeed(p.lvl),'#e8c02a','');
   const mw=64,mh=mw*MH/MW,mx=W-mw-12,my=12;ctx.drawImage(mini,mx,my,mw,mh);
   const dot=(o,c,size)=>{ctx.fillStyle=c;ctx.fillRect(mx+o.x/T*mw/MW-size/2,my+o.y/T*mh/MH-size/2,size,size)};
   for(const e of G.enemies)if(dist(e,p)<620&&!concealed(e,p))dot(e,e.kind==='boss'?'#ff2020':'#ff5040',2);
@@ -2043,6 +2053,7 @@ function hudBody(){
   const cur=objNow(),S=G.swarm,obj=S?(S.over?'The swarm wins. Wave '+S.wave:S.breakT>0?(S.wave?'Wave '+S.wave+' cleared · next in '+Math.ceil(S.breakT)+'s':'The Swarm · first wave in '+Math.ceil(S.breakT)+'s'):'Wave '+S.wave+' · '+S.left+' left'):G.boss?'Defeat '+G.boss.name:G.gate.open?'Boss gate open. Rec. level '+recLevel(G.stage):cur?(cur.label||'Objective')+' '+Math.min(cur.have,cur.need)+'/'+cur.need:'Defeat '+foeWord()+': '+Math.min(G.killsStage,q)+'/'+q;ctx.fillText(obj,12,46);
   const barY=touchMode?(H<500?85:60):H-57;
   bar(12,barY,bw,20,p.hp/p.s.maxHp,'#c0392f','Life '+Math.ceil(p.hp)+'/'+Math.round(p.s.maxHp));bar(12,barY+23,bw,18,p.mana/p.s.maxMana,'#2d6fc0','Mana '+Math.floor(p.mana));bar(12,barY+44,bw,8,p.xp/xpNeed(p.lvl),'#e8c02a','');
+  if(G.stage===5)bar(12+bw+6,barY+25,110,16,(p.toxin||0)/100,(p.toxin||0)>=100?'#e8463f':'#91b842','Toxin '+Math.floor(p.toxin||0)+'%');
   // rage gauge
   {const rd=p.rage>=100,rY=touchMode?barY+56:barY-42,pul=rd?.5+.5*Math.sin(G.t*9):0;ctx.fillStyle='rgba(5,10,20,.82)';ctx.fillRect(12,rY,bw,19);const gr=ctx.createLinearGradient(12,0,12+bw,0);gr.addColorStop(0,'#ff7a28');gr.addColorStop(1,rd?'#ffe060':'#e8263c');ctx.fillStyle=gr;ctx.fillRect(14,rY+2,(bw-4)*clamp(p.rage/100,0,1),15);if(rd){ctx.strokeStyle='rgba(255,230,120,'+(.45+.55*pul)+')';ctx.lineWidth=2;ctx.strokeRect(12,rY,bw,19)}ctx.font='700 11px "IBM Plex Mono",monospace';ctx.textAlign='left';ctx.fillStyle='#fff';ctx.fillText(rd?(touchMode?'ULTIMATE READY: tap Ult':'ULTIMATE READY: press V'):'Rage '+Math.floor(p.rage)+'%',19,rY+14)}
   {const active=Object.keys(AURA_TYPES).filter(k=>auraHas(p,k)).map(k=>AURA_TYPES[k].n);if(active.length){const t='Auras: '+active.join(' · '),y=touchMode?barY+88:barY-48;ctx.font='600 11px Barlow,sans-serif';ctx.textAlign='left';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(t,12,y);ctx.fillStyle='#cbeee4';ctx.fillText(t,12,y)}}

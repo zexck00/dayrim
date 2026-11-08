@@ -4,7 +4,7 @@ const AOI=1300,EVENT_AOI=1500;
 const ENEMY_SKIP=new Set(['xp','gold','dmg','sp','cd','wander','wa','still','kx','ky','spT','smT','mdT','healT','hitCd','pid','dead','id','th','tok','tokT','slotA','windMax','delayed','comboLeft','rushT','punishCd','lostT','alerted','strafeT','strafeD','hideT','hideAt','struck','reactAt','dragA','biteT','wailHit','driftTo','wardT','eyeCd']);
 const NPC_SKIP=new Set(['kx','ky','t','sp','scare','dead','id']);
 const LOOT_SKIP=new Set(['t','amt','id']);
-const OWN_SKIP=new Set(['input','actions','ack','id','combo_','x','y','vx','vy','lx','ly']);
+const OWN_SKIP=new Set(['input','actions','ack','id','combo_','x','y','vx','vy','lx','ly','toxinTick']);
 const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats','grabT','possT','stunT','webT'];
 let nextEnt=1;
 const entId=o=>o.id||(o.id=nextEnt++);

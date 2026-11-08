@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Sporefall Marsh: manage toxin, carry three purifier canisters to separate vents, and avoid the spore clouds released by Bloaters. The safehouse and activated vents clear toxin.
 - Chitin Horror, the Stage 4 boss: flank its armored front, dodge its bouncing charge, cut allies free from web spit, and burst egg sacs before they hatch. It sheds its armor and speeds up at low life.
 - Webbed Barrow: cut four egg clusters before they hatch, and rescue allies caught by ranged Webbers. A player alone breaks free after five seconds.
 - The Swarm: an endless mode on any stage you have reached, alone or online. Every wave is bigger, a boss joins every fifth wave, and the safehouse only shelters you between waves. Nothing you earn carries back to your saved character; your best wave is kept.
@@ -27,6 +28,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
 
 ### Fixed
+- Carrying an objective item now prevents signature moves and ultimates, and a downed carrier drops the item where they fell.
 - Defeated Lurkers always release their victims, including when damage over time kills them.
 - Defeating the Banshee releases lantern carriers and possession. Travel and checkpoint retries clear encounter statuses.
 - New Swarm runs clear leftover loot, temporary effects, cooldowns and party bonuses. Wave rewards no longer remove potions above five.
