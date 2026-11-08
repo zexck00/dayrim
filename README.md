@@ -1,6 +1,6 @@
 # Dayrim
 
-A pixel action RPG that runs in the browser. Pick a hero or a villain, fight the other side across procedural day and night maps, train, and take down 10 stage bosses. Play alone, or in co-op rooms of up to 4 players on your own server.
+A pixel action RPG that runs in the browser. Pick a hero or a villain, fight the other side across procedural day and night maps, train, and take down 10 stage bosses. Play alone, or in co-op rooms of up to 4 players on your own server. On any stage you have reached you can also take on The Swarm: endless waves, a boss every fifth wave, and nothing carried back to your story character.
 
 Version: see [VERSION](VERSION). Changes: see [CHANGELOG.md](CHANGELOG.md).
 

@@ -23,6 +23,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
 
 ### Fixed
+- Carry canisters no longer spawn inside the drop zone, where picking one up delivered it at once.
 - Objective props such as plates, beacons, canisters, the drop zone, pillars and the escort boat now draw in single-player.
 - Hold objectives can no longer get stuck: after a party wipe, when a party shrinks mid-step, or when someone joins or leaves during a hold. A zone that is already lit stays lit.
 - The objective pointer now works online, including for targets far off screen.
