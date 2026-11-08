@@ -8,7 +8,7 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 
 | Area | Status |
 |---|---|
-| Latest rules and networking suite | 470 rule checks, 45 networking checks and all 780 reaction pairs passed on the Swarm branch (2026-11-08) |
+| Latest rules and networking suite | 478 rule checks, 45 networking checks and all 780 reaction pairs passed after the correctness sweep (2026-11-08) |
 | Server, rooms, saves, abuse limits | Tested over real WebSockets (`game/server/test.js`) |
 | Browser checks | Automated checks cover two tabs, solo/online G actions, a checkpoint boon, viewport layout, weapon icons and the optional 3D layer; not a substitute for human playtests |
 | Full stage to boss kill and next stage online | Tested by a bot, one player |
@@ -34,7 +34,6 @@ Nothing here is promised, and the owner sets priorities.
 - **Asset villains:** walking, dodge, pill and heal poses need video from the owner. They are built from idle frames for now.
 - **Only 3 villains use videos:** the owner said "for now". The others still use the code-drawn rig.
 - **Accounts:** none yet. Losing the browser token loses the character.
-- **Stale page text:** the old Phaser plan remains in `src/page.html`, but the full-window layout currently hides it. Remove or rewrite it as part of D-05.
 - **Leftovers:** `sprites/hero/`, `sprites/hero-cutout/`, `sprites/villain/` and `tools/heroes_fullbody.py` are unused and safe to delete.
 - **Test hooks in the page:** `window.__dayrim` and `window.__botOn` ship in the page. They only affect that player's own browser, and online rules run on the server.
 - **Licensing:** see "Before a public or commercial release" in `README.md`.

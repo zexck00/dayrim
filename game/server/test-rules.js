@@ -637,6 +637,16 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  {const {p,rr,step}=sw(),rrOf=()=>rr;S().breakT=0;T.nextWave();step(1);const e=T.G.enemies.find(x=>!x.dead);e.method='melee';e.a.melee=true;e.role='rusher';e.cd=0;p.x=T.G.safe.x;p.y=T.G.safe.y;e.x=p.x+20;e.y=p.y;const hp=p.hp;for(let i=0;i<60;i++){p.inv=0;p.x=T.G.safe.x;p.y=T.G.safe.y;e.x=p.x+20;e.y=p.y;s.step(T.G===undefined?null:rrOf(),1/30)}ok(p.hp<hp,'during a wave the safehouse is no shelter')}
  {const {p,rr}=sw(['Detective'],1);p.nearSafe=true;s.hostAction(rr,p,'travel','2');T.enter(rr);ok(T.G.stage===1&&T.G.swarm,'travel is ignored during the Swarm')}
  {const {snapshot,newClient}=require('./sync'),{p,rr}=sw();const g=snapshot(rr,p,newClient(),1).g;const o=JSON.parse(g.sw);ok(o.w===0&&o.b>0&&o.o===0,'snapshots carry the wave state')}}
+// Encounter cleanup must also work for damage over time, wipes and endless-mode retries.
+{const r=mk(),p=s.createRoom(r,'Detective',{maxStage:3},'Cleanup');const q=s.addPlayer(r,'Firefighter',null,'Ally');T.enter(r);
+ const e=T.spawnMob(0,{x:p.x+200,y:p.y},false);e.role='lurker';e.grab=p.id;p.grabT=6;T.G.p=q;T.killEnemy(e);ok(!p.grabT&&!e.grab,'killing a grabbing Lurker directly releases its victim');
+ T.summonBoss(3);const b=T.G.boss,l=T.G.props.find(o=>o.kind==='lantern');p.carry=l;l.by=p.id;p.possT=6;T.G.p=q;T.killEnemy(b);ok(!p.carry&&!p.possT&&!T.G.props.some(o=>o.kind==='lantern'),'a defeated Banshee releases lantern carriers and possession');
+ p.grabT=6;p.stunT=2;p.blindT=5;p.possT=6;T.restartCheckpoint();ok(!p.grabT&&!p.stunT&&!p.blindT&&!p.possT,'checkpoint retries clear encounter statuses');
+ p.grabT=6;p.stunT=2;p.blindT=5;p.possT=6;p.nearSafe=true;s.hostAction(r,p,'travel',2);T.enter(r);ok(!p.grabT&&!p.stunT&&!p.blindT&&!p.possT,'stage travel clears encounter statuses')}
+{const r=mk(),p=s.createRoom(r,'Detective',{maxStage:3,potions:9,gold:40},'Retry',{mode:'swarm'});T.enter(r);
+ const S=T.G.swarm;S.breakT=0;S.wave=1;S.spawned=S.total=0;T.swarmTick(1/30);ok(p.potions===9,'a wave reward never removes potions above the reward cap');
+ T.G.loot.push({x:p.x,y:p.y,kind:'gold',amt:999,t:0});p.fastT=20;p.magicT=20;p.combo=10;p.comboT=6;p.teamCd=12;p.mendT=10;p.breakReady=4;p.dashT=.2;p.cd.dash=3;T.G.chain={n:20,t:6,tier:null};T.G.link={t:5,ids:[p.id],hits:[]};
+ T.endSwarm();T.restartSwarm();ok(!T.G.loot.length&&!T.G.link&&!T.G.chain.n,'a fresh Swarm run clears old loot and party combat bonuses');ok(!p.fastT&&!p.magicT&&!p.combo&&!p.teamCd&&!p.mendT&&!p.breakReady&&!p.dashT&&!p.cd.dash,'a fresh Swarm run clears temporary player effects and cooldowns');s.step(r,1/30);ok(p.gold===40,'old loot cannot grant rewards in the new run')}
 console.log('\n'+n+' checks passed');
 
 
