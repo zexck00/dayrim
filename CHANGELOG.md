@@ -15,6 +15,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
 
 ### Changed
+- Portrait phones use a compact HUD with a smaller minimap, a boss bar below player status, and a shorter touch-control grid. Sound, fullscreen and 3D effects are available in the Settings menu.
 - Removed the hidden, obsolete Phaser roadmap and its unused page styles.
 - Enemies are smarter. Only two press one player at a time while the rest circle, aim follows you until late in a wind-up, attacks can chain, and healing or reviving draws a rush.
 - Shooters lead and strafe, guards turn slowly, packs alert each other, and enemies wait outside the safehouse instead of forgetting you.

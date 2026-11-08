@@ -178,6 +178,15 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .detail .ctl{display:none}
   .roster{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
+.settings-actions{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0}.settings-actions button{min-height:44px}
+@media(max-width:640px) and (orientation:portrait){
+  .screen{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .screen.touch-playing>.sound{display:none}
+  .touch{grid-template-columns:repeat(4,48px);gap:6px;bottom:max(10px,env(safe-area-inset-bottom,0px))}
+  .touch button{height:48px;font-size:11px;border-radius:14px}
+  .touch .big{border-radius:16px!important}
+}
+
 </style>
 
 <div class="wrap">

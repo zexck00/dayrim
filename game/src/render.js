@@ -331,22 +331,22 @@ function drawDanger(){const p=G.p;if(!p||G.mode!=='play')return;const cam=G.cam,
   const life=p.hp/((p.s&&p.s.maxHp)||1);if(life<.3&&!(p.deadT>0)){const pul=reduced?.5:.5+.5*Math.sin(G.t*6),g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,R*.6);g.addColorStop(0,'rgba(200,20,30,0)');g.addColorStop(1,'rgba(210,20,30,'+(.32+.3*pul*(1-life/.3)).toFixed(2)+')');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
   if(drawDanger.hp!==undefined&&p.hp<drawDanger.hp-.5&&!(p.deadT>0)){let src=null,bd=1e9;for(const e of G.enemies){if(e.dead)continue;const d=dist(e,p);if(d<bd&&(e.targetId===p.id||d<220)){bd=d;src=e}}for(const s of G.shots){if(s.from!=='e')continue;const d=dist(s,p);if(d<bd){bd=d;src=s}}if(src)drawDanger.mark={a:Math.atan2(src.y-p.y,src.x-p.x),t:.7}}drawDanger.hp=p.hp;
   const mk=drawDanger.mark;if(mk&&mk.t>0){mk.t-=1/60;ctx.save();ctx.strokeStyle='rgba(255,90,80,'+clamp(mk.t/.7,0,1).toFixed(2)+')';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.arc(sx,sy,64,mk.a-.45,mk.a+.45);ctx.stroke();ctx.restore()}
-  let n=0;for(const e of G.enemies){if(e.dead||n>=6)continue;const winding=e.wind>0||e.aimT>0||e.pounceT>0||e.tel||e.act==='beam';if(!winding||(e.kind!=='boss'&&e.targetId!==p.id))continue;const ex=W/2+(e.x-cam.x)*z,ey=H/2+(e.y-cam.y)*z;if(ex>30&&ex<W-30&&ey>30&&ey<H-30)continue;n++;const a=Math.atan2(ey-H/2,ex-W/2),hw=W/2-38,hh=H/2-38,k=Math.min(hw/Math.max(Math.abs(Math.cos(a)),1e-6),hh/Math.max(Math.abs(Math.sin(a)),1e-6)),q=reduced?1:.6+.4*Math.sin(G.t*14);ctx.save();ctx.translate(W/2+Math.cos(a)*k,H/2+Math.sin(a)*k);ctx.rotate(a);ctx.fillStyle='rgba(255,80,70,'+q.toFixed(2)+')';ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-6,-11);ctx.lineTo(-6,11);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(5,10,20,.9)';ctx.lineWidth=2;ctx.stroke();ctx.restore()}}
+  let n=0;for(const e of G.enemies){if(e.dead||n>=6)continue;const winding=e.wind>0||e.aimT>0||e.pounceT>0||e.tel||e.act==='beam';if(!winding||(e.kind!=='boss'&&e.targetId!==p.id))continue;const ex=W/2+(e.x-cam.x)*z,ey=H/2+(e.y-cam.y)*z;const bounds=portraitHud()?portraitBounds():{top:38,bottom:H-38},cy=(bounds.top+bounds.bottom)/2;if(ex>30&&ex<W-30&&ey>bounds.top&&ey<bounds.bottom)continue;n++;const a=Math.atan2(ey-cy,ex-W/2),hw=W/2-38,hh=Math.max(18,(bounds.bottom-bounds.top)/2),k=Math.min(hw/Math.max(Math.abs(Math.cos(a)),1e-6),hh/Math.max(Math.abs(Math.sin(a)),1e-6)),q=reduced?1:.6+.4*Math.sin(G.t*14);ctx.save();ctx.translate(W/2+Math.cos(a)*k,cy+Math.sin(a)*k);ctx.rotate(a);ctx.fillStyle='rgba(255,80,70,'+q.toFixed(2)+')';ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-6,-11);ctx.lineTo(-6,11);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(5,10,20,.9)';ctx.lineWidth=2;ctx.stroke();ctx.restore()}}
 /* Points at the current objective: a marker when it is in view, an arrow on the screen edge when it is not. */
 function drawObjPointer(){
   if(!G.p)return;const list=objTargets();if(!list.length)return;
-  const cam=G.cam,z=zoom/hudK,m=52,pad=74;
+  const cam=G.cam,z=zoom/hudK,m=52,pad=74,portrait=portraitHud(),top=portrait?portraitBounds().top:pad,bottom=portrait?portraitBounds().bottom:H-pad,cx=W/2,cy=(top+bottom)/2;
   for(const o of list){
     let sx=W/2+(o.x-cam.x)*z,sy=H/2+(o.y-cam.y)*z;
-    const on=sx>m&&sx<W-m&&sy>m&&sy<H-m,d=Math.round(Math.hypot(o.x-G.p.x,o.y-G.p.y)/40),pulse=.55+.45*Math.sin(G.t*4),col='#8fe6b8';
+    const on=sx>m&&sx<W-m&&sy>(portrait?top:m)&&sy<(portrait?bottom:H-m),d=Math.round(Math.hypot(o.x-G.p.x,o.y-G.p.y)/40),pulse=.55+.45*Math.sin(G.t*4),col='#8fe6b8';
     ctx.save();ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.92)';ctx.font='700 12px "IBM Plex Mono",monospace';ctx.textAlign='center';
     if(on){
       const y=sy-40-5*Math.sin(G.t*3);
       ctx.globalAlpha=.9;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(sx,y-8);ctx.lineTo(sx+7,y+1);ctx.lineTo(sx-7,y+1);ctx.closePath();ctx.fill();
       ctx.globalAlpha=.35+.45*pulse;ctx.beginPath();ctx.arc(sx,sy,Math.max(o.r||10,12),0,TAU);ctx.lineWidth=2;ctx.stroke();
-      ctx.globalAlpha=1;const t=o.label+'  '+d+'m';ctx.strokeText(t,sx,y-13);ctx.fillStyle='#e6fff0';ctx.fillText(t,sx,y-13);
+      ctx.globalAlpha=1;const t=o.label+'  '+d+'m';const tw=Math.min(W-24,ctx.measureText(t).width),tx=portrait?clamp(sx,12+tw/2,W-12-tw/2):sx,ty=portrait?Math.max(top+14,y-13):y-13;ctx.strokeText(t,tx,ty,portrait?W-24:W);ctx.fillStyle='#e6fff0';ctx.fillText(t,tx,ty,portrait?W-24:W);
     }else{
-      const cx=W/2,cy=H/2,a=Math.atan2(sy-cy,sx-cx),hw=W/2-pad,hh=H/2-pad;
+      const a=Math.atan2(sy-cy,sx-cx),hw=W/2-pad,hh=(bottom-top)/2;
       const k=Math.min(hw/Math.max(Math.abs(Math.cos(a)),1e-6),hh/Math.max(Math.abs(Math.sin(a)),1e-6));
       const ex=cx+Math.cos(a)*k,ey=cy+Math.sin(a)*k;
       ctx.translate(ex,ey);ctx.rotate(a);ctx.globalAlpha=.6+.4*pulse;ctx.fillStyle=col;
@@ -357,8 +357,42 @@ function drawObjPointer(){
   }
 }
 
-let hudK=1;
-function hud(){const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
+let hudK=1,hudTop=0,hudBottom=0,portraitMode=false;
+const portraitHud=()=>portraitMode;
+const portraitBounds=()=>({top:hudTop+(G.boss?176:124)+(G.mp?100:0),bottom:H-hudBottom-232});
+function hud(){if(portraitHud())return hudPortrait();const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
+/* Portrait uses CSS pixels and a single top panel, leaving the middle of the fight clear. */
+function hudPortrait(){
+  ctx.setTransform(dpr,0,0,dpr,0,hudTop*dpr);ctx.imageSmoothingEnabled=false;
+  const p=G.p,S=G.swarm,cur=objNow(),left=10,right=W-10,statsW=W-100,st=STAGES[G.stage-1];
+  const panel=(x,y,w,h)=>{ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(x,y,w,h)},label=(t,x,y,size,col,max,align='left')=>{ctx.textAlign=align;ctx.font='600 '+size+'px Barlow,sans-serif';ctx.fillStyle=col;ctx.fillText(t,x,y,max)};
+  panel(6,6,W-12,106);
+  label('Stage '+G.stage+' · '+st.n,left,23,15,'#f2ecd8',statsW);
+  const obj=S?(S.over?'Run ended · wave '+S.wave:S.breakT>0?'Wave '+S.wave+' · next in '+Math.ceil(S.breakT)+'s':'Wave '+S.wave+' · '+S.left+' left'):G.boss?'Boss fight':G.gate.open?'Boss gate open':cur?(cur.label||'Objective')+' '+Math.min(cur.have,cur.need)+'/'+cur.need:'Defeat '+foeWord()+' '+Math.min(G.killsStage,quota(G.stage))+'/'+quota(G.stage);
+  label(G.banner&&H<700?(G.banner.b||G.banner.a):obj,left,42,13,'#d0d8e8',statsW);
+  bar(left,52,statsW,19,p.hp/p.s.maxHp,'#c0392f','Life '+Math.ceil(p.hp)+'/'+Math.round(p.s.maxHp));
+  bar(left,74,statsW,16,p.mana/p.s.maxMana,'#2d6fc0','Mana '+Math.floor(p.mana));
+  bar(left,94,statsW,5,p.xp/xpNeed(p.lvl),'#e8c02a','');
+  const mw=64,mh=mw*MH/MW,mx=W-mw-12,my=12;ctx.drawImage(mini,mx,my,mw,mh);
+  const dot=(o,c,size)=>{ctx.fillStyle=c;ctx.fillRect(mx+o.x/T*mw/MW-size/2,my+o.y/T*mh/MH-size/2,size,size)};
+  for(const e of G.enemies)if(dist(e,p)<620&&!concealed(e,p))dot(e,e.kind==='boss'?'#ff2020':'#ff5040',2);
+  dot(G.safe,'#6fdca0',4);dot(G.gate,G.gate.open?'#ff8f80':'#6a7080',3);for(const q of G.players)dot(q,q===p?'#fff':'#6fd8ff',3);
+  label(clock(G.hour),mx+mw/2,70,11,'#cbeee4',mw,'center');
+  label('Ult '+Math.floor(p.rage)+'%',mx+mw/2,88,12,p.rage>=100?'#ffe060':'#f2ecd8',mw,'center');
+  bar(mx,96,mw,4,p.rage/100,'#f0c23c','');
+  if(G.boss){const e=G.boss,y=120;panel(6,y,W-12,44);label(e.name,W/2,y+15,16,'#f2ecd8',W-28,'center');bar(left,y+21,W-20,9,e.hp/e.maxHp,'#e8463f','');bar(left,y+33,W-20,4,(e.guard||0)/(e.guardMax||100),e.staggerT>0?'#ffd860':'#7db6ff','')}
+  if(G.mp)netHud(true,true);
+  const combatY=G.boss?186:134;
+  if(p.combo>=2)label(p.combo+' kill combo',right,combatY,14,'#ffe060',W/2-20,'right');
+  if(G.mp&&G.chain&&G.chain.n>=2)label('Party chain '+G.chain.n,right,combatY+20,12,'#8fe6ff',W/2-20,'right');
+  if(G.link&&G.link.t>0){const L=G.link,mine=(L.ids||[]).includes(p.id);label(mine?'Linked '+L.n+(L.dmg?' +'+Math.round(L.dmg*100)+'%':''):'Link now · tap Ult',right,combatY+42,13,'#8fe6ff',W/2-20,'right')}
+  if(!G.mp&&p.deadT>0)label('Second Wind in '+Math.ceil(p.deadT),W/2,205,19,'#ffcf65',W-28,'center');
+  const freeBottom=H-hudTop-hudBottom-232;
+  if(p.nearSafe&&!G.boss)label('Menu: shop and upgrades',W/2,Math.min(freeBottom-16,H*.55),14,'#6fdca0',W-28,'center');
+  if(G.banner&&H>=700&&!(G.mp&&(net.down||p.deadT>0||p.respawnT>0))){const y=Math.min(H*.42,freeBottom-50);panel(6,y-24,W-12,59);label(G.banner.a,W/2,y,22,'#f2ecd8',W-28,'center');label(G.banner.b,W/2,y+23,13,'#f0c23c',W-28,'center')}
+  /* World markers use the unshifted canvas coordinate system. */
+  ctx.setTransform(dpr,0,0,dpr,0,0);drawDanger();drawObjPointer();
+}
 function hudBody(){
   ctx.setTransform(dpr*hudK,0,0,dpr*hudK,0,0);ctx.imageSmoothingEnabled=false;
   const p=G.p,small=W<560,bw=small?150:210,st=STAGES[G.stage-1],q=quota(G.stage),n=nightness(G.hour);if(!G.mp&&p.deadT>0){ctx.textAlign='center';ctx.font='700 22px Barlow,sans-serif';ctx.fillStyle='#ffcf65';ctx.fillText('Second Wind in '+Math.ceil(p.deadT),W/2,110)}
