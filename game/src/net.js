@@ -103,6 +103,7 @@ function netUpdate(dt){
   const playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0),v=G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0},guard=playing&&(mouse.right||touchHold.guard);
   if(touchMode){const n=nearestEnemy();if(n)me.face=Math.atan2(n.y-me.y,n.x-me.x);else if(v.x||v.y)me.face=Math.atan2(v.y,v.x)}else if(playing)me.face=Math.atan2(mouse.y-(me.y-22),mouse.x-me.x);
   const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
+  if(me.webT>0)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
   else if(v.x||v.y){const sp=envSpeed(me)*me.s.speed*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);

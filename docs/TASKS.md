@@ -201,7 +201,7 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
-| C-30 | C | L | Stage 4 Webbed Barrow: webs, egg clusters, Webber | Done, with party-size helpers | C-18 |
+| C-30B | C | L | Stage 4 Webbed Barrow: webs, egg clusters, Webber | Prototype: four egg clusters hatch enemies until cut; ranged Webbers root players until rescued, with a five-second solo escape. Tests cover attacks, retries and sync. Placeholder art and human balance/playtests remain open. | C-18 |
 | C-31 | C | M | Boss: Chitin Horror (Crack the Shell) | Solo and party versions tested | C-17 |
 | C-32 | C | L | Stage 5 Sporefall Marsh: Toxin meter, canisters, Bloater | Done | C-18 |
 | C-33 | C | M | Boss: Spore Brute (Share the Poison) | As above | C-17 |

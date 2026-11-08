@@ -260,7 +260,7 @@ const STAGE_STEPS={
   1:[{kind:'kill',label:'Defeat the villains'},{kind:'revive',n:1,label:'Revive the wounded scout'}],
   2:[{kind:'kill',label:'Defeat the villains'},{kind:'hold',n:3,t:5,guard:true,mark:'Beacon',label:'Light the three beacons'}],
   3:[{kind:'kill',label:'Defeat the villains'},{kind:'escort',t:60,label:'Escort the lantern boat'}],
-  4:[{kind:'kill',label:'Defeat the villains'}],
+  4:[{kind:'kill',label:'Defeat the villains'},{kind:'eggs',n:4,label:'Cut the four egg clusters'}],
   5:[{kind:'kill',label:'Defeat the villains'},{kind:'carry',n:3,label:'Carry the canisters to the vents'}],
   6:[{kind:'kill',label:'Defeat the villains'},{kind:'hold',n:2,t:3,simul:true,label:'Hold both pressure plates'}],
   7:[{kind:'kill',label:'Defeat the villains'}],
@@ -280,7 +280,8 @@ function onStepStart(st){if(!st)return;st.have=0;
   else if(st.kind==='hold')spawnZones(st.need);
   else if(st.kind==='carry')spawnCarries(st.need);
   else if(st.kind==='escort')spawnEscort();
-  if(st.label)G.banner={t:3,a:st.label,b:st.kind==='revive'?'Hold F beside the scout':st.kind==='carry'?'Carriers cannot attack':st.kind==='escort'?'Stay close to keep it moving':st.guard?'Hits on the lighter set a beacon back':'Boss gate opens when this is done'}}
+  else if(st.kind==='eggs')spawnEggs(st.need);
+  if(st.label)G.banner={t:3,a:st.label,b:st.kind==='eggs'?'Attack the eggs before they hatch':st.kind==='revive'?'Hold F beside the scout':st.kind==='carry'?'Carriers cannot attack':st.kind==='escort'?'Stay close to keep it moving':st.guard?'Hits on the lighter set a beacon back':'Boss gate opens when this is done'}}
 function openGate(){if(!G.gate||G.gate.open)return;G.gate.open=true;G.banner={t:3,a:'Boss gate open',b:'Choose a checkpoint boon in Skills'};sfx('level');addLog('The boss gate is open.');offerBoons()}
 /* Hold, carry and escort steps all spawn props: one synced list, one renderer, one set of rules. */
 let propSeq=1;
@@ -291,6 +292,14 @@ const playersNear=(o,r)=>G.players.some(q=>!(q.deadT>0)&&!(q.respawnT>0)&&dist(q
 function spawnZones(n){const zs=[],SEP=320;for(let i=0;i<n;i++){let o=null;for(let t=0;t<60;t++){const c=propSpot(360,1100);if(zs.every(z=>Math.hypot(z.x-c.x,z.y-c.y)>=SEP)){o=c;break}}if(!o)o=propSpot(360,1100);zs.push(addProp('zone',o.x,o.y,40))}G.obj.zones=zs}
 /* Canisters never start inside the drop zone, or they would be delivered the moment they are picked up. */
 function spawnCarries(n){const d=propSpot(600,1300),items=[];for(let i=0;i<n;i++){let o=propSpot(300,800);for(let t=0;t<20&&Math.hypot(o.x-d.x,o.y-d.y)<140;t++)o=propSpot(300,800);items.push(addProp('canister',o.x,o.y,11))}G.obj.drop=addProp('drop',d.x,d.y,46);G.obj.items=items}
+const WEBBED={eggHatch:25,webTime:5,webberCap:2,webberCd:4};
+function spawnEggs(n){const eggs=[];for(let i=0;i<n;i++){let o=propSpot(360,1100);for(let t=0;t<60&&eggs.some(e=>dist(e,o)<180);t++)o=propSpot(360,1100);eggs.push(addProp('egg',o.x,o.y,18,{t:WEBBED.eggHatch}))}G.obj.eggs=eggs}
+function eggHit(e){if(e.kind!=='egg'||e.done)return false;e.done=true;text(e.x,e.y-55,'EGGS CUT','#e6e6c8',true);burst(e.x,e.y-15,'#e6e6c8',8);return true}
+function eggTick(dt){for(const e of (G.obj.eggs||[])){if(e.done)continue;e.t-=dt;if(e.t<=0){e.t=WEBBED.eggHatch;const m=spawnMob(0,{x:e.x,y:e.y},false);if(m)m.aware=true;text(e.x,e.y-55,'HATCHED','#ffb080',true)}}}
+function spawnWebber(){const e=spawnMob(500,null,false);if(!e)return null;e.role='webber';e.method='shoot';e.a=Object.assign({},e.a,{melee:false,atk:WEBBED.webberCd});e.aware=true;return e}
+const webberDue=()=>G.stage===4&&G.enemies.filter(e=>!e.dead&&e.role==='webber').length<Math.round(WEBBED.webberCap*partyCrowd())&&spawnWebber();
+function clearWeb(q){if(!(q.webT>0))return;q.webT=0;text(q.x,q.y-70,'FREED','#e6e6c8',true)}
+function webAlly(p,shape){for(const q of G.players)if(q!==p&&q.webT>0&&shape(q))clearWeb(q)}
 function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx=G.gate.x;e.ty=G.gate.y;G.obj.escort=e}
 /* A hold step either lights each zone in turn, or needs them all held at once. */
 /* A hold step either lights each zone in turn, or needs them all held at once.
@@ -303,6 +312,7 @@ function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;if(o.tg)retu
   else if(st.kind==='carry'){const held=G.players.some(q=>q.carry&&!q.carry.done);
     if(held&&o.drop)out.push({x:o.drop.x,y:o.drop.y,label:'Drop'});
     else for(const c of (o.items||[]))if(!c.done&&!c.by)out.push({x:c.x,y:c.y,label:'Canister'})}
+  else if(st.kind==='eggs'){for(const e of o.eggs||[])if(!e.done)out.push({x:e.x,y:e.y,label:'Eggs'})}
   else if(st.kind==='escort'&&o.escort)out.push({x:o.escort.x,y:o.escort.y,label:'Boat'});
   return out}
 const HOLD_ALONE_T=8;
@@ -332,6 +342,7 @@ function releaseCarries(){for(const c of (G.obj&&G.obj.items)||[])if(c.by&&!G.pl
 /* A wipe sends the party back to the last finished step: finished steps stay, the current one starts over. */
 function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;if(st.kind==='hold'){(o.zones||[]).forEach(z=>{z.t=0;z.done=false;z.alarm=false});st.holdT=0;st.have=0;st.met=false;st.alone=false}
   else if(st.kind==='carry'){(o.items||[]).forEach(c=>{c.done=false;c.by=0});st.have=0;G.players.forEach(p=>p.carry=null)}
+  else if(st.kind==='eggs'){for(const e of o.eggs||[]){e.done=false;e.t=WEBBED.eggHatch}st.have=0}
   else if(st.kind==='escort'&&o.escort){o.escort.x=G.safe.x+90;o.escort.y=G.safe.y+70;o.escort.done=false;o.escort.t=0;st.have=0}}
 function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;
   if(st.kind==='kill')st.have=G.killsStage;
@@ -339,6 +350,7 @@ function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if
   else if(st.kind==='hold')holdStep(st,dt||0);
   else if(st.kind==='carry'){releaseCarries();st.have=(o.items||[]).filter(c=>c.done).length}
   else if(st.kind==='escort')escortStep(st,dt||0);
+  else if(st.kind==='eggs'){eggTick(dt||0);st.have=(o.eggs||[]).filter(e=>e.done).length}
   /* A step is done when its own rule says so. Hold steps need the timer, not just bodies on the plates. */
   if(!(st.met!==undefined?st.met:st.have>=st.need))return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
@@ -494,7 +506,7 @@ function pickBanshee(e){const r=Math.random(),ph=e.phase||0;
   e.act='aim';bossTelegraph(e,'line',e.r+230,.7)}
 const lanternLit=l=>!!(l.by||l.t>0);
 const bossWarded=e=>e.kind==='boss'&&((e.ghostT||0)>0||((e.kit||G.stage)===3&&G.props.some(l=>l.kind==='lantern')&&!G.props.some(l=>l.kind==='lantern'&&lanternLit(l)&&dist(l,e)<BANSHEE.lanternR)));
-function clearEncounterStatus(p){p.grabT=p.stunT=p.blindT=p.possT=0}
+function clearEncounterStatus(p){p.grabT=p.stunT=p.blindT=p.possT=p.webT=0}
 function clearLanterns(){G.props=G.props.filter(o=>o.kind!=='lantern');for(const q of G.players)if(q.carry&&q.carry.kind==='lantern')q.carry=null}
 function spawnLanterns(){clearLanterns();const o=G.arena||G.boss||G.gate;for(const s of[-1,1]){let x=o.x+s*150,y=o.y+60;if(blocked(x,y,12)){x=o.x;y=o.y}addProp('lantern',x,y,12)}G.banner={t:3.2,a:'Lantern Anchor',b:G.players.length===1?'Carry a lantern to her and hold F to set it down':'Only lantern light lets you hurt her. Hold F to set one down'}}
 function lanternTick(dt){for(const l of G.props){if(l.kind!=='lantern')continue;l.cool=Math.max(0,(l.cool||0)-dt);if(l.dropBy){const d=G.players.find(q=>(q.id||1)===l.dropBy);if(!d||dist(d,l)>40)l.dropBy=0}if(l.by){const c=G.players.find(q=>(q.id||1)===l.by);if(!c||c.carry!==l||c.deadT>0||c.respawnT>0){l.by=0;l.t=G.players.length===1?999:BANSHEE.lanternLit;if(c&&c.carry===l)c.carry=null}else{l.x=c.x;l.y=c.y}}else if(l.t>0&&l.t<900)l.t=Math.max(0,l.t-dt)}}
@@ -646,7 +658,8 @@ function doAttack(){
   const mdmg=dmg*(MELEE_UP[up]||1),reach=W.reach+up*MELEE_REACH_STEP,arc=1.1+up*MELEE_ARC_STEP;p.swingArc=arc;p.swing=.17;p.swingA=p.face;p.swingR=reach;sfx(W.m==='unarmed'?'hit':'slash');let n=0,landed=false;
   for(const e of G.enemies){if(e.dead)continue;const d=dist(e,p);if(d>reach+e.r)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc||d<e.r+p.r+4){if(!e.buried)landed=true;hitEnemy(e,mdmg,a,W.m==='shield'?300:W.m==='unarmed'?90:170);if(W.m==='shield'&&up>=2)shieldInterrupt(e);n++}}
   for(const c of G.npcs){if(c.dead)continue;const d=dist(c,p);if(d>reach+10)continue;const a=Math.atan2(c.y-p.y,c.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc)hitNpc(c,mdmg,a,true)}
-  for(const c of (G.props||[])){if(c.kind!=='pillar'||c.done)continue;const d=dist(c,p);if(d>reach+c.r)continue;const a=Math.atan2(c.y-p.y,c.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc||d<c.r+p.r+4){pillarHit(c,p,false);n++}}
+  webAlly(p,q=>dist(q,p)<=reach+q.r&&angGap(Math.atan2(q.y-p.y,q.x-p.x),p.face)<arc);
+  for(const c of (G.props||[])){if(!['pillar','egg'].includes(c.kind)||c.done)continue;const d=dist(c,p);if(d>reach+c.r)continue;const a=Math.atan2(c.y-p.y,c.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc||d<c.r+p.r+4){if(c.kind==='egg')eggHit(c);else pillarHit(c,p,false);n++}}
   if(landed&&W.m==='heal'&&up>=2)weaponHealAlly(p);
   if(n&&W.m==='heal'){const h=p.s.maxHp*.01*p.stats.hea*p.s.mendMul;p.hp=Math.min(p.s.maxHp,p.hp+h);burst(p.x,p.y-24,'#6fdca0',3)}
   if(n>2)shake(1.5);
@@ -729,7 +742,7 @@ function moveDamage(a,key,id){const base=a.char?a.s.dmg*statMul(a,'mag')*(1+(a.s
 function strike(a,shape,dmg,kb){
   const inShape=t=>shape(t.x-a.x,t.y-a.y,t);
   if(a.char){for(const e of G.enemies)if(!e.dead&&inShape(e))hitEnemy(e,dmg,Math.atan2(e.y-a.y,e.x-a.x),kb,!!(a.mv&&a.mv.id!=='small'));
-    for(const c of (G.props||[]))if(c.kind==='pillar'&&!c.done&&inShape(c))pillarHit(c,a,!!(a.mv&&a.mv.id!=='small'));for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),true)}
+    for(const c of (G.props||[]))if(!c.done&&inShape(c)){if(c.kind==='pillar')pillarHit(c,a,!!(a.mv&&a.mv.id!=='small'));else if(c.kind==='egg')eggHit(c)}webAlly(a,inShape);for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),true)}
   else{if(inShape(G.p))hurtPlayer(dmg);for(const c of G.npcs)if(!c.dead&&inShape(c))hitNpc(c,dmg,Math.atan2(c.y-a.y,c.x-a.x),false)}
 }
 function fireMove(a,mv,hitN){
@@ -852,7 +865,7 @@ const gymCost=r=>Math.round(40*Math.pow(1.3,r));
 const shopCost=s=>Math.round(s.base*(1+(G.stage-1)*.35));
 const guardArmor=p=>(8+p.stats.grd*10+p.lvl*1.4)*(p.weapon==='shield'?1.6:1)*p.s.guardMul;
 function moveVec(){let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;if(joy.on){x=joy.dx;y=joy.dy}const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return{x,y}}
-function doDash(){const p=G.p;if(p.cd.dash>0||p.stunT>0||p.grabT>0)return;const v=moveVec(),a=(v.x||v.y)?Math.atan2(v.y,v.x):p.face;p.cd.dash=p.s.dashCd*cdMulOf(p);p.dashT=.26;p.dashX=Math.cos(a);p.dashY=Math.sin(a);p.inv=Math.max(p.inv,.32+Math.min(3,(p.runBoons||{}).wide||0)*.12);sfx('dash')}
+function doDash(){const p=G.p;if(p.cd.dash>0||p.stunT>0||p.grabT>0||p.webT>0)return;const v=moveVec(),a=(v.x||v.y)?Math.atan2(v.y,v.x):p.face;p.cd.dash=p.s.dashCd*cdMulOf(p);p.dashT=.26;p.dashX=Math.cos(a);p.dashY=Math.sin(a);p.inv=Math.max(p.inv,.32+Math.min(3,(p.runBoons||{}).wide||0)*.12);sfx('dash')}
 function usePotion(){const p=G.p;if(p.cd.potion>0||p.potions<=0||p.hp>=p.s.maxHp)return;p.potions--;p.cd.potion=1;p.pickT=.4;p.healFx=.8;const h=Math.min(p.s.maxHp-p.hp,p.s.maxHp*.45);p.hp+=h;threatHeal(p,h);text(p.x,p.y-72,'+'+Math.round(h),'#86dccb',true);burst(p.x,p.y-20,'#86dccb',16);sfx('pull');dirty()}
 function useFast(){const p=G.p;if(p.fast<=0||p.fastT>0)return;p.fast--;p.fastT=20;p.pickT=.4;p.pillT=.8;p.pillC='111,180,255';text(p.x,p.y-72,'Fast Pill','#6fb4ff',true);sfx('loot');dirty()}
 function useMagic(){const p=G.p;if(p.magic<=0||p.magicT>0)return;p.magic--;p.magicT=20;p.pickT=.4;p.pillT=.8;p.pillC='200,140,255';text(p.x,p.y-72,'Magic Pill','#c88cff',true);sfx('loot');dirty()}
@@ -879,7 +892,7 @@ function updatePlayer(p,dt){
   if(p.fastT>0)p.fastT-=dt;if(p.magicT>0)p.magicT-=dt;
   p.mana=Math.min(p.s.maxMana,p.mana+p.s.regen*dt*chainBonus().mana);if(auraHas(p,'medic'))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.006*dt);
   p.specT=Math.max(0,(p.specT||0)-dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec(),drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*chainBonus().spd;p.moving=!!(v.x||v.y);
-  if(p.dashT>0){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
+  if(p.dashT>0&&!(p.webT>0)){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
   else{move(p,v.x*sp*dt,v.y*sp*dt);if(p.moving){p.walk+=dt*11;p.moveA=Math.atan2(v.y,v.x)}}
   if(drag)move(drag,p.x-ox,p.y-oy);
   /* Arena doors: a living boss keeps the party inside. */
@@ -908,7 +921,7 @@ function update(dt){
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
   // keep the streets populated: more rivals at night, more citizens by day
   const n=nightness(G.hour);G.spawnT-=dt;
-  if(G.swarm)swarmTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue())useMobs()?spawnMob(520):spawnRival(520);
+  if(G.swarm)swarmTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue())useMobs()?spawnMob(520):spawnRival(520);
     const wantN=Math.round(14*(1-n)+3);if(G.npcs.length<wantN)spawnNpc();else if(G.npcs.length>wantN)G.npcs.splice(G.npcs.findIndex(c=>dist(c,nearestPlayer(c))>500)>>>0,1)}
   if(useMobs()&&!G.clearPending&&!G.swarm){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
   updateNpcs(dt);tickHazards(dt);G.p=G.players[0];
@@ -922,8 +935,8 @@ function update(dt){
     if(wall(nx/T|0,(ny+22)/T|0)){s.life=0;if(s.from==='p'&&!s.small)explode(s);else impact(s);continue}
     s.x=nx;s.y=ny;trail(s,dt);
     if(s.from==='e'||s.from==='p'){for(const c of G.npcs){if(!c.dead&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+3){s.life=0;if(s.from==='p'&&!s.small)explode(s);else{impact(s);hitNpc(c,s.dmg,Math.atan2(s.vy,s.vx),s.from==='p')}break}}if(s.life<=0)continue}
-    if(s.from==='p'){for(const e of G.enemies){if(!e.dead&&!(s.hitTargets&&s.hitTargets.includes(e))&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){if(s.small){impact(s);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),90);if(s.pierce>0){G.fx.push({k:'pierceFx',x:s.x,y:s.y,a:Math.atan2(s.vy,s.vx),t:.22,m:.22});(s.hitTargets||(s.hitTargets=[])).push(e);s.pierce--}else s.life=0}else{s.life=0;explode(s)}break}}}
-    else for(const q of G.players){if(!(q.respawnT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;hurtPlayer(s.dmg);impact(s);break}}}
+    if(s.from==='p'){let propHit=false;for(const c of G.props||[])if(c.kind==='egg'&&!c.done&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+4){eggHit(c);s.life=0;propHit=true;break}if(propHit)continue;for(const q of G.players)if(q!==G.p&&q.webT>0&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+4){clearWeb(q);s.life=0;propHit=true;break}if(propHit)continue;for(const e of G.enemies){if(!e.dead&&!(s.hitTargets&&s.hitTargets.includes(e))&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){if(s.small){impact(s);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),90);if(s.pierce>0){G.fx.push({k:'pierceFx',x:s.x,y:s.y,a:Math.atan2(s.vy,s.vx),t:.22,m:.22});(s.hitTargets||(s.hitTargets=[])).push(e);s.pierce--}else s.life=0}else{s.life=0;explode(s)}break}}}
+    else for(const q of G.players){if(!(q.respawnT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;if(s.web&&!(q.inv>0||q.deadT>0)){q.webT=WEBBED.webTime;q.dashT=0;G.banner={t:2.5,a:'Webbed',b:G.players.length>1?'An ally can attack the web to free you':'The web breaks after 5 seconds'};text(q.x,q.y-70,'WEBBED','#e6e6c8',true)}hurtPlayer(s.dmg);impact(s);break}}}
   G.shots=G.shots.filter(s=>s.life>0);G.enemies=G.enemies.filter(e=>!e.dead);
   G.loot=G.loot.filter(l=>{l.t+=dt;const p=nearestPlayer(l);G.p=p;const d=dist(l,p),mag=(l.kind==='item'||(l.kind==='weapon'&&!p.weapons.includes(l.w)))?0:96;if(mag&&d<mag){const a=Math.atan2(p.y-l.y,p.x-l.x);l.x+=Math.cos(a)*300*dt;l.y+=Math.sin(a)*300*dt}if(d<(l.kind==='item'||l.kind==='weapon'?30:18)){pickup(l);return false}return true});
   for(const q of alivePlayers()){if(G.gate.open&&!G.boss&&!G.clearPending&&!(q.deadT>0||q.respawnT>0)&&dist(q,G.gate)<46){G.p=q;summonBoss()}}
@@ -1008,8 +1021,8 @@ const tideAt=t=>{const c=TIDE.rise+TIDE.hold+TIDE.fall+TIDE.low,u=t%c;return u<T
 function tideTick(dt){if(!G.w.isle){G.tide=0;return}const was=G.tide||0;G.tideT=(G.tideT||0)+dt;G.tide=tideAt(G.tideT);if(was===0&&G.tide>0)G.banner={t:2.4,a:'The water is rising',b:'Get to an island'}}
 const dryAt=o=>{const W=G.w,i=idx(clamp(o.x/T|0,0,MW-1),clamp(o.y/T|0,0,MH-1));return !W.isle||!!W.isle[i]||W.ground[i]===2||W.ground[i]===4};
 /* One speed rule for the server and for online prediction, so a slowed player does not snap back. */
-const envSpeed=p=>{if(p.stunT>0||p.grabT>0)return 0;let k=1;if((G.tide||0)>0&&!dryAt(p))k*=1-TIDE.slow*G.tide;if(p.possT>0)k*=.5;return k};
-function playerStatus(q,dt){q.stunT=Math.max(0,(q.stunT||0)-dt);q.blindT=Math.max(0,(q.blindT||0)-dt);if(q.possT>0){q.possT=Math.max(0,q.possT-dt);const b=G.boss;if(b&&!(q.deadT>0)){const a=Math.atan2(b.y-q.y,b.x-q.x);move(q,Math.cos(a)*BANSHEE.pull*dt,Math.sin(a)*BANSHEE.pull*dt)}}if(G.boss&&(G.boss.kit||G.stage)===3&&!(q.deadT>0||q.respawnT>0)){const was=G.p;G.p=q;lanternStep(q);G.p=was}}
+const envSpeed=p=>{if(p.stunT>0||p.grabT>0||p.webT>0)return 0;let k=1;if((G.tide||0)>0&&!dryAt(p))k*=1-TIDE.slow*G.tide;if(p.possT>0)k*=.5;return k};
+function playerStatus(q,dt){if(q.webT>0&&(q.deadT>0||q.respawnT>0||G.players.filter(p=>!(p.deadT>0||p.respawnT>0)).length<=1))q.webT=Math.max(0,q.webT-dt);q.stunT=Math.max(0,(q.stunT||0)-dt);q.blindT=Math.max(0,(q.blindT||0)-dt);if(q.possT>0){q.possT=Math.max(0,q.possT-dt);const b=G.boss;if(b&&!(q.deadT>0)){const a=Math.atan2(b.y-q.y,b.x-q.x);move(q,Math.cos(a)*BANSHEE.pull*dt,Math.sin(a)*BANSHEE.pull*dt)}}if(G.boss&&(G.boss.kit||G.stage)===3&&!(q.deadT>0||q.respawnT>0)){const was=G.p;G.p=q;lanternStep(q);G.p=was}}
 function spawnLurker(){for(let t=0;t<60;t++){const c=pick(G.w.open),o={x:(c%MW+.5)*T,y:((c/MW|0)+.5)*T};if(dryAt(o)||dist(o,G.safe)<=240||G.players.some(q=>dist(o,q)<320))continue;const e=spawnMob(0,o,false);if(!e)return null;e.role='lurker';e.lurk=true;e.hp*=3;e.maxHp*=3;e.dmg*=1.2;e.xp*=2.5;e.gold*=2;return e}return null}
 const lurkerDue=()=>G.w.isle&&G.enemies.filter(e=>!e.dead&&e.role==='lurker').length<Math.round(LURKER.cap*partyCrowd())&&spawnLurker();
 function lurkRelease(e,freed){const q=G.players.find(x=>(x.id||1)===e.grab);if(q)q.grabT=0;e.grab=0;if(freed){e.stunT=1.5;expose(e,2);text(e.x,e.y-80,'FREED','#8fe6ff',true)}}
@@ -1076,7 +1089,7 @@ function updateEnemy(e,dt){
     else if(!seen||d>310)steer(e,dt,e.sp,seen);
     else{const s=e.ang+e.strafeD*Math.PI/2;if(move(e,Math.cos(s)*e.sp*AI.strafe*dt,Math.sin(s)*e.sp*AI.strafe*dt))e.strafeD=-e.strafeD;e.walk+=dt*5;e.moving=true}
     if(e.role==='caster'){e.zoneT=(e.zoneT===undefined?rnd(4,7):e.zoneT)-dt;if(e.zoneT<=0&&seen&&d<360){e.zoneT=rnd(6,9);e.castT=.5;G.hazards=G.hazards||[];G.hazards.push({x:p.x+clamp((p.vx||0)*.6,-AI.leadMax,AI.leadMax),y:p.y+clamp((p.vy||0)*.6,-AI.leadMax,AI.leadMax),r:52,t:3.2,dps:e.dmg*.25,from:'e',col:'120,90,200'});text(e.x,e.y-88,'ZONE','#b98cff',true)}}
-    if(seen&&e.cd<=0&&d<480){e.cd=a.atk;const sp=e.method==='spell',ss=sp?165:220,la=aiLead(e,p,ss);if(sp)e.castT=.3;else e.atkShow=.2;G.shots.push({x:e.x,y:e.y-22,vx:Math.cos(la)*ss,vy:Math.sin(la)*ss,r:sp?8:4,from:'e',life:3,dmg:e.dmg*(sp?1.25:1),spell:sp,fx:sp?(e.w==='flask'?'flask':e.w==='staff'?'skull':e.w==='cards'?'card':e.w==='book'?'arcane':e.w==='candle'?'ember':'orb'):(e.w==='bow'?'arrow':e.w==='blaster'?'plasma':'bullet'),col:sp?spellCol(e.name,e.w==='flask'?'flask':'orb'):e.w==='blaster'?'111,220,255':'255,160,90',a:la})}
+    if(seen&&e.cd<=0&&d<480){e.cd=a.atk;const sp=e.method==='spell',ss=sp?165:220,la=aiLead(e,p,ss);if(sp)e.castT=.3;else e.atkShow=.2;G.shots.push({x:e.x,y:e.y-22,vx:Math.cos(la)*ss,vy:Math.sin(la)*ss,r:sp?8:4,from:'e',life:3,dmg:e.dmg*(sp?1.25:1),web:e.role==='webber',spell:sp,fx:e.role==='webber'?'orb':sp?(e.w==='flask'?'flask':e.w==='staff'?'skull':e.w==='cards'?'card':e.w==='book'?'arcane':e.w==='candle'?'ember':'orb'):(e.w==='bow'?'arrow':e.w==='blaster'?'plasma':'bullet'),col:e.role==='webber'?'230,230,200':sp?spellCol(e.name,e.w==='flask'?'flask':'orb'):e.w==='blaster'?'111,220,255':'255,160,90',a:la})}
   }
 }
 /* A boss sometimes follows one attack straight into another, more often when hurt. Each still has its full warning. */
