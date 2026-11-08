@@ -15,6 +15,8 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
 
 ### Changed
+- Portrait phones use a compact HUD with a smaller minimap, a boss bar below player status, and a shorter touch-control grid. Sound, fullscreen and 3D effects are available in the Settings menu.
+- Removed the hidden, obsolete Phaser roadmap and its unused page styles.
 - Enemies are smarter. Only two press one player at a time while the rest circle, aim follows you until late in a wind-up, attacks can chain, and healing or reviving draws a rush.
 - Shooters lead and strafe, guards turn slowly, packs alert each other, and enemies wait outside the safehouse instead of forgetting you.
 - Bosses can chain attacks and react to healing. Every attack keeps its warning.
@@ -23,6 +25,9 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
 
 ### Fixed
+- Defeated Lurkers always release their victims, including when damage over time kills them.
+- Defeating the Banshee releases lantern carriers and possession. Travel and checkpoint retries clear encounter statuses.
+- New Swarm runs clear leftover loot, temporary effects, cooldowns and party bonuses. Wave rewards no longer remove potions above five.
 - Carry canisters no longer spawn inside the drop zone, where picking one up delivered it at once.
 - Objective props such as plates, beacons, canisters, the drop zone, pillars and the escort boat now draw in single-player.
 - Hold objectives can no longer get stuck: after a party wipe, when a party shrinks mid-step, or when someone joins or leaves during a hold. A zone that is already lit stays lit.
