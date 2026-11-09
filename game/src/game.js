@@ -75,21 +75,40 @@ function upgradeWeapon(id){const p=G.p,kit=kitOf(p);if(typeof id!=='string'||!p.
 const ACHIEVEMENTS=[
  {id:'story1',group:'Story',n:'First light',d:'Clear a story stage at or beyond stage 1.',key:'beaten',goal:1},
  {id:'story3',group:'Story',n:'Into the fen',d:'Clear a story stage at or beyond stage 3.',key:'beaten',goal:3},
+ {id:'story5',group:'Story',n:'Through the marsh',d:'Clear a story stage at or beyond stage 5.',key:'beaten',goal:5},
  {id:'story7',group:'Story',n:'Rust survivor',d:'Clear a story stage at or beyond stage 7.',key:'beaten',goal:7},
+ {id:'story10',group:'Story',n:'After the night',d:'Clear stage 10.',key:'beaten',goal:10},
+ {id:'kills10',group:'Combat',n:'First patrol',d:'Defeat 10 enemies in a story run.',key:'kills',goal:10},
  {id:'kills50',group:'Combat',n:'Street fighter',d:'Defeat 50 enemies in a story run.',key:'kills',goal:50},
  {id:'kills250',group:'Combat',n:'City defender',d:'Defeat 250 enemies in a story run.',key:'kills',goal:250},
+ {id:'kills1000',group:'Combat',n:'Legend of the streets',d:'Defeat 1,000 enemies in a story run.',key:'kills',goal:1000},
  {id:'combo20',group:'Combat',n:'On a roll',d:'Defeat 20 enemies in one combo in a story run.',key:'bestCombo',goal:20},
+ {id:'ultimate',group:'Combat',n:'Unleashed',d:'Use an ultimate.',key:'event',goal:1},
+ {id:'reaction',group:'Combat',n:'Chain reaction',d:'Trigger an elemental reaction or resonance.',key:'event',goal:1},
+ {id:'interrupt',group:'Combat',n:'Not so fast',d:'Interrupt an enemy with an upgraded shield.',key:'event',goal:1},
  {id:'level10',group:'Progression',n:'Finding your feet',d:'Reach level 10 in a story run.',key:'lvl',goal:10},
  {id:'level25',group:'Progression',n:'Seasoned',d:'Reach level 25 in a story run.',key:'lvl',goal:25},
+ {id:'weapon2',group:'Progression',n:'Getting sharper',d:'Upgrade a weapon or signature to tier 2 in a story run.',key:'weapon',goal:2},
  {id:'weapon5',group:'Progression',n:'Fully armed',d:'Upgrade a weapon or signature to tier 5 in a story run.',key:'weapon',goal:5},
+ {id:'boon',group:'Progression',n:'A little help',d:'Choose a checkpoint boon.',key:'event',goal:1},
  {id:'revive',group:'Teamwork',n:'Back on your feet',d:'Revive another player. Multiplayer.',key:'revive',goal:1},
  {id:'partyBoss',group:'Teamwork',n:'Together we stand',d:'Clear a story boss with a party. Multiplayer.',key:'partyBoss',goal:1},
+ {id:'teamAbility',group:'Teamwork',n:'Know your role',d:'Use your team ability.',key:'event',goal:1},
+ {id:'link',group:'Teamwork',n:'In sync',d:'Link ultimates with another player. Multiplayer.',key:'event',goal:1},
+ {id:'teamReaction',group:'Teamwork',n:'Better together',d:'Trigger a reaction with another player. Multiplayer.',key:'event',goal:1},
+ {id:'healAlly',group:'Teamwork',n:'Healing hands',d:'Heal an ally with an upgraded healing weapon. Multiplayer.',key:'event',goal:1},
+ {id:'freeWeb',group:'Teamwork',n:'Cut loose',d:'Free another player from a web. Multiplayer.',key:'event',goal:1},
+ {id:'egg',group:'Encounters',n:'Pest control',d:'Destroy an egg sac before it hatches.',key:'event',goal:1},
+ {id:'pillar',group:'Encounters',n:'Pillar breaker',d:'Break a boss arena pillar.',key:'event',goal:1},
+ {id:'scrap',group:'Encounters',n:'Scrap collector',d:'Help destroy a disabled Scrap Golem.',key:'event',goal:1},
+ {id:'wave1',group:'The Swarm',n:'First wave',d:'Clear wave 1 in the Swarm.',key:'swarmBest',goal:1},
  {id:'wave5',group:'The Swarm',n:'Holding the line',d:'Clear wave 5 in the Swarm.',key:'swarmBest',goal:5},
  {id:'wave10',group:'The Swarm',n:'Against the tide',d:'Clear wave 10 in the Swarm.',key:'swarmBest',goal:10},
- {id:'wave20',group:'The Swarm',n:'Unbreakable',d:'Clear wave 20 in the Swarm.',key:'swarmBest',goal:20}
+ {id:'wave20',group:'The Swarm',n:'Unbreakable',d:'Clear wave 20 in the Swarm.',key:'swarmBest',goal:20},
+ {id:'wave30',group:'The Swarm',n:'Still standing',d:'Clear wave 30 in the Swarm.',key:'swarmBest',goal:30}
 ];
 function achievementNotice(p,id){} // Browser and server supply their own presentation.
-function achievementValue(p,a){if((p.achievements||{})[a.id])return a.goal;if(a.key==='weapon')return Math.max(0,...Object.keys(p.weaponUpgrades||{}).map(id=>upgradeLevel(p,id)));if(a.key==='revive'||a.key==='partyBoss')return 0;return Math.max(0,Number(p[a.key])||0)}
+function achievementValue(p,a){if((p.achievements||{})[a.id])return a.goal;if(a.key==='weapon')return Math.max(0,...Object.keys(p.weaponUpgrades||{}).map(id=>upgradeLevel(p,id)));if(a.key==='event'||a.key==='revive'||a.key==='partyBoss')return 0;return Math.max(0,Number(p[a.key])||0)}
 function achievementStore(p){if(G.mp||G.demo)return;try{let all=JSON.parse(localStorage.getItem('dayrim-achievements')||'{}');if(!all||typeof all!=='object'||Array.isArray(all))all={};all[p.char]=p.achievements;localStorage.setItem('dayrim-achievements',JSON.stringify(all))}catch(e){}}
 function achievementUnlock(p,id,notify=true){if(G.demo||!ACHIEVEMENTS.some(a=>a.id===id)||p.achievements[id])return false;p.achievements[id]=true;if(notify)achievementNotice(p,id);achievementStore(p);return true}
 function achievementCheck(p,notify=true){for(const a of ACHIEVEMENTS)if((!notify||!G.swarm||a.key==='swarmBest')&&achievementValue(p,a)>=a.goal)achievementUnlock(p,a.id,notify)}
@@ -322,12 +341,12 @@ function spawnGenerator(){const d=propSpot(600,1300);let f=propSpot(300,800);for
 function generatorStep(st,dt){const o=G.obj,g=o.drop,c=o.items&&o.items[0];if(!g||!c)return;releaseCarries();if(!c.done){st.label='Carry fuel to the generator';return}g.by=1;st.label='Hold F / Revive to repair';if(!st.alarm){st.alarm=true;beaconAlarm(g);G.banner={t:3,a:'Repair the generator',b:'Hold F / Revive nearby; defend the repairer'}}const repair=G.players.some(p=>!(p.deadT>0||p.respawnT>0)&&dist(p,g)<70&&(G.mp?p.reviveHold>0:(keys.has('KeyF')||touchHold.revive))&&!G.players.some(q=>q!==p&&q.deadT>0&&dist(q,p)<120));if(repair)g.t=Math.min(RUST.repair,(g.t||0)+dt);if(g.t>=RUST.repair){g.done=true;st.have=1;st.met=true}}
 const WEBBED={eggHatch:25,webTime:5,webberCap:2,webberCd:4};
 function spawnEggs(n){const eggs=[];for(let i=0;i<n;i++){let o=propSpot(360,1100);for(let t=0;t<60&&eggs.some(e=>dist(e,o)<180);t++)o=propSpot(360,1100);eggs.push(addProp('egg',o.x,o.y,18,{t:WEBBED.eggHatch}))}G.obj.eggs=eggs}
-function eggHit(e){if(e.kind!=='egg'||e.done)return false;e.done=true;text(e.x,e.y-55,'EGGS CUT','#e6e6c8',true);burst(e.x,e.y-15,'#e6e6c8',8);return true}
+function eggHit(e){if(e.kind!=='egg'||e.done)return false;e.done=true;achievementUnlock(G.p,'egg');text(e.x,e.y-55,'EGGS CUT','#e6e6c8',true);burst(e.x,e.y-15,'#e6e6c8',8);return true}
 function eggTick(dt){for(const e of (G.obj.eggs||[])){if(e.done)continue;e.t-=dt;if(e.t<=0){e.t=WEBBED.eggHatch;const m=spawnMob(0,{x:e.x,y:e.y},false);if(m)m.aware=true;text(e.x,e.y-55,'HATCHED','#ffb080',true)}}}
 function spawnWebber(){const e=spawnMob(500,null,false);if(!e)return null;e.role='webber';e.method='shoot';e.a=Object.assign({},e.a,{melee:false,atk:WEBBED.webberCd});e.aware=true;return e}
 const webberDue=()=>G.stage===4&&G.enemies.filter(e=>!e.dead&&e.role==='webber').length<Math.round(WEBBED.webberCap*partyCrowd())&&spawnWebber();
-function clearWeb(q){if(!(q.webT>0))return;q.webT=0;text(q.x,q.y-70,'FREED','#e6e6c8',true)}
-function webAlly(p,shape){for(const q of G.players)if(q!==p&&q.webT>0&&shape(q))clearWeb(q)}
+function clearWeb(q,actor){if(!(q.webT>0))return;q.webT=0;if(actor&&actor!==q)achievementUnlock(actor,'freeWeb');text(q.x,q.y-70,'FREED','#e6e6c8',true)}
+function webAlly(p,shape){for(const q of G.players)if(q!==p&&q.webT>0&&shape(q))clearWeb(q,p)}
 function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx=G.gate.x;e.ty=G.gate.y;G.obj.escort=e}
 /* A hold step either lights each zone in turn, or needs them all held at once. */
 /* A hold step either lights each zone in turn, or needs them all held at once.
@@ -500,10 +519,10 @@ function spawnPillars(n){let made=0;for(let i=0;i<220&&made<n;i++){const c=pick(
 function breakPillar(c){if(!c||c.done)return false;c.done=true;G.fx.push({k:'ring',x:c.x,y:c.y,r:10,to:90,t:.35,m:.35,c:'#bff0ff'});burst(c.x,c.y,'#bff0ff',26,210);shake(4);sfx('boom');text(c.x,c.y-44,'Pillar broken','#8fd6ff',true);return true}
 /* A pillar only breaks on timing, never on raw damage. */
 function pillarHit(c,p,charged){if(!c||c.done)return false;
-  if(G.players.length===1){if(!charged){text(c.x,c.y-44,'Charged move','#8fd6ff',true);return false}return breakPillar(c)}
+  if(G.players.length===1){if(!charged){text(c.x,c.y-44,'Charged move','#8fd6ff',true);return false}const done=breakPillar(c);if(done)achievementUnlock(p,'pillar');return done}
   c.hits=(c.hits||[]).filter(h=>G.t-h.t<=PILLAR_WINDOW&&h.id!==(p.id||0));
   c.hits.push({id:p.id||0,t:G.t});
-  if(c.hits.length>=2)return breakPillar(c);
+  if(c.hits.length>=2){const done=breakPillar(c);if(done)for(const h of c.hits){const q=G.players.find(q=>(q.id||0)===h.id);if(q)achievementUnlock(q,'pillar')}return done}
   text(c.x,c.y-44,'Now together','#8fd6ff',true);return false}
 function bossPillarRegen(e,dt){const up=pillarsUp();if(up){e.hp=Math.min(e.maxHp,e.hp+e.maxHp*PILLAR_REGEN*up*dt);if(Math.random()<dt*2)G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:30,t:.3,m:.3,c:'#8fd6ff'})}}
 function startBurrow(e){e.act='burrow';e.actT=1.1;e.buried=true;e.tel=null;e.moving=false;sfx('dash');burst(e.x,e.y,'#8a8478',20,150)}
@@ -686,7 +705,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){
   if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
   if(justBroke)bossGuard(e,BOSS_GUARD_GAIN.break);
   const el=ELEMENT[p.char],prev=e.statusType,solo=G.players.length===1,rid=(el&&e.statusT>0&&prev&&G.t>=(e.reactAt||0)&&(solo||(e.statusBy||0)!==(p.id||0)))?(solo?'resonance':reactionOf(prev,el)):'';
-  if(rid&&REACT_FX[rid]){e.reactAt=G.t+REACT_CD;const mult=REACT_FX[rid](e,p,base);base*=solo?1+(mult-1)*.5:mult;text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p,solo?.5:1);bossGuard(e,BOSS_GUARD_GAIN.reaction*(solo?.5:1))}
+  if(rid&&REACT_FX[rid]){achievementUnlock(p,'reaction');if(!solo)achievementUnlock(p,'teamReaction');e.reactAt=G.t+REACT_CD;const mult=REACT_FX[rid](e,p,base);base*=solo?1+(mult-1)*.5:mult;text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p,solo?.5:1);bossGuard(e,BOSS_GUARD_GAIN.reaction*(solo?.5:1))}
   else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
   if(e.shatterT>0)base*=1.25;if((e.staggerT||0)>0)base*=BOSS_STAGGER_DMG;
   base*=shellBlock(e,p);base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),facing=Math.abs(Math.atan2(Math.sin(ang-e.ang-Math.PI),Math.cos(ang-e.ang-Math.PI))),block=(e.guarding&&facing<1.05)?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
@@ -724,10 +743,10 @@ function hurtPlayer(d){
   if(p.hp<=0){p.hp=0;if(G.players.length===1&&!p.secondWind){p.secondWind=true;playerDown(p,true);writeSave()}else if(G.mp)playerDown(p);else if(G.swarm){p.hp=0;endSwarm()}else{p.gold=Math.floor(p.gold*.8);writeSave();setMode('dead')}}
 }
 /* An upgraded shield cancels ordinary enemies' current wind-up, never a boss move. */
-function shieldInterrupt(e){if(!e||e.dead||e.kind==='boss'||!((e.wind||0)>0||(e.healWind||0)>0))return false;e.wind=0;e.healWind=0;e.healT=Math.max(e.healT||0,3);e.castT=0;e.cd=Math.max(e.cd||0,1);text(e.x,e.y-98,'INTERRUPTED','#8fd0ff',true);G.fx.push({k:'shieldFx',x:e.x,y:e.y-24,a:Math.atan2(e.y-G.p.y,e.x-G.p.x),t:.28,m:.28});burst(e.x,e.y-24,'#8fd0ff',6,100);return true}
+function shieldInterrupt(e){if(!e||e.dead||e.kind==='boss'||!((e.wind||0)>0||(e.healWind||0)>0))return false;achievementUnlock(G.p,'interrupt');e.wind=0;e.healWind=0;e.healT=Math.max(e.healT||0,3);e.castT=0;e.cd=Math.max(e.cd||0,1);text(e.x,e.y-98,'INTERRUPTED','#8fd0ff',true);G.fx.push({k:'shieldFx',x:e.x,y:e.y-24,a:Math.atan2(e.y-G.p.y,e.x-G.p.x),t:.28,m:.28});burst(e.x,e.y-24,'#8fd0ff',6,100);return true}
 const WEAPON_HEAL_RANGE=200,WEAPON_HEAL_SHARE=.02,WEAPON_HEAL_CD=1;
 /* From tier two, a healing weapon restores one nearby ally once per second. */
-function weaponHealAlly(p){if((p.weaponHealCd||0)>0)return false;const q=G.players.filter(q=>q!==p&&!(q.deadT>0||q.respawnT>0)&&q.hp<q.s.maxHp&&dist(q,p)<=WEAPON_HEAL_RANGE).sort((a,b)=>a.hp/a.s.maxHp-b.hp/b.s.maxHp)[0];if(!q)return false;const h=Math.min(q.s.maxHp-q.hp,q.s.maxHp*WEAPON_HEAL_SHARE);q.hp+=h;p.weaponHealCd=WEAPON_HEAL_CD;threatHeal(p,h);G.fx.push({k:'healLink',x:p.x,y:p.y-24,x2:q.x,y2:q.y-24,t:.32,m:.32});text(q.x,q.y-72,'+'+Math.round(h),'#6fdca0',true);burst(q.x,q.y-24,'#6fdca0',8,90);return true}
+function weaponHealAlly(p){if((p.weaponHealCd||0)>0)return false;const q=G.players.filter(q=>q!==p&&!(q.deadT>0||q.respawnT>0)&&q.hp<q.s.maxHp&&dist(q,p)<=WEAPON_HEAL_RANGE).sort((a,b)=>a.hp/a.s.maxHp-b.hp/b.s.maxHp)[0];if(!q)return false;const h=Math.min(q.s.maxHp-q.hp,q.s.maxHp*WEAPON_HEAL_SHARE);q.hp+=h;achievementUnlock(p,'healAlly');p.weaponHealCd=WEAPON_HEAL_CD;threatHeal(p,h);G.fx.push({k:'healLink',x:p.x,y:p.y-24,x2:q.x,y2:q.y-24,t:.32,m:.32});text(q.x,q.y-72,'+'+Math.round(h),'#6fdca0',true);burst(q.x,q.y-24,'#6fdca0',8,90);return true}
 function doAttack(){
   if(G.p.carry||G.p.stunT>0)return;
   if(kitOf(G.p)){doMove('small');return}
@@ -749,7 +768,7 @@ function doAttack(){
 function doSpell(){if(G.p.carry||G.p.stunT>0)return;if(kitOf(G.p)){doMove('moderate');return}const p=G.p;if(p.guard||p.cd.bolt>0||p.mana<p.s.spellCost)return;p.mana-=p.s.spellCost;p.cd.bolt=.7*cdMulOf(p);p.castT=.3;sfx('bolt');const sk=1+(p.skills.spell||0)*.1;G.shots.push({x:p.x+Math.cos(p.face)*20,y:p.y-22+Math.sin(p.face)*20,vx:Math.cos(p.face)*410,vy:Math.sin(p.face)*410,r:7,from:'p',life:1.1,heavy:true,dmg:p.s.dmg*1.7*statMul(p,'mag')*sk*dmgMul(),fx:'comet',col:spellCol(p.char,'comet'),a:p.face})}
 function explode(s){const p=G.p,R=s.blast||p.s.blast;impact(s,R);sfx('boom');shake(s.blast?.8:2);for(const c of G.npcs){if(!c.dead&&Math.hypot(c.x-s.x,c.y-22-s.y)<R)hitNpc(c,s.dmg,Math.atan2(c.y-s.y,c.x-s.x),true)}for(const e of G.enemies.slice()){if(!e.dead&&Math.hypot(e.x-s.x,e.y-22-s.y)<R+e.r)hitEnemy(e,s.dmg,Math.atan2(e.y-s.y,e.x-s.x),210,!!s.heavy)}}
 const TEAM_ABILITY={bruiser:{n:'Taunt',cd:14,d:'Draw nearby enemies and reduce damage taken.'},striker:{n:'Break',cd:12,d:'Your next hit breaks a target and can interrupt a cast.'},shooter:{n:'Mark',cd:10,d:'Mark an aimed enemy so the party deals more damage.'},medic:{n:'Mend Link',cd:8,d:'Heal the lowest-life nearby ally over time.'},scout:{n:'Rescue Dash',cd:12,d:'Dash to an ally and shield you both.'}};
-function chooseBoon(id){const p=G.p;if(!p.boonPending||(id!=='wide'&&id!=='opening'))return false;const b=p.runBoons||(p.runBoons={wide:0,opening:0});if((b[id]||0)>=3)return false;b[id]=(b[id]||0)+1;p.boonPending=false;addLog(id==='wide'?'Dodge protection increased.':'Dodge openings last longer.');writeSave();return true}
+function chooseBoon(id){const p=G.p;if(!p.boonPending||(id!=='wide'&&id!=='opening'))return false;const b=p.runBoons||(p.runBoons={wide:0,opening:0});if((b[id]||0)>=3)return false;b[id]=(b[id]||0)+1;p.boonPending=false;achievementUnlock(p,'boon');addLog(id==='wide'?'Dodge protection increased.':'Dodge openings last longer.');writeSave();return true}
 /* One target rule for both the action and the player's target preview. */
 function teamTarget(p,k,aim=mouse){if(k==='shooter')return G.enemies.filter(e=>!e.dead&&!e.fleshDown&&!e.scrapDown&&dist(e,p)<450&&los(p,e)&&!concealed(e,p)).sort((a,b)=>Math.hypot(a.x-aim.x,a.y-aim.y)-Math.hypot(b.x-aim.x,b.y-aim.y))[0]||null;
   if(k==='medic')return G.players.filter(q=>!q.deadT&&!q.respawnT&&dist(q,p)<400).sort((a,b)=>a.hp/a.s.maxHp-b.hp/b.s.maxHp)[0]||null;
@@ -760,7 +779,7 @@ function doTeam(){const p=G.p;if(p.carry)return false;const k=archKey(p.char),ab
   else if(k==='shooter'){const target=teamTarget(p,k);if(!target){addLog('No enemy in range or sight to mark.');return false}target.markT=6;target.aware=true;text(target.x,target.y-100,'MARKED','#ffd860',true)}
   else if(k==='medic'){const q=teamTarget(p,k);if(!q)return false;q.mendT=4;q.mendBy=p.id;q.mendRate=q.s.maxHp*.3/4;addLog('Mend Link: '+esc(q.pname||label(q.char))+'.');text(q.x,q.y-80,'MEND LINK','#80e5aa',true)}
   else{const q=teamTarget(p,k);if(q){addLog('Rescue Dash: '+esc(q.pname||label(q.char))+'.');const dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy)||1,steps=Math.max(1,Math.ceil(Math.max(0,d-35)/12));for(let i=0;i<steps;i++)if(move(p,dx/d*Math.min(12,Math.max(0,d-35)),dy/d*Math.min(12,Math.max(0,d-35))))break;p.inv=Math.max(p.inv,1);if(dist(p,q)<70)q.inv=Math.max(q.inv,1)}else{doDash();p.inv=Math.max(p.inv,1)}text(p.x,p.y-80,'RESCUE DASH','#b9a4ff',true)}
-  p.teamCd=ability.cd*cdMulOf(p);return true}
+  p.teamCd=ability.cd*cdMulOf(p);achievementUnlock(p,'teamAbility');return true}
 function doHeal(){const p=G.p;if(p.guard||p.cd.pull>0||p.mana<22||p.hp>=p.s.maxHp)return;p.mana-=22;p.cd.pull=5*cdMulOf(p);p.castT=.45;p.healFx=.8;const h=Math.min(p.s.maxHp-p.hp,p.s.maxHp*(.05+.045*p.stats.hea)*p.s.mendMul);p.hp+=h;threatHeal(p,h);text(p.x,p.y-72,'+'+Math.round(h),'#6fdca0',true);burst(p.x,p.y-24,'#6fdca0',18,120);G.fx.push({k:'ring',x:p.x,y:p.y-20,r:40,to:10,t:.4,m:.4,c:'#6fdca0'});sfx('pull')}
 /* ---------- Style helpers ---------- */
 function spellCol(ch,sty){const w=SPECS[ch]&&SPECS[ch].wc;if(sty==='flask')return'90,240,110';if(sty==='ember')return'255,150,60';if(sty==='card')return'255,90,200';if(w&&w[0]==='#'&&w.length===7)return parseInt(w.slice(1,3),16)+','+parseInt(w.slice(3,5),16)+','+parseInt(w.slice(5,7),16);return'190,120,255'}
@@ -895,7 +914,7 @@ function ultOf(p){const k=kitOf(p);if(k)return ULT_BY_KIT[k];let b='pow';for(con
 function doUlt(){
   const p=G.p;if(p.carry||G.p.ult||p.rage<100||G.mode!=='play'||G.clearPending)return false;
   if(G.players.length>1)openLink(p);
-  const [name,col]=ultOf(p);p.rage=0;p.guard=false;p.mv=null;G.p.ult={t:0,hit:0,name,col,seed:Math.random()*99};p.inv=ULT_LEN;
+  const [name,col]=ultOf(p);achievementUnlock(p,'ultimate');p.rage=0;p.guard=false;p.mv=null;G.p.ult={t:0,hit:0,name,col,seed:Math.random()*99};p.inv=ULT_LEN;
   const k=kitOf(p);if(k)p.mv={id:'special',key:k,t:0,dur:KIT[k].special.dur,hit:99,side:Math.cos(p.face)>=0?1:-1,mirror:KIT[k].special.face!==0&&(Math.cos(p.face)>=0?1:-1)!==KIT[k].special.face};
   audioOn();tone(60,420,.68,'sawtooth',.06);tone(90,630,.68,'square',.025);voice(name+'!');return true;
 }
@@ -924,7 +943,7 @@ function linkClearFire(){G.shots=G.shots.filter(s=>s.from!=='e');G.hazards=(G.ha
 function linkEffect(L,t){
   /* Credit earlier hits when another player joins after they landed. */
   const me=G.p,shown=new Set();for(const h of L.hits){if(h.e.dead||h.e.fleshDown||h.e.scrapDown||h.bonus>=t[1]||bossWarded(h.e))continue;G.p=h.p;const dmg=h.base*(t[1]-h.bonus);h.bonus=t[1];h.e.hp-=dmg;if(!shown.has(h.e)){text(h.e.x,h.e.y-125,'LINK BONUS','#8fe6ff',true);shown.add(h.e)}threatAdd(h.e,h.p.id||0,100*dmg/Math.max(1,h.e.maxHp));bossPhaseCheck(h.e);if(h.e.hp<=0)killEnemy(h.e)}G.p=me;
-  if(L.ids.length>=2)linkClearFire();
+  if(L.ids.length>=2){for(const q of G.players)if(L.ids.includes(q.id))achievementUnlock(q,'link');linkClearFire()}
   if(L.ids.length>=3)for(const q of G.players)q.inv=Math.max(q.inv,ULT_LEN);
   if(L.ids.length>=4){for(const q of G.players)if(!(q.deadT>0||q.respawnT>0))q.hp=q.s.maxHp;
     if(G.boss&&!G.boss.dead&&(G.boss.staggerT||0)<=0){if((G.boss.kit||G.stage)===7&&(G.boss.phase||0)>=2)bossGuard(G.boss,BOSS_GUARD_GAIN.special);else{G.boss.staggerT=BOSS_STAGGER;G.boss.guard=0}}}
@@ -1018,7 +1037,7 @@ function update(dt){
     if(wall(nx/T|0,(ny+22)/T|0)){s.life=0;if(s.from==='p'&&!s.small)explode(s);else impact(s);continue}
     s.x=nx;s.y=ny;trail(s,dt);
     if(s.from==='e'||s.from==='p'){for(const c of G.npcs){if(!c.dead&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+3){s.life=0;if(s.from==='p'&&!s.small)explode(s);else{impact(s);hitNpc(c,s.dmg,Math.atan2(s.vy,s.vx),s.from==='p')}break}}if(s.life<=0)continue}
-    if(s.from==='p'){let propHit=false;for(const c of G.props||[])if((c.kind==='egg'||c.kind==='scrapPart')&&!c.done&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+4){if(c.kind==='egg')eggHit(c);else scrapPartHit(c,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const q of G.players)if(q!==G.p&&q.webT>0&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+4){clearWeb(q);s.life=0;propHit=true;break}if(propHit)continue;for(const e of G.enemies){if(!e.dead&&!e.fleshDown&&!e.scrapDown&&!(s.hitTargets&&s.hitTargets.includes(e))&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){if(s.small){impact(s);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),90);if(s.pierce>0){G.fx.push({k:'pierceFx',x:s.x,y:s.y,a:Math.atan2(s.vy,s.vx),t:.22,m:.22});(s.hitTargets||(s.hitTargets=[])).push(e);s.pierce--}else s.life=0}else{s.life=0;explode(s)}break}}}
+    if(s.from==='p'){let propHit=false;for(const c of G.props||[])if((c.kind==='egg'||c.kind==='scrapPart')&&!c.done&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+4){if(c.kind==='egg')eggHit(c);else scrapPartHit(c,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const q of G.players)if(q!==G.p&&q.webT>0&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+4){clearWeb(q,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const e of G.enemies){if(!e.dead&&!e.fleshDown&&!e.scrapDown&&!(s.hitTargets&&s.hitTargets.includes(e))&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){if(s.small){impact(s);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),90);if(s.pierce>0){G.fx.push({k:'pierceFx',x:s.x,y:s.y,a:Math.atan2(s.vy,s.vx),t:.22,m:.22});(s.hitTargets||(s.hitTargets=[])).push(e);s.pierce--}else s.life=0}else{s.life=0;explode(s)}break}}}
     else for(const q of G.players){if(!(q.respawnT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;if(s.web&&!(q.inv>0||q.deadT>0)){q.webT=WEBBED.webTime;q.dashT=0;G.banner={t:2.5,a:'Webbed',b:G.players.length>1?'An ally can attack the web to free you':'The web breaks after 5 seconds'};text(q.x,q.y-70,'WEBBED','#e6e6c8',true)}hurtPlayer(s.dmg);impact(s);break}}}
   G.shots=G.shots.filter(s=>s.life>0);G.enemies=G.enemies.filter(e=>!e.dead);
   G.loot=G.loot.filter(l=>{l.t+=dt;const p=nearestPlayer(l);G.p=p;const d=dist(l,p),mag=(l.kind==='item'||(l.kind==='weapon'&&!p.weapons.includes(l.w)))?0:96;if(mag&&d<mag){const a=Math.atan2(p.y-l.y,p.x-l.x);l.x+=Math.cos(a)*300*dt;l.y+=Math.sin(a)*300*dt}if(d<(l.kind==='item'||l.kind==='weapon'?30:18)){pickup(l);return false}return true});
@@ -1104,7 +1123,7 @@ const scrapGolemDue=()=>G.stage===7&&G.enemies.filter(e=>!e.dead&&e.scrapGolem).
 function clearScrap(){G.props=G.props.filter(c=>c.kind!=='scrapPart')}
 function scrapSpot(e,dx,other){let best=null,bd=Infinity;for(const i of G.w.open){const o={x:(i%MW+.5)*T,y:((i/MW|0)+.5)*T};if(blocked(o.x,o.y,14)||other&&dist(o,other)<35||G.arena&&dist(o,G.arena)>G.arena.r-14)continue;const d=Math.hypot(o.x-e.x-dx,o.y-e.y);if(d<bd){bd=d;best=o}}return best||{x:e.x,y:e.y}}
 function scrapDisable(e){if(e.scrapDown)return;e.hp=0;e.scrapDown=true;e.scrapT=RUST.rebuild;e.flash=0;e.wind=0;e.rotT=0;e.moving=false;const a=scrapSpot(e,-34),b=scrapSpot(e,34,a);for(const o of[a,b])addProp('scrapPart',o.x,o.y,14,{golem:e});text(e.x,e.y-90,'BREAK THE PARTS','#ffd080',true);G.banner={t:2.5,a:'Scrap Golem down',b:G.players.length===1?'Break both parts before it rebuilds':'Two players must break its parts'};sfx('boom')}
-function scrapPartHit(c,p){if(!c||c.done||!c.golem||!c.golem.scrapDown)return false;const e=c.golem,parts=G.props.filter(x=>x.kind==='scrapPart'&&x.golem===e),id=p.id||1,other=parts.find(x=>x!==c&&x.done);if(other&&other.by===id&&G.players.filter(q=>!(q.deadT>0||q.respawnT>0)).length>1){text(c.x,c.y-45,'ALLY NEEDED','#ffd080',true);return false}c.done=true;c.by=id;burst(c.x,c.y,'#d6b685',8,80);if(parts.length===2&&parts.every(x=>x.done)){G.props=G.props.filter(x=>x.golem!==e);e.scrapFinished=true;e.scrapDown=false;const me=G.p;G.p=p;killEnemy(e);G.p=me}return true}
+function scrapPartHit(c,p){if(!c||c.done||!c.golem||!c.golem.scrapDown)return false;const e=c.golem,parts=G.props.filter(x=>x.kind==='scrapPart'&&x.golem===e),id=p.id||1,other=parts.find(x=>x!==c&&x.done);if(other&&other.by===id&&G.players.filter(q=>!(q.deadT>0||q.respawnT>0)).length>1){text(c.x,c.y-45,'ALLY NEEDED','#ffd080',true);return false}c.done=true;c.by=id;burst(c.x,c.y,'#d6b685',8,80);if(parts.length===2&&parts.every(x=>x.done)){for(const part of parts){const q=G.players.find(q=>(q.id||1)===part.by);if(q)achievementUnlock(q,'scrap')}G.props=G.props.filter(x=>x.golem!==e);e.scrapFinished=true;e.scrapDown=false;const me=G.p;G.p=p;killEnemy(e);G.p=me}return true}
 function scrapTick(dt){for(const e of G.enemies){if(!e.scrapDown||e.dead)continue;e.scrapT-=dt;if(e.scrapT<=0){e.scrapDown=false;e.hp=e.maxHp*.5;e.cd=1;e.wind=0;G.props=G.props.filter(c=>c.golem!==e);text(e.x,e.y-90,'REBUILT','#ffd080',true)}}}
 /* Stage 6: unstable floor warns before it collapses and reforms after a short time. */
 const VALE={first:12,interval:11,warning:2,hole:4,radius:58,damage:2,fallCooldown:1,shieldCap:2};
