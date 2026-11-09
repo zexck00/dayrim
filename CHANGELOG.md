@@ -16,6 +16,8 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Sporefall Marsh: manage toxin, carry three purifier canisters to separate vents, and avoid the spore clouds released by Bloaters. The safehouse and activated vents clear toxin.
 - Chitin Horror, the Stage 4 boss: flank its armored front, dodge its bouncing charge, cut allies free from web spit, and burst egg sacs before they hatch. It sheds its armor and speeds up at low life.
 - Webbed Barrow: cut four egg clusters before they hatch, and rescue allies caught by ranged Webbers. A player alone breaks free after five seconds.
+- The title song plays on the title poster, fading in to 70% volume, and hands over to the menu music on Play Game.
+- First blood: the owner's line plays on a kill, at most once every 10 minutes.
 - The Swarm: an endless mode on any stage you have reached, alone or online. Every wave is bigger, a boss joins every fifth wave, and the safehouse only shelters you between waves. Nothing you earn carries back to your saved character; your best wave is kept.
 - Gloom Eye, the Stage 2 boss: a sweeping gaze beam, triple tentacle slams, a blinding pulse at 60% and a second sweep at 25%. When it locks its gaze on you, face away; its back eye then opens and hits from behind it break its guard. Solo, dodging through the beam also opens the eye.
 - Duskwater Fen, Stage 3: the water rises and falls, and it slows you off the islands. Lurkers grab and drag a player until an ally hits them; solo, your own hits free you.
@@ -28,6 +30,9 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ### Changed
 - Every playable character now has a themed ultimate name, emblem and animated effects, visible to nearby online players.
 - Weapon projectiles gain brighter trails and distinctive ornaments as they are upgraded, visible in solo and online play.
+- The Necromancer, Toxin Alchemist and Void Empress use the same pixel figures as the other villains. Their own attacks stay, shown as a coloured sweep or aura. The page is about 3.5 MB smaller without their large art sheets.
+- The whole title poster fits on screen, with a blurred fill around it. Play Game grows and brightens 20% on hover.
+- Combo announcer lines moved up one clip: kill 1 is First blood and Double Kill is kill 2. Legendary uses the computer voice until it has a recording.
 - Portrait phones use a compact HUD with a smaller minimap, a boss bar below player status, and a shorter touch-control grid. Sound, fullscreen and 3D effects are available in the Settings menu.
 - Removed the hidden, obsolete Phaser roadmap and its unused page styles.
 - Enemies are smarter. Only two press one player at a time while the rest circle, aim follows you until late in a wind-up, attacks can chain, and healing or reviving draws a rush.
@@ -39,6 +44,8 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### Fixed
 - Carrying an objective item now prevents signature moves and ultimates, and a downed carrier drops the item where they fell.
+- The wounded scout can be revived reliably: night thinning no longer deletes it, hits and shots can no longer hurt or push it before it is revived, enemies ignore it, and the hold-F reach is 80.
+- The title poster no longer flashes a broken image while the page loads; it fades in once its pictures are ready.
 - Defeated Lurkers always release their victims, including when damage over time kills them.
 - Defeating the Banshee releases lantern carriers and possession. Travel and checkpoint retries clear encounter statuses.
 - New Swarm runs clear leftover loot, temporary effects, cooldowns and party bonuses. Wave rewards no longer remove potions above five.
