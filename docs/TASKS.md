@@ -208,7 +208,7 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 | C-34 | C | L | Stage 6 Ruined Vale: collapse, two-plate gates, Shieldbearer | Prototype: warned collapses, Shieldbearers and the two plates opening the boss gate work in solo and party rules. Balance, readability and final art need human review. | C-18 |
 | C-35 | C | L | Boss: Flesh Amalgam (Keep Them Apart). Hardest so far, as it needs two bodies. | Prototype: independent threat, split health, separation healing, defeat windows and rejoining have solo and party rule coverage. Balance, readability and final art need human review. | C-17 |
 | C-36 | C | L | Stage 7 Rustleaf Woods: rust, generator, Scrap Golem | Prototype: per-player night rust, a fuel-and-repair generator, and two-player Golem parts with a solo fallback have rule coverage. Balance, readability and final art need human review. | C-18 |
-| C-37 | C | M | Boss: Rusted Ghoul (Generator Shock) | As above | C-17 |
+| C-37 | C | M | Boss: Rusted Ghoul (Generator Shock) | Prototype: hook, cleaves, Rust Field, Last Stand and solo/party Generator Shock have rule coverage. Balance, readability and final art need human review. | C-17 |
 | C-38 | C | L | **Villain side** (section 7): Hero Recruit minions, NPC Dread, patrols, ending text | Villain party has the same quality of fight | C-19 |
 | C-39 | C | M | **Director:** pressure-based spawning (section 11) | Fights come in waves, with breaks | C-19 |
 | C-40 | C | M | Balance pass on stages 1 to 7 using D-06 bots and playtests | Solo and party clear rates recorded | D-06 |

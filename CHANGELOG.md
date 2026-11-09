@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Rusted Ghoul, the Stage 7 boss: dodge its hook and cleaves, then power the generator and lure it onto the coil to stagger it and clear Rust Field. The coil charges itself for a lone standing player.
 - Rustleaf Woods: rust weakens armor at night, a fueled generator must be defended while it is repaired, and Scrap Golems rebuild unless their parts are destroyed. Solo players can break both parts.
 - Flesh Amalgam, the Stage 6 boss: pull its two bodies apart to stop them healing, and bring a downed body’s partner down before it revives. The bodies rejoin for the final phase.
 - Ruined Vale: avoid warned floor collapses and flank Shieldbearers. Hold both pressure plates to open the boss gate; a solo player can hold them one at a time.
