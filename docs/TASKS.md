@@ -32,7 +32,7 @@ The split below assumes these strengths. I don't know each person's skills, so s
 | C-12, C-13 | Prototype: threat from damage and healing with decay and switch hysteresis, a live taunt override, and five G-key role abilities. | Target feedback (markers), threat-driven boss targeting, validation and balance are open. |
 | C-14 | Prototype: all 40 characters carry the element from the design, all ten reaction rows are implemented (Inferno, Shatter, Overload, Freeze, Rot, Collapse, Purge, Eclipse, Cauterise, Frostbite), other pairs resonate, and the coverage check exercises all 780 character pairs. | Balance, boss variants and human playtesting remain open. A target can react once every 2 seconds; that value needs Z's review. |
 | C-15, C-16 | Prototype: kills by anyone feed one party chain with a six second window and the design's four bonus tiers, each kill gives the killer full rage and allies within 500 units 35% of it, and a party ultimate opens a three second link window with the Duo, Trio and Full Party effects. | Z's final numbers and human playtests are open. |
-| C-18 | Prototype: a stage runs ordered objective steps from one data table (kill, revive, hold single or simultaneous, carry and escort), the boss gate opens on the last step, a wipe restarts only the step in progress, and the HUD shows the current step and progress. | Each stage's own props and rules and human playtests are open; stages 4 and 7 still use only the kill step. Split steps fall back to the timed single-zone version when the party is too small, so solo stage 6 and stage 9 can be finished. |
+| C-18 | Prototype: a stage runs ordered objective steps from one data table (kill, revive, hold single or simultaneous, carry and escort), the boss gate opens on the last step, a wipe restarts only the step in progress, and the HUD shows the current step and progress. | Each stage's own props and rules and human playtests remain open. Split steps fall back to the timed single-zone version when the party is too small, so solo stage 6 and stage 9 can be finished. |
 | C-19, C-20 | Prototype: all six roles exist and are labelled, shooters keep distance, casters leave zones, guards block only from the front, every aware enemy shows who it targets, Stage 1 fields back-line rushers, telegraphed brutes and interruptible healers for both factions, and its objective (kill quota then revive the wounded scout) runs end to end. | Role balance, the teaching pass and human playtests are open. |
 | C-26–C-28, D-26 | Prototype: role auras, weapon upgrades, checkpoint boons and optional Three.js effects are present. | Balance, readability, asset-character coverage and performance work listed below. |
 | D-10–D-12, D-17–D-18 | Partial: recovery and prototype combat fields sync, revive/team touch buttons and placeholder party feedback exist. | Four-player, lag, bandwidth, accessibility and real-phone checks remain open. |
@@ -201,14 +201,14 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
-| C-30 | C | L | Stage 4 Webbed Barrow: webs, egg clusters, Webber | Done, with party-size helpers | C-18 |
-| C-31 | C | M | Boss: Chitin Horror (Crack the Shell) | Solo and party versions tested | C-17 |
-| C-32 | C | L | Stage 5 Sporefall Marsh: Toxin meter, canisters, Bloater | Done | C-18 |
-| C-33 | C | M | Boss: Spore Brute (Share the Poison) | As above | C-17 |
-| C-34 | C | L | Stage 6 Ruined Vale: collapse, two-plate gates, Shieldbearer | Done | C-18 |
-| C-35 | C | L | Boss: Flesh Amalgam (Keep Them Apart). Hardest so far, as it needs two bodies. | As above | C-17 |
-| C-36 | C | L | Stage 7 Rustleaf Woods: rust, generator, Scrap Golem | Done | C-18 |
-| C-37 | C | M | Boss: Rusted Ghoul (Generator Shock) | As above | C-17 |
+| C-30B | C | L | Stage 4 Webbed Barrow: webs, egg clusters, Webber | Prototype: four egg clusters hatch enemies until cut; ranged Webbers root players until rescued, with a five-second solo escape. Tests cover attacks, retries and sync. Placeholder art and human balance/playtests remain open. | C-18 |
+| C-31 | C | M | Boss: Chitin Horror (Crack the Shell) | Prototype: shell, charge, web spit, egg sacs and molt have solo and party rule coverage. Human playtesting, balance and final art remain open. | C-17 |
+| C-32 | C | L | Stage 5 Sporefall Marsh: Toxin meter, canisters, Bloater | Prototype: per-player toxin, three purifier vents and exploding Bloaters work in solo and online rules. Placeholder art, balance and human playtests remain open. | C-18 |
+| C-33 | C | M | Boss: Spore Brute (Share the Poison) | Prototype: solo and party Toxic Load, purifier, clean vents, mushrooms and all phases have rule coverage. Balance, readability and final art need human review. | C-17 |
+| C-34 | C | L | Stage 6 Ruined Vale: collapse, two-plate gates, Shieldbearer | Prototype: warned collapses, Shieldbearers and the two plates opening the boss gate work in solo and party rules. Balance, readability and final art need human review. | C-18 |
+| C-35 | C | L | Boss: Flesh Amalgam (Keep Them Apart). Hardest so far, as it needs two bodies. | Prototype: independent threat, split health, separation healing, defeat windows and rejoining have solo and party rule coverage. Balance, readability and final art need human review. | C-17 |
+| C-36 | C | L | Stage 7 Rustleaf Woods: rust, generator, Scrap Golem | Prototype: per-player night rust, a fuel-and-repair generator, and two-player Golem parts with a solo fallback have rule coverage. Balance, readability and final art need human review. | C-18 |
+| C-37 | C | M | Boss: Rusted Ghoul (Generator Shock) | Prototype: hook, cleaves, Rust Field, Last Stand and solo/party Generator Shock have rule coverage. Balance, readability and final art need human review. | C-17 |
 | C-38 | C | L | **Villain side** (section 7): Hero Recruit minions, NPC Dread, patrols, ending text | Villain party has the same quality of fight | C-19 |
 | C-39 | C | M | **Director:** pressure-based spawning (section 11) | Fights come in waves, with breaks | C-19 |
 | C-40 | C | M | Balance pass on stages 1 to 7 using D-06 bots and playtests | Solo and party clear rates recorded | D-06 |

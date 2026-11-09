@@ -68,7 +68,7 @@ function applyList(rec,map,kind){if(!rec)return false;const [upd,rm]=rec;let cha
 function netSnapshot(m){
   if(!net.inRoom||!net.ents)return;const E=net.ents,me=G.p;
   if(m.p){const [upd,rm]=m.p,others=[];
-    for(const d of upd){if(d.id===me.id){const was=me.s&&me.s.maxHp;patch(me,d,true,true);if(d.lvl!==undefined||d.gold!==undefined||d.potions!==undefined||d.sp!==undefined||d.weapon!==undefined||was!==me.s.maxHp)dirty();if(G.mode==='menu'&&menuTab==='weapons'&&(d.gold!==undefined||d.weapon!==undefined||d.weapons!==undefined||d.weaponUpgrades!==undefined||d.nearSafe!==undefined))refreshProgressMenu();if(G.mode==='menu'&&menuTab==='skills'&&(d.sp!==undefined||d.skills!==undefined||d.boonPending!==undefined||d.runBoons!==undefined))refreshProgressMenu()}else others.push(d)}
+    for(const d of upd){if(d.id===me.id){const was=me.s&&me.s.maxHp;patch(me,d,true,true);if(d.lvl!==undefined||d.gold!==undefined||d.potions!==undefined||d.sp!==undefined||d.weapon!==undefined||was!==me.s.maxHp)dirty();if(G.mode==='menu'&&menuTab==='weapons'&&(d.gold!==undefined||d.weapon!==undefined||d.weapons!==undefined||d.weaponUpgrades!==undefined||d.nearSafe!==undefined))refreshProgressMenu();if(G.mode==='menu'&&menuTab==='achievements'&&(d.achievements!==undefined||d.kills!==undefined||d.bestCombo!==undefined||d.lvl!==undefined||d.beaten!==undefined||d.swarmBest!==undefined||d.weaponUpgrades!==undefined))refreshProgressMenu();if(G.mode==='menu'&&menuTab==='skills'&&(d.sp!==undefined||d.skills!==undefined||d.boonPending!==undefined||d.runBoons!==undefined))refreshProgressMenu()}else others.push(d)}
     if(applyList([others,rm],E.p,'p')){const before=G.players.length;G.players=[...E.p.values()];if(before!==G.players.length&&before>0)net.scaleNotice=performance.now()+4000}}
   if(applyList(m.e,E.e,'e'))G.enemies=[...E.e.values()];
   if(applyList(m.n,E.n,'n'))G.npcs=[...E.n.values()];
@@ -88,7 +88,7 @@ function netEvent(v){switch(v[0]){
   case's':sfx(v[1]);break;case'v':voice(v[1]);break;case't':tone(v[1],v[2],v[3],v[4],v[5],v[6]);break;case'o':noiseHit(v[1],v[2]);break;case'g':stinger(v[1]);break;case'k':shake(v[1]);break;
   case'l':addLog(v[1]);break;case'x':text(v[1],v[2],v[3],v[4],!!v[5]);break;case'b':burst(v[1],v[2],v[3],v[4],v[5]);break;case'w':glowP(v[1],v[2],v[3],v[4],v[5],v[6],v[7]);break;
   case'e':bleed(v[1],v[2],v[3],v[4],v[5]);break;case'd':addDecal(v[1],v[2],v[3],!!v[4],v[5]||undefined);break;case'f':G.fx.push(v[1]);break;
-  case'clear':if(G.mode==='play'||G.mode==='menu'||G.mode==='pause')setMode('clear');break;case'clearDone':if(G.mode==='clear')setMode('play');break}}
+  case'achievement':showAchievement(v[1]);break;case'clear':if(G.mode==='play'||G.mode==='menu'||G.mode==='pause')setMode('clear');break;case'clearDone':if(G.mode==='clear')setMode('play');break}}
 
 /* Runs every frame in a room, in place of update() */
 function netUpdate(dt){
@@ -103,6 +103,7 @@ function netUpdate(dt){
   const playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0),v=G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0},guard=playing&&(mouse.right||touchHold.guard);
   if(touchMode){const n=nearestEnemy();if(n)me.face=Math.atan2(n.y-me.y,n.x-me.x);else if(v.x||v.y)me.face=Math.atan2(v.y,v.x)}else if(playing)me.face=Math.atan2(mouse.y-(me.y-22),mouse.x-me.x);
   const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
+  if(me.webT>0)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
   else if(v.x||v.y){const sp=envSpeed(me)*me.s.speed*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
