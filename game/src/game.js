@@ -910,11 +910,18 @@ function addRage(n,p){p=p||G.p;const was=p.rage;p.rage=Math.min(100,p.rage+n);if
 const ULT_HITS=[.7,1.05,1.4],ULT_LEN=1.9,ULT_RADIUS=720;
 const ULT_BY_STAT={pow:['Earthshatter','255,140,50'],aim:['Bullet Storm','255,220,110'],mag:['Cataclysm','190,120,255'],grd:['Aegis Nova','120,200,255'],hea:['Judgment Light','130,255,170']};
 const ULT_BY_KIT={necro:['Army of the Dead','110,255,170'],void:['Event Horizon','190,110,255'],toxic:['Plague Bloom','140,240,70']};
-function ultOf(p){const k=kitOf(p);if(k)return ULT_BY_KIT[k];let b='pow';for(const s in p.stats)if(p.stats[s]>p.stats[b])b=s;return ULT_BY_STAT[b]}
+/* Name, color, animation family and emblem are authored for each playable character. */
+const ULT_STYLE={
+ Detective:['Case closed','255,207,112','rays','crosshair'],Vigilante:['Midnight justice','187,201,224','slash','hook'],Guardian:['Last bastion','255,205,94','shield','shield'],Ranger:['Rain of arrows','148,214,117','rays','arrow'],Inventor:['Overclock','100,242,209','tech','gear'],Firefighter:['Flashover','255,156,71','wave','axe'],
+ 'Hero Shadow':['Silent strike','181,130,153','slash','dagger'],Prodigy:['Power play','215,153,255','slash','bat'],Sage:['Arcane wisdom','211,168,255','rune','book'],Patriot:['Star spangled','255,108,105','shield','star'],Phantom:['Spectral passage','125,255,198','spiral','ghost'],Pyromancer:['Inferno','255,130,60','flame','flame'],Chronomancer:['Time fracture','112,221,255','orbit','clock'],Beastmaster:['Wild hunt','239,190,112','slash','claw'],Voidwalker:['Beyond the veil','170,137,255','spiral','portal'],Exorcist:['Sacred rite','255,229,159','rune','cross'],'Gravity Mage':['Gravity well','184,145,255','orbit','orbit'],Druid:['Wild bloom','139,238,139','bloom','leaf'],Cyborg:['System overload','105,224,255','tech','circuit'],Illusionist:['Grand illusion','255,118,193','shard','card'],
+ Necromancer:['Army of the Dead','110,255,170','rune','skull'],'Blood Reaper':['Crimson harvest','255,91,109','slash','scythe'],'Toxin Alchemist':['Plague Bloom','140,240,70','bloom','flask'],'Soul Stealer':['Soul siphon','204,146,255','spiral','soul'],'Shadow Monarch':['Shadow dominion','192,108,255','slash','crown'],Puppeteer:['Cut the strings','237,147,255','rune','strings'],'Void Empress':['Event Horizon','190,110,255','orbit','crown'],'Plague Doctor':['Black remedy','169,227,117','bloom','mask'],'Mad Scientist':['Voltaic experiment','101,245,236','tech','bolt'],'Demon Knight':['Hellfire oath','255,126,66','flame','sword'],'Gravity Weaver':['Crushing orbit','199,132,255','spiral','orbit'],'Mecha Tyrant':['Iron supremacy','255,103,83','tech','target'],'Chrono Thief':['Stolen seconds','255,214,111','tech','clock'],'Swarm Queen':['Royal swarm','229,221,98','bloom','stinger'],'Ice Archmage':['Winter crown','153,225,255','shard','snow'],'Deep Siren':['Abyssal call','115,239,225','wave','trident'],'Ash Shaman':['Ashen spirits','247,143,101','flame','skull'],'Soul Forger':['Soulforge','255,163,74','rays','hammer'],'Mirror Jester':['Shattered reflection','255,125,196','shard','mirror'],'Cyber Priest':['Digital absolution','111,242,226','tech','cross']
+};
+function ultOf(p){const u=ULT_STYLE[p.char];if(u)return u;const k=kitOf(p);if(k)return ULT_BY_KIT[k];let b='pow';for(const s in p.stats)if(p.stats[s]>p.stats[b])b=s;return ULT_BY_STAT[b]}
 function doUlt(){
   const p=G.p;if(p.carry||G.p.ult||p.rage<100||G.mode!=='play'||G.clearPending)return false;
   if(G.players.length>1)openLink(p);
   const [name,col]=ultOf(p);achievementUnlock(p,'ultimate');p.rage=0;p.guard=false;p.mv=null;G.p.ult={t:0,hit:0,name,col,seed:Math.random()*99};p.inv=ULT_LEN;
+  G.fx.push({k:'ultStyle',x:p.x,y:p.y-28,t:.7,m:.7,char:p.char,phase:'charge',c:col});
   const k=kitOf(p);if(k)p.mv={id:'special',key:k,t:0,dur:KIT[k].special.dur,hit:99,side:Math.cos(p.face)>=0?1:-1,mirror:KIT[k].special.face!==0&&(Math.cos(p.face)>=0?1:-1)!==KIT[k].special.face};
   audioOn();tone(60,420,.68,'sawtooth',.06);tone(90,630,.68,'square',.025);voice(name+'!');return true;
 }
@@ -929,8 +936,8 @@ function ultHit(u,n){
   const p=G.p,sk=Math.max(...Object.values(p.stats)),lb=linkBonus(p),d=p.s.dmg*STAT_MUL[sk-1]*dmgMul()*6;
   shake(12);tone(70,28,.5,'sawtooth',.09);noiseHit(.45,.13);
   if(n===0){G.shots=G.shots.filter(s=>s.from!=='e');G.hazards=(G.hazards||[]).filter(h=>h.from!=='e')}
-  G.fx.push({k:'nova',x:p.x,y:p.y-30,r:ULT_RADIUS*(.45+n*.28),t:.5,m:.5,c:u.col,a:rnd(TAU)});
-  for(const e of G.enemies.slice()){if(e.dead||e.fleshDown||e.scrapDown||dist(e,p)>ULT_RADIUS)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);G.fx.push({k:'pillar',x:e.x,y:e.y,t:.4,m:.4,c:u.col,w:e.r*1.5});glowP(e.x,e.y-30,u.col,8,190,.5,4);const hp=e.fleshSplit&&G.flesh?G.flesh.one.fleshTotal:e.hp;hitEnemy(e,ultDmgFor(e,p,lb),a,260);const after=e.fleshSplit&&G.flesh?G.flesh.one.fleshTotal:e.hp;if(G.link&&G.link.ids.includes(p.id)&&!e.dead&&!e.fleshDown)G.link.hits.push({e,p,base:Math.max(0,hp-after)/(1+lb),bonus:lb})}
+  G.fx.push({k:'ultStyle',x:p.x,y:p.y-30,t:.55,m:.55,char:p.char,phase:'burst',beat:n,c:u.col});
+  for(const e of G.enemies.slice()){if(e.dead||e.fleshDown||e.scrapDown||dist(e,p)>ULT_RADIUS)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);G.fx.push({k:'ultStyle',x:e.x,y:e.y-25,t:.4,m:.4,char:p.char,phase:'impact',c:u.col});glowP(e.x,e.y-30,u.col,8,190,.5,4);const hp=e.fleshSplit&&G.flesh?G.flesh.one.fleshTotal:e.hp;hitEnemy(e,ultDmgFor(e,p,lb),a,260);const after=e.fleshSplit&&G.flesh?G.flesh.one.fleshTotal:e.hp;if(G.link&&G.link.ids.includes(p.id)&&!e.dead&&!e.fleshDown)G.link.hits.push({e,p,base:Math.max(0,hp-after)/(1+lb),bonus:lb})}
   for(const c of (G.props||[]).slice())if(c.kind==='scrapPart'&&!c.done&&dist(c,p)<ULT_RADIUS)scrapPartHit(c,p);
   for(const c of G.npcs)if(!c.dead&&dist(c,p)<ULT_RADIUS)hitNpc(c,d,Math.atan2(c.y-p.y,c.x-p.x),true);
 }

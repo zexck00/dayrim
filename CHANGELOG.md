@@ -26,6 +26,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
 
 ### Changed
+- Every playable character now has a themed ultimate name, emblem and animated effects, visible to nearby online players.
 - Weapon projectiles gain brighter trails and distinctive ornaments as they are upgraded, visible in solo and online play.
 - Portrait phones use a compact HUD with a smaller minimap, a boss bar below player status, and a shorter touch-control grid. Sound, fullscreen and 3D effects are available in the Settings menu.
 - Removed the hidden, obsolete Phaser roadmap and its unused page styles.
