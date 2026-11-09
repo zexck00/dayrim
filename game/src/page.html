@@ -21,15 +21,13 @@ a{color:var(--foam)}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,a:focus-visible{outline:2px solid var(--lichen);outline-offset:2px}
 .wrap{max-width:1240px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header.top,main.plan,footer,.sheet{display:none!important}
-header.top{padding-block:28px 18px;display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 32px}
+.sheet{display:none!important}
 h1{font:700 clamp(46px,7vw,76px)/.95 var(--display);margin:0;color:var(--bone);letter-spacing:.005em}
-.lede{margin:0;max-width:52ch;color:var(--mist);font-size:18px;text-wrap:pretty}
 .stage{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px}
 .screen{position:fixed;inset:0;z-index:10;width:100vw;max-width:100vw;height:100dvh;aspect-ratio:auto;background:#06141a;border:1px solid var(--line);overflow:hidden;min-width:0}
 canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
 .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,20,26,.62);overflow:auto;z-index:3}
-.ov.pick{background:rgba(7,12,24,.88);align-items:flex-start}
+.ov.pick{background:rgba(7,12,24,.96);align-items:flex-start}
 .card.sel{max-width:1200px}
 .weapon-icon{position:static;width:44px;height:44px;flex:none;image-rendering:pixelated;cursor:default;background:#111b30;border:1px solid var(--line)}
 .mrow.weapon-row{grid-template-columns:minmax(0,1fr) auto auto auto}
@@ -60,6 +58,11 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .mrow strong{display:block;line-height:1.2}
 .mrow span{color:var(--mist);font-size:14px;line-height:1.25;display:block}
 .mrow em{font:500 12px var(--mono);color:var(--lichen);font-style:normal;white-space:nowrap}
+.skill-group{margin:20px 0 6px;color:var(--lichen);font-size:15px}.mrow.skill-row{padding:10px 0}.mrow .skill-progress{height:5px;max-width:220px;margin-top:6px;background:#26394b}.skill-progress i{display:block;height:100%;background:var(--lichen)}
+.mrow.weapon-row{padding:10px;margin-bottom:8px;border:1px solid var(--line);background:rgba(14,26,43,.88)}
+.weapon-info{min-width:0}.mrow .weapon-tier{display:flex;align-items:center;gap:7px;margin:3px 0;color:var(--bone);font:600 11px var(--mono)}
+.mrow .weapon-pips{display:flex;gap:4px}.weapon-pips i{display:block;width:14px;height:6px;border:1px solid #83a8ba;background:transparent}.weapon-pips i.on{background:var(--lichen);border-color:var(--lichen)}
+.mrow .weapon-effect{color:#a6e2dc}.mrow .weapon-reason{color:#f0c48c}
 .buy{background:var(--shelf);border:1px solid var(--foam);padding:4px 10px;min-width:76px;font-weight:700;font-size:14px}
 .buy:hover:not(:disabled){background:var(--line)}
 .buy:disabled{opacity:.45;cursor:not-allowed;border-color:var(--line)}
@@ -87,8 +90,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .boon kbd{font:500 12px var(--mono);color:var(--lichen)}
 .boon strong{display:block;font-size:18px}
 .boon span{color:var(--mist);font-size:15px}
-.touch{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:8px;display:grid;grid-template-columns:repeat(3,54px);gap:6px;z-index:2}
-.touch button{height:54px;border-radius:50%;border:1px solid var(--foam);background:rgba(18,48,58,.72);font:500 11px var(--body);padding:0;touch-action:none}
+.touch{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,54px);gap:6px;z-index:2;pointer-events:none}
+.touch button{height:54px;border-radius:50%;border:1px solid var(--foam);background:rgba(18,48,58,.82);font:700 11px var(--body);padding:2px;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
+.touch button:active,.touch button.held{background:rgba(63,117,133,.95);border-color:var(--lichen)}
+.touch button{position:relative}.touch button[data-state="waiting"]{color:#b3bac4;border-color:#7c8998;background:rgba(25,35,45,.82)}.touch button[data-state="ready"]{border-color:#f0c23c}.touch button[data-status]:not([data-status=""])::after{content:attr(data-status);position:absolute;bottom:1px;left:0;right:0;font:700 9px/1 var(--mono);color:#f5d78b}
+.joystick{position:absolute;width:92px;height:92px;margin:-46px 0 0 -46px;border:2px solid rgba(190,225,244,.65);border-radius:50%;background:rgba(12,32,48,.25);pointer-events:none;z-index:2}
+.joystick i{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border-radius:50%;background:rgba(190,225,244,.7);border:2px solid #eef8ff}
 .touch .big{background:rgba(240,128,92,.55);border-color:var(--coral)}
 .fx3{z-index:1;pointer-events:none}
 .fx3b{top:calc(216px*var(--k,1))!important}
@@ -127,95 +134,48 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .up{color:var(--foam);font:500 12px var(--mono)} .down{color:var(--coral);font:500 12px var(--mono)}
 .log{list-style:none;margin:0;padding:0;font-size:13px;color:var(--mist);display:grid;gap:2px}
 
-main.plan{padding-block:56px 72px;display:grid;gap:56px}
-.plan h2{font:700 clamp(34px,4.6vw,48px)/1.02 var(--display);margin:0 0 10px;text-wrap:balance}
-.plan h3{font:700 19px/1.25 var(--body);margin:0 0 4px}
-.plan p{margin:0 0 12px;max-width:68ch}
-.muted{color:var(--mist)}
-.call{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-block:1px solid var(--line);margin-top:18px}
-.call>div{padding:14px 16px 14px 0;min-width:0}
-.call>div+div{padding-left:16px;border-left:1px solid var(--line)}
-.lab{display:block;font:500 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--lichen);margin-bottom:4px}
-.call strong{display:block;font-size:19px;line-height:1.2;margin-bottom:3px}
-.call span.d{color:var(--mist);font-size:15px;display:block;line-height:1.35}
-.phases{list-style:none;margin:18px 0 0;padding:0;display:grid}
-.phase{display:grid;grid-template-columns:48px minmax(0,1.15fr) minmax(0,1fr);gap:4px 20px;padding:16px 0;border-top:1px solid var(--line)}
-.num{font:700 38px/1 var(--display);color:var(--foam)}
-.phase .when{font:500 12px var(--mono);color:var(--lichen);display:block;margin-bottom:6px}
-.phase p{margin:0;font-size:16px}
-.exit{color:var(--mist);font-size:16px;min-width:0}
-.exit b{display:block;font:500 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--lichen);margin-bottom:4px}
-.here{display:inline-block;background:var(--foam);color:#071426;font:500 11px var(--mono);padding:1px 6px;margin-left:6px;vertical-align:2px}
-.tablebox{overflow-x:auto;margin-top:16px}
-table{border-collapse:collapse;width:100%;min-width:640px;font-size:16px}
-th{font:500 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--lichen);text-align:left;padding:7px 14px 7px 0;border-bottom:1px solid var(--line)}
-td{padding:10px 14px 10px 0;border-bottom:1px solid rgba(44,90,100,.55);vertical-align:top}
-tr.pick td{background:rgba(111,180,255,.1)} tr.pick td:first-child{padding-left:8px} tr.pick td strong{color:var(--foam)}
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px}
-.two>div{min-width:0}
-.flow{display:grid;gap:8px;margin-top:14px}
-.row3{display:grid;grid-template-columns:1fr auto 1.3fr auto 1fr;gap:8px;align-items:center}
-.node{border:1px solid var(--line);background:var(--deep);padding:10px;min-width:0;line-height:1.25}
-.node small{display:block;color:var(--mist);font-size:13px;margin-top:2px}
-.node.core{border-color:var(--foam)}
-.arr{color:var(--lichen);font-family:var(--mono)}
-pre{margin:0;background:#081a20;border:1px solid var(--line);padding:12px 14px;overflow-x:auto;font:400 13px/1.55 var(--mono);color:var(--bone)}
-.cmds{display:grid;gap:8px;margin-top:14px}
-.cmd{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
-.copy{background:var(--shelf);border:1px solid var(--line);padding:0 12px;font-size:14px}
-.copy:hover{border-color:var(--foam)}
-.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px;margin-top:12px}
-.choices>div{padding:13px 0;border-top:1px solid var(--line);min-width:0}
-.choices p{margin:0;font-size:16px;color:var(--mist)}
-.choices em{font-style:normal;color:var(--foam)}
-footer{padding-block:0 42px;color:var(--mist);font-size:14px}
 @media(max-width:940px){
   .stage{grid-template-columns:minmax(0,1fr)}
   .sheet{height:auto;min-height:0}
-  .call{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .call>div:nth-child(3){padding-left:0;border-left:0}
-  .call>div:nth-child(n+3){border-top:1px solid var(--line)}
-  .two{grid-template-columns:minmax(0,1fr)}
 }
 /* Title poster: the first screen. The owner's poster, the DAYRIM letters cut from the title art, and the Play Game button. */
 .splash{position:absolute;inset:0;z-index:8;container-type:size;overflow:hidden;background:#07060c;transition:opacity .7s ease,visibility 0s linear .7s}
 .splash.gone{opacity:0;visibility:hidden;pointer-events:none}
-.sp-poster{position:absolute;inset:-3%;width:106%;height:106%;object-fit:cover;animation:spDrift 28s ease-in-out infinite alternate;filter:saturate(1.05) brightness(.82)}
-.splash::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse 52% 20% at 50% 44%,rgba(6,3,10,.62) 0,rgba(6,3,10,.38) 55%,rgba(6,3,10,0) 100%),radial-gradient(ellipse 20% 13% at 50% 76%,rgba(6,3,10,.5) 0,rgba(6,3,10,0) 100%),radial-gradient(ellipse 70% 60% at 50% 46%,rgba(0,0,0,0) 30%,rgba(4,2,8,.55) 100%)}
-.sp-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
-.sp-words{position:absolute;left:50%;top:44%;width:min(64%,1100px);transform:translate(-50%,-50%);z-index:3;pointer-events:none;user-select:none;animation:spWords 4.5s ease-in-out infinite}
-.sp-play{position:absolute;left:50%;top:75%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:.7em;padding:.35em .2em;border:0;background:none;cursor:pointer;
+/* Nothing on the poster shows until both pictures have loaded, so a half-loaded or broken image never flashes */
+.splash .sp-poster,.splash .sp-words,.splash .sp-play,.splash::before{opacity:0;transition:opacity .5s ease}
+.splash.ready .sp-poster,.splash.ready .sp-words,.splash.ready .sp-play,.splash.ready::before{opacity:1}
+.sp-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;filter:saturate(1.05) brightness(.86)}
+.splash::before{content:"";position:absolute;inset:-40px;background:var(--poster,none) center/cover;filter:blur(26px) brightness(.4) saturate(1.1);z-index:0}
+.splash::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse 52% 20% at 50% 44%,rgba(6,3,10,.62) 0,rgba(6,3,10,.38) 55%,rgba(6,3,10,0) 100%),radial-gradient(ellipse 20% 13% at 50% 76%,rgba(6,3,10,.5) 0,rgba(6,3,10,0) 100%),radial-gradient(ellipse 70% 60% at 50% 46%,rgba(0,0,0,0) 30%,rgba(4,2,8,.55) 100%)}
+.sp-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+.sp-words{position:absolute;left:50%;top:44%;width:min(64%,1100px);transform:translate(-50%,-50%);z-index:4;pointer-events:none;user-select:none;animation:spWords 4.5s ease-in-out infinite}
+.sp-play{position:absolute;left:50%;top:75%;transform:translate(-50%,-50%);z-index:5;display:flex;align-items:center;gap:.7em;padding:.35em .2em;border:0;background:none;cursor:pointer;
   font:900 clamp(12px,1.75cqw,26px)/1 "Cinzel","Trajan Pro","Times New Roman",serif;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:transform .25s ease}
 .sp-play .pg-t{background:linear-gradient(#d9cbb4,#8a7660);background-size:100% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 .5px rgba(255,190,110,.9)) drop-shadow(0 1px 0 #1a0f08) drop-shadow(0 3px 4px rgba(0,0,0,.95)) drop-shadow(0 0 8px rgba(255,140,50,.28));transition:filter .3s ease}
 .sp-play .pg-l{display:block;width:2.2em;height:2px;background:linear-gradient(90deg,rgba(214,150,80,0),rgba(232,170,96,.9));box-shadow:0 1px 2px #000;position:relative;transition:width .3s ease,box-shadow .3s ease}
 .sp-play .pg-l.r{transform:scaleX(-1)}
 .sp-play .pg-l::after{content:"";position:absolute;right:-4px;top:50%;width:6px;height:6px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#f1d3a4,#9a6a3c);box-shadow:0 0 4px rgba(255,150,60,.6)}
-.sp-play:hover .pg-t,.sp-play:focus-visible .pg-t{filter:drop-shadow(0 0 .6px rgba(255,210,140,1)) drop-shadow(0 1px 0 #1a0f08) drop-shadow(0 3px 4px rgba(0,0,0,.95)) drop-shadow(0 0 14px rgba(255,140,50,.7)) brightness(1.15)}
-.sp-play:hover .pg-l,.sp-play:focus-visible .pg-l{width:3em;box-shadow:0 1px 2px #000,0 0 8px rgba(255,150,60,.8)}
-.sp-play:active{transform:translate(-50%,-50%) scale(.96)}
+/* Hover: the words light up 20% and grow 20% */
+.sp-play:hover,.sp-play:focus-visible{transform:translate(-50%,-50%) scale(1.2)}
+.sp-play:hover .pg-t,.sp-play:focus-visible .pg-t{filter:drop-shadow(0 0 .5px rgba(255,190,110,.9)) drop-shadow(0 1px 0 #1a0f08) drop-shadow(0 3px 4px rgba(0,0,0,.95)) drop-shadow(0 0 8px rgba(255,140,50,.28)) brightness(1.2)}
+.sp-play:hover .pg-l,.sp-play:focus-visible .pg-l{filter:brightness(1.2)}
+.sp-play:active{transform:translate(-50%,-50%) scale(1.14)}
 .sp-play:focus-visible{outline:none}
-.sp-play.go{transform:translate(-50%,-50%) scale(1.06);opacity:.4;transition:transform .4s ease,opacity .4s ease}
-@keyframes spDrift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.05) translate(-1%,-.6%)}}
+.sp-play.go{transform:translate(-50%,-50%) scale(1.2);opacity:.4;transition:transform .4s ease,opacity .4s ease}
 @keyframes spWords{0%,100%{filter:drop-shadow(0 0 2px #000) drop-shadow(0 8px 14px rgba(0,0,0,.95)) drop-shadow(0 0 16px rgba(255,140,50,.3)) brightness(1.08)}50%{filter:drop-shadow(0 0 2px #000) drop-shadow(0 8px 14px rgba(0,0,0,.95)) drop-shadow(0 0 34px rgba(255,140,50,.55)) brightness(1.16)}}
-@media(prefers-reduced-motion:reduce){.sp-poster,.sp-words{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.sp-words{animation:none!important}}
 @media(max-width:640px){
   .sp-words{width:92%;top:40%}.sp-play{font-size:clamp(13px,3.6cqw,22px);top:70%}
 }
+@media(max-height:500px){.touch{grid-template-columns:repeat(4,48px);gap:4px}.touch button{height:48px;font-size:10px}}
+@media(max-height:500px){.screen.touch-playing .menub{display:none}.screen.touch-playing .sound{top:132px!important}.screen.touch-playing .fsb{right:95px}.screen.touch-playing .fx3b{right:185px}}
 @media(max-width:640px){
   .screen{aspect-ratio:auto}
   .mrow.weapon-row{grid-template-columns:minmax(0,1fr) auto}.weapon-row .weapon-choice{grid-column:1/-1}
   .sound{top:102px}.fx3{z-index:1;pointer-events:none}
 .fx3b{top:calc(216px*var(--k,1))!important}
 .menub{top:130px!important}.fsb{top:158px!important}
-  .phase{grid-template-columns:38px minmax(0,1fr)}
-  .exit{grid-column:2}
-  .call{grid-template-columns:minmax(0,1fr)}
-  .call>div,.call>div+div{padding:12px 0;border-left:0;border-top:1px solid var(--line)}
-  .call>div:first-child{border-top:0}
-  .row3{grid-template-columns:minmax(0,1fr)}
-  .arr{display:none}
-  .choices{grid-template-columns:minmax(0,1fr)}
   .sel-body{grid-template-columns:minmax(0,1fr)}
   .detail{order:-1;grid-template-columns:90px minmax(0,1fr);column-gap:10px}
   .pv{grid-row:span 4}
@@ -223,18 +183,24 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
   .detail .ctl{display:none}
   .roster{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
+.settings-actions{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0}.settings-actions button{min-height:44px}
+@media(max-width:640px) and (orientation:portrait){
+  .screen{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .screen.touch-playing>.sound{display:none}
+  .touch{grid-template-columns:repeat(4,48px);gap:6px;bottom:max(10px,env(safe-area-inset-bottom,0px))}
+  .touch button{height:48px;font-size:11px;border-radius:14px}
+  .touch .big{border-radius:16px!important}
+}
+
 </style>
 
 <div class="wrap">
-  <header class="top">
-    <h1>Dayrim</h1>
-    <p class="lede">A day and night action RPG across wild procedural lands. Pick a side, fight the other side, train, and take down 10 stage bosses. The plan for the full game follows below.</p>
-  </header>
   <section class="stage" aria-label="Playable prototype">
     <div class="screen" id="screen">
       <canvas id="c" aria-label="Game view"></canvas><canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas>
       <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button>
-      <div class="touch" id="touch" hidden>
+      <div class="joystick" id="joystick" aria-hidden="true" hidden><i></i></div>
+      <div class="touch" id="touch" aria-label="Touch controls" hidden>
         <button type="button" data-a="potion">Potion</button>
         <button type="button" data-a="revive">Hold to revive</button>
         <button type="button" data-a="fast">Fast</button>
@@ -247,8 +213,8 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
         <button type="button" data-a="ult" style="border-color:#ffd860;color:#ffd860">Ult</button>
         <button type="button" data-a="menu">Menu</button>
         <button type="button" data-a="dash">Dodge</button>
-        <button type="button" data-a="guard">Shield</button>
-        <button type="button" data-a="slash" class="big" style="grid-column:span 2;border-radius:27px">Attack</button>
+        <button type="button" data-a="guard" aria-label="Hold to shield">Shield</button>
+        <button type="button" data-a="slash" class="big" aria-label="Hold to attack" style="grid-column:span 2;border-radius:27px">Attack</button>
       </div>
       <div class="ov" id="ov"><div class="card" id="card"></div></div>
       <div class="splash" id="splash">
@@ -273,111 +239,6 @@ footer{padding-block:0 42px;color:var(--mist);font-size:14px}
   </section>
 </div>
 
-<main class="plan wrap">
-  <section>
-    <h2>How to execute it</h2>
-    <p>Keep building the 2D, single-player game in small phases, and test each phase on real players before starting the next. This path gives you something playable every week and keeps online features open for later.</p>
-    <div class="call">
-      <div><span class="lab">Engine</span><strong>Phaser 3</strong><span class="d">With TypeScript and Vite. Runs in any modern browser.</span></div>
-      <div><span class="lab">First release</span><strong>Single-player</strong><span class="d">Saves stay in the browser, so you need no server.</span></div>
-      <div><span class="lab">Hosting</span><strong>Static site</strong><span class="d">itch.io for playtests, then Cloudflare Pages or similar.</span></div>
-      <div><span class="lab">My time estimate</span><strong>6 to 8 months</strong><span class="d">One developer, about 15 hours a week.</span></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>The roadmap</h2>
-    <p class="muted">Each phase ends with a test. If the test fails, fix it before adding anything. These durations are my estimates and depend heavily on your experience and art plan.</p>
-    <ol class="phases">
-      <li class="phase"><div class="num">0</div><div><h3>Prototype <span class="here">This page</span></h3><span class="when">1 to 2 weeks</span><p>Prove the combat, training and loot loop, with code-drawn pixel characters and your art on the select screen.</p></div><div class="exit"><b>Exit test</b>Five minutes of play feels good with no real art.</div></li>
-      <li class="phase"><div class="num">1</div><div><h3>Vertical slice</h3><span class="when">4 to 6 weeks</span><p>Move to Phaser. Draw final sprite sheets for three of your characters. Add tile maps and one finished city district with its boss.</p></div><div class="exit"><b>Exit test</b>A stranger keeps playing for 20 minutes without being asked to.</div></li>
-      <li class="phase"><div class="num">2</div><div><h3>Systems</h3><span class="when">8 to 10 weeks</span><p>Deepen skills and add a stash, crafting, and NPCs as vendors and quest givers. Keep characters, items and monsters in data files.</p></div><div class="exit"><b>Exit test</b>You can add a new item or enemy without changing code.</div></li>
-      <li class="phase"><div class="num">3</div><div><h3>Content</h3><span class="when">8 to 12 weeks</span><p>Finish sprite sheets for more of the 40 characters and draw frame-by-frame boss animation if playtests call for it. Add 10 distinct districts, music, sound and story.</p></div><div class="exit"><b>Exit test</b>A first playthrough lasts 4 to 6 hours, and players start a second character.</div></li>
-      <li class="phase"><div class="num">4</div><div><h3>Playtest and launch</h3><span class="when">4 to 6 weeks</span><p>Release a public demo, collect crash and balance data, tune performance on cheap laptops, then launch.</p></div><div class="exit"><b>Exit test</b>A steady 60 frames per second on a five-year-old laptop, with no save-loss bugs open.</div></li>
-    </ol>
-  </section>
-
-  <section>
-    <h2>Choosing the engine</h2>
-    <p>Phaser fits best because it already includes the parts an action RPG needs and has no install step for players.</p>
-    <div class="tablebox"><table>
-      <thead><tr><th>Option</th><th>Best for</th><th>Main drawback</th><th>Verdict</th></tr></thead>
-      <tbody>
-        <tr class="pick"><td><strong>Phaser 3</strong></td><td>2D games with sprites, tile maps, physics and audio</td><td>Very large battles need care to stay smooth</td><td><strong>Start here</strong></td></tr>
-        <tr><td>PixiJS</td><td>Fast 2D drawing with your own game code</td><td>You write collisions, scenes and audio yourself</td><td>Only if Phaser limits you</td></tr>
-        <tr><td>Babylon.js or Three.js</td><td>A true 3D game in the browser</td><td>3D art costs far more, and load times are longer</td><td>Only if 3D is essential</td></tr>
-        <tr><td>Godot web export</td><td>Visual editor, and desktop releases later</td><td>Larger downloads and slower start in a browser</td><td>Good if web is not your main target</td></tr>
-      </tbody>
-    </table></div>
-  </section>
-
-  <section class="two">
-    <div>
-      <h2>How the code fits together</h2>
-      <p>Keep the game rules separate from the drawing code. You can then test balance without a browser, and adding online play later will not require a rewrite.</p>
-      <div class="flow">
-        <div class="row3">
-          <div class="node">Input<small>Keyboard, mouse, touch</small></div><span class="arr">→</span>
-          <div class="node core"><strong>Simulation</strong><small>Combat, loot and AI at a fixed tick rate</small></div><span class="arr">→</span>
-          <div class="node">Renderer<small>Phaser sprites, effects, HUD</small></div>
-        </div>
-        <div class="row3">
-          <div class="node">Data files<small>Items, skills, enemies</small></div><span class="arr">→</span>
-          <div class="node">Same simulation<small>Reads data, writes state</small></div><span class="arr">→</span>
-          <div class="node">Saves<small>IndexedDB, cloud later</small></div>
-        </div>
-      </div>
-    </div>
-    <div>
-      <h2>Project layout</h2>
-      <p class="muted">A starting structure for phase 1.</p>
-<pre>src/
-  sim/        rules with no Phaser imports
-    combat.ts  loot.ts  ai.ts  floor.ts
-  render/     Phaser scenes, sprites, HUD
-  data/       items.json  skills.json  enemies.json
-  save/       versioned save files
-tests/        balance and loot simulations
-public/       art, audio, tile maps</pre>
-    </div>
-  </section>
-
-  <section>
-    <h2>Start on your own machine</h2>
-    <p>You need <a href="https://nodejs.org" rel="noopener">Node.js</a> installed. Run these three commands, then open the local address that the last one prints.</p>
-    <div class="cmds">
-      <div class="cmd"><pre>npm create vite@latest dayrim -- --template vanilla-ts</pre><button class="copy" type="button">Copy</button></div>
-      <div class="cmd"><pre>cd dayrim &amp;&amp; npm install phaser</pre><button class="copy" type="button">Copy</button></div>
-      <div class="cmd"><pre>npm run dev</pre><button class="copy" type="button">Copy</button></div>
-    </div>
-  </section>
-
-  <section class="two">
-    <div>
-      <h2>What the preview covers</h2>
-      <p><strong>Included:</strong> 40 playable characters with their own stats, six action methods, 23 fixed-power weapons to collect to swap freely, full-body pixel animation, procedural overgrown maps with day and night, killable NPCs with gore and situational dialogue, weak and strong minions, rage-powered fullscreen ultimates, kill combos with voice-over, 10 stages with animated monster bosses, skills, gym training, potions, pills and automatic saving.</p>
-      <p><strong>Left out:</strong> final hand-drawn sprite sheets, unique districts, crafting, quests, story, music and online play. Characters in play are simplified pixel versions of your art.</p>
-    </div>
-    <div>
-      <h2>Where these projects stall</h2>
-      <p><strong>A 40-character roster.</strong> Launch with three to five fully animated characters, then add more once the game is fun.</p>
-      <p><strong>Online play too early.</strong> It can double the work, and it needs a server and cheat protection. Save it for after launch.</p>
-      <p><strong>Animation.</strong> The code-drawn characters prove the game cheaply. Final sprite sheets in your art style remain the largest art cost, so test the price on three characters first.</p>
-    </div>
-  </section>
-
-  <section>
-    <h2>Four decisions for you</h2>
-    <p class="muted">These change the plan the most. My default is in green.</p>
-    <div class="choices">
-      <div><h3>Solo or online?</h3><p><em>Solo first.</em> Online co-op can follow with a Node.js game server such as Colyseus.</p></div>
-      <div><h3>2D or 3D?</h3><p><em>2D.</em> Choose 3D only if the look is central to your idea and you have the art budget.</p></div>
-      <div><h3>Keep the code-drawn pixels or go further?</h3><p><em>Keep them while testing,</em> then commission sprite sheets for three characters to learn the real cost before committing to all 40.</p></div>
-      <div><h3>How will it make money?</h3><p><em>Free demo, then a one-time purchase.</em> Avoid pay-to-win loot, and decide early if you want ads or cosmetics.</p></div>
-    </div>
-  </section>
-</main>
-<footer class="wrap">Hero and villain cards are your Dayrim art as drawn. Monsters are your art cut out automatically, so some edges are rough. In-game characters, citizens, the city and effects are drawn by code. Your saved run is stored only in this browser.</footer>
 
 <script>
 /*GAME*/

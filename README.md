@@ -1,6 +1,6 @@
 # Dayrim
 
-A pixel action RPG that runs in the browser. Pick a hero or a villain, fight the other side across procedural day and night maps, train, and take down 10 stage bosses. Play alone, or in co-op rooms of up to 4 players on your own server.
+A pixel action RPG that runs in the browser. Pick a hero or a villain, fight the other side across procedural day and night maps, train, and take down 10 stage bosses. Play alone, or in co-op rooms of up to 4 players on your own server. On any stage you have reached you can also take on The Swarm: endless waves, a boss every fifth wave, and nothing carried back to your story character.
 
 Version: see [VERSION](VERSION). Changes: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -41,7 +41,9 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 | L | Fullscreen. Esc leaves it. |
 | Esc or P | Pause alone, room menu online. Both have Return to menu. |
 
-Touch controls appear on phones and tablets.
+Touch controls appear on phones and tablets. Drag on the game view to move; a stick shows the direction. Hold Attack or Shield to keep using it, and hold Revive beside a downed ally. Buttons show cooldowns, ultimate charge and common unavailable states. Tap Menu for skills and other options. Aim is automatic.
+
+At the safehouse, open the menu and choose **Weapons** to upgrade an owned weapon. The two upgrades cost 80 and 180 gold; the menu shows tier progress, compares effects before purchase and explains unavailable upgrades. Necromancer, Void Empress and Toxin Alchemist upgrade their signature moves instead. At the final tier, pistols and bows pierce one additional enemy, shields interrupt ordinary enemy wind-ups, and healing weapons can restore a nearby ally on a hit.
 
 ## How online play works
 

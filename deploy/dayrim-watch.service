@@ -7,8 +7,11 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=/home/calypso/workspace/dayrim
-ExecStart=/home/calypso/workspace/dayrim/deploy/watch.sh all
-TimeoutStartSec=300
+# Run through bash so a lost executable bit (a git checkout, an editor) cannot
+# make the watcher die with 203/EXEC.
+ExecStart=/usr/bin/env bash /home/calypso/workspace/dayrim/deploy/watch.sh all
+# Two stacks can each spend minutes on a pull, 150 s of health checks and a rollback.
+TimeoutStartSec=900
 # A failed deploy must not stop the timer from trying again after a human clears
 # the hold file; the script already exits 0 in every expected case.
 SuccessExitStatus=0

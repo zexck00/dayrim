@@ -19,9 +19,9 @@ The split below assumes these strengths. I don't know each person's skills, so s
 - Follow the rules in [AGENTS.md](../AGENTS.md). Rules go in `game/src/game.js`, and anything a player does online must be checked on the server.
 - Sizes are rough effort: **S** is up to a day, **M** is 2 to 4 days, **L** is a week or more. Dates depend on how many hours each person has.
 
-## Progress snapshot — 2026-11-06
+## Progress snapshot — 2026-11-07
 
-**Status meanings:** implemented means code and the stated automated checks exist; **prototype** means usable but incomplete or awaiting balance, UI and Z review; open means the task’s full acceptance criteria have not been met. A prototype does not imply a merged pull request or a completed human playtest. The work below is committed on the local `combat-depth-stage1` branch; review and merge status are not recorded here.
+**Status meanings:** implemented means code and the stated automated checks exist; **prototype** means usable but incomplete or awaiting balance, UI and Z review; open means the task’s full acceptance criteria have not been met. A prototype does not imply a merged pull request or a completed human playtest. The combat fixes are merged to `dev` (PR #8) but not yet to `main`; human playtest status is not established. See [Combat depth review](COMBAT_DEPTH_REVIEW.md) for follow-ups.
 
 | Work | Current status | Remaining work |
 |---|---|---|
@@ -30,16 +30,18 @@ The split below assumes these strengths. I don't know each person's skills, so s
 | C-10 | Prototype: crawl, revive, Medic/Scout bonuses and Second Wind work in rules. | D’s 4-player and phone UI checks; Z review and human playtesting. |
 | C-11 | Prototype: Hope, wipe and stage-start/boss-gate retries work online. | Z decides final Hope and wipe rules; C-17/C-18 are needed for boss-phase and objective checkpoints. |
 | C-12, C-13 | Prototype: threat from damage and healing with decay and switch hysteresis, a live taunt override, and five G-key role abilities. | Target feedback (markers), threat-driven boss targeting, validation and balance are open. |
-| C-14 | Prototype: all 40 characters carry the element from the design, all ten reaction rows are implemented (Inferno, Shatter, Overload, Freeze, Rot, Collapse, Purge, Eclipse, Cauterise, Frostbite), same-element pairs resonate, and the coverage check reports 351 of 780 character pairs. | 429 pairs stay neutral by design; balance, boss variants and human playtesting remain open. |
+| C-14 | Prototype: all 40 characters carry the element from the design, all ten reaction rows are implemented (Inferno, Shatter, Overload, Freeze, Rot, Collapse, Purge, Eclipse, Cauterise, Frostbite), other pairs resonate, and the coverage check exercises all 780 character pairs. | Balance, boss variants and human playtesting remain open. A target can react once every 2 seconds; that value needs Z's review. |
 | C-15, C-16 | Prototype: kills by anyone feed one party chain with a six second window and the design's four bonus tiers, each kill gives the killer full rage and allies within 500 units 35% of it, and a party ultimate opens a three second link window with the Duo, Trio and Full Party effects. | Z's final numbers and human playtests are open. |
 | C-18 | Prototype: a stage runs ordered objective steps from one data table (kill, revive, hold single or simultaneous, carry and escort), the boss gate opens on the last step, a wipe restarts only the step in progress, and the HUD shows the current step and progress. | Each stage's own props and rules and human playtests are open; stages 4 and 7 still use only the kill step. Split steps fall back to the timed single-zone version when the party is too small, so solo stage 6 and stage 9 can be finished. |
 | C-19, C-20 | Prototype: all six roles exist and are labelled, shooters keep distance, casters leave zones, guards block only from the front, every aware enemy shows who it targets, Stage 1 fields back-line rushers, telegraphed brutes and interruptible healers for both factions, and its objective (kill quota then revive the wounded scout) runs end to end. | Role balance, the teaching pass and human playtests are open. |
 | C-26–C-28, D-26 | Prototype: role auras, weapon upgrades, checkpoint boons and optional Three.js effects are present. | Balance, readability, asset-character coverage and performance work listed below. |
 | D-10–D-12, D-17–D-18 | Partial: recovery and prototype combat fields sync, revive/team touch buttons and placeholder party feedback exist. | Four-player, lag, bandwidth, accessibility and real-phone checks remain open. |
 
-**Latest verification:** after the threat and haste commits, the full server suite passed **125 rule checks and 39 networking checks**. Chromium checked a solo boon and G action and an online G action; these are automated checks, not a four-person playtest. One 25-minute solo bot sample cleared ten stages with Firefighter and Detective in about 16 game minutes each; Necromancer cleared three stages with one death. The bot does not use team abilities or checkpoint boons, and single random runs are not a balance verdict. The party bot and human balance results remain outstanding.
+**Latest verification:** on the Swarm branch (2026-11-08), the full server suite passed **470 rule checks, 45 networking checks and all 780 reaction pairs**, and headless Chromium showed the Swarm picker and wave HUD. Earlier, on `enemy-ai-overhaul`, which stacked PRs #9, #10 and #11, it passed 415 rule checks, 42 networking checks and all 780 reaction pairs. C played that branch on 2026-11-07 and reported that it feels good; this is one person's first impression, with no recorded stages, party size or numbers. The balance bot predates objective steps and now clears no stages, so the older bot results below are historical; use `game/tools/ai-trial.js` for comparisons. Earlier, on `combat-depth-fixes`, the suite passed 333 rule checks, 42 networking checks and all 780 reaction pairs. Chromium checked a solo boon and G action and an online G action; these are automated checks, not a four-person playtest. One 25-minute solo bot sample cleared ten stages with Firefighter and Detective in about 16 game minutes each; Necromancer cleared three stages with one death. The bot does not use team abilities or checkpoint boons, and single random runs are not a balance verdict. The [party bot samples](playtests/2026-11-06-party-bot-smoke.md) include Stage 1 clears for one, two and four players, but no Stage 3 results; human balance results remain outstanding.
 
-**Next work:** (1) record a human Stage 1 solo/co-op session, including readability of brute warnings, healer interrupts, rescue, reactions and boon discovery; (2) build D-06 and measure one to four players; (3) complete reaction coverage before expanding enemy roles and stages; (4) get Z’s decisions on Hope, wipes, combat feel and balance. Final music and SFX remain Z-owned, with D responsible for the audio engine.
+**Milestone 1 (2026-11-08):** Stages 1 to 3 and their three bosses now have prototype rules, objectives and team mechanics. The Swarm is also in (see below). The remaining M1 items are human: a recorded co-op playtest and the first outside playtest (Z-14).
+
+**Next work:** (1) record a human Stage 1 solo/co-op session, including readability of brute warnings, healer interrupts, rescue, reactions and boon discovery; (2) improve and validate the D-06 runner with one to four players; (3) complete the remaining usability checks in [Combat depth review](COMBAT_DEPTH_REVIEW.md) and playtest reactions; (4) get Z’s decisions on Hope, wipes, combat feel and balance. Final music and SFX remain Z-owned, with D responsible for the audio engine.
 
 ## Milestones
 
@@ -65,7 +67,7 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 | Z-02 | Z | S | Answer the questions in GAME_DESIGN section 20 | Answers written in that section | |
 | Z-03 | Z | M | Decide the art style and resolution, using the Necromancer as the reference | One approved reference sheet in `ASSETS/` | |
 | Z-04 | Z | S | Decide whether the repository stays public, given it holds original art | Decision made and repository set | |
-| D-07 | D | S | **Open — show the difficulty:** "Difficulty ×4" on the party panel and lobby, with a message when it changes as someone joins or leaves | Everyone sees the current value | C-05 |
+| D-07 | D | S | **Show the difficulty:** the party panel, open-room list and join/leave notice show the multiplier | Prototype implemented; verify four-player and real-phone readability | C-05 |
 | D-08 | D | S | **Finish fullscreen** (section 19). Already built: button, L key, hidden cursor with a crosshair, cursor back in menus and after Esc, pause on exit when alone, HUD scaling. Automated browsers refuse real fullscreen, so test it by hand, and fix what breaks. | Tested by hand in Chrome, Firefox and Safari, alone and in a room | |
 | D-09 | D | M | **HD drawing** (section 19): smooth scaling for HD art, a Full, Medium or Low graphics setting, and measure whether 4 players with HD art hold 60 FPS on canvas or need WebGL | Test results shared, with a recommendation | D-03 |
 | Z-06 | Z | S | Approve the HD art sizes in GAME_DESIGN section 19, before producing art | Sizes confirmed in the Asset specification | |
@@ -75,7 +77,7 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 | D-03 | D | M | **Asset loading.** Inlining everything won't scale: 3 villains already take 2.5 MB, so 40 characters and 10 monsters would make a huge page. Load each character's sheet when needed. Keep solo able to run from the server without logging in. | Page under 2 MB; characters load on demand with a loading state | |
 | D-04 | D | S | Set up Git LFS for art and video, before the large assets arrive | New art files go through LFS, documented in AGENTS.md | Z-01 |
 | D-05 | D | S | Remove the old plan text from `src/page.html` (currently hidden by the full-window layout), and delete unused sprite folders listed in HANDOFF.md | Public page shows only the game and a short intro | |
-| D-06 | D | M | Make a headless party bot for the server, that joins real rooms and plays by itself | 4 bots can clear stage 1, and report time, wipes and damage | |
+| D-06 | D | M | Make a headless party bot for the server, that joins real rooms and plays by itself | Prototype WebSocket runner reports time, downs, wipes, estimated damage and Hope; one four-bot sample cleared Stage 1 in 138.9 seconds. Repeat across seeds and compositions. | |
 | C-01 | C | S | Fix the ultimate exploit: divide boss percent damage by party size | 4 ultimates deal the same percent as 1 solo | |
 | C-05 | C | M | **Party difficulty** (section 9): heroes, villains and bosses get ×1, ×2, ×4 or ×8 life and damage by party size. Replaces `partyToughen`. All living enemies rescale when someone joins or leaves, and keep their percentage of life. | Unit tests for 1 to 4 players, and for joining and leaving during a boss fight. Solo is unchanged. | C-01 |
 | C-06 | C | M | **Check the new difficulty is playable:** run ×2, ×4 and ×8 on stages 1 to 3 and report downs, wipes and clear time | Results shared with Z, with a recommendation on damage. Any change gets Z's approval. | C-05, D-06 |
@@ -85,9 +87,9 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 
 ## M1 Co-op core
 
-A Stage 1 combat-depth prototype adds rusher, brute and interruptible healer behavior, all five G-key role actions, Overload and Break Strike reactions, and a personal boon choice at the boss gate. These are initial mechanics rather than completion of the full C-12–C-19 designs: full threat, the complete reaction matrix, later enemy roles and full checkpoint objectives remain open. Boons persist with the current character run. Balance, readability and multiplayer behavior need human playtests and Z review; final music and SFX remain Z-owned. One solo bot run after this prototype cleared 10 stages with Firefighter and Detective in 16 game minutes each; Necromancer cleared 3 in 25 minutes with one death. The bot does not use team abilities or checkpoint boons, and these single random runs do not establish balance.
+A Stage 1 combat-depth prototype adds rusher, brute and interruptible healer behavior, all five G-key role actions, Overload and Break Strike reactions, and a personal boon choice at the boss gate. These are initial mechanics rather than completion of the full C-12–C-19 designs: full threat behavior, reaction balance, later enemy roles and complete checkpoint behavior remain open. Boons persist with the current character run. Balance, readability and multiplayer behavior need human playtests and Z review; final music and SFX remain Z-owned. One solo bot run after this prototype cleared 10 stages with Firefighter and Detective in 16 game minutes each; Necromancer cleared 3 in 25 minutes with one death. The bot does not use team abilities or checkpoint boons, and these single random runs do not establish balance.
 
-C-10 and C-11 are provisional recovery implementations pending Z’s decision and D’s UI review. An online party starts with 3/4/5/6 Hope for 1/2/3/4 players; the one-player room uses 3 as a prototype alongside Second Wind. Membership changes adjust capacity while preserving Hope spent. A bleed-out at zero Hope wipes only if nobody is standing; retry refills Hope and returns to the safehouse or opened boss gate. The current boss restarts from full life because phase checkpoints and stage objectives do not exist yet. Solo offline keeps its existing death flow.
+C-10 and C-11 are provisional recovery implementations pending Z’s decision and D’s UI review. An online party starts with 3/4/5/6 Hope for 1/2/3/4 players; the one-player room uses 3 as a prototype alongside Second Wind. Membership changes adjust capacity while preserving Hope spent. A bleed-out at zero Hope wipes only if nobody is standing; retry refills Hope and returns to the safehouse or opened boss gate. A boss restarts from full life because boss-phase checkpoints do not exist yet; stage objective steps are implemented and the in-progress step resets. Solo offline keeps its existing death flow.
 
 ### Core mechanics
 
@@ -97,8 +99,8 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | C-11 | C | M | **Hope** and wipe, with restart at checkpoint | A party can wipe and retry with no stuck state | C-10 |
 | C-12 | C | L | **Threat** (section 3): replaces nearest-player targeting in `updateEnemy` | Tests show Taunt pulling an enemy from a closer ally | |
 | C-13 | C | L | **Team abilities** on G (section 4): Taunt, Break, Mark, Mend Link, Rescue Dash | Each works solo-safe, online and in tests | C-12 |
-| C-14 | C | L | **Status and reactions** (section 5), with a script to check every pair of characters has a reaction available | All 8 reactions work; only cross-player triggers count online | |
-| C-15 | C | M | **Party chain** and shared rage (section 6) | Prototype: one counter for the party with the design's 5/12/20/30 bonuses, shared rage within 500 units, and the personal combo and best still saved per player. Rules and networking tests cover it; linked ultimates are C-16. | C-16, Z's numbers, human playtests |
+| C-14 | C | L | **Status and reactions** (section 5), with a script to check every pair of characters has a reaction available | Prototype: 10 named reactions and resonance cover all 780 distinct-character pairs; online reactions require different players. | Solo Resonance is implemented at half strength; balance and human playtests remain open. |
+| C-15 | C | M | **Party chain** and shared rage (section 6) | Prototype: one counter for the party with the design's 5/12/20/30 bonuses, shared rage within 500 units, and the personal combo and best still saved per player. Rules and networking tests cover it; linked ultimates are implemented under C-16. | Z's numbers, human playtests |
 | C-16 | C | M | **Linked ultimates**, plus the shorter effect for allies | Prototype: a 3 second window, Duo/Trio/Full Party as designed, damage applied once after the boss share, and allies see the ground nova rather than the fullscreen, so they can still dodge. | Z's numbers, human playtests |
 | C-17 | C | M | **Boss framework:** guard bar, stagger, enrage, arena doors, phases, telegraph helper. Used by all 10 bosses. | Prototype: every boss gets a guard bar fed by Break and reactions, a 5s stagger that raises damage taken, a 0.6s minimum telegraph on every big attack, an enrage clock, phase breathers that clear enemy fire, and an arena that holds the party in until the boss dies. Stage 1 boss runs on it. | Per-boss guard tuning, phase tables for stages 2-10 and the stage-1 boss's own mechanics are open. |
 | C-18 | C | M | **Objective framework:** progress, checkpoints, carry, hold, escort | Used by stages 1 to 3 | |
@@ -110,20 +112,21 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 |---|---|---|---|---|---|
 | C-20 | C | M | Stage 1 Sunrise Hollow, with its objective | Prototype: the objective line, the marker and the edge arrow point a solo player at the wounded scout, and the scout no longer crashes the renderer when it is on screen. | C-10, C-18 |
 | C-21 | C | M | Boss: Crystal Scurrier (Pillar Break) | Prototype: Skitter Rush and Shard Spray at full life, Burrow and two crystal pillars at half life. Pillars heal the boss; solo breaks one with a charged move, a party breaks one with two hits inside 2s. Rules tests cover both, human tests open. | Human playtest, pillar art and the asset animations are open. |
-| C-22 | C | M | Stage 2 Noonshade Thicket: thicket, beacons, Stalker | Objective done | C-18 |
-| C-23 | C | M | Boss: Gloom Eye (Look Away) | As above | C-17 |
-| C-24 | C | L | Stage 3 Duskwater Fen: rising water, escort boat, Lurker | Objective done | C-18 |
-| C-25 | C | M | Boss: Banshee Phantasm (Lantern Anchor) | As above | C-17 |
+| C-22 | C | M | Stage 2 Noonshade Thicket: thicket, beacons, Stalker | Prototype: seeded thicket hides enemies beyond 120 units for each player, Stalkers ambush from it with a warning and a dodge opening, and each beacon draws a wave and is set back when the lighter is hit. Rule tests pass. | Stalker art (Z-12), balance and human playtests are open. The balance bot does not play objectives, so it cannot clear this stage. |
+| C-23 | C | M | Boss: Gloom Eye (Look Away) | Prototype: gaze beam, triple slam, blinding pulse at 60%, reverse sweep at 25%, Look Away with a back eye that only takes guard hits from behind, and the solo dodge-through-beam version. Rule tests pass; bot runs clear it solo and in parties. | Human playtests and boss art |
+| C-24 | C | L | Stage 3 Duskwater Fen: rising water, escort boat, Lurker | Prototype: a rising and falling tide slows players off seeded islands, clearings and bridges, with the same rule used for online prediction. Lurkers grab and drag a player until an ally hits them; solo, the player's own hits free them. The escort step already existed. | Human playtests and Lurker art (Z-12) |
+| C-25 | C | M | Boss: Banshee Phantasm (Lantern Anchor) | Prototype: wail ring with a gap, untouchable Phase Drift, Possess at 50%, and Lantern Anchor: she only takes damage within 170 units of a lit lantern. A lantern is lit while carried and for 8 s after being set down with F; solo it stays lit. Rule tests pass; bot runs clear it solo and with two players. | Human playtests. Four-player bot parties did not clear it under the ×8 rule. |
 
 ### Prototype follow-up
 
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
 | C-26 | C | M | Balance the five passive role auras in solo and parties; review stacking, range, recovery and clarity | All 40 characters covered; tests and human balance notes reviewed by Z | D-06 |
-| C-27 | C | M | Playtest the two safehouse weapon upgrades, including melee arcs, ranged cones and spell blasts | Prototype: melee upgrades now add 1.2 and 1.5 damage steps as well as reach and arc; the arcs, cones and blasts still need a human playtest. | Upgrade balance and progression reviewed by Z; decide how signature-move characters participate | D-06 |
+| C-27 | C | M | Playtest the two safehouse weapon upgrades, including melee arcs, ranged cones and spell blasts | Prototype: melee, ranged and spell upgrades show current and next effects; signature moves use the same two damage tiers. Tier-2 pistol/bow piercing, non-boss shield interrupts and nearby ally healing are implemented. Rule tests, delayed online purchase confirmation, reduced-motion checks and desktop/phone-viewport checks pass. | Z review and human playtesting of balance, progression and visual clarity | D-06 |
 | C-28 | C | M | Review boss-gate boon choices and their run/save lifecycle | Choices are discoverable, meaningful and reset at the agreed end of a run; tested solo and online | C-18 |
 | C-29 | C | S | **Haste:** levels and trained Agility shorten every cooldown through one `cdMul`, floored at 60% of base | Rule tests cover the curve, the floor and that dash and team abilities use it; sheet shows Haste | |
 | C-30 | C | S | **Gore pass:** damage-scaled blood, chunks on heavy hits and kills, pools, wound trails, per-family blood colour | Works solo and online, decal list capped, tests added; Z review | |
+| C-86 | C | L | **Enemy AI overhaul:** attack slots and circling, tracked wind-ups, combos, delayed swings, punishes, leading shots, role behaviour, boss chains and a hits-to-down damage curve | Prototype: tuned from the `AI` table and `WEAK_HITS_TO_DOWN` in `game.js`, with rule tests and `game/tools/ai-trial.js` samples. Changes how solo plays, so it needs Z's approval. | Recorded playtests with several players, kit villain behaviour and Z's review of the ×8 party stack with stronger enemies. C's first play on 2026-11-07 felt good. |
 | D-26 | D | M | Measure and polish the optional bundled Three.js r187 effects layer | Offline fallback, context loss, reduced motion and performance tested on target devices | D-09 |
 
 ### Minions, day and night, power-ups
@@ -162,14 +165,14 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
 | D-10 | D | M | Sync new fields: downed, threat target, statuses, guard, objectives (`sync.js`) | Bandwidth stays under 25 KB/s per player before compression | C-10 |
-| D-11 | D | M | **Party panel:** life, downed timer, status, rage, ultimate ready | Readable at phone size | C-10 |
+| D-11 | D | M | **Party panel:** life, downed timer, status, rage, ultimate ready | Readable at phone size | C-10; simulated four-player mobile layout checked, real-phone playtest open |
 | D-12 | D | M | **Revive and ally UI:** ring around downed ally, progress bar, screen-edge arrows | Tested with 4 players | C-10 |
 | D-13 | D | M | **Pings and quick phrases** (section 14), with server rate limits | Spam can't flood others | |
 | D-14 | D | M | **Lobby:** role of each player, ready check, host starts, difficulty and stage choice | Party can choose before starting | |
 | D-15 | D | M | **Rejoin in place:** a reconnecting player returns to the same spot and state, not the safehouse | Disconnect test passes | |
 | D-16 | D | S | Boss bar with guard meter and phase marks. Objective tracker. | Matches design | C-17, C-18 |
 | D-17 | D | M | Keep own-character prediction in step with new states such as crawl, root and drag | No snapping at 200 ms lag | C-10 |
-| D-18 | D | M | Touch controls for G and hold-to-revive are prototyped; add ping and test all controls on real phones. | One full stage played on a phone | C-13 |
+| D-18 | D | M | Touch controls for G and hold-to-revive are prototyped; a visible movement stick, held-state feedback, cancellation handling and compact landscape layout have browser emulation checks. Add ping and test all controls on real phones. | One full stage played on a phone | C-13 |
 
 ### Art and playtest
 
@@ -181,6 +184,18 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | Z-13 | Z | M | First sounds: revive, ping, reactions and links (section 18) | Delivered as licensed files | Z-50 |
 | Z-14 | Z | M | **Run the first playtest** with 4 outside players, using a simple form: what was fun, confusing or unfair | Results shared in `docs/playtests/` | D-01, C-25 |
 | D-19 | D | M | Import tool: turns delivered art into game sheets automatically and reports what's missing | One command imports a character | D-03 |
+
+## The Swarm
+
+An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from the `SWARM` table in `game.js`, and `node game/tools/ai-trial.js --mode swarm` measures it.
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| C-90 | C | M | **Wave director:** wave n sends base + step × n enemies scaled by party size, at most 50 alive, with tougher and harder-hitting enemies from wave 6 and Stalkers, Lurkers and rivals mixed in | Prototype with rule tests | |
+| C-91 | C | S | **Boss waves:** every fifth wave rotates the Crystal Scurrier, Gloom Eye and Banshee on any map | Prototype with rule tests | |
+| C-92 | C | S | **Runs:** breaks revive, heal and hand out a potion; a wipe or solo death ends the run, keeps the best wave and starts a new run; nothing else reaches the story save | Prototype with rule tests | |
+| C-93 | C | S | **Entry:** a Swarm picker in single-player and a Swarm option when creating a room, clamped to the furthest stage reached; the room list shows the wave | Prototype with networking tests | |
+| C-94 | C | M | **Balance:** human runs solo and in parties; set the growth curve | Bot samples only. A perfect-dodging bot reached wave 28 alone without falling, so human results decide the curve. | C-90 |
 
 ## M2 Middle game
 
@@ -232,7 +247,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | C-54 | C | L | Stage 10 The Last Night: 3 trials | Done | C-30 to C-52 |
 | C-55 | C | L | Boss: Nameless King, 4 phases, boss echoes and Final Toll | Beaten by a real party, and by one solo tester | C-16, C-35 to C-53 |
 | C-56 | C | M | **Difficulty tiers** and elite modifiers (section 9) | Veteran and Nightmare work on every stage | C-39 |
-| C-57 | C | M | **Team skills** (section 13) and stage scoring (section 8) | Saved and shown at stage end | |
+| C-57 | C | M | **Team skills** (section 13) and stage scoring (section 8) | Saved and shown at stage end | Existing independent skills are grouped and previewed in the Skills menu; team skills and stage scoring remain open. |
 | C-58 | C | L | **Signature passives** for 40 characters. Design with Z. | Each one tested | Z-30 |
 | D-30 | D | M | Stage results screen, team scoreboard, and best records per room | Works online and solo | C-57 |
 | D-31 | D | M | Darkness and light rendering that works on phones | Passes D-25 test | C-50 |

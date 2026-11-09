@@ -9,12 +9,10 @@ w=int.from_bytes(atlas[24:27],'little')+1 if atlas[12:16]==b'VP8X' else None
 h=int.from_bytes(atlas[27:30],'little')+1 if w else None
 assert w and h,'expected an extended WebP atlas'
 data=f'const ATLAS_URL="data:image/webp;base64,{base64.b64encode(atlas).decode()}";\nconst CAST={json.dumps(cast,separators=(",",":"))},AW={w},AH={h};\n'
-mv=root/'sprites'/'moves'
-data+='const MOVES='+(mv/'moves.json').read_text()+';\nconst MOVE_URLS={'+','.join(k+':"data:image/webp;base64,'+base64.b64encode((mv/f'{k}.webp').read_bytes()).decode()+'"' for k in ['necro','toxic','void'])+'};\n'
 vo=root/'sprites'/'voice'
 data+='const VOICE_CLIPS={'+','.join('"'+f.stem+'":"'+base64.b64encode(f.read_bytes()).decode()+'"' for f in sorted(vo.glob('*.wav')))+'};\n'
 sx=root/'sprites'/'sfx'
-data+='const SOUND_CLIPS={'+','.join(f'{k}:"'+base64.b64encode((sx/f).read_bytes()).decode()+'"' for k,f in [('menu','menu.m4a'),('heroBrowse','hero-browse.m4a'),('villainBrowse','villain-browse.mp3'),('ambA','ambience-a.m4a'),('ambB','ambience-b.m4a')]+[(f.stem.replace('-','_'),f.name) for p in ('step-','an-','sfx-','mus-') for f in sorted(sx.glob(p+'*.m4a'))])+'};\n'
+data+='const SOUND_CLIPS={'+','.join(f'{k}:"'+base64.b64encode((sx/f).read_bytes()).decode()+'"' for k,f in [('menu','menu.m4a'),('titleSong','title-song.m4a'),('heroBrowse','hero-browse.m4a'),('villainBrowse','villain-browse.mp3'),('ambA','ambience-a.m4a'),('ambB','ambience-b.m4a')]+[(f.stem.replace('-','_'),f.name) for p in ('step-','an-','sfx-','mus-') for f in sorted(sx.glob(p+'*.m4a'))])+'};\n'
 ti=root/'sprites'/'title'
 data+='const TITLE_URLS={'+','.join(f'{k}:"data:image/webp;base64,'+base64.b64encode((ti/f).read_bytes()).decode()+'"' for k,f in [('poster','poster.webp'),('words','words.webp'),('stone','stone.webp')])+'};\n'
 data+='const THREE_LAYER_B64="'+base64.b64encode((root/'vendor'/'three-layer.js').read_bytes()).decode()+'";\n'

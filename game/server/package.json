@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node index.js",
-    "test": "node test-rules.js && node test.js"
+    "test": "node ../tools/check-reactions.js && node test-rules.js && node test.js"
   },
   "dependencies": {
     "ws": "8.18.0"

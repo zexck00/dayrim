@@ -89,7 +89,7 @@ Stats keep their current meaning. The ability's strength scales with the matchin
 
 ## 5. Status reactions
 
-Attacks apply a status for 4 seconds. When a **different player** hits that target with a status that reacts, the reaction fires and both players gain extra rage. Your own attacks can't trigger reactions, unless you are alone (solo uses half strength), so teamwork is what makes them strong.
+Attacks apply a status for 4 seconds. When a **different player** hits that target with a status that reacts, the reaction fires and both players gain extra rage. Your own attacks cannot trigger reactions in a party. When alone, a second hit on an active status triggers Resonance at half strength: 5% extra damage and 6 rage, with half the usual boss guard gain. In the prototype, one target can react once every 2 seconds; other hits during that time only refresh the status.
 
 | First status | Second status | Reaction | Effect |
 |---|---|---|---|
@@ -101,8 +101,10 @@ Attacks apply a status for 4 seconds. When a **different player** hits that targ
 | Void | Shock | **Collapse** | Pulls enemies in 160 units together, then a burst |
 | Bleed | Holy | **Purge** | Allies nearby heal 10% |
 | Holy | Void | **Eclipse** | Everyone in 200 units is stunned 1.5 s (bosses: guard break) |
+| Bleed | Burn | **Cauterise** | 160% hit damage and a nearby burst |
+| Bleed | Chill | **Frostbite** | 120% hit damage and 40% slow for 3 s |
 
-Each character's element is in section 12. Not every pair of elements reacts in this table. C-14 must check every pair of characters and add reactions, or team-ability elements, until each pair has at least one.
+Each character's element is in section 12. In the current prototype, pairs without a named reaction create Resonance: 10% extra damage on the triggering hit and rage for both players. Same-element pairs also resonate.
 
 ## 6. Party chain and linked ultimates
 
@@ -117,13 +119,13 @@ Each character's element is in section 12. Not every pair of elements reacts in 
 
 **Rage:** each kill gives the killer full rage and everyone else within 500 units 35%.
 
-**Linked ultimates:** when a player fires an ultimate, a 3-second window opens and allies see **"Link now!"**.
+**Linked ultimates:** when a player fires an ultimate, a 3-second window opens and allies see **"Link now!"**. The current prototype refreshes the window as each new player joins, and applies tier increases to earlier hits on surviving targets.
 
 | Linked | Effect |
 |---|---|
 | 2 players | **Duo:** both ultimates +40% damage, and enemy shots are cleared across the area |
 | 3 players | **Trio:** +70% damage, and party is invulnerable for the full length |
-| 4 players | **Full Party:** +100% damage, full heal, boss staggered 5 s |
+| 4 players | **Full Party:** +100% damage, full heal for standing players, boss staggered 5 s |
 
 **Ultimates online:** the fullscreen effect plays fully for the caster, and allies see a shorter version so that they can still dodge. Boss damage becomes `4% of max life ÷ party size` per hit, before the link bonus.
 
@@ -321,6 +323,8 @@ Every enemy has one job, so that a party has to prioritize.
 | Healer | Heals nearby enemies | Kill first, or Mark | Heal users |
 | Stage specials | See section 8 | Team action | One per stage |
 
+**Behaviour prototype:** two melee enemies press one player at a time and the rest circle. Aim follows the player until late in a wind-up, so a late dodge works. Attacks can chain, brutes can delay a swing, and healing, pills or reviving draw a rush. Shooters lead and strafe. Enemies wait outside the safehouse. Bosses can chain attacks, always with their full telegraph.
+
 **Director:** spawns follow a "pressure" score so that fights come in waves with short breaks. It tracks party life, Hope and time since the last hard fight. It replaces the current spawn timer, but the rule of minions first and 2 villains per minute stays.
 
 ## 12. Characters
@@ -366,6 +370,7 @@ Elements below are a first pass. Z may change any of them to match the final art
 - **New team skills:** a third skill group gives Faster Revive, Longer Link Window, Stronger Reactions and Share Potion.
 - **Stage unlocks:** clearing with a party unlocks that stage for all its members.
 - **Equipment and weapon drops stay off**, as the owner decided. Z decides whether they return.
+- **Weapon upgrade prototype:** two safehouse tiers cost 80 and 180 gold. At the second tier, pistols and bows pierce one additional enemy; shields interrupt ordinary enemy attack or healing wind-ups; healing weapons restore 2% of the lowest-health nearby standing ally’s maximum life on a successful enemy hit, at most once per second. Boss moves are not interrupted. These values need playtesting.
 
 ## 14. Communication
 
@@ -580,6 +585,16 @@ Hero parties and villain parties hear the same stage themes, with a different in
 - **Smooth scaling for HD art,** kept separate from the sharp scaling used on pixel art.
 - **A graphics setting:** Full, Medium or Low, to keep weaker laptops and phones smooth.
 - **GPU drawing (WebGL)** if many HD sprites slow the canvas down. D-09 measures this first, since it's a larger change.
+
+## 21. The Swarm
+
+An endless mode on any stage map the character has reached, alone or in a room. The stage keeps its rule, such as the Fen's water or the Thicket's cover.
+
+- **Waves:** wave n sends 8 + 4n enemies, scaled by party size. At most 50 are alive at once; from wave 6 enemies gain life and damage instead of only numbers. Stalkers, Lurkers and rival heroes or villains join from waves 3 and 4.
+- **Bosses:** every fifth wave a boss joins with half the usual enemies, rotating the Crystal Scurrier, Gloom Eye and Banshee Phantasm.
+- **Breaks:** 15 seconds between waves. Downed players are revived, everyone heals 30% and gets a potion, Hope refills, and the safehouse shop is open. During a wave the safehouse gives no shelter or healing.
+- **The end:** a wipe, or a solo death after Second Wind, ends the run. The best wave is kept and a new run starts.
+- **Rewards:** nothing earned in the Swarm carries back to the story character.
 
 ## 20. Questions for Z
 

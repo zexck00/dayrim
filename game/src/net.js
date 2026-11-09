@@ -68,15 +68,15 @@ function applyList(rec,map,kind){if(!rec)return false;const [upd,rm]=rec;let cha
 function netSnapshot(m){
   if(!net.inRoom||!net.ents)return;const E=net.ents,me=G.p;
   if(m.p){const [upd,rm]=m.p,others=[];
-    for(const d of upd){if(d.id===me.id){const was=me.s&&me.s.maxHp;patch(me,d,true,true);if(d.lvl!==undefined||d.gold!==undefined||d.potions!==undefined||d.sp!==undefined||d.weapon!==undefined||was!==me.s.maxHp)dirty()}else others.push(d)}
-    if(applyList([others,rm],E.p,'p'))G.players=[...E.p.values()]}
+    for(const d of upd){if(d.id===me.id){const was=me.s&&me.s.maxHp;patch(me,d,true,true);if(d.lvl!==undefined||d.gold!==undefined||d.potions!==undefined||d.sp!==undefined||d.weapon!==undefined||was!==me.s.maxHp)dirty();if(G.mode==='menu'&&menuTab==='weapons'&&(d.gold!==undefined||d.weapon!==undefined||d.weapons!==undefined||d.weaponUpgrades!==undefined||d.nearSafe!==undefined))refreshProgressMenu();if(G.mode==='menu'&&menuTab==='skills'&&(d.sp!==undefined||d.skills!==undefined||d.boonPending!==undefined||d.runBoons!==undefined))refreshProgressMenu()}else others.push(d)}
+    if(applyList([others,rm],E.p,'p')){const before=G.players.length;G.players=[...E.p.values()];if(before!==G.players.length&&before>0)net.scaleNotice=performance.now()+4000}}
   if(applyList(m.e,E.e,'e'))G.enemies=[...E.e.values()];
   if(applyList(m.n,E.n,'n'))G.npcs=[...E.n.values()];
   if(applyList(m.h,E.h,'h'))G.shots=[...E.h.values()];
   if(applyList(m.z,E.z,'z'))G.hazards=[...E.z.values()];
   if(applyList(m.l,E.l,'l'))G.loot=[...E.l.values()];
   if(applyList(m.pr,E.pr,'pr'))G.props=[...E.pr.values()];
-  const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.hope!==undefined)G.hope=g.hope;if(g.obj!==undefined){try{const o=JSON.parse(g.obj);G.obj={i:o.i,done:!!o.d,steps:[],cur:{have:o.h,need:o.n,label:o.l}}}catch(e){}}if(g.maxHope!==undefined)G.hopeMax=g.maxHope;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;if(g.ch!==undefined&&(!G.chain||G.chain.n!==g.ch))G.chain={n:g.ch,t:6,tier:null};if(g.lk!==undefined){try{const L=g.lk?JSON.parse(g.lk):null;G.link=L?{n:L.n,t:L.t,dmg:0,name:'',ids:L.in?[G.p.id]:[]}:null}catch(e){}}
+  const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.hope!==undefined)G.hope=g.hope;if(g.hopeSpent!==undefined)G.hopeSpent=g.hopeSpent;if(g.obj!==undefined){try{const o=JSON.parse(g.obj);G.obj={i:o.i,done:!!o.d,steps:[],cur:{have:o.h,need:o.n,label:o.l},tg:o.tg||[],holdNeed:o.hn||0}}catch(e){}}if(g.maxHope!==undefined)G.hopeMax=g.maxHope;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.td!==undefined)G.tide=g.td;if(g.sw!==undefined){try{const o=g.sw?JSON.parse(g.sw):null;G.swarm=o?{wave:o.w,left:o.l,breakT:o.b,over:!!o.o}:null}catch(e){}}if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;if(g.ch!==undefined){if(!G.chain)G.chain={n:0,t:0,tier:null};G.chain.n=g.ch}if(g.ct!==undefined){if(!G.chain)G.chain={n:0,t:0,tier:null};G.chain.t=g.ct}if(g.lk!==undefined){try{const L=g.lk?JSON.parse(g.lk):null;G.link=L?{n:L.n,t:L.t,dmg:(linkTier(L.n)||[0,0])[1],name:'',ids:L.in?[G.p.id]:[]}:null}catch(e){}}
     if(g.ban!==undefined){if(g.ban){const b=JSON.parse(g.ban);G.banner={a:b.a,b:b.b,t:b.t}}else G.banner=null}
     if(g.boss!==undefined)net.bossId=g.boss}
   G.boss=net.bossId?E.e.get(net.bossId)||null:null;
@@ -104,7 +104,7 @@ function netUpdate(dt){
   if(touchMode){const n=nearestEnemy();if(n)me.face=Math.atan2(n.y-me.y,n.x-me.x);else if(v.x||v.y)me.face=Math.atan2(v.y,v.x)}else if(playing)me.face=Math.atan2(mouse.y-(me.y-22),mouse.x-me.x);
   const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
-  else if(v.x||v.y){const sp=me.s.speed*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
+  else if(v.x||v.y){const sp=envSpeed(me)*me.s.speed*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
   if(me.x!==bx||me.y!==by)net.pending.push({s:net.seq+1,dx:me.x-bx,dy:me.y-by});if(net.pending.length>240)net.pending.shift();
   net.reviveT-=dt;if(net.reviveT<=0&&G.mode==='play'&&(keys.has('KeyF')||touchHold.revive)){net.reviveT=.2;netSend({t:'a',n:'revive',v:true})}net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}
@@ -139,26 +139,29 @@ function renderLobby(){
   c.innerHTML='<div class="sel-top"><h2>Play online</h2></div><div class="mlist"><p class="mhead">Up to 4 players fight together. You play as <b>the '+esc(label(chosen))+'</b> ('+(side==='hero'?'hero':'villain')+'). Everyone in a room plays on the same side.</p>'+
    (net.err?'<p class="mhead" role="alert" style="color:#ff8f80">'+esc(net.err)+'</p>':'')+
    '<div class="mrow"><div><strong><label for="nm">Your name</label></strong></div><input id="nm" maxlength="16" autocomplete="nickname" value="'+esc(nm)+'" style="font:inherit;padding:8px;min-width:0;width:170px"></div>'+
-   '<div class="mrow"><div><strong>New room</strong><span><label><input type="checkbox" id="prv"> Private: only people with the code can join</label></span></div><button type="button" class="buy" id="mk">Create</button></div>'+
+   '<div class="mrow"><div><strong>New room</strong><span><label><input type="checkbox" id="prv"> Private: only people with the code can join</label><label><input type="checkbox" id="swm"> The Swarm on stage <select id="sws">'+[1,2,3,4,5,6,7,8,9,10].map(n=>'<option>'+n+'</option>').join('')+'</select> (up to your furthest stage)</label></span></div><button type="button" class="buy" id="mk">Create</button></div>'+
    '<div class="mrow"><div><strong><label for="cd">Join with a code</label></strong></div><input id="cd" maxlength="5" autocapitalize="characters" autocomplete="off" style="font:inherit;padding:8px;width:90px;text-transform:uppercase"><button type="button" class="buy" id="jn">Join</button></div>'+
    '<div id="rl"></div></div><div class="btnrow"><button class="ghost" id="bk" type="button">Back to characters</button></div>';
   const setName=()=>{net.name=$('nm').value.slice(0,16);store.set('dayrim-name',net.name)};
   const go=msg=>{setName();net.err='';netConnect(()=>{netSend({t:'name',name:net.name});netSend(msg)})};
-  $('mk').onclick=()=>go({t:'create',char:chosen,private:$('prv').checked});
+  $('mk').onclick=()=>go({t:'create',char:chosen,private:$('prv').checked,mode:$('swm').checked?'swarm':'story',stage:+$('sws').value||1});
   $('jn').onclick=()=>{const code=$('cd').value;if(code.trim())go({t:'join',code,char:chosen})};
   $('bk').onclick=()=>{net.lobby=false;net.err='';clearInterval(lobbyPoll);renderSelect()};
   paintRooms();clearInterval(lobbyPoll);const poll=()=>{if(!net.lobby){clearInterval(lobbyPoll);return}netConnect(()=>netSend({t:'rooms'}))};poll();lobbyPoll=setInterval(poll,3000);
 }
 function paintRooms(){const el=$('rl');if(!el)return;
-  el.innerHTML=net.rooms.length?'<p class="mhead">Open rooms</p>'+net.rooms.map(r=>'<div class="mrow"><div><strong>'+esc(r.host)+'</strong><span>'+(r.side==='hero'?'Heroes':'Villains')+' · Stage '+r.stage+'</span></div><em>'+r.count+'/'+r.max+'</em><button type="button" class="buy" data-room="'+esc(r.code)+'"'+(r.side!==factionOf(chosen)?' disabled title="Choose a character from this side to join"':'')+'>Join</button></div>').join(''):'<p class="mhead">No open rooms right now. Create one.</p>';
+  el.innerHTML=net.rooms.length?'<p class="mhead">Open rooms</p>'+net.rooms.map(r=>'<div class="mrow"><div><strong>'+esc(r.host)+'</strong><span>'+(r.side==='hero'?'Heroes':'Villains')+' · '+(r.mode==='swarm'?'The Swarm, stage '+r.stage+', wave '+(r.wave||0):'Stage '+r.stage)+' · Difficulty ×'+PARTY_SCALE[Math.max(0,Math.min(3,r.count-1))].difficulty+'</span></div><em>'+r.count+'/'+r.max+'</em><button type="button" class="buy" data-room="'+esc(r.code)+'"'+(r.side!==factionOf(chosen)?' disabled title="Choose a character from this side to join"':'')+'>Join</button></div>').join(''):'<p class="mhead">No open rooms right now. Create one.</p>';
   el.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>{const nm=$('nm');net.name=nm?nm.value.slice(0,16):net.name;store.set('dayrim-name',net.name);net.err='';netConnect(()=>{netSend({t:'name',name:net.name});netSend({t:'join',code:b.dataset.room,char:chosen})})})}
 /* Party list, room code and the respawn message, drawn over the game */
-function netHud(small){
-  const me=G.p,x=12;let y=small?116:70;ctx.textAlign='left';
-  ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?150:190,18+G.players.length*17);
-  ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+' · Hope '+(G.hope??0)+'/'+(G.hopeMax??0),x,y);y+=16;
-  for(const q of G.players){const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';const rev=G.players.find(z=>z.reviveTarget===q.id&&z.reviveProgress>0),status=q.respawnT>0?' · '+Math.ceil(q.respawnT)+'s':q.deadT>0?(rev?' · '+Math.round(rev.reviveProgress*100)+'%':' · down '+Math.ceil(q.deadT)+'s'):'';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player')+status,x+(small?55:76),y);y+=17}
-  const big=(a,b)=>{ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.font='700 '+(small?26:42)+'px "Pixelify Sans",monospace';ctx.strokeText(a,W/2,H*.45);ctx.fillStyle='#ff8f80';ctx.fillText(a,W/2,H*.45);ctx.font='600 15px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(b,W/2,H*.45+26);ctx.fillStyle='#f2ecd8';ctx.fillText(b,W/2,H*.45+26)};
+function netHud(small,portrait=false){
+  const me=G.p,x=12;let y=portrait?(G.boss?182:132):touchMode?(H<500?220:195):(small?116:70);ctx.textAlign='left';
+  if(portrait){ctx.fillStyle='rgba(5,10,20,.75)';ctx.fillRect(6,y-14,148,23+(G.players.length-1)*17);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle='#f0c23c';ctx.fillText('Hope '+(G.hope??0)+'/'+(G.hopeMax??0)+' · Difficulty ×'+partyScale().difficulty,x,y,136);y+=18}else{
+  ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?180:225,66+G.players.length*17);
+  ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+' · Hope '+(G.hope??0)+'/'+(G.hopeMax??0),x,y);y+=15;{const chg=net.scaleNotice>performance.now();ctx.fillStyle=chg?'#8fe6ff':'#f0c23c';ctx.fillText((chg?'Difficulty changed ×':'Difficulty ×')+partyScale().difficulty+' · Spent '+(G.hopeSpent||0),x,y,small?168:210)}y+=15;ctx.fillStyle='#f0c23c';ctx.fillText('Retry: '+(G.gate&&G.gate.open?'boss gate':'objective checkpoint'),x,y,small?168:210);y+=16;}
+
+  for(const q of G.players){if(portrait&&q===me)continue;const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';const rev=G.players.find(z=>z.reviveTarget===q.id&&z.reviveProgress>0),status=q.respawnT>0?' · '+Math.ceil(q.respawnT)+'s':q.deadT>0?(rev?' · '+Math.round(rev.reviveProgress*100)+'%':' · down '+Math.ceil(q.deadT)+'s'):'';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player')+status,x+(small?55:76),y,portrait?84:small?113:149);y+=17}
+  const selected=G.players.find(q=>q.id===me.reviveTarget&&q.deadT>0);if(selected){ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#8fe6ff';ctx.fillText('Reviving '+(selected.pname||label(selected.char))+' · '+Math.round(me.reviveProgress*100)+'%',x,y,portrait?136:W-24);y+=16}else if(G.players.some(q=>q!==me&&q.deadT>0)){ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#d8e9ff';ctx.fillText((touchMode?'Hold revive':'Hold F')+' near an ally ('+(archKey(me.char)==='medic'?120:60)+')',x,y,portrait?136:W-24);y+=16}
+  const big=(a,b)=>{const y=portrait?Math.max(portraitBounds().top+20,Math.min(H*.45,portraitBounds().bottom-30)):H*.45;ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.font='700 '+(small?26:42)+'px "Pixelify Sans",monospace';ctx.strokeText(a,W/2,y,portrait?W-24:W);ctx.fillStyle='#ff8f80';ctx.fillText(a,W/2,y,portrait?W-24:W);ctx.font='600 15px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(b,W/2,y+26,portrait?W-24:W);ctx.fillStyle='#f2ecd8';ctx.fillText(b,W/2,y+26,portrait?W-24:W)};
   if(net.down)big('Reconnecting','Trying to get back to room '+net.code);
   else if(me.respawnT>0)big('You bled out','Waking at the safehouse in '+Math.ceil(me.respawnT));else if(me.deadT>0)big('You are down',me.windDown?'Second Wind in '+Math.ceil(me.deadT):'Crawl to an ally · Bleeding out in '+Math.ceil(me.deadT));
 }

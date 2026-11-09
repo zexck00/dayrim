@@ -1,11 +1,11 @@
 'use strict';
 /* Builds one snapshot per client. Each client is sent only what changed since its last snapshot, and only what is near its player. */
 const AOI=1300,EVENT_AOI=1500;
-const ENEMY_SKIP=new Set(['xp','gold','dmg','sp','cd','wander','wa','still','kx','ky','spT','smT','mdT','healT','aware','hitCd','pid','dead','id','th']);
+const ENEMY_SKIP=new Set(['xp','gold','dmg','sp','cd','wander','wa','still','kx','ky','spT','smT','mdT','healT','hitCd','pid','dead','id','th','tok','tokT','slotA','windMax','delayed','comboLeft','rushT','punishCd','lostT','alerted','strafeT','strafeD','hideT','hideAt','struck','reactAt','dragA','biteT','wailHit','driftTo','wardT','eyeCd']);
 const NPC_SKIP=new Set(['kx','ky','t','sp','scare','dead','id']);
 const LOOT_SKIP=new Set(['t','amt','id']);
-const OWN_SKIP=new Set(['input','actions','ack','id','combo_','x','y']);
-const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats'];
+const OWN_SKIP=new Set(['input','actions','ack','id','combo_','x','y','vx','vy','lx','ly']);
+const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats','grabT','possT','stunT'];
 let nextEnt=1;
 const entId=o=>o.id||(o.id=nextEnt++);
 const rnum=(k,v)=>k==='x'||k==='y'||k==='walk'?Math.round(v*10)/10:Math.round(v*100)/100;
@@ -39,7 +39,7 @@ function snapshot(room,me,known,tick){
   if(players)out.p=players;
   const e=diff(G.enemies.filter(o=>o.kind==='boss'||near(me,o,AOI)),known.e,o=>flatten(o,ENEMY_SKIP));if(e)out.e=e;
   const n=diff(G.npcs.filter(o=>near(me,o,AOI)),known.n,o=>flatten(o,NPC_SKIP));if(n)out.n=n;
-  const shot=s=>({x:rnum('x',s.x),y:rnum('y',s.y),vx:Math.round(s.vx),vy:Math.round(s.vy),r:s.r,from:s.from,fx:s.fx,col:s.col,a:rnum('a',s.a||0),small:s.small?1:0,spell:s.spell?1:0});
+  const shot=s=>{const o={x:rnum('x',s.x),y:rnum('y',s.y),vx:Math.round(s.vx),vy:Math.round(s.vy),r:s.r,from:s.from,fx:s.fx,col:s.col,a:rnum('a',s.a||0),small:s.small?1:0,spell:s.spell?1:0};if(s.piercing)o.piercing=1;return o};
   const h=diff(G.shots.filter(o=>near(me,o,AOI)),known.h,shot,true);if(h)out.h=h;
   const hazard=z=>({x:rnum('x',z.x),y:rnum('y',z.y),r:z.r,t:rnum('t',z.t),from:z.from,col:z.col});
   const z=diff((G.hazards||[]).filter(o=>near(me,o,AOI)),known.z,hazard,true);if(z)out.z=z;
@@ -48,7 +48,7 @@ function snapshot(room,me,known,tick){
   const pr=diff((G.props||[]).filter(o=>near(me,o,AOI)||o.kind==='drop'||o.kind==='escort'),known.pr,prop);if(pr)out.pr=pr;
   /* Room-wide values. The banner is only sent when a new one appears, and the client counts it down. */
   const b=G.banner;if(b&&!b.t0){b.t0=b.t;b.bid=entId({})}
-  const g={hour:Math.round(G.hour*20)/20,kills:G.killsStage,hope:G.hope,maxHope:G.hopeMax,obj:G.obj?JSON.stringify({i:G.obj.i,d:G.obj.done?1:0,h:(G.obj.steps[G.obj.i]||{}).have||0,n:(G.obj.steps[G.obj.i]||{}).need||0,l:(G.obj.steps[G.obj.i]||{}).label||''}):'',gate:G.gate.open?1:0,boss:G.boss?entId(G.boss):0,ban:b?JSON.stringify({a:b.a,b:b.b,t:b.t0,i:b.bid}):'',time:Math.floor(G.t/3)*3,ch:G.chain?G.chain.n:0,lk:G.link?JSON.stringify({n:G.link.ids.length,t:Math.round(G.link.t*10)/10,in:G.link.ids.indexOf(me.id)>=0?1:0}):''};
+  const g={hour:Math.round(G.hour*20)/20,kills:G.killsStage,hope:G.hope,maxHope:G.hopeMax,hopeSpent:G.hopeSpent||0,obj:G.obj?JSON.stringify({i:G.obj.i,d:G.obj.done?1:0,h:(G.obj.steps[G.obj.i]||{}).have||0,n:(G.obj.steps[G.obj.i]||{}).need||0,l:(G.obj.steps[G.obj.i]||{}).label||'',tg:(G.obj.wire||{}).tg||[],hn:(G.obj.wire||{}).hn||0}):'',gate:G.gate.open?1:0,boss:G.boss?entId(G.boss):0,ban:b?JSON.stringify({a:b.a,b:b.b,t:b.t0,i:b.bid}):'',time:Math.floor(G.t/3)*3,td:Math.round((G.tide||0)*20)/20,sw:G.swarm?JSON.stringify({w:G.swarm.wave,l:G.swarm.left,b:Math.ceil(G.swarm.breakT),o:G.swarm.over?1:0}):'',ch:G.chain?G.chain.n:0,ct:G.chain?Math.round(Math.max(0,G.chain.t)*10)/10:0,lk:G.link?JSON.stringify({n:G.link.ids.length,t:Math.round(G.link.t*10)/10,in:G.link.ids.indexOf(me.id)>=0?1:0}):''};
   let gd=null;for(const k in g)if(g[k]!==known.g[k]){(gd=gd||{})[k]=g[k];known.g[k]=g[k]}
   if(gd)out.g=gd;
   const evs=[];for(const v of room.ev){if(v.to!==undefined?v.to===me.id:(v.x===undefined||Math.hypot(v.x-me.x,v.y-me.y)<EVENT_AOI))evs.push(v.e)}

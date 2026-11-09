@@ -4,16 +4,81 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Added
+- The title song plays on the title poster, fading in to 70% volume, and hands over to the menu music on Play Game.
+- First blood: the owner's line plays on a kill, at most once every 10 minutes.
+- The Swarm: an endless mode on any stage you have reached, alone or online. Every wave is bigger, a boss joins every fifth wave, and the safehouse only shelters you between waves. Nothing you earn carries back to your saved character; your best wave is kept.
+- Gloom Eye, the Stage 2 boss: a sweeping gaze beam, triple tentacle slams, a blinding pulse at 60% and a second sweep at 25%. When it locks its gaze on you, face away; its back eye then opens and hits from behind it break its guard. Solo, dodging through the beam also opens the eye.
+- Duskwater Fen, Stage 3: the water rises and falls, and it slows you off the islands. Lurkers grab and drag a player until an ally hits them; solo, your own hits free you.
+- Banshee Phantasm, the Stage 3 boss: a wail ring with a gap to step through, untouchable drifts and, at half life, a possess that slows and pulls one player. She can only be hurt in lantern light. Carry a lantern and hold F to set it down.
+- A red edge at low life, arrows for off-screen enemies about to hit you, and a mark showing where a hit came from.
+- Brighter attacks: swing crescents and tip flares, glowing bullets and muzzle flashes, hit sparks with bigger bursts on critical hits, a flash on kills, and pulsing enemy wind-ups.
+- Stage 2 has tall thicket that hides enemies until they are within 120 units. Marked enemies and ones just hit still show.
+- Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
+
+### Changed
+- The Necromancer, Toxin Alchemist and Void Empress use the same pixel figures as the other villains. Their own attacks stay, shown as a coloured sweep or aura. The page is about 3.5 MB smaller without their large art sheets.
+- The whole title poster fits on screen, with a blurred fill around it. Play Game grows and brightens 20% on hover.
+- Combo announcer lines moved up one clip: kill 1 is First blood and Double Kill is kill 2. Legendary uses the computer voice until it has a recording.
+- Portrait phones use a compact HUD with a smaller minimap, a boss bar below player status, and a shorter touch-control grid. Sound, fullscreen and 3D effects are available in the Settings menu.
+- Removed the hidden, obsolete Phaser roadmap and its unused page styles.
+- Enemies are smarter. Only two press one player at a time while the rest circle, aim follows you until late in a wind-up, attacks can chain, and healing or reviving draws a rush.
+- Shooters lead and strafe, guards turn slowly, packs alert each other, and enemies wait outside the safehouse instead of forgetting you.
+- Bosses can chain attacks and react to healing. Every attack keeps its warning.
+- Enemy hits are stronger on early stages: a weak hit now takes about 10, 8 and 7 hits to down you on Stages 1, 2 and 3, down from over 20.
+- Stage 2 beacons now take 5 seconds to light. Starting one draws a wave, and hits on the lighter set the beacon back.
+- A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
+
 ### Fixed
+- The wounded scout can be revived reliably: night thinning no longer deletes it, hits and shots can no longer hurt or push it before it is revived, enemies ignore it, and the hold-F reach is 80.
+- The title poster no longer flashes a broken image while the page loads; it fades in once its pictures are ready.
+- Defeated Lurkers always release their victims, including when damage over time kills them.
+- Defeating the Banshee releases lantern carriers and possession. Travel and checkpoint retries clear encounter statuses.
+- New Swarm runs clear leftover loot, temporary effects, cooldowns and party bonuses. Wave rewards no longer remove potions above five.
+- Carry canisters no longer spawn inside the drop zone, where picking one up delivered it at once.
+- Objective props such as plates, beacons, canisters, the drop zone, pillars and the escort boat now draw in single-player.
+- Hold objectives can no longer get stuck: after a party wipe, when a party shrinks mid-step, or when someone joins or leaves during a hold. A zone that is already lit stays lit.
+- The objective pointer now works online, including for targets far off screen.
+- The zone ring online fills to the real hold time.
+- The difficulty notice no longer draws over the retry line.
+- The party chain HUD reads its bonuses from the rules, so the two can't disagree.
+- A deploy that fails to start now rolls back to the previous image, and an interrupted deploy leaves a hold instead of looking current.
+- The mobile party panel no longer overlaps the player status bars, and the linked-ultimate prompt names the touch control.
+- Touch movement and held actions clear when interrupted, including when a menu opens or the game loses focus.
+- The online Skills menu updates when the server confirms training or a checkpoint choice.
+- The online Weapons menu updates when the server confirms a purchase or changes safehouse access.
+- Signature moves can hit crystal pillars without closing the room.
+- A replacement wounded scout appears if the objective scout is killed.
+- Killing the wounded scout no longer closes an online room.
+- Online enemy target markers now receive the awareness state they need to appear.
+- Full Party healing no longer gives life to downed or respawning players without reviving them.
+- Healing generates enemy attention only for life actually restored, credited to the healer.
+- Online linked-ultimate feedback now shows its damage bonus.
+- Linked ultimates now increase damage already dealt when an ally joins late.
+- Revive progress resets when switching allies, expired statuses no longer resonate, and healing threat follows the healer.
 - Citizens now fear the player responsible for a civilian death, rather than every party member.
 
 ### Changed
-- Elements now come from the design for all 40 characters. Ten pairs react: Inferno, Shatter, Overload, Freeze, Rot, Collapse, Purge, Eclipse, Cauterise and Frostbite. Two players with the same element resonate for a small damage bonus instead. Only the listed pairs react, so Burn plus Toxin no longer reports an Overload stun, and both players who build a reaction earn rage.
+- Touch buttons show ability cooldowns, ultimate charge and common reasons an item or ability is unavailable.
+- Touch controls fit short landscape screens, show held actions and a movement stick, and keep utility buttons clear of the action grid.
+- Skills are grouped by purpose and show rank progress and current and next bonuses; descriptions clarify which attacks and healing they affect.
+- Weapon upgrade cards show tier progress, current and next effects, and why an upgrade is unavailable. Piercing, shield interrupts and ally heals have distinct combat cues.
+- Ultimate hits deal the designed 4% of boss life divided by party size before link bonuses, even for high-damage builds.
+- Every character pair can trigger a reaction: combinations without a named reaction now create resonance, granting both players rage and a small damage bonus.
+- Elements now come from the design for all 40 characters. Ten pairs react: Inferno, Shatter, Overload, Freeze, Rot, Collapse, Purge, Eclipse, Cauterise and Frostbite. Two players with the same element resonate for a small damage bonus instead. Other pairs create resonance, and both players who build a reaction earn rage.
 - Enemies now build threat from the damage and the healing they take and go for the player who earned the most attention, instead of always walking at the nearest one. Taunt still overrides it, and bosses are unchanged for now.
 - The game now fills the browser window. The in-game menu includes a return to main menu button and a weapons tab with distinct weapon icons.
 - Party size now scales enemy life, rival and boss damage, enemy count and the boss gate quota. Living enemies adjust when players join or leave, and ultimates share their boss damage across the party. These values are provisional pending playtests.
 
 ### Added
+- A fully upgraded healing weapon restores a nearby injured ally on a successful hit, at most once per second.
+- A fully upgraded shield interrupts ordinary enemies when it strikes during their attack or healing wind-up.
+- Fully upgraded pistols and bows can pierce one additional enemy per shot.
+- The Weapons menu compares current and next upgrade effects, and upgraded attacks show a short tier-colored pulse.
+- Necromancer, Void Empress and Toxin Alchemist can upgrade their signature moves twice at the safehouse, with stronger damage and a visual pulse.
+- Mark, Mend Link and Rescue Dash show their current target beside the team ability.
+- Party and combat feedback now shows difficulty, Hope spent, retry location, revive target and range, chain time and bonuses, enemy status and Taunt duration, and citizen fear. The Skills menu explains reactions.
+- Solo players can trigger half-strength Resonance with a second hit on an active status.
 - A title poster before hero selection: the owner's poster art with the DAYRIM letters cut from the title art in the centre, slow drifting embers, and a small stone-lettered Play Game button (Enter also works) that leads to choosing a hero.
 - Footsteps that change with the ground: grass, sandy paths, stone, water and wood, using the owner's step recordings.
 - Shallow ponds you can wade through, with wooden bridges where paths cross them. Their colors follow each stage's theme.

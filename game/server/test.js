@@ -5,7 +5,7 @@ const WebSocket=require('ws');
 const PORT=18000+Math.floor(Math.random()*1000),DATA=fs.mkdtempSync(path.join(os.tmpdir(),'dayrim-test-'));
 let srv,passed=0;const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const ok=(c,m)=>{assert.ok(c,m);passed++;console.log('  ok  '+m)};
-function start(){srv=spawn(process.execPath,['index.js'],{cwd:__dirname,env:{...process.env,PORT,HOST:'127.0.0.1',DATA_DIR:DATA,MAX_ROOMS:'3'},stdio:['ignore','pipe','inherit']});return new Promise(res=>srv.stdout.once('data',res))}
+function start(){srv=spawn(process.execPath,['index.js'],{cwd:__dirname,env:{...process.env,PORT,HOST:'127.0.0.1',DATA_DIR:DATA,MAX_ROOMS:'3'},stdio:['ignore','pipe','inherit']});return new Promise((resolve,reject)=>{const cleanup=()=>{srv.stdout.removeListener('data',ready);srv.removeListener('exit',exited);srv.removeListener('error',failed)},ready=()=>{cleanup();resolve()},exited=(code,signal)=>{cleanup();reject(new Error('Test server exited before listening: '+(signal||code)))},failed=e=>{cleanup();reject(e)};srv.stdout.once('data',ready);srv.once('exit',exited);srv.once('error',failed)})}
 const stop=()=>new Promise(res=>{srv.once('exit',res);srv.kill('SIGTERM')});
 const get=(p,h={})=>new Promise((res,rej)=>http.get({port:PORT,host:'127.0.0.1',path:p,headers:h},r=>{const b=[];r.on('data',d=>b.push(d));r.on('end',()=>res({status:r.statusCode,headers:r.headers,body:Buffer.concat(b)}))}).on('error',rej));
 class Bot{
@@ -59,6 +59,7 @@ class Bot{
   console.log('      '+Math.round((a.bytes-bb)/sec/1024*10)/10+' KB/s before compression per player, '+Math.round((a.snaps-sn)/sec)+' snapshots/s, '+a.ents.e.size+' enemies in view');
   ok(a.ents.e.size>=0&&a.snaps>sn+50,'snapshots keep flowing during a fight');
   ok(a.world.ch!==undefined&&a.world.ch===b.world.ch,'both players see the same party chain: '+(a.world.ch||0));
+  ok(Number.isFinite(a.world.ct)&&Number.isFinite(a.world.hopeSpent),'chain timer and Hope spent reach real clients');
   ok(a.world.lk!==undefined&&a.world.lk===b.world.lk,'the link window is on the wire and empty when nobody links');
 
   console.log('Host and leaving');
@@ -81,6 +82,12 @@ class Bot{
   ok(again.me.kills===p1.chars.Detective.kills&&again.me.lvl===p1.chars.Detective.lvl,'same token gets the same character back after a restart');
   const lst=new Bot();await lst.open();await lst.hello('Zed');lst.send({t:'rooms'});ok(!(await lst.wait('rooms')).rooms.some(x=>x.code===r.code),'private room stays out of the list');
   const dup=new Bot();await dup.open();await dup.hello('Ana',a.token);await sleep(200);ok(again.closed===4001,'signing in twice closes the older connection');
+
+  console.log('The Swarm');
+  const sw=new Bot();await sw.open();await sw.hello('Swarmer');sw.send({t:'create',char:'Detective',mode:'swarm',stage:7});const sj=await sw.wait('joined');sw.id=sj.you;ok(sj.stage===1,'a Swarm room is clamped to the furthest stage the character has reached');
+  await sleep(400);const swo=JSON.parse(sw.world.sw||'null');ok(swo&&swo.w===0&&swo.b>0,'clients get the wave state before the first wave');
+  const look=new Bot();await look.open();await look.hello('Look');look.send({t:'rooms'});const sr=(await look.wait('rooms')).rooms.find(x=>x.code===sj.code);ok(sr&&sr.mode==='swarm'&&sr.wave===0,'the room list shows a Swarm room and its wave');
+  sw.close();look.close();await sleep(200);
 
   console.log('Bad origins and floods');
   const evil=new Bot();const refused=await evil.open({Origin:'https://evil.example'}).then(()=>false,()=>true);ok(refused,'another website cannot open a connection');

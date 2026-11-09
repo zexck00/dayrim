@@ -1,0 +1,25 @@
+# Overlay: puts Dayrim behind a shared Traefik instead of publishing a host port.
+#
+#   docker compose -f docker-compose.yml -f compose.traefik.yml up -d --build
+#
+# Or set COMPOSE_FILE=docker-compose.yml:compose.traefik.yml in .env, along with
+# DAYRIM_HOST and ALLOWED_ORIGINS=https://<that host>.
+#
+# TLS comes from the websecure entrypoint's certResolver. Don't use a middleware
+# with a strict CSP here: the game page is one file of inline scripts.
+services:
+  dayrim:
+    ports: !reset []
+    networks:
+      - traefik_default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_default"
+      - "traefik.http.routers.dayrim.rule=Host(`${DAYRIM_HOST:?set DAYRIM_HOST in .env}`)"
+      - "traefik.http.routers.dayrim.entrypoints=websecure"
+      - "traefik.http.routers.dayrim.middlewares=basic-security@file"
+      - "traefik.http.services.dayrim.loadbalancer.server.port=8080"
+
+networks:
+  traefik_default:
+    external: true
