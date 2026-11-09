@@ -68,7 +68,8 @@ function threatHeal(p,amount){if(!(amount>0))return;for(const e of G.enemies)if(
 /* Auras are passive, shared with nearby allies, and do not stack with the same effect. */
 const AURA_RADIUS=220,AURA_TYPES={bruiser:{n:'Bulwark',d:'8% less damage taken',col:'#70caff'},shooter:{n:'Focus',d:'8% more damage',col:'#ffd166'},striker:{n:'Precision',d:'4% critical chance',col:'#ff7b72'},scout:{n:'Haste',d:'8% movement speed',col:'#b9a4ff'},medic:{n:'Renewal',d:'0.6% life per second',col:'#80e5aa'}};
 const auraOf=p=>AURA_TYPES[archKey(p.char)],auraHas=(p,k)=>!(p.deadT>0||p.respawnT>0)&&G.players.some(q=>!(q.deadT>0||q.respawnT>0)&&archKey(q.char)===k&&dist(p,q)<=AURA_RADIUS);
-const upgradeLevel=(p,id)=>Math.max(0,Math.min(2,Number.isInteger((p.weaponUpgrades||{})[id])?p.weaponUpgrades[id]:0)),upgradeCost=n=>[80,180][n]||0;
+const UPGRADE_COSTS=[80,180,300,450,650],MAX_WEAPON_TIER=UPGRADE_COSTS.length;
+const upgradeLevel=(p,id)=>Math.max(0,Math.min(MAX_WEAPON_TIER,Number.isInteger((p.weaponUpgrades||{})[id])?p.weaponUpgrades[id]:0)),upgradeCost=n=>UPGRADE_COSTS[n]||0;
 function upgradeWeapon(id){const p=G.p,kit=kitOf(p);if(typeof id!=='string'||!p.nearSafe)return false;if(kit?id!=='signature':(!Object.prototype.hasOwnProperty.call(WEAPONS,id)||!p.weapons.includes(id)))return false;const n=upgradeLevel(p,id),cost=upgradeCost(n);if(!cost||p.gold<cost)return false;p.gold-=cost;p.weaponUpgrades=p.weaponUpgrades||{};p.weaponUpgrades[id]=n+1;dirty();writeSave();return true}
 const STAGES=[
  {n:'Sunrise Hollow',h:6,boss:'Crystal Scurrier',ah:96,r:30,biome:0},
@@ -114,11 +115,12 @@ const stageScale=s=>Math.pow(1.38,s-1),recLevel=s=>s*3,quota=s=>Math.ceil((8+(s-
    takes REC_HITS hits from a player at the stage's recommended level, at every stage. The unit
    keeps the old "55 per stage" slot so every archetype keeps the ratio it was tuned with. */
 const REC_HITS=2.2;
-/* What an upgrade adds to a swing. Ranged spreads 1 / 1.2 / 1.5 over its extra shots; melee hits one arc. */
-const MELEE_UP=[1,1.2,1.5],MELEE_REACH_STEP=12,MELEE_ARC_STEP=.25;
+/* Later tiers add measured power without growing swings into a full circle. */
+const MELEE_UP=[1,1.2,1.5,1.7,1.9,2.1],MELEE_REACH_STEP=12,MELEE_ARC_STEP=.25;
+const meleeReach=(w,n)=>w.reach+Math.min(n,3)*MELEE_REACH_STEP,meleeArc=n=>1.1+Math.min(n,2)*MELEE_ARC_STEP;
 const PIERCING_WEAPONS=new Set(['pistol','bow']);
-const GUN_UP=[{angles:[0],damage:1},{angles:[-.18,0,.18],damage:.4},{angles:[-.36,-.18,0,.18,.36],damage:.3}];
-const SPELL_UP=[{angles:[0],damage:1,blast:44},{angles:[-.18,0,.18],damage:.45,blast:56},{angles:[-.36,0,.36],damage:.45,blast:68}];
+const GUN_UP=[{angles:[0],damage:1},{angles:[-.18,0,.18],damage:.4},{angles:[-.36,-.18,0,.18,.36],damage:.3},{angles:[-.36,-.18,0,.18,.36],damage:.34},{angles:[-.36,-.18,0,.18,.36],damage:.38},{angles:[-.36,-.18,0,.18,.36],damage:.42}];
+const SPELL_UP=[{angles:[0],damage:1,blast:44},{angles:[-.18,0,.18],damage:.45,blast:56},{angles:[-.36,0,.36],damage:.45,blast:68},{angles:[-.36,0,.36],damage:.5,blast:72},{angles:[-.36,0,.36],damage:.55,blast:76},{angles:[-.36,0,.36],damage:.6,blast:80}];
 const recDamage=s=>11+2.6*recLevel(s);
 const mobUnit=s=>recDamage(s)*REC_HITS/.6;
 /* Enemy damage is set in hits to down a player at the recommended level, like enemy life is set in hits to kill. The old curve left 20 or more weak hits on early stages. Later stages keep the old curve where it is already harsher. Life and armor follow recalc. */
@@ -701,7 +703,7 @@ function hurtPlayer(d){
 /* An upgraded shield cancels ordinary enemies' current wind-up, never a boss move. */
 function shieldInterrupt(e){if(!e||e.dead||e.kind==='boss'||!((e.wind||0)>0||(e.healWind||0)>0))return false;e.wind=0;e.healWind=0;e.healT=Math.max(e.healT||0,3);e.castT=0;e.cd=Math.max(e.cd||0,1);text(e.x,e.y-98,'INTERRUPTED','#8fd0ff',true);G.fx.push({k:'shieldFx',x:e.x,y:e.y-24,a:Math.atan2(e.y-G.p.y,e.x-G.p.x),t:.28,m:.28});burst(e.x,e.y-24,'#8fd0ff',6,100);return true}
 const WEAPON_HEAL_RANGE=200,WEAPON_HEAL_SHARE=.02,WEAPON_HEAL_CD=1;
-/* Once per second, a fully upgraded healing weapon restores one nearby ally. */
+/* From tier two, a healing weapon restores one nearby ally once per second. */
 function weaponHealAlly(p){if((p.weaponHealCd||0)>0)return false;const q=G.players.filter(q=>q!==p&&!(q.deadT>0||q.respawnT>0)&&q.hp<q.s.maxHp&&dist(q,p)<=WEAPON_HEAL_RANGE).sort((a,b)=>a.hp/a.s.maxHp-b.hp/b.s.maxHp)[0];if(!q)return false;const h=Math.min(q.s.maxHp-q.hp,q.s.maxHp*WEAPON_HEAL_SHARE);q.hp+=h;p.weaponHealCd=WEAPON_HEAL_CD;threatHeal(p,h);G.fx.push({k:'healLink',x:p.x,y:p.y-24,x2:q.x,y2:q.y-24,t:.32,m:.32});text(q.x,q.y-72,'+'+Math.round(h),'#6fdca0',true);burst(q.x,q.y-24,'#6fdca0',8,90);return true}
 function doAttack(){
   if(G.p.carry||G.p.stunT>0)return;
@@ -709,12 +711,10 @@ function doAttack(){
   const p=G.p,id=p.weapon,W=WEAPONS[id];if(p.cd.slash>0||p.guard)return;
   if(W.m==='spell'&&p.mana<W.cost)return;
   p.cd.slash=W.cd*cdMulOf(p);p.atkT=Math.min(.3,p.cd.slash);p.atkDur=p.atkT;const dmg=weaponDamage(id)*dmgMul(),up=upgradeLevel(p,id),fx=Math.cos(p.face),fy=Math.sin(p.face);
-  if(up)G.fx.push({k:'ring',x:p.x+fx*12,y:p.y-24+fy*12,r:6,to:22+up*10,t:.24,m:.24,shape:up===2?'diamond':'circle',c:up===1?'#ffd166':'#80eaff'});
+  if(up)G.fx.push({k:'ring',x:p.x+fx*12,y:p.y-24+fy*12,r:6,to:22+up*10,t:.24,m:.24,shape:up>=2?'diamond':'circle',c:up===1?'#ffd166':'#80eaff'});
   if(W.m==='shoot'){sfx('shot');const sty={bow:'arrow',blaster:'plasma',tommy:'tracer',camera:'flash'}[id]||'bullet',sp=sty==='arrow'?470:sty==='plasma'?430:640;for(const off of GUN_UP[up].angles){const a=p.face+off;G.shots.push({x:p.x+fx*24,y:p.y-24+fy*24,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:sty==='plasma'?7:4,from:'p',life:.8,dmg:dmg*GUN_UP[up].damage,small:true,pierce:up>=2&&PIERCING_WEAPONS.has(id)?1:0,piercing:up>=2&&PIERCING_WEAPONS.has(id),fx:sty,col:sty==='plasma'?'111,220,255':'255,220,120',a})}muzzle(p.x+fx*30,p.y-24+fy*30,p.face,sty);return}
   if(W.m==='spell'){p.mana-=W.cost;sfx('bolt');const sty={book:'arcane',flask:'flask',candle:'ember',staff:'skull',cards:'card'}[id]||'orb';for(const off of SPELL_UP[up].angles){const a=p.face+off;G.shots.push({x:p.x+fx*20,y:p.y-24+fy*20,vx:Math.cos(a)*390,vy:Math.sin(a)*390,r:6,from:'p',life:.9,dmg:dmg*SPELL_UP[up].damage,blast:SPELL_UP[up].blast,fx:sty,col:spellCol(p.char,sty),a})}return}
-  /* Melee upgrades used to buy reach and arc only, so a blade got no stronger while a gun did.
-     The swing now follows the same 1 / 1.2 / 1.5 damage steps a ranged upgrade gives. */
-  const mdmg=dmg*(MELEE_UP[up]||1),reach=W.reach+up*MELEE_REACH_STEP,arc=1.1+up*MELEE_ARC_STEP;p.swingArc=arc;p.swing=.17;p.swingA=p.face;p.swingR=reach;sfx(W.m==='unarmed'?'hit':'slash');let n=0,landed=false;
+  const mdmg=dmg*MELEE_UP[up],reach=meleeReach(W,up),arc=meleeArc(up);p.swingArc=arc;p.swing=.17;p.swingA=p.face;p.swingR=reach;sfx(W.m==='unarmed'?'hit':'slash');let n=0,landed=false;
   for(const e of G.enemies.slice()){if(e.dead||e.fleshDown||e.scrapDown)continue;const d=dist(e,p);if(d>reach+e.r)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc||d<e.r+p.r+4){if(!e.buried)landed=true;hitEnemy(e,mdmg,a,W.m==='shield'?300:W.m==='unarmed'?90:170);if(W.m==='shield'&&up>=2)shieldInterrupt(e);n++}}
   for(const c of G.npcs){if(c.dead)continue;const d=dist(c,p);if(d>reach+10)continue;const a=Math.atan2(c.y-p.y,c.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc)hitNpc(c,mdmg,a,true)}
   webAlly(p,q=>dist(q,p)<=reach+q.r&&angGap(Math.atan2(q.y-p.y,q.x-p.x),p.face)<arc);
@@ -806,7 +806,7 @@ function strike(a,shape,dmg,kb){
 }
 function fireMove(a,mv,hitN){
   const {key,id,side}=mv,d=moveDamage(a,key,id),col=KIT[key].col,from=a.char?'p':'e',band=(y,h)=>Math.abs(y)<h;
-  if(a.char&&hitN===0){const up=upgradeLevel(a,'signature');if(up)G.fx.push({k:'ring',x:a.x,y:a.y-22,r:8,to:30+up*14,t:.3,m:.3,shape:up===2?'diamond':'circle',c:'#'+col.split(',').map(v=>(+v).toString(16).padStart(2,'0')).join('')})}
+  if(a.char&&hitN===0){const up=upgradeLevel(a,'signature');if(up)G.fx.push({k:'ring',x:a.x,y:a.y-22,r:8,to:30+up*14,t:.3,m:.3,shape:up>=2?'diamond':'circle',c:'#'+col.split(',').map(v=>(+v).toString(16).padStart(2,'0')).join('')})}
   if(key==='necro'){
     if(id==='small'){strike(a,(x,y)=>x*side>18&&x*side<112&&band(y,46),d,120);glowP(a.x+side*72,a.y-46,col,12,170,.4,3)}
     if(id==='moderate'){strike(a,(x,y)=>Math.hypot(x,y*1.2)<112&&x*side>-22,d,240);shake(2)}

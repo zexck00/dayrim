@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Weapon and signature upgrades now reach tier 5. Three new safehouse upgrades increase power while keeping melee reach and swing coverage in check.
 - Rusted Ghoul, the Stage 7 boss: dodge its hook and cleaves, then power the generator and lure it onto the coil to stagger it and clear Rust Field. The coil charges itself for a lone standing player.
 - Rustleaf Woods: rust weakens armor at night, a fueled generator must be defended while it is repaired, and Scrap Golems rebuild unless their parts are destroyed. Solo players can break both parts.
 - Flesh Amalgam, the Stage 6 boss: pull its two bodies apart to stop them healing, and bring a downed body’s partner down before it revives. The bodies rejoin for the final phase.
