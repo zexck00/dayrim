@@ -238,7 +238,9 @@ const SPLASH=$('splash');
 function splashOn(){return !!SPLASH&&!SPLASH.classList.contains('gone')}
 function leaveSplash(){if(!splashOn())return;const b=$('spplay');if(b.classList.contains('go'))return;b.classList.add('go');
   setTimeout(()=>{SPLASH.classList.add('gone');titleMusic();if(G.mode!=='title')setMode('title');menuMusic()},350)}
-function initSplash(){if(!SPLASH)return;$('spposter').src=TITLE_URLS.poster;SPLASH.style.setProperty('--poster','url('+TITLE_URLS.poster+')');$('spwords').src=TITLE_URLS.words;
+function initSplash(){if(!SPLASH)return;const ims=[$('spposter'),$('spwords')];ims[0].src=TITLE_URLS.poster;SPLASH.style.setProperty('--poster','url('+TITLE_URLS.poster+')');ims[1].src=TITLE_URLS.words;
+  /* Show the poster only once both pictures are decoded */
+  Promise.all(ims.map(im=>im.decode?im.decode().catch(()=>{}):Promise.resolve())).then(()=>SPLASH.classList.add('ready'));
   /* The button letters are filled with stone cut from the DAYRIM letters, so they match the title */
   SPLASH.querySelector('.pg-t').style.backgroundImage='url('+TITLE_URLS.stone+'),linear-gradient(#d9cbb4,#8a7660)';
   audioOn();if(ac)ac.addEventListener('statechange',titleMusic);const b=$('spplay');b.addEventListener('click',leaveSplash);try{b.focus({preventScroll:true})}catch(e){}requestAnimationFrame(splashTick)}

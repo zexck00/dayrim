@@ -30,6 +30,8 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
 
 ### Fixed
+- The wounded scout can be revived reliably: night thinning no longer deletes it, hits and shots can no longer hurt or push it before it is revived, enemies ignore it, and the hold-F reach is 80.
+- The title poster no longer flashes a broken image while the page loads; it fades in once its pictures are ready.
 - Defeated Lurkers always release their victims, including when damage over time kills them.
 - Defeating the Banshee releases lantern carriers and possession. Travel and checkpoint retries clear encounter statuses.
 - New Swarm runs clear leftover loot, temporary effects, cooldowns and party bonuses. Wave rewards no longer remove potions above five.

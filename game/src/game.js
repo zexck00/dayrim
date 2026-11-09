@@ -382,7 +382,7 @@ function updateRevive(p,dt){
   if(!q)q=G.players.filter(x=>x!==p&&x.deadT>0&&dist(p,x)<=range).sort((a,b)=>dist(p,a)-dist(p,b))[0];
   if(q){if(p.reviveTarget!==q.id)p.reviveProgress=0;p.reviveTarget=q.id;p.reviveProgress+=dt/(archKey(p.char)==='medic'?1.5:3);if(p.reviveProgress>=1){revive(q);threatHeal(p,q.s.maxHp*.35);p.reviveTarget=0;p.reviveProgress=0}return}
   p.reviveTarget=0;
-  const c=G.npcs.find(x=>x.wounded&&!x.dead&&dist(p,x)<=range);
+  const c=G.npcs.find(x=>x.wounded&&!x.dead&&dist(p,x)<=Math.max(range,80));
   if(!c){p.reviveProgress=0;return}
   p.reviveProgress=Math.min(1,p.reviveProgress+dt/2.4);c.reviveT=p.reviveProgress;
   if(p.reviveProgress>=1){c.wounded=false;c.hp=c.maxHp;c.sp=rnd(34,56);text(c.x,c.y-42,'Saved','#6fdca0',true);burst(c.x,c.y-20,'#6fdca0',14,120);const st=G.obj&&G.obj.steps[G.obj.i];if(st&&st.kind==='revive')st.have++}
@@ -690,7 +690,8 @@ const TALK={
  villainArrive:['Their masters are here!','The villains have come!']
 };
 function say(c,kind,chance=1){if(c.dead||Math.random()>chance)return;const k=kind==='villain'?'villainArrive':kind;if(c.qt>.6&&!['hurt','hurtEnemy','witness'].includes(k))return;c.quip=pick(TALK[k]);c.qt=2.6}
-function hitNpc(c,d,a,byPlayer){if(c.dead)return;c.hp-=d;c.kx=(c.kx||0)+Math.cos(a)*180;c.ky=(c.ky||0)+Math.sin(a)*180;c.scare=4;c.flash=.1;sfx('hit');bleed(c.x,c.y-26,Math.cos(a),Math.sin(a),10);if(c.hp<=0)killNpc(c,a,byPlayer);else say(c,byPlayer?'hurt':'hurtEnemy')}
+/* The wounded scout can't be hurt or knocked away until revived, so the objective can't vanish or slide out of reach */
+function hitNpc(c,d,a,byPlayer){if(c.dead||c.wounded)return;c.hp-=d;c.kx=(c.kx||0)+Math.cos(a)*180;c.ky=(c.ky||0)+Math.sin(a)*180;c.scare=4;c.flash=.1;sfx('hit');bleed(c.x,c.y-26,Math.cos(a),Math.sin(a),10);if(c.hp<=0)killNpc(c,a,byPlayer);else say(c,byPlayer?'hurt':'hurtEnemy')}
 /* ---------- Gore. Blood scales with the damage relative to the target's life, so a pistol pop bleeds little and an ultimate bleeds a lot. ---------- */
 const GORE={hit:26,kill:64,cap:420,trailT:.4,poolMin:16,poolMax:30,mark:.34};
 const GORE_KIT={necro:['#8c1820','#5e0f16','#e8dcc0'],toxic:['#3f6a2a','#26401a','#a8c070'],void:['#6a2a7a','#3e1a4a','#c090d8']};
@@ -908,7 +909,7 @@ function update(dt){
   // keep the streets populated: more rivals at night, more citizens by day
   const n=nightness(G.hour);G.spawnT-=dt;
   if(G.swarm)swarmTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue())useMobs()?spawnMob(520):spawnRival(520);
-    const wantN=Math.round(14*(1-n)+3);if(G.npcs.length<wantN)spawnNpc();else if(G.npcs.length>wantN)G.npcs.splice(G.npcs.findIndex(c=>dist(c,nearestPlayer(c))>500)>>>0,1)}
+    const wantN=Math.round(14*(1-n)+3);if(G.npcs.length<wantN)spawnNpc();else if(G.npcs.length>wantN)G.npcs.splice(G.npcs.findIndex(c=>!c.wounded&&dist(c,nearestPlayer(c))>500)>>>0,1)}
   if(useMobs()&&!G.clearPending&&!G.swarm){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
   updateNpcs(dt);tickHazards(dt);G.p=G.players[0];
   for(const c of G.w.cars){if(c.v){c.y+=c.s*dt;if(c.y<-60)c.y=MH*T+60;if(c.y>MH*T+60)c.y=-60}else{c.x+=c.s*dt;if(c.x<-60)c.x=MW*T+60;if(c.x>MW*T+60)c.x=-60}}
@@ -920,7 +921,7 @@ function update(dt){
   for(const s of G.shots){s.life-=dt;const nx=s.x+s.vx*dt,ny=s.y+s.vy*dt;if(s.from==='p')G.p=ownerOf(s);
     if(wall(nx/T|0,(ny+22)/T|0)){s.life=0;if(s.from==='p'&&!s.small)explode(s);else impact(s);continue}
     s.x=nx;s.y=ny;trail(s,dt);
-    if(s.from==='e'||s.from==='p'){for(const c of G.npcs){if(!c.dead&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+3){s.life=0;if(s.from==='p'&&!s.small)explode(s);else{impact(s);hitNpc(c,s.dmg,Math.atan2(s.vy,s.vx),s.from==='p')}break}}if(s.life<=0)continue}
+    if(s.from==='e'||s.from==='p'){for(const c of G.npcs){if(!c.dead&&!c.wounded&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+3){s.life=0;if(s.from==='p'&&!s.small)explode(s);else{impact(s);hitNpc(c,s.dmg,Math.atan2(s.vy,s.vx),s.from==='p')}break}}if(s.life<=0)continue}
     if(s.from==='p'){for(const e of G.enemies){if(!e.dead&&!(s.hitTargets&&s.hitTargets.includes(e))&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){if(s.small){impact(s);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),90);if(s.pierce>0){G.fx.push({k:'pierceFx',x:s.x,y:s.y,a:Math.atan2(s.vy,s.vx),t:.22,m:.22});(s.hitTargets||(s.hitTargets=[])).push(e);s.pierce--}else s.life=0}else{s.life=0;explode(s)}break}}}
     else for(const q of G.players){if(!(q.respawnT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;hurtPlayer(s.dmg);impact(s);break}}}
   G.shots=G.shots.filter(s=>s.life>0);G.enemies=G.enemies.filter(e=>!e.dead);
@@ -1049,7 +1050,7 @@ function updateEnemy(e,dt){
   if(e.kind==='boss')return updateBoss(e,dt,d,seen);
   if(e.role==='stalker'&&stalkerAct(e,dt,d,seen))return;
   if(e.role==='lurker'&&lurkerAct(e,dt,d,seen))return;
-  if(!e.aware){let tg=null,bd=170;for(const c of G.npcs){const dd=dist(c,e);if(!c.dead&&dd<bd){bd=dd;tg=c}}if(tg){e.ang=Math.atan2(tg.y-e.y,tg.x-e.x);if(bd>e.r+14){move(e,Math.cos(e.ang)*e.sp*.8*dt,Math.sin(e.ang)*e.sp*.8*dt);e.walk+=dt*7;e.moving=true}else if(e.cd<=0){e.cd=1.1;e.atkShow=.2;hitNpc(tg,e.dmg*1.4,e.ang,false)}return}e.wander-=dt;if(e.wander<=0){e.wander=rnd(1.5,4);e.wa=rnd(TAU);e.still=Math.random()<.35}if(!e.still){const h=move(e,Math.cos(e.wa)*e.sp*.4*dt,Math.sin(e.wa)*e.sp*.4*dt);e.ang=e.wa;e.walk+=dt*6;e.moving=true;if(h)e.wander=0}return}
+  if(!e.aware){let tg=null,bd=170;for(const c of G.npcs){const dd=dist(c,e);if(!c.dead&&!c.wounded&&dd<bd){bd=dd;tg=c}}if(tg){e.ang=Math.atan2(tg.y-e.y,tg.x-e.x);if(bd>e.r+14){move(e,Math.cos(e.ang)*e.sp*.8*dt,Math.sin(e.ang)*e.sp*.8*dt);e.walk+=dt*7;e.moving=true}else if(e.cd<=0){e.cd=1.1;e.atkShow=.2;hitNpc(tg,e.dmg*1.4,e.ang,false)}return}e.wander-=dt;if(e.wander<=0){e.wander=rnd(1.5,4);e.wa=rnd(TAU);e.still=Math.random()<.35}if(!e.still){const h=move(e,Math.cos(e.wa)*e.sp*.4*dt,Math.sin(e.wa)*e.sp*.4*dt);e.ang=e.wa;e.walk+=dt*6;e.moving=true;if(h)e.wander=0}return}
   const a=e.a;
   e.rushT=Math.max(0,(e.rushT||0)-dt);e.punishCd=Math.max(0,(e.punishCd||0)-dt);
   /* In the Swarm the safehouse only shelters the party between waves. */

@@ -141,6 +141,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 /* Title poster: the first screen. The owner's poster, the DAYRIM letters cut from the title art, and the Play Game button. */
 .splash{position:absolute;inset:0;z-index:8;container-type:size;overflow:hidden;background:#07060c;transition:opacity .7s ease,visibility 0s linear .7s}
 .splash.gone{opacity:0;visibility:hidden;pointer-events:none}
+/* Nothing on the poster shows until both pictures have loaded, so a half-loaded or broken image never flashes */
+.splash .sp-poster,.splash .sp-words,.splash .sp-play,.splash::before{opacity:0;transition:opacity .5s ease}
+.splash.ready .sp-poster,.splash.ready .sp-words,.splash.ready .sp-play,.splash.ready::before{opacity:1}
 .sp-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;filter:saturate(1.05) brightness(.86)}
 .splash::before{content:"";position:absolute;inset:-40px;background:var(--poster,none) center/cover;filter:blur(26px) brightness(.4) saturate(1.1);z-index:0}
 .splash::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse 52% 20% at 50% 44%,rgba(6,3,10,.62) 0,rgba(6,3,10,.38) 55%,rgba(6,3,10,0) 100%),radial-gradient(ellipse 20% 13% at 50% 76%,rgba(6,3,10,.5) 0,rgba(6,3,10,0) 100%),radial-gradient(ellipse 70% 60% at 50% 46%,rgba(0,0,0,0) 30%,rgba(4,2,8,.55) 100%)}
