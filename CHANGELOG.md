@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- The title song plays on the title poster, fading in to 70% volume, and hands over to the menu music on Play Game.
+- First blood: the owner's line plays on a kill, at most once every 10 minutes.
 - The Swarm: an endless mode on any stage you have reached, alone or online. Every wave is bigger, a boss joins every fifth wave, and the safehouse only shelters you between waves. Nothing you earn carries back to your saved character; your best wave is kept.
 - Gloom Eye, the Stage 2 boss: a sweeping gaze beam, triple tentacle slams, a blinding pulse at 60% and a second sweep at 25%. When it locks its gaze on you, face away; its back eye then opens and hits from behind it break its guard. Solo, dodging through the beam also opens the eye.
 - Duskwater Fen, Stage 3: the water rises and falls, and it slows you off the islands. Lurkers grab and drag a player until an ally hits them; solo, your own hits free you.
@@ -15,6 +17,9 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
 
 ### Changed
+- The Necromancer, Toxin Alchemist and Void Empress use the same pixel figures as the other villains. Their own attacks stay, shown as a coloured sweep or aura. The page is about 3.5 MB smaller without their large art sheets.
+- The whole title poster fits on screen, with a blurred fill around it. Play Game grows and brightens 20% on hover.
+- Combo announcer lines moved up one clip: kill 1 is First blood and Double Kill is kill 2. Legendary uses the computer voice until it has a recording.
 - Portrait phones use a compact HUD with a smaller minimap, a boss bar below player status, and a shorter touch-control grid. Sound, fullscreen and 3D effects are available in the Settings menu.
 - Removed the hidden, obsolete Phaser roadmap and its unused page styles.
 - Enemies are smarter. Only two press one player at a time while the rest circle, aim follows you until late in a wind-up, attacks can chain, and healing or reviving draws a rush.

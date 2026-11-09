@@ -118,18 +118,23 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
 addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
 addEventListener('blur',()=>{keys.clear();resetTouch();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
-function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';menuMusic();gameAmbience()}
+function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';titleMusic();menuMusic();gameAmbience()}
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
 const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
 function loadSounds(){if(!ac)return;Object.entries(SOUND_CLIPS).forEach(([k,b64])=>{if(SOUND_BUF[k]||SOUND_WAIT[k]===-1)return;SOUND_WAIT[k]=SOUND_WAIT[k]||-1;try{const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
-  ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k.startsWith('an_')&&SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900){SOUND_WAIT[k]=0;announce(k.slice(3))}if(k==='menu')menuMusic();else if(k==='ambA'||k==='ambB')gameAmbience();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
+  ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k.startsWith('an_')&&SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900){SOUND_WAIT[k]=0;announce(k.slice(3))}if(k==='menu')menuMusic();else if(k==='titleSong')titleMusic();else if(k==='ambA'||k==='ambB')gameAmbience();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
 /* A browse sound cuts off the one before it, so clicking quickly through cards doesn't pile up */
 /* Villain browse is twice the hero browse level, at the owner's request. Its loudest point stays below clipping (about -1.7 dB). */
 const SOUND_VOL={heroBrowse:.8,villainBrowse:1.6};
 function playSound(k,v=SOUND_VOL[k]||.8){if(muted||!ac)return;const b=SOUND_BUF[k];if(!b){if(SOUND_WAIT[k]===-1)SOUND_WAIT[k]=performance.now();return}
   try{if(browseSrc)browseSrc.stop()}catch(e){}try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;g.gain.value=v;s.connect(g).connect(ac.destination);s.start();browseSrc=s;(window.__soundLog=window.__soundLog||[]).push(k)}catch(e){}}
+/* Title song: plays on the title poster only. It fades in to 70% volume, at the owner's request, and fades out when Play Game is pressed. */
+const TITLE_VOL=.7;let titleSrc=null,titleGain=null;
+function titleMusic(){const want=!muted&&!!ac&&!!SOUND_BUF.titleSong&&splashOn();if(want===!!titleSrc)return;const now=ac?ac.currentTime:0;
+  if(want){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF.titleSong;loopTrim(s,SOUND_BUF.titleSong);g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(TITLE_VOL,now+3);s.connect(g).connect(ac.destination);s.start(now,s.loopStart);titleSrc=s;titleGain=g}catch(e){}}
+  else{const s=titleSrc,g=titleGain;titleSrc=titleGain=null;try{g.gain.cancelScheduledValues(now);g.gain.setValueAtTime(g.gain.value,now);g.gain.linearRampToValueAtTime(0,now+.9);s.stop(now+.95)}catch(e){}}}
 /* Loops on the character and online screens, fades in and out, and respects Sound off */
-function menuMusic(){const want=!muted&&!!ac&&!!SOUND_BUF.menu&&!!G&&G.mode==='title';if(want===!!menuSrc)return;const now=ac?ac.currentTime:0;
+function menuMusic(){const want=!muted&&!!ac&&!!SOUND_BUF.menu&&!!G&&G.mode==='title'&&!splashOn();if(want===!!menuSrc)return;const now=ac?ac.currentTime:0;
   if(want){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF.menu;loopTrim(s,SOUND_BUF.menu);g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(.5,now+1.2);s.connect(g).connect(ac.destination);s.start();menuSrc=s;menuGain=g}catch(e){}}
   else{const s=menuSrc,g=menuGain;menuSrc=menuGain=null;try{g.gain.cancelScheduledValues(now);g.gain.setValueAtTime(g.gain.value,now);g.gain.linearRampToValueAtTime(0,now+.6);s.stop(now+.65)}catch(e){}}}
 /* Encoders add a sliver of silence at each end, so loops skip it to avoid a gap */
@@ -156,8 +161,13 @@ let annPrio=0,annUntil=0;
 function announce(k,prio=2,vol=.8){if(muted||!ac)return false;const b=SOUND_BUF['an_'+k];if(!b){if(SOUND_WAIT['an_'+k]===-1)SOUND_WAIT['an_'+k]=performance.now();return false}
   const now=performance.now();if(now<annUntil&&prio<annPrio)return true;try{if(voiceSrc)voiceSrc.stop()}catch(e){}
   try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;g.gain.value=vol;s.connect(g).connect(ac.destination);s.start();voiceSrc=s;annPrio=prio;annUntil=now+b.duration*1000;(window.__annLog=window.__annLog||[]).push(k)}catch(e){}return true}
-/* Combo tiers in order: Double Kill is kill 1, up to Legendary as kill 9 */
-function announceTier(text){const i=COMBO_TIERS.findIndex(c=>c[1]===text);return i>=0&&announce('kill_'+(i+1),2)}
+/* kill 1 is the owner's "First blood" line. Combo tiers follow it: Double Kill is kill 2, up to Godlike as kill 9.
+   Legendary has no recording yet, so it falls back to the computer voice. */
+function announceTier(text){const i=COMBO_TIERS.findIndex(c=>c[1]===text);return i>=0&&announce('kill_'+(i+2),2)}
+/* First blood plays on a kill only if it hasn't played in the last 10 minutes, at the owner's request */
+const FIRST_BLOOD_GAP=10*60*1000;let firstBloodAt=-Infinity,killSeen=null;
+function watchFirstBlood(){const k=(G.killsStage||0)+((G.p&&G.p.kills)||0);if(killSeen===null||k<killSeen){killSeen=k;return}if(k===killSeen)return;killSeen=k;
+  const now=performance.now();if(now-firstBloodAt<FIRST_BLOOD_GAP)return;if(announce('kill_1',3))firstBloodAt=now}
 /* Rule sounds that have the owner's recording. Anything else falls back to the synth. */
 const ASSET_SFX={slash:{keys:['sfx_melee_1','sfx_melee_2','sfx_melee_3'],vol:.45},pull:{keys:['sfx_heal_1','sfx_heal_2','sfx_heal_3'],vol:.3}};
 let rivalAnnT=0;
@@ -175,14 +185,14 @@ function soundWatch(){if(!ac||!G||!G.p||G.mode==='title'){if(bossMus&&ac)setBoss
   const b=G.boss;if(b&&b!==bossSeen){bossSeen=b;bossT0=G.t;announce('boss_fight',3)}
   if(b){bossLastHp=b.hp/(b.maxHp||1);setBossMusic(muted?null:(G.t-bossT0<60?'mus_boss':'mus_boss_late'))}
   else{if(bossSeen&&(bossSeen.dead||bossSeen.hp<=bossSeen.maxHp*.25||bossLastHp<.25))announce('boss_defeated',4);bossSeen=null;if(bossMus)setBossMusic(null)}
-  gameAmbience();
+  gameAmbience();watchFirstBlood();
   const me=G.p,ps=G.players||[me];for(const q of ps){const d=isDown(q),was=!!downSeen[q.id||0];downSeen[q.id||0]=d;if(!d||was)continue;
     const all=ps.every(isDown),others=ps.filter(o=>o!==q);
     if(q===me)announce(all&&others.length?'all_down':'you_down',4);
     else if(!isDown(me)&&others.filter(o=>o!==me).every(isDown))announce(others.length>1?'friends_all_down':'friend_down',4);
     else if(all)announce('all_down',5);else announce('friend_down',3)}}
 /* Browsers only allow sound after the player interacts, so the first click or key turns it on */
-['pointerdown','keydown'].forEach(n=>addEventListener(n,()=>{audioOn();menuMusic();gameAmbience()},{capture:true}));
+['pointerdown','keydown'].forEach(n=>addEventListener(n,()=>{audioOn();titleMusic();menuMusic();gameAmbience()},{capture:true}));
 $('sound').onclick=ev=>{audioOn();toggleSound();ev.currentTarget.blur()};
 /* Fullscreen. Browsers keep Esc for themselves, so the game reacts to the change, not the key. */
 const SCREEN=$('screen'),canFullscreen=!!(SCREEN.requestFullscreen||SCREEN.webkitRequestFullscreen);
@@ -207,7 +217,7 @@ if('IntersectionObserver'in window)new IntersectionObserver(es=>{es.forEach(e=>{
 /* Select-screen preview cycles through every animation */
 const PV=[['walk',4,9,2,'Walking'],['attack',3,7,2,'Attacking'],['dodge',1,1,2,'Dodging'],['pickup',3,4,2,'Picking up'],['walk',4,9,0,'Walking'],['walk',4,9,1,'Walking']];
 function drawPreview(now){const cv=$('pv');if(!cv)return;const g=cv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,96,96);
-  const kk=KIT_OF[chosen];if(kk&&MOVE_IMG[kk]&&MOVE_IMG[kk].complete){const SS=[['idle','Standing'],['small','Small attack'],['moderate','Moderate attack'],['special','Special attack'],['defeated','Defeated']],sg=Math.floor(now/1800)%SS.length,[st,lab]=SS[sg],fr=MOVES[kk].frames[st],f=fr[Math.floor((now%1800)/1800*fr.length)],s=.36;g.imageSmoothingEnabled=true;g.drawImage(MOVE_IMG[kk],f[0],f[1],f[2],f[3],48+f[4]*s,90+f[5]*s,f[2]*s,f[3]*s);const l0=$('pvl');if(l0&&l0.textContent!==lab)l0.textContent=lab;return}const seg=Math.floor(now/1400)%PV.length,[anim,nf,fps,dir,label]=PV[seg],f=Math.floor(now/1000*fps)%nf;g.fillStyle='rgba(10,14,28,.5)';g.beginPath();g.ellipse(48,90,20,5,0,0,TAU);g.fill();blit(g,chosen,48,88,dir,anim,f,false,anim==='dodge'?(now/1000*9)%TAU:0);const l=$('pvl');if(l&&l.textContent!==label)l.textContent=label}
+  const seg=Math.floor(now/1400)%PV.length,[anim,nf,fps,dir,label]=PV[seg],f=Math.floor(now/1000*fps)%nf;g.fillStyle='rgba(10,14,28,.5)';g.beginPath();g.ellipse(48,90,20,5,0,0,TAU);g.fill();blit(g,chosen,48,88,dir,anim,f,false,anim==='dodge'?(now/1000*9)%TAU:0);const l=$('pvl');if(l&&l.textContent!==label)l.textContent=label}
 /* Loop */
 function resize(){const r=$('screen').getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);zoom=Math.max(H/560,W/980);portraitMode=touchMode&&W<640&&H>W;hudK=portraitMode?1:clamp(H/640,1,2.5);const cs=getComputedStyle($('screen'));hudTop=parseFloat(cs.paddingTop)||0;hudBottom=parseFloat(cs.paddingBottom)||0;$('screen').style.setProperty('--k',hudK)}
 if('ResizeObserver'in window)new ResizeObserver(resize).observe($('screen'));else addEventListener('resize',resize);
@@ -227,11 +237,11 @@ if(matchMedia('(pointer:coarse)').matches)touchMode=true;
 const SPLASH=$('splash');
 function splashOn(){return !!SPLASH&&!SPLASH.classList.contains('gone')}
 function leaveSplash(){if(!splashOn())return;const b=$('spplay');if(b.classList.contains('go'))return;b.classList.add('go');
-  setTimeout(()=>{SPLASH.classList.add('gone');if(G.mode!=='title')setMode('title');menuMusic()},350)}
-function initSplash(){if(!SPLASH)return;$('spposter').src=TITLE_URLS.poster;$('spwords').src=TITLE_URLS.words;
+  setTimeout(()=>{SPLASH.classList.add('gone');titleMusic();if(G.mode!=='title')setMode('title');menuMusic()},350)}
+function initSplash(){if(!SPLASH)return;$('spposter').src=TITLE_URLS.poster;SPLASH.style.setProperty('--poster','url('+TITLE_URLS.poster+')');$('spwords').src=TITLE_URLS.words;
   /* The button letters are filled with stone cut from the DAYRIM letters, so they match the title */
   SPLASH.querySelector('.pg-t').style.backgroundImage='url('+TITLE_URLS.stone+'),linear-gradient(#d9cbb4,#8a7660)';
-  const b=$('spplay');b.addEventListener('click',leaveSplash);try{b.focus({preventScroll:true})}catch(e){}requestAnimationFrame(splashTick)}
+  audioOn();if(ac)ac.addEventListener('statechange',titleMusic);const b=$('spplay');b.addEventListener('click',leaveSplash);try{b.focus({preventScroll:true})}catch(e){}requestAnimationFrame(splashTick)}
 /* Embers drift slowly up across the poster */
 const spEmbers=[];let spLast=0;
 function newEmber(){const a=Math.random();return{x:Math.random(),y:1.02,vx:(Math.random()-.5)*.02,vy:-.03-Math.random()*.06,life:0,max:6+Math.random()*8,r:.8+Math.random()*1.8,h:a<.8?24+Math.random()*24:275+Math.random()*20,w:Math.random()*6.28}}
@@ -247,5 +257,5 @@ function splashTick(now){if(!splashOn())return;const dt=Math.min(.05,(now-(spLas
   drawEmbers($('spfx'),spEmbers,dt);requestAnimationFrame(splashTick)}
 demoScene();resize();setMode('title');
 initSplash();
-window.__dayrim={get state(){return G},net,objTargets,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
+window.__dayrim={get state(){return G},net,objTargets,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,firstBloodAt:firstBloodAt===-Infinity?null:Math.round(firstBloodAt),titlePlaying:!!titleSrc,titleGain:titleGain&&+titleGain.gain.value.toFixed(2),ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
 requestAnimationFrame(tick);

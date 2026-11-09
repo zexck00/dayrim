@@ -67,27 +67,40 @@ function drawProp(o){
 function poseOf(e,moving,attacking,facing){let anim='idle',f=Math.floor(G.t*2.4)%2,dir=dirOf(facing),flip=Math.cos(facing)<0;
   if(moving){anim='walk';f=Math.floor(e.walk||0)%4}
   return{anim,f,dir,flip:dir===2&&flip}}
-/* Draw one frame from a villain's asset sheet, feet on the ground point */
-function kitFrame(key,st,i,x,y,mirror,alpha,extra){const im=MOVE_IMG[key];if(!im||!im.complete||!im.naturalWidth)return false;const fr=MOVES[key].frames[st],f=fr[clamp(i,0,fr.length-1)],s=WS*(MOVES[key].scale[st]||1);ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.translate(x,y);if(mirror)ctx.scale(-1,1);if(alpha!==undefined)ctx.globalAlpha=alpha;if(extra)extra();ctx.drawImage(im,f[0],f[1],f[2],f[3],f[4]*s,f[5]*s,f[2]*s,f[3]*s);ctx.restore();return true}
-/* The videos show no walking, dodging, pills or healing, so those are built from the real idle frames */
+/* Kit attacks on the pixel figures: a coloured sweep for small and moderate, a rising aura for the special */
+function kitMoveFx(a,mv,key,col,behind){const q=clamp(mv.t/mv.dur,0,1),side=mv.side||1,cy=a.y-24;ctx.save();ctx.globalCompositeOperation='lighter';
+  if(mv.id==='special'){if(behind){const r=26+Math.sin(G.t*10)*3,g=ctx.createRadialGradient(a.x,cy,4,a.x,cy,r*2.2);g.addColorStop(0,'rgba('+col+',.55)');g.addColorStop(1,'rgba('+col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(a.x,cy,r*2.2,r*2.4,0,0,TAU);ctx.fill();
+      ctx.strokeStyle='rgba('+col+',.7)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(a.x,a.y+2,30+q*18,10+q*6,0,0,TAU);ctx.stroke()}
+    else{for(let i=0;i<3;i++){const t=(G.t*1.6+i/3)%1,px=a.x+Math.sin(i*2.3+G.t*3)*16,py=a.y-t*64;ctx.fillStyle='rgba('+col+','+(1-t).toFixed(2)+')';ctx.fillRect(px-2,py-2,4,4)}
+      if(key==='necro'&&q>.18&&q<.6){const len=240,sx=a.x+side*20,wob=Math.sin(G.t*40)*2,g=ctx.createLinearGradient(sx,0,sx+side*len,0);g.addColorStop(0,'rgba(170,255,210,.9)');g.addColorStop(1,'rgba(90,255,160,0)');ctx.fillStyle=g;ctx.fillRect(Math.min(sx,sx+side*len),cy-12-wob,len,24+wob*2);
+        const g2=ctx.createLinearGradient(sx,0,sx+side*len,0);g2.addColorStop(0,'rgba(255,255,255,.9)');g2.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g2;ctx.fillRect(Math.min(sx,sx+side*len),cy-4,len,8)}}}
+  else if(!behind){const big=mv.id==='moderate',R=big?62:46,arc=big?1.5:1.05,a0=side>0?0:Math.PI,st=a0-arc,en=st+2*arc*clamp(q*1.8,0,1);
+    ctx.strokeStyle='rgba('+col+','+(1-q*.6).toFixed(2)+')';ctx.lineWidth=big?7:5;ctx.lineCap='round';ctx.beginPath();ctx.arc(a.x,cy,R,st,en);ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,'+(.7-q*.6).toFixed(2)+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(a.x,cy,R,st,en);ctx.stroke()}
+  ctx.restore()}
+/* The Necromancer, Void Empress and Toxin Alchemist use the same pixel figures as every other villain.
+   Their own attacks (small, moderate, special) still run from KIT in game.js; here they show as the
+   pixel attack and cast poses, with a swing or aura in the kit's colour. */
 function drawKitActor(a,moving,walkT,face,opts={}){
-  const key=opts.key,mv=a.mv,x=a.x,y=a.y+6,n=MOVES[key].frames.idle.length,idleI=Math.floor(G.t*9+(a.ph||0))%n,side=Math.cos(face)<0;
-  shadow(a.x,a.y+4,20);
-  if(mv){const fr=MOVES[key].frames[mv.id],i=Math.floor(mv.t/mv.dur*fr.length);kitFrame(key,mv.id,i,x,y,mv.mirror);
-    if(key==='necro'&&mv.id==='special'&&i>=4&&i<=12){const dir=mv.side,len=240,sx=x+dir*(160),cy=y-48;ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createLinearGradient(sx,0,sx+dir*len,0);g.addColorStop(0,'rgba(170,255,210,.95)');g.addColorStop(1,'rgba(90,255,160,0)');ctx.fillStyle=g;const wob=Math.sin(G.t*40)*2;ctx.fillRect(Math.min(sx,sx+dir*len),cy-22-wob,len,44+wob*2);const g2=ctx.createLinearGradient(sx,0,sx+dir*len,0);g2.addColorStop(0,'rgba(255,255,255,.95)');g2.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g2;ctx.fillRect(Math.min(sx,sx+dir*len),cy-8,len,16);ctx.restore()}
-    return}
-  const dodge=a.dashT>0;
-  if(dodge){const dx=a.dashX||0,dy=a.dashY||0;for(let i=3;i>=1;i--)kitFrame(key,'idle',0,x-dx*i*20,y-dy*i*20,dx<0,.16*(4-i)/1.3,()=>{ctx.rotate((dx>=0?1:-1)*.3)});kitFrame(key,'idle',0,x,y,dx<0,undefined,()=>{ctx.rotate((dx>=0?1:-1)*.3);ctx.scale(1.08,.9)});return}
-  const im=MOVE_IMG[key];
-  if(moving&&im&&im.complete){const fr=MOVES[key].frames.idle[idleI],s=WS*(MOVES[key].scale.idle||1),[fx,fy,fw,fh,ox,oy]=fr,hip=Math.round(fh*.56),sw=Math.sin(walkT),bob=Math.abs(sw)*-3,mid=-ox;ctx.save();ctx.imageSmoothingEnabled=true;ctx.translate(x,y);if(side)ctx.scale(-1,1);ctx.rotate(.05*Math.abs(Math.cos(face))+sw*.015);
-    ctx.drawImage(im,fx,fy,fw,hip,ox*s,(oy*s)+bob,fw*s,hip*s);const Lw=clamp(mid,1,fw-1);ctx.drawImage(im,fx,fy+hip,Lw,fh-hip,ox*s+sw*3,(oy+hip)*s+bob-Math.max(0,sw)*5,Lw*s,(fh-hip)*s);ctx.drawImage(im,fx+Lw,fy+hip,fw-Lw,fh-hip,(ox+Lw)*s-sw*3,(oy+hip)*s+bob-Math.max(0,-sw)*5,(fw-Lw)*s,(fh-hip)*s);ctx.restore()}
-  else kitFrame(key,'idle',idleI,x,y,side);
-  if(a.flash>0||a.hitT>0){ctx.globalCompositeOperation='lighter';kitFrame(key,'idle',idleI,x,y,side,.6);ctx.globalCompositeOperation='source-over'}
+  const key=opts.key,name=a.char||a.name,mv=a.mv,col=(KIT[key]||{}).col||'200,140,255';
+  shadow(a.x,a.y,(a.r||14)+2);
+  let anim='idle',f=Math.floor((G.t+(a.ph||0))*2.4)%2,fc=face,rot=0;
+  if(mv){const q=mv.t/mv.dur;fc=mv.side>0?0:Math.PI;if(mv.id==='special'){anim='cast';f=Math.floor(G.t*6)%2}else{anim='attack';f=clamp(Math.floor(q*3),0,2)}}
+  else if(a.dashT>0){anim='dodge';f=0;const ang=Math.atan2(a.dashY||0,a.dashX||0);fc=ang;rot=(1-a.dashT/.26)*TAU*(Math.cos(ang)<0?-1:1)}
+  else if(a.hitT>0){anim='hit';f=0}
+  else if(a.guard){anim='guard';f=0}
+  else if(a.castT>0){anim='cast';f=a.castT>.2?0:1}
+  else if(a.pickT>0){anim='pickup';f=clamp(Math.floor((1-a.pickT/.45)*3),0,2)}
+  else if(moving){anim='walk';f=Math.floor(walkT||0)%4}
+  const dir=anim==='dodge'?2:dirOf(fc),flip=dir===2&&Math.cos(fc)<0,blink=a.inv>0&&!(a.dashT>0)&&Math.floor(G.t*22)%2===0;
+  if(mv)kitMoveFx(a,mv,key,col,true);
+  blit(ctx,name,a.x,a.y,dir,anim,f,flip,rot,blink?.5:undefined);
+  if(mv)kitMoveFx(a,mv,key,col,false);
   if(a.healFx>0){const q=a.healFx/.8;ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(110,240,160,'+q+')';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(a.x,a.y,34*(1.4-q),16*(1.4-q),0,0,TAU);ctx.stroke();for(let i=0;i<4;i++){const py=a.y-(1-q)*90-i*18,px=a.x+Math.sin(i*2.1)*18;ctx.fillStyle='rgba(120,255,170,'+q+')';ctx.fillRect(px-1,py-5,3,10);ctx.fillRect(px-5,py-1,10,3)}ctx.restore()}
   if(a.pillT>0){const q=a.pillT/.8,c=a.pillC||'200,140,255';ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(a.x,a.y-50,4,a.x,a.y-50,70);g.addColorStop(0,'rgba('+c+','+(.5*q)+')');g.addColorStop(1,'rgba('+c+',0)');ctx.fillStyle=g;ctx.fillRect(a.x-70,a.y-120,140,140);ctx.restore();ctx.fillStyle='rgb('+c+')';ctx.fillRect(a.x-6,a.y-96-(1-q)*16,6,5);ctx.fillStyle='#fff';ctx.fillRect(a.x,a.y-96-(1-q)*16,6,5)}
 }
 function drawHazard(h){const q=clamp(h.t/1.2,0,1),c=h.col,tm=G.t;ctx.save();ctx.globalAlpha=.55*q;for(let i=0;i<9;i++){const a=i*.7+tm*.4,R=h.r*(.25+((i*37)%70)/100),px=h.x+Math.cos(a)*R,py=h.y+Math.sin(a)*R*.5,r=h.r*.3+Math.sin(tm*2+i)*2;ctx.fillStyle=i%2?'rgba('+c+',.55)':'rgba(70,150,40,.5)';ctx.beginPath();ctx.ellipse(px,py-6,r,r*.65,0,0,TAU);ctx.fill()}ctx.restore()}
-function drawTag(q){const y=q.y-(kitOf(q)?112:66);ctx.textAlign='center';ctx.font='700 12px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';const t=(q.pname||'Player')+' · '+q.lvl;ctx.strokeText(t,q.x,y-5);ctx.fillStyle='#8fe0ff';ctx.fillText(t,q.x,y-5);ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(q.x-22,y-2,44,5);ctx.fillStyle='#d8483c';ctx.fillRect(q.x-21,y-1,42*clamp(q.hp/(q.s.maxHp||1),0,1),3)}
+function drawTag(q){const y=q.y-66;ctx.textAlign='center';ctx.font='700 12px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';const t=(q.pname||'Player')+' · '+q.lvl;ctx.strokeText(t,q.x,y-5);ctx.fillStyle='#8fe0ff';ctx.fillText(t,q.x,y-5);ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(q.x-22,y-2,44,5);ctx.fillStyle='#d8483c';ctx.fillRect(q.x-21,y-1,42*clamp(q.hp/(q.s.maxHp||1),0,1),3)}
 function drawDowned(p){const r=G.players.find(q=>q.reviveTarget===p.id&&q.reviveProgress>0);ctx.textAlign='center';ctx.font='700 14px Barlow,sans-serif';ctx.lineWidth=4;ctx.strokeStyle='#101019';const t=r?'Reviving '+Math.round(r.reviveProgress*100)+'%':'Down · '+Math.ceil(p.deadT)+'s';ctx.strokeText(t,p.x,p.y-125);ctx.fillStyle='#ffcf65';ctx.fillText(t,p.x,p.y-125)}
 function drawPlayer(p){
   if(kitOf(p)){drawKitActor(p,p.moving&&!p.mv,p.walk,p.moving&&touchMode&&p.moveA!==undefined?p.moveA:p.face,{key:kitOf(p)});if(p.guard){ctx.strokeStyle='rgba(150,190,240,.85)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y-40,42,p.face-1,p.face+1);ctx.stroke()}return}
@@ -120,7 +133,7 @@ function drawCombatMarker(e){const status=e.healWind>0?'HEALING · Q TO INTERRUP
 function drawTargetMark(e){if(!e.aware||!e.targetId)return;const idx=G.players.findIndex(q=>(q.id||0)===e.targetId);if(idx<0)return;const mine=!!G.p&&(G.p.id||0)===e.targetId,x=e.x,y=e.y-(e.ah||74)-38+Math.sin(G.t*7+e.x*.3)*1.5;ctx.beginPath();ctx.moveTo(x-6,y-4);ctx.lineTo(x+6,y-4);ctx.lineTo(x,y+4);ctx.closePath();ctx.globalAlpha=mine?.95:.5;ctx.fillStyle=mine?'#ff5a4a':'#8fd4ff';ctx.fill();ctx.globalAlpha=1;if(!mine&&G.players.length>1){ctx.font='700 10px Barlow,sans-serif';ctx.textAlign='center';ctx.fillStyle='#8fd4ff';ctx.fillText(String(idx+1),x,y-6)}}
 function drawRival(e){
   if(e.art)return drawMob(e);
-  if(e.vill){drawKitActor(e,e.moving,e.walk,e.ang,{key:KIT_OF[e.name]});const w=56,y=e.y-112;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(e.x-w/2,y,w,5);ctx.fillStyle='#ff4a6a';ctx.fillRect(e.x-w/2,y,w*Math.max(0,e.hp/e.maxHp),5);return}
+  if(e.vill){drawKitActor(e,e.moving,e.walk,e.ang,{key:KIT_OF[e.name]});const w=56,y=e.y-74;ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(e.x-w/2,y,w,5);ctx.fillStyle='#ff4a6a';ctx.fillRect(e.x-w/2,y,w*Math.max(0,e.hp/e.maxHp),5);return}
   shadow(e.x,e.y,e.r);
   if(e.elite){ctx.strokeStyle='rgba(232,201,92,'+(.5+.3*Math.sin((G.t+e.ph)*4)).toFixed(2)+')';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(e.x,e.y+2,e.r+7,(e.r+7)*.5,0,0,TAU);ctx.stroke()}
   if(e.wind>0){const R=e.a.range+e.r+12,q=.5+.5*Math.sin(G.t*30);ctx.fillStyle='rgba(240,80,60,.3)';ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.arc(e.x,e.y,R,e.ang-1.2,e.ang+1.2);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(255,170,120,'+(reduced?.7:.45+.45*q).toFixed(2)+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,R,e.ang-1.2,e.ang+1.2);ctx.stroke()}
@@ -283,7 +296,7 @@ function render(){
   /* Single-player props carry kind and done; the network shape is k and d. Draw both the same way. */
   (G.props||[]).forEach(o=>{if(inView(o))drawProp2(o.k?o:Object.assign({},o,{k:o.kind,d:o.done?1:0}))});
   (G.hazards||[]).forEach(h=>{if(inView(h))drawHazard(h)});
-  G.fx.forEach(f=>{if(f.k==='bossdie')drawBossDeath(f);else if(f.k==='kitdie'){const n=MOVES[f.key].frames.defeated.length,el=f.m-f.t,i=Math.min(n-1,Math.floor(el/1.2*n));kitFrame(f.key,'defeated',i,f.x,f.y+6,f.mir,clamp(f.t/1,0,1))}});
+  G.fx.forEach(f=>{if(f.k==='bossdie')drawBossDeath(f);else if(f.k==='kitdie'){const nm=Object.keys(KIT_OF).find(n=>KIT_OF[n]===f.key),q=1-clamp(f.t/f.m,0,1);if(nm)blit(ctx,nm,f.x,f.y,2,'hit',0,!!f.mir,(f.mir?-1:1)*Math.min(1.5,(f.m-f.t)*3),clamp(f.t/1.2,0,1))}});
   G.fx.forEach(f=>{if(f.k!=='ring')return;const q=reduced?.5:1-f.t/f.m;ctx.strokeStyle=f.c;ctx.globalAlpha=clamp(f.t/f.m,0,1);ctx.lineWidth=4;const R=f.r+(f.to-f.r)*q;ctx.beginPath();if(f.shape==='diamond'){ctx.moveTo(f.x,f.y-R);ctx.lineTo(f.x+R,f.y);ctx.lineTo(f.x,f.y+R);ctx.lineTo(f.x-R,f.y);ctx.closePath()}else ctx.arc(f.x,f.y,R,0,TAU);ctx.stroke();ctx.globalAlpha=1});
   // day and night lighting
   const n=nightness(G.hour),tint=tintOf(G.hour,n);

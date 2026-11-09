@@ -141,25 +141,27 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 /* Title poster: the first screen. The owner's poster, the DAYRIM letters cut from the title art, and the Play Game button. */
 .splash{position:absolute;inset:0;z-index:8;container-type:size;overflow:hidden;background:#07060c;transition:opacity .7s ease,visibility 0s linear .7s}
 .splash.gone{opacity:0;visibility:hidden;pointer-events:none}
-.sp-poster{position:absolute;inset:-3%;width:106%;height:106%;object-fit:cover;animation:spDrift 28s ease-in-out infinite alternate;filter:saturate(1.05) brightness(.82)}
-.splash::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse 52% 20% at 50% 44%,rgba(6,3,10,.62) 0,rgba(6,3,10,.38) 55%,rgba(6,3,10,0) 100%),radial-gradient(ellipse 20% 13% at 50% 76%,rgba(6,3,10,.5) 0,rgba(6,3,10,0) 100%),radial-gradient(ellipse 70% 60% at 50% 46%,rgba(0,0,0,0) 30%,rgba(4,2,8,.55) 100%)}
-.sp-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
-.sp-words{position:absolute;left:50%;top:44%;width:min(64%,1100px);transform:translate(-50%,-50%);z-index:3;pointer-events:none;user-select:none;animation:spWords 4.5s ease-in-out infinite}
-.sp-play{position:absolute;left:50%;top:75%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:.7em;padding:.35em .2em;border:0;background:none;cursor:pointer;
+.sp-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;filter:saturate(1.05) brightness(.86)}
+.splash::before{content:"";position:absolute;inset:-40px;background:var(--poster,none) center/cover;filter:blur(26px) brightness(.4) saturate(1.1);z-index:0}
+.splash::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse 52% 20% at 50% 44%,rgba(6,3,10,.62) 0,rgba(6,3,10,.38) 55%,rgba(6,3,10,0) 100%),radial-gradient(ellipse 20% 13% at 50% 76%,rgba(6,3,10,.5) 0,rgba(6,3,10,0) 100%),radial-gradient(ellipse 70% 60% at 50% 46%,rgba(0,0,0,0) 30%,rgba(4,2,8,.55) 100%)}
+.sp-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+.sp-words{position:absolute;left:50%;top:44%;width:min(64%,1100px);transform:translate(-50%,-50%);z-index:4;pointer-events:none;user-select:none;animation:spWords 4.5s ease-in-out infinite}
+.sp-play{position:absolute;left:50%;top:75%;transform:translate(-50%,-50%);z-index:5;display:flex;align-items:center;gap:.7em;padding:.35em .2em;border:0;background:none;cursor:pointer;
   font:900 clamp(12px,1.75cqw,26px)/1 "Cinzel","Trajan Pro","Times New Roman",serif;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:transform .25s ease}
 .sp-play .pg-t{background:linear-gradient(#d9cbb4,#8a7660);background-size:100% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 .5px rgba(255,190,110,.9)) drop-shadow(0 1px 0 #1a0f08) drop-shadow(0 3px 4px rgba(0,0,0,.95)) drop-shadow(0 0 8px rgba(255,140,50,.28));transition:filter .3s ease}
 .sp-play .pg-l{display:block;width:2.2em;height:2px;background:linear-gradient(90deg,rgba(214,150,80,0),rgba(232,170,96,.9));box-shadow:0 1px 2px #000;position:relative;transition:width .3s ease,box-shadow .3s ease}
 .sp-play .pg-l.r{transform:scaleX(-1)}
 .sp-play .pg-l::after{content:"";position:absolute;right:-4px;top:50%;width:6px;height:6px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#f1d3a4,#9a6a3c);box-shadow:0 0 4px rgba(255,150,60,.6)}
-.sp-play:hover .pg-t,.sp-play:focus-visible .pg-t{filter:drop-shadow(0 0 .6px rgba(255,210,140,1)) drop-shadow(0 1px 0 #1a0f08) drop-shadow(0 3px 4px rgba(0,0,0,.95)) drop-shadow(0 0 14px rgba(255,140,50,.7)) brightness(1.15)}
-.sp-play:hover .pg-l,.sp-play:focus-visible .pg-l{width:3em;box-shadow:0 1px 2px #000,0 0 8px rgba(255,150,60,.8)}
-.sp-play:active{transform:translate(-50%,-50%) scale(.96)}
+/* Hover: the words light up 20% and grow 20% */
+.sp-play:hover,.sp-play:focus-visible{transform:translate(-50%,-50%) scale(1.2)}
+.sp-play:hover .pg-t,.sp-play:focus-visible .pg-t{filter:drop-shadow(0 0 .5px rgba(255,190,110,.9)) drop-shadow(0 1px 0 #1a0f08) drop-shadow(0 3px 4px rgba(0,0,0,.95)) drop-shadow(0 0 8px rgba(255,140,50,.28)) brightness(1.2)}
+.sp-play:hover .pg-l,.sp-play:focus-visible .pg-l{filter:brightness(1.2)}
+.sp-play:active{transform:translate(-50%,-50%) scale(1.14)}
 .sp-play:focus-visible{outline:none}
-.sp-play.go{transform:translate(-50%,-50%) scale(1.06);opacity:.4;transition:transform .4s ease,opacity .4s ease}
-@keyframes spDrift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.05) translate(-1%,-.6%)}}
+.sp-play.go{transform:translate(-50%,-50%) scale(1.2);opacity:.4;transition:transform .4s ease,opacity .4s ease}
 @keyframes spWords{0%,100%{filter:drop-shadow(0 0 2px #000) drop-shadow(0 8px 14px rgba(0,0,0,.95)) drop-shadow(0 0 16px rgba(255,140,50,.3)) brightness(1.08)}50%{filter:drop-shadow(0 0 2px #000) drop-shadow(0 8px 14px rgba(0,0,0,.95)) drop-shadow(0 0 34px rgba(255,140,50,.55)) brightness(1.16)}}
-@media(prefers-reduced-motion:reduce){.sp-poster,.sp-words{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.sp-words{animation:none!important}}
 @media(max-width:640px){
   .sp-words{width:92%;top:40%}.sp-play{font-size:clamp(13px,3.6cqw,22px);top:70%}
 }
