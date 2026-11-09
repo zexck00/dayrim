@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Added
+- Achievements for story milestones, combat, progression, teamwork and the Swarm, with a collection menu and unlock notifications.
 - Weapon and signature upgrades now reach tier 5. Three new safehouse upgrades increase power while keeping melee reach and swing coverage in check.
 - Rusted Ghoul, the Stage 7 boss: dodge its hook and cleaves, then power the generator and lure it onto the coil to stagger it and clear Rust Field. The coil charges itself for a lone standing player.
 - Rustleaf Woods: rust weakens armor at night, a fueled generator must be defended while it is repaired, and Scrap Golems rebuild unless their parts are destroyed. Solo players can break both parts.

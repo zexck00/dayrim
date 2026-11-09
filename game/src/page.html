@@ -63,6 +63,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .weapon-info{min-width:0}.mrow .weapon-tier{display:flex;align-items:center;gap:7px;margin:3px 0;color:var(--bone);font:600 11px var(--mono)}
 .mrow .weapon-pips{display:flex;gap:4px}.weapon-pips i{display:block;width:14px;height:6px;border:1px solid #83a8ba;background:transparent}.weapon-pips i.on{background:var(--lichen);border-color:var(--lichen)}
 .mrow .weapon-effect{color:#a6e2dc}.mrow .weapon-reason{color:#f0c48c}
+.achievement-card{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:12px;margin:8px 0;border:1px solid var(--line);background:#101c2e}.achievement-card .medal{display:grid;place-items:center;width:40px;height:40px;border:1px solid #64738a;color:#8190a4;font-size:22px}.achievement-card.earned{border-color:#a78736;background:#252617}.achievement-card.earned .medal{border-color:#f0c23c;color:#ffdc70;background:#4d3a13}.achievement-card strong,.achievement-card span{display:block}.achievement-card span{font-size:14px;color:var(--mist)}.achievement-card em{font:12px var(--mono);font-style:normal;color:#f0c23c;white-space:nowrap}
+.achievement-toast{position:absolute;z-index:7;top:16px;right:16px;display:flex;align-items:center;gap:12px;max-width:min(350px,calc(100% - 32px));padding:12px 17px;background:linear-gradient(115deg,#172238,#2c291c);border:1px solid #e2b951;box-shadow:0 4px 28px #000b,0 0 20px #e2b95133;pointer-events:none;animation:achievement-in .35s ease-out}.achievement-toast .medal{display:grid;place-items:center;width:42px;height:42px;flex:none;color:#ffe086;background:#5a4113;border:1px solid #efc45b;font-size:25px}.achievement-toast small{display:block;color:#f2c862;font:700 10px var(--mono);letter-spacing:.1em;text-transform:uppercase}.achievement-toast strong{display:block;font:700 17px var(--display);line-height:1.2}@keyframes achievement-in{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.achievement-toast{animation:none}}
 .buy{background:var(--shelf);border:1px solid var(--foam);padding:4px 10px;min-width:76px;font-weight:700;font-size:14px}
 .buy:hover:not(:disabled){background:var(--line)}
 .buy:disabled{opacity:.45;cursor:not-allowed;border-color:var(--line)}
@@ -212,6 +214,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
         <button type="button" data-a="slash" class="big" aria-label="Hold to attack" style="grid-column:span 2;border-radius:27px">Attack</button>
       </div>
       <div class="ov" id="ov"><div class="card" id="card"></div></div>
+      <div class="achievement-toast" id="achievement-toast" role="status" aria-live="polite" hidden><span class="medal" aria-hidden="true">★</span><div><small>Achievement unlocked</small><strong id="achievement-name"></strong></div></div>
       <div class="splash" id="splash">
         <img class="sp-poster" id="spposter" alt="">
         <canvas class="sp-fx" id="spfx" aria-hidden="true"></canvas>

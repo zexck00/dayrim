@@ -70,7 +70,30 @@ const AURA_RADIUS=220,AURA_TYPES={bruiser:{n:'Bulwark',d:'8% less damage taken',
 const auraOf=p=>AURA_TYPES[archKey(p.char)],auraHas=(p,k)=>!(p.deadT>0||p.respawnT>0)&&G.players.some(q=>!(q.deadT>0||q.respawnT>0)&&archKey(q.char)===k&&dist(p,q)<=AURA_RADIUS);
 const UPGRADE_COSTS=[80,180,300,450,650],MAX_WEAPON_TIER=UPGRADE_COSTS.length;
 const upgradeLevel=(p,id)=>Math.max(0,Math.min(MAX_WEAPON_TIER,Number.isInteger((p.weaponUpgrades||{})[id])?p.weaponUpgrades[id]:0)),upgradeCost=n=>UPGRADE_COSTS[n]||0;
-function upgradeWeapon(id){const p=G.p,kit=kitOf(p);if(typeof id!=='string'||!p.nearSafe)return false;if(kit?id!=='signature':(!Object.prototype.hasOwnProperty.call(WEAPONS,id)||!p.weapons.includes(id)))return false;const n=upgradeLevel(p,id),cost=upgradeCost(n);if(!cost||p.gold<cost)return false;p.gold-=cost;p.weaponUpgrades=p.weaponUpgrades||{};p.weaponUpgrades[id]=n+1;dirty();writeSave();return true}
+function upgradeWeapon(id){const p=G.p,kit=kitOf(p);if(typeof id!=='string'||!p.nearSafe)return false;if(kit?id!=='signature':(!Object.prototype.hasOwnProperty.call(WEAPONS,id)||!p.weapons.includes(id)))return false;const n=upgradeLevel(p,id),cost=upgradeCost(n);if(!cost||p.gold<cost)return false;p.gold-=cost;p.weaponUpgrades=p.weaponUpgrades||{};p.weaponUpgrades[id]=n+1;if(!G.swarm)achievementCheck(p);dirty();writeSave();return true}
+/* Unlocks are personal; the catalog is shared by the browser and server. */
+const ACHIEVEMENTS=[
+ {id:'story1',group:'Story',n:'First light',d:'Clear a story stage at or beyond stage 1.',key:'beaten',goal:1},
+ {id:'story3',group:'Story',n:'Into the fen',d:'Clear a story stage at or beyond stage 3.',key:'beaten',goal:3},
+ {id:'story7',group:'Story',n:'Rust survivor',d:'Clear a story stage at or beyond stage 7.',key:'beaten',goal:7},
+ {id:'kills50',group:'Combat',n:'Street fighter',d:'Defeat 50 enemies in a story run.',key:'kills',goal:50},
+ {id:'kills250',group:'Combat',n:'City defender',d:'Defeat 250 enemies in a story run.',key:'kills',goal:250},
+ {id:'combo20',group:'Combat',n:'On a roll',d:'Defeat 20 enemies in one combo in a story run.',key:'bestCombo',goal:20},
+ {id:'level10',group:'Progression',n:'Finding your feet',d:'Reach level 10 in a story run.',key:'lvl',goal:10},
+ {id:'level25',group:'Progression',n:'Seasoned',d:'Reach level 25 in a story run.',key:'lvl',goal:25},
+ {id:'weapon5',group:'Progression',n:'Fully armed',d:'Upgrade a weapon or signature to tier 5 in a story run.',key:'weapon',goal:5},
+ {id:'revive',group:'Teamwork',n:'Back on your feet',d:'Revive another player. Multiplayer.',key:'revive',goal:1},
+ {id:'partyBoss',group:'Teamwork',n:'Together we stand',d:'Clear a story boss with a party. Multiplayer.',key:'partyBoss',goal:1},
+ {id:'wave5',group:'The Swarm',n:'Holding the line',d:'Clear wave 5 in the Swarm.',key:'swarmBest',goal:5},
+ {id:'wave10',group:'The Swarm',n:'Against the tide',d:'Clear wave 10 in the Swarm.',key:'swarmBest',goal:10},
+ {id:'wave20',group:'The Swarm',n:'Unbreakable',d:'Clear wave 20 in the Swarm.',key:'swarmBest',goal:20}
+];
+function achievementNotice(p,id){} // Browser and server supply their own presentation.
+function achievementValue(p,a){if((p.achievements||{})[a.id])return a.goal;if(a.key==='weapon')return Math.max(0,...Object.keys(p.weaponUpgrades||{}).map(id=>upgradeLevel(p,id)));if(a.key==='revive'||a.key==='partyBoss')return 0;return Math.max(0,Number(p[a.key])||0)}
+function achievementStore(p){if(G.mp||G.demo)return;try{let all=JSON.parse(localStorage.getItem('dayrim-achievements')||'{}');if(!all||typeof all!=='object'||Array.isArray(all))all={};all[p.char]=p.achievements;localStorage.setItem('dayrim-achievements',JSON.stringify(all))}catch(e){}}
+function achievementUnlock(p,id,notify=true){if(G.demo||!ACHIEVEMENTS.some(a=>a.id===id)||p.achievements[id])return false;p.achievements[id]=true;if(notify)achievementNotice(p,id);achievementStore(p);return true}
+function achievementCheck(p,notify=true){for(const a of ACHIEVEMENTS)if((!notify||!G.swarm||a.key==='swarmBest')&&achievementValue(p,a)>=a.goal)achievementUnlock(p,a.id,notify)}
+function achievementInit(p,solo=false){const saved=p.achievements&&typeof p.achievements==='object'&&!Array.isArray(p.achievements)?p.achievements:{};let local={};if(solo)try{local=JSON.parse(localStorage.getItem('dayrim-achievements')||'{}')[p.char]||{};p.swarmBest=Math.max(p.swarmBest||0,JSON.parse(localStorage.getItem('dayrim-swarm-best')||'{}')[p.char]||0)}catch(e){}if(!local||typeof local!=='object'||Array.isArray(local))local={};p.achievements={};for(const a of ACHIEVEMENTS)if(saved[a.id]===true||local[a.id]===true)p.achievements[a.id]=true;achievementCheck(p,false);if(solo)achievementStore(p)}
 const STAGES=[
  {n:'Sunrise Hollow',h:6,boss:'Crystal Scurrier',ah:96,r:30,biome:0},
  {n:'Noonshade Thicket',h:11,boss:'Gloom Eye',ah:100,r:30,biome:1,thicket:9},
@@ -150,7 +173,7 @@ try{const c=localStorage.getItem('dayrim-char');if(c&&archKey(c)){chosen=c;selTa
 function readSave(){try{const r=JSON.parse(localStorage.getItem('dayrim-save')||'null');return r&&archKey(r.char)?r:null}catch(e){return null}}
 /* Starting a Swarm run builds a character and enters a stage, which would normally save. Hold saves until the run is marked. */
 let saveHold=false;
-function writeSave(){if(!G||G.demo||G.mp||G.swarm||saveHold)return;const p=G.p;try{localStorage.setItem('dayrim-save',JSON.stringify({char:p.char,lvl:p.lvl,xp:p.xp,gold:p.gold,potions:p.potions,fast:p.fast,magic:p.magic,gear:p.gear,bag:p.bag,weapons:p.weapons,weapon:p.weapon,skills:p.skills,train:p.train,sp:p.sp,kills:p.kills,rage:p.rage,bestCombo:p.bestCombo,stage:G.stage,runBoons:p.runBoons,weaponUpgrades:p.weaponUpgrades,secondWind:!!p.secondWind,maxStage:p.maxStage,beaten:p.beaten}))}catch(e){}}
+function writeSave(){if(!G||G.demo||G.mp||G.swarm||saveHold)return;const p=G.p;try{localStorage.setItem('dayrim-save',JSON.stringify({char:p.char,lvl:p.lvl,xp:p.xp,gold:p.gold,potions:p.potions,fast:p.fast,magic:p.magic,gear:p.gear,bag:p.bag,weapons:p.weapons,weapon:p.weapon,skills:p.skills,train:p.train,sp:p.sp,kills:p.kills,rage:p.rage,bestCombo:p.bestCombo,stage:G.stage,runBoons:p.runBoons,weaponUpgrades:p.weaponUpgrades,achievements:p.achievements,secondWind:!!p.secondWind,maxStage:p.maxStage,beaten:p.beaten}))}catch(e){}}
 function clearSave(){try{localStorage.removeItem('dayrim-save')}catch(e){}}
 
 /* ---------- Audio ---------- */
@@ -240,7 +263,7 @@ function tintOf(h,n){h=(h%24+24)%24;const warm=(h>=5&&h<8)||(h>=16&&h<20);return
 const clock=h=>{h=(h%24+24)%24;const hh=h|0,m=(h-hh)*60|0;return String(hh).padStart(2,'0')+':'+String(m-(m%5)).padStart(2,'0')};
 
 /* ---------- Stage flow ---------- */
-function freshPlayer(name){return{char:name,id:1,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),weaponUpgrades:{},weaponHealCd:0,runBoons:{wide:0,opening:0},boonPending:false,teamCd:0,breakReady:0,tauntGuard:0,mendT:0,mendRate:0,stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,killerT:0,deadT:0,respawnT:0,downCount:0,lastDown:-100,secondWind:false,reviveHold:0,reviveTarget:0,reviveProgress:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
+function freshPlayer(name){return{char:name,id:1,x:0,y:0,r:13,hp:100,mana:50,lvl:1,xp:0,gold:20,potions:3+(archOf(name).potions||0),fast:1,magic:1,gear:{armor:null,clothes:null,tool:null},bag:[],weapons:weaponOf(name)==='fists'?['fists']:['fists',weaponOf(name)],weapon:weaponOf(name),weaponUpgrades:{},achievements:{},weaponHealCd:0,runBoons:{wide:0,opening:0},boonPending:false,teamCd:0,breakReady:0,tauntGuard:0,mendT:0,mendRate:0,stats:STATS[name],skills:{},train:{str:0,end:0,agi:0},sp:0,maxStage:1,beaten:0,kills:0,rage:0,bestCombo:0,combo:0,comboT:0,comboPop:0,comboTier:null,ult:null,nearSafe:false,killerT:0,deadT:0,respawnT:0,downCount:0,lastDown:-100,secondWind:false,reviveHold:0,reviveTarget:0,reviveProgress:0,cd:{slash:0,bolt:0,pull:0,dash:0,potion:0},face:0,inv:0,dashT:0,dashX:0,dashY:0,swing:0,swingA:0,walk:0,moving:false,atkT:0,pickT:0,hitT:0,castT:0,guard:false,fastT:0,magicT:0,s:{}}}
 function recalc(){
   const p=G.p,sk=id=>p.skills[id]||0,s={dmg:11+p.lvl*2.6+p.train.str*2,maxHp:95+p.lvl*18+p.train.end*15,maxMana:60+p.lvl*4,armor:p.lvl*1.6,crit:.05,speed:165+p.train.agi*2,leech:0,regen:3,blast:64,dashCd:2.4,mana:0,hp:0,spellCost:16,cdMul:1-.012*(p.lvl-1)-.03*p.train.agi,guardMul:1,mendMul:1};
   Object.values(p.gear).forEach(it=>{if(!it)return;for(const k in it.aff)s[k]=(s[k]||0)+it.aff[k]});
@@ -400,7 +423,7 @@ function updateRevive(p,dt){
   if(!holding){p.reviveTarget=0;p.reviveProgress=0;return}
   let q=G.players.find(x=>x.id===p.reviveTarget&&x!==p&&x.deadT>0&&dist(p,x)<=range);
   if(!q)q=G.players.filter(x=>x!==p&&x.deadT>0&&dist(p,x)<=range).sort((a,b)=>dist(p,a)-dist(p,b))[0];
-  if(q){if(p.reviveTarget!==q.id)p.reviveProgress=0;p.reviveTarget=q.id;p.reviveProgress+=dt/(archKey(p.char)==='medic'?1.5:3);if(p.reviveProgress>=1){revive(q);threatHeal(p,q.s.maxHp*.35);p.reviveTarget=0;p.reviveProgress=0}return}
+  if(q){if(p.reviveTarget!==q.id)p.reviveProgress=0;p.reviveTarget=q.id;p.reviveProgress+=dt/(archKey(p.char)==='medic'?1.5:3);if(p.reviveProgress>=1){revive(q);achievementUnlock(p,'revive');threatHeal(p,q.s.maxHp*.35);p.reviveTarget=0;p.reviveProgress=0}return}
   p.reviveTarget=0;
   const c=G.npcs.find(x=>x.wounded&&!x.dead&&dist(p,x)<=range);
   if(!c){p.reviveProgress=0;return}
@@ -410,10 +433,10 @@ function updateRevive(p,dt){
 function applyInput(p){}
 const foeWord=()=>factionOf(G.p.char)==='hero'?'villains':'heroes';
 function newRun(name){
-  G=baseState(false);G.p=freshPlayer(name);G.players=[G.p];recalc();enterStage(1);G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;
+  G=baseState(false);G.p=freshPlayer(name);G.players=[G.p];achievementInit(G.p,true);recalc();enterStage(1);G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;
 }
 function loadRun(sv){
-  G=baseState(false);G.p=Object.assign(freshPlayer(sv.char),sv);G.players=[G.p];{const p=G.p;delete p.gear.weapon;p.bag=p.bag.filter(i=>i.slot!=='weapon');if(!p.weapons.includes('fists'))p.weapons.unshift('fists');if(!p.weapons.includes(p.weapon))p.weapon='fists'}recalc();enterStage(sv.stage);G.p.secondWind=!!sv.secondWind;G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;writeSave();
+  G=baseState(false);G.p=Object.assign(freshPlayer(sv.char),sv);G.players=[G.p];achievementInit(G.p,true);{const p=G.p;delete p.gear.weapon;p.bag=p.bag.filter(i=>i.slot!=='weapon');if(!p.weapons.includes('fists'))p.weapons.unshift('fists');if(!p.weapons.includes(p.weapon))p.weapon='fists'}recalc();enterStage(sv.stage);G.p.secondWind=!!sv.secondWind;G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;writeSave();
 }
 function demoScene(){
   G=baseState(true);G.p=freshPlayer(chosen);G.players=[G.p];recalc();enterStage(1);G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;G.hour=11;G.banner=null;
@@ -676,7 +699,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){
 function killEnemy(e){
   if(e.fleshSplit){fleshDownBody(e);return}
   if(e.scrapGolem&&!e.scrapFinished){scrapDisable(e);return}
-  if(e.grab)lurkRelease(e,false);if(e.role==='bloater')sporeCloud(e);e.dead=true;const p=G.p,boss=e.kind==='boss';p.kills++;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:8,to:boss?170:58,t:.3,m:.3,c:'#fff2d0'});onKill(e);if(e.vill||e.elite)sfx('rivalDown');burst(e.x,e.y-20,e.elite?'#e8c95c':'#c8c8d0',boss?70:12,boss?300:150);
+  if(e.grab)lurkRelease(e,false);if(e.role==='bloater')sporeCloud(e);e.dead=true;const p=G.p,boss=e.kind==='boss';p.kills++;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:8,to:boss?170:58,t:.3,m:.3,c:'#fff2d0'});onKill(e);if(!G.swarm)achievementCheck(p);if(e.vill||e.elite)sfx('rivalDown');burst(e.x,e.y-20,e.elite?'#e8c95c':'#c8c8d0',boss?70:12,boss?300:150);
   const ga=(e.kx||e.ky)?Math.atan2(e.ky,e.kx):rnd(TAU);goreSpray(e,ga,.6,boss);goreChunks(e,ga,boss?26:(e.mob?6:10));gorePool(e,boss?3:1);if(e.vill)G.fx.push({k:'kitdie',key:KIT_OF[e.name],x:e.x,y:e.y,mir:G.p.x>e.x,t:6,m:6});else if(boss||e.art)G.fx.push({k:'bossdie',art:e.art,ah:e.ah,x:e.x,y:e.y,fs:e.fs||1,t:boss?1.5:.8,m:boss?1.5:.8});else G.fx.push({k:'ko',name:e.name,x:e.x,y:e.y,t:.7,m:.7});
   const night=nightness(G.hour)>.5?1.25:1;
   if(!boss&&e.kind==='rival'&&!e.minion)G.killsStage++;
@@ -694,7 +717,7 @@ function dropLoot(e,night){
 }
 function gainXp(x){const p=G.p;p.xp+=x;let up=false;
   while(p.xp>=xpNeed(p.lvl)){p.xp-=xpNeed(p.lvl);p.lvl++;p.sp++;up=true}
-  if(up){recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana;sfx('level');burst(p.x,p.y-20,'#e8c95c',28,220);text(p.x,p.y-74,'Level '+p.lvl,'#e8c95c',true);addLog('Level '+p.lvl+'. Skill point earned (press T).');writeSave()}}
+  if(up){if(!G.swarm)achievementCheck(p);recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana;sfx('level');burst(p.x,p.y-20,'#e8c95c',28,220);text(p.x,p.y-74,'Level '+p.lvl,'#e8c95c',true);addLog('Level '+p.lvl+'. Skill point earned (press T).');writeSave()}}
 function hurtPlayer(d){
   const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor*(1-Math.min(90,(p.rust||0)+(p.fieldRust||0))/100)+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;beaconHit(p);p.hitT=.18;shake(5);sfx('hurt');
   text(p.x,p.y-72,'-'+Math.round(v),'#ff6a5f');burst(p.x,p.y-20,'#f0805c',8);if(!p.guard)bleed(p.x,p.y-24,rnd(-1,1),rnd(-1,1),clamp(Math.round(v/Math.max(1,p.s.maxHp)*60),3,22));
@@ -939,7 +962,7 @@ function pickup(l){
   text(l.x,l.y-14,it.name,RAR[it.rar].c);dirty();
 }
 function stash(it){const p=G.p;p.bag.unshift(it);if(p.bag.length>12){const w=p.bag.reduce((a,b)=>b.score<a.score?b:a);p.bag.splice(p.bag.indexOf(w),1);const g=salvage(w);p.gold+=g;addLog('Bag full. Sold '+esc(w.name)+' for '+g+' gold.')}}
-function stageCleared(){const n=G.stage;for(const p of G.players){if(n>=p.maxStage)p.maxStage=Math.min(10,n+1);p.beaten=Math.max(p.beaten,n)}G.clearPending=1.6;writeSave()}
+function stageCleared(){const n=G.stage;for(const p of G.players){if(n>=p.maxStage)p.maxStage=Math.min(10,n+1);p.beaten=Math.max(p.beaten,n);if(G.mp&&G.players.length>1)achievementUnlock(p,'partyBoss');achievementCheck(p)}G.clearPending=1.6;writeSave()}
 
 /* ---------- Update ---------- */
 function nearestEnemy(){let b=null,bd=380;for(const e of G.enemies){if(e.dead||e.fleshDown||e.scrapDown||concealed(e,G.p))continue;const d=dist(e,G.p);if(d<bd&&los(e,G.p)){bd=d;b=e}}for(const c of G.props||[]){if((c.kind||c.k)!=='scrapPart'||c.done||c.d)continue;const d=dist(c,G.p);if(d<bd&&los(c,G.p)){bd=d;b=c}}return b}
@@ -1065,7 +1088,7 @@ function swarmTick(dt){const S=G.swarm;
   if(S.spawned<S.total&&alive<SWARM.cap&&S.spawnT<=0){S.spawnT=SWARM.spawnEvery;if(swarmSpawn())S.spawned++}
   S.left=S.total-S.spawned+alive+(G.boss?1:0);if(S.spawned>=S.total&&!alive&&!G.boss)waveCleared()}
 function waveCleared(){const S=G.swarm;S.breakT=SWARM.breakT;if(G.mp){G.hopeSpent=0;G.hope=G.hopeMax}
-  for(const q of G.players){q.swarmBest=Math.max(q.swarmBest||0,S.wave);if(q.deadT>0){const me=G.p;G.p=q;revive(q);G.p=me}if(q.respawnT>0){q.respawnT=0;respawn(q)}if(q.s)q.hp=Math.min(q.s.maxHp,q.hp+q.s.maxHp*.3);q.potions=Math.max(q.potions||0,Math.min(5,(q.potions||0)+1))}
+  for(const q of G.players){q.swarmBest=Math.max(q.swarmBest||0,S.wave);achievementCheck(q);if(q.deadT>0){const me=G.p;G.p=q;revive(q);G.p=me}if(q.respawnT>0){q.respawnT=0;respawn(q)}if(q.s)q.hp=Math.min(q.s.maxHp,q.hp+q.s.maxHp*.3);q.potions=Math.max(q.potions||0,Math.min(5,(q.potions||0)+1))}
   if(!G.mp)try{const b=JSON.parse(localStorage.getItem('dayrim-swarm-best')||'{}');b[G.p.char]=Math.max(b[G.p.char]||0,S.wave);localStorage.setItem('dayrim-swarm-best',JSON.stringify(b))}catch(e){}
   G.banner={t:3,a:'Wave '+S.wave+' cleared',b:'Next wave in '+SWARM.breakT+'s. The safehouse shop is open'};sfx('level')}
 function endSwarm(){const S=G.swarm;if(!S||S.over)return;S.over=true;S.overT=SWARM.overT;G.enemies=[];G.boss=null;G.flesh=null;G.shots=[];G.hazards=[];G.arena=null;clearLanterns();clearGhoul();clearScrap();
