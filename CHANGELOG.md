@@ -4,6 +4,9 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Fixed
+- A revive button now appears near the wounded Stage 1 scout for mouse players, and the objective instructions mention the touch control.
+
 ### Added
 - More achievements for combat actions, teamwork, encounter mechanics and longer-term milestones.
 - Achievements for story milestones, combat, progression, teamwork and the Swarm, with a collection menu and unlock notifications.

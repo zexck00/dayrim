@@ -21,7 +21,15 @@ $('rack').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b
 $('wearbest').addEventListener('click',()=>wearBest());
 function returnToMenu(){if(netOn()){netLeave();return}writeSave();demoScene();setMode('title')}
 const touchPointers=new Map();
-function resetTouch(){if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
+let scoutHold=false;
+function stopScoutRevive(){if(!scoutHold)return;scoutHold=false;touchHold.revive=false;if(netOn())netAct('revive',false)}
+function updateScoutButton(){const p=G.p,b=$('scout-revive'),show=G.mode==='play'&&!touchMode&&p&&!(p.deadT>0||p.respawnT>0)&&G.npcs.some(c=>c.wounded&&!c.dead&&dist(p,c)<=Math.max(archKey(p.char)==='medic'?120:60,80));if(!show)stopScoutRevive();b.hidden=!show}
+$('scout-revive').addEventListener('pointerdown',ev=>{if(ev.button!==0)return;ev.preventDefault();scoutHold=true;touchHold.revive=true;ev.currentTarget.setPointerCapture(ev.pointerId);if(netOn())netAct('revive',true)});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('scout-revive').addEventListener(n,stopScoutRevive));
+$('scout-revive').addEventListener('keydown',ev=>{if((ev.code==='Space'||ev.code==='Enter')&&!ev.repeat){ev.preventDefault();scoutHold=true;touchHold.revive=true;if(netOn())netAct('revive',true)}});
+$('scout-revive').addEventListener('keyup',ev=>{if(ev.code==='Space'||ev.code==='Enter'){ev.preventDefault();stopScoutRevive()}});
+$('scout-revive').addEventListener('blur',stopScoutRevive);
+function resetTouch(){stopScoutRevive();if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('scout-revive').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
 function setMode(m){
   setTimeout(()=>{menuMusic();gameAmbience()},0);
   resetTouch();G.mode=m;mouse.left=mouse.right=false;keys.clear();const ov=$('ov'),c=$('card');
@@ -233,7 +241,7 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   else if(G.mode==='title'||G.mode==='menu'){G.t+=dt;if(G.mode==='title')drawPreview(now)}
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
   footsteps();soundWatch();
-  touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus()}
+  touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus();updateScoutButton()}
   try{render();drawFx3(now)}catch(err){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}
