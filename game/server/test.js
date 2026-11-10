@@ -29,6 +29,9 @@ class Bot{
   ok((await get('/healthz')).status===200,'/healthz answers');
   for(const p of['/../server/index.js','/server/index.js','/data/profiles','/src/game.js','/..%2f..%2fetc/passwd'])ok((await get(p)).status===404,'not exposed: '+p);
   ok((await get('/',{'if-none-match':home.headers.etag})).status===304,'browsers can reuse the cached page');
+  {const html=require('zlib').gunzipSync(home.body).toString(),m=html.match(/const ATLAS_URL="(assets\/[^"]+)"/);ok(!!m&&home.body.length<1024*1024,'the page links its pictures and sounds instead of embedding them');
+   const a=await get('/'+m[1]);ok(a.status===200&&a.headers['content-type']==='image/webp'&&/immutable/.test(a.headers['cache-control']||''),'linked assets are served and cached for good');
+   for(const p of['/assets/../server/index.js','/assets/..%2fdayrim.html','/assets/nothing.0123456789.webp','/assets/','/assets/index.js'])ok((await get(p)).status===404,'not exposed: '+p)}
 
   console.log('Rooms');
   const a=new Bot(),b=new Bot(),c=new Bot();await a.open();await b.open();await c.open();

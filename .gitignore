@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .env
 game/data/
+game/dayrim-inline.html

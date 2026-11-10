@@ -31,6 +31,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
 
 ### Changed
+- The game page is about 390 KB instead of 10 MB. Pictures, sounds and the 3D effects library are separate files in game/assets that load as needed and stay cached, so the character menu appears straight away even on slow connections. Sounds load one after another, title and menu music first. `tools/build.py --inline` still makes a single self-contained file.
 - Every playable character now has a themed ultimate name, emblem and animated effects, visible to nearby online players.
 - Weapon projectiles gain brighter trails and distinctive ornaments as they are upgraded, visible in solo and online play.
 - The Necromancer, Toxin Alchemist and Void Empress use the same pixel figures as the other villains. Their own attacks stay, shown as a coloured sweep or aura. The page is about 3.5 MB smaller without their large art sheets.

@@ -870,7 +870,13 @@ const mouseAimX=()=>{const p=G.p;return touchMode?p.x+Math.cos(p.face):mouse.x};
 let VOICE=null;
 function pickVoice(){if(!('speechSynthesis'in window))return null;const vs=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));return vs.find(v=>/daniel|alex|fred|ralph|male|david|george/i.test(v.name))||vs[0]||null}
 const VOICE_BUF={};let voiceSrc=null;
-function loadVoices(){Object.entries(VOICE_CLIPS).forEach(([k,b64])=>{try{const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);ac.decodeAudioData(u8.buffer,b=>{VOICE_BUF[k]=b},()=>{})}catch(e){}})}
+/* Sound files are separate downloads (assets/), fetched only when sound is switched on.
+   A small queue fetches a few at a time, so the first ones needed are not stuck behind the rest. */
+function fetchAudio(url){return fetch(url).then(r=>{if(!r.ok)throw new Error(r.status);return r.arrayBuffer()}).then(b=>new Promise((ok,no)=>ac.decodeAudioData(b,ok,no)))}
+const AUDIO_Q=[];let audioBusy=0;
+function queueAudio(url,done,fail){AUDIO_Q.push({url,done,fail});pumpAudio()}
+function pumpAudio(){while(audioBusy<3&&AUDIO_Q.length){const j=AUDIO_Q.shift();audioBusy++;fetchAudio(j.url).then(j.done,j.fail||(()=>{})).finally(()=>{audioBusy--;pumpAudio()})}}
+function loadVoices(){Object.entries(VOICE_CLIPS).forEach(([k,url])=>queueAudio(url,b=>{VOICE_BUF[k]=b}))}
 /* Recorded lines play through the game's audio. The browser's own speech is only the backup. */
 function voice(text){if(muted)return;if(typeof announceTier==='function'&&announceTier(text))return;(window.__voiceLog=window.__voiceLog||[]).push(text);const buf=VOICE_BUF[text.toLowerCase().replace(/\W+/g,'-').replace(/^-|-$/g,'')];
   if(buf&&ac){try{if(voiceSrc)voiceSrc.stop();const s=ac.createBufferSource(),g=ac.createGain();s.buffer=buf;s.playbackRate.value=.94;g.gain.value=.9;s.connect(g).connect(ac.destination);s.start();voiceSrc=s;window.__voicePlayed=(window.__voicePlayed||0)+1;return}catch(e){}}

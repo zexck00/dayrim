@@ -134,8 +134,11 @@ addEventListener('blur',()=>{keys.clear();resetTouch();mouse.left=mouse.right=fa
 function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';titleMusic();menuMusic();gameAmbience()}
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
 const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
-function loadSounds(){if(!ac)return;Object.entries(SOUND_CLIPS).forEach(([k,b64])=>{if(SOUND_BUF[k]||SOUND_WAIT[k]===-1)return;SOUND_WAIT[k]=SOUND_WAIT[k]||-1;try{const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
-  ac.decodeAudioData(u8.buffer,b=>{SOUND_BUF[k]=b;if(k.startsWith('an_')&&SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900){SOUND_WAIT[k]=0;announce(k.slice(3))}if(k==='menu')menuMusic();else if(k==='titleSong')titleMusic();else if(k==='ambA'||k==='ambB')gameAmbience();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0},()=>{SOUND_WAIT[k]=0})}catch(e){SOUND_WAIT[k]=0}})}
+/* Sounds load in priority order: the title song and menu music first, then the browse sounds and start line, then everything else */
+const SOUND_FIRST=['titleSong','menu','heroBrowse','villainBrowse','an_start','ambA','ambB'];
+function soundLoaded(k,b){SOUND_BUF[k]=b;if(k.startsWith('an_')&&SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900){SOUND_WAIT[k]=0;announce(k.slice(3))}if(k==='menu')menuMusic();else if(k==='titleSong')titleMusic();else if(k==='ambA'||k==='ambB')gameAmbience();else if(SOUND_WAIT[k]>0&&performance.now()-SOUND_WAIT[k]<900)playSound(k);SOUND_WAIT[k]=0}
+function loadSounds(){if(!ac)return;const ks=Object.keys(SOUND_CLIPS).sort((a,b)=>{const ia=SOUND_FIRST.indexOf(a),ib=SOUND_FIRST.indexOf(b);return(ia<0?99:ia)-(ib<0?99:ib)});
+  ks.forEach(k=>{if(SOUND_BUF[k]||SOUND_WAIT[k]===-1)return;SOUND_WAIT[k]=SOUND_WAIT[k]||-1;queueAudio(SOUND_CLIPS[k],b=>soundLoaded(k,b),()=>{SOUND_WAIT[k]=0})})}
 /* A browse sound cuts off the one before it, so clicking quickly through cards doesn't pile up */
 /* Villain browse is twice the hero browse level, at the owner's request. Its loudest point stays below clipping (about -1.7 dB). */
 const SOUND_VOL={heroBrowse:.8,villainBrowse:1.6};
