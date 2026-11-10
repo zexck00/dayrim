@@ -5,6 +5,7 @@ RUN cd server && npm ci --omit=dev
 COPY server/index.js server/sim.js server/sim-glue.js server/sync.js server/profiles.js server/
 COPY src/rig.js src/game.js src/
 COPY dayrim.html ./
+COPY assets ./assets
 ENV NODE_ENV=production PORT=8080 DATA_DIR=/data TRUST_PROXY=1
 RUN mkdir -p /data && chown node:node /data
 USER node

@@ -4,7 +4,21 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Fixed
+- A revive button now appears near the wounded Stage 1 scout for mouse players, and the objective instructions mention the touch control.
+
 ### Added
+- More achievements for combat actions, teamwork, encounter mechanics and longer-term milestones.
+- Achievements for story milestones, combat, progression, teamwork and the Swarm, with a collection menu and unlock notifications.
+- Weapon and signature upgrades now reach tier 5. Three new safehouse upgrades increase power while keeping melee reach and swing coverage in check.
+- Rusted Ghoul, the Stage 7 boss: dodge its hook and cleaves, then power the generator and lure it onto the coil to stagger it and clear Rust Field. The coil charges itself for a lone standing player.
+- Rustleaf Woods: rust weakens armor at night, a fueled generator must be defended while it is repaired, and Scrap Golems rebuild unless their parts are destroyed. Solo players can break both parts.
+- Flesh Amalgam, the Stage 6 boss: pull its two bodies apart to stop them healing, and bring a downed body’s partner down before it revives. The bodies rejoin for the final phase.
+- Ruined Vale: avoid warned floor collapses and flank Shieldbearers. Hold both pressure plates to open the boss gate; a solo player can hold them one at a time.
+- Spore Brute, the Stage 5 boss: share Toxic Load with nearby allies, use the purifier or clean vents, destroy healing mushrooms, and reach a clean zone before Toxic Storm.
+- Sporefall Marsh: manage toxin, carry three purifier canisters to separate vents, and avoid the spore clouds released by Bloaters. The safehouse and activated vents clear toxin.
+- Chitin Horror, the Stage 4 boss: flank its armored front, dodge its bouncing charge, cut allies free from web spit, and burst egg sacs before they hatch. It sheds its armor and speeds up at low life.
+- Webbed Barrow: cut four egg clusters before they hatch, and rescue allies caught by ranged Webbers. A player alone breaks free after five seconds.
 - The title song plays on the title poster, fading in to 70% volume, and hands over to the menu music on Play Game.
 - First blood: the owner's line plays on a kill, at most once every 10 minutes.
 - The Swarm: an endless mode on any stage you have reached, alone or online. Every wave is bigger, a boss joins every fifth wave, and the safehouse only shelters you between waves. Nothing you earn carries back to your saved character; your best wave is kept.
@@ -17,6 +31,9 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Stalkers wait in the thicket, give a short warning, then lunge. Dodging the lunge leaves them open.
 
 ### Changed
+- The game page is about 390 KB instead of 10 MB. Pictures, sounds and the 3D effects library are separate files in game/assets that load as needed and stay cached, so the character menu appears straight away even on slow connections. Sounds load one after another, title and menu music first. `tools/build.py --inline` still makes a single self-contained file.
+- Every playable character now has a themed ultimate name, emblem and animated effects, visible to nearby online players.
+- Weapon projectiles gain brighter trails and distinctive ornaments as they are upgraded, visible in solo and online play.
 - The Necromancer, Toxin Alchemist and Void Empress use the same pixel figures as the other villains. Their own attacks stay, shown as a coloured sweep or aura. The page is about 3.5 MB smaller without their large art sheets.
 - The whole title poster fits on screen, with a blurred fill around it. Play Game grows and brightens 20% on hover.
 - Combo announcer lines moved up one clip: kill 1 is First blood and Double Kill is kill 2. Legendary uses the computer voice until it has a recording.
@@ -30,6 +47,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - A target can react once every 2 seconds, so fast weapons no longer earn ultimates and boss stagger from every second hit. The value is a prototype.
 
 ### Fixed
+- Carrying an objective item now prevents signature moves and ultimates, and a downed carrier drops the item where they fell.
 - The wounded scout can be revived reliably: night thinning no longer deletes it, hits and shots can no longer hurt or push it before it is revived, enemies ignore it, and the hold-F reach is 80.
 - The title poster no longer flashes a broken image while the page loads; it fades in once its pictures are ready.
 - Defeated Lurkers always release their victims, including when damage over time kills them.

@@ -36,8 +36,8 @@ jobs:
       - name: The page must match its sources
         run: |
           python3 game/tools/build.py
-          git diff --quiet -- game/dayrim.html || {
-            echo "::error::dayrim.html is stale; rebuild and commit it."
+          [ -z "$(git status --porcelain -- game/dayrim.html game/assets)" ] || {
+            echo "::error::dayrim.html or game/assets is stale; rebuild and commit them."
             exit 1
           }
 

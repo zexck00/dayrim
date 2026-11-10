@@ -42,9 +42,10 @@ jobs:
         run: python3 game/tools/build.py
       - name: Fail if the committed page is stale
         run: |
-          if ! git diff --quiet -- game/dayrim.html; then
-            echo "::error file=game/dayrim.html::dayrim.html is out of date. Run python3 game/tools/build.py and commit the result."
-            git --no-pager diff --stat -- game/dayrim.html
+          # The page and the asset files it links to (game/assets) must both be committed and current
+          if [ -n "$(git status --porcelain -- game/dayrim.html game/assets)" ]; then
+            echo "::error file=game/dayrim.html::dayrim.html or game/assets is out of date. Run python3 game/tools/build.py and commit the result."
+            git status --porcelain -- game/dayrim.html game/assets
             exit 1
           fi
-          echo "dayrim.html is in sync with its sources."
+          echo "dayrim.html and its assets are in sync with their sources."

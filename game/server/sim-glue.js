@@ -9,6 +9,7 @@ tone=(...a)=>ev(['t',...a],undefined,undefined,here().id);
 noiseHit=(...a)=>ev(['o',...a],undefined,undefined,here().id);
 stinger=l=>ev(['g',l],undefined,undefined,here().id);
 shake=v=>ev(['k',v],undefined,undefined,here().id);
+achievementNotice=(p,id)=>ev(['achievement',id],undefined,undefined,p.id);
 addLog=html=>ev(['l',html],undefined,undefined,here().id);
 text=(x,y,s,c,big)=>ev(['x',Math.round(x),Math.round(y),s,c,big?1:0],x,y);
 burst=(x,y,c,n,sp=120)=>ev(['b',Math.round(x),Math.round(y),c,n,sp],x,y);
@@ -19,7 +20,7 @@ trail=()=>{};tickFx=()=>{};dirty=()=>{};audioOn=()=>{};writeSave=()=>{};
 function setMode(m){if(m==='clear'&&CUR){CUR.cleared=true;ev(['clear',G.stage])}}
 
 const roundDeep=o=>{for(const k in o){const v=o[k];if(typeof v==='number')o[k]=Math.round(v*100)/100}return o};
-const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','weaponUpgrades','runBoons','skills','train','sp','kills','rage','bestCombo','maxStage','beaten','swarmBest'];
+const SAVE_KEYS=['char','lvl','xp','gold','potions','fast','magic','gear','bag','weapons','weapon','weaponUpgrades','achievements','runBoons','skills','train','sp','kills','rage','bestCombo','maxStage','beaten','swarmBest'];
 
 /* Input and actions from the network take effect at the start of that player's own turn */
 applyInput=p=>{const i=p.input;joy.on=true;joy.dx=i.x;joy.dy=i.y;mouse.x=i.ax;mouse.y=i.ay;mouse.left=i.l;mouse.right=i.r;
@@ -42,7 +43,7 @@ function makePlayer(char,save,pname,id){
   if(!Array.isArray(p.weapons)||!p.weapons.includes('fists'))p.weapons=['fists'].concat(p.weapons||[]);if(!p.weapons.includes(p.weapon))p.weapon='fists';
   if(!p.runBoons||typeof p.runBoons!=='object'||Array.isArray(p.runBoons))p.runBoons={wide:0,opening:0};
   if(!p.weaponUpgrades||typeof p.weaponUpgrades!=='object'||Array.isArray(p.weaponUpgrades))p.weaponUpgrades={};
-  p.input={s:0,x:0,y:0,ax:0,ay:0,l:false,r:false};p.actions=[];p.ack=0;p.stats=STATS[char];
+  achievementInit(p,false);p.input={s:0,x:0,y:0,ax:0,ay:0,l:false,r:false};p.actions=[];p.ack=0;p.stats=STATS[char];
   return p;
 }
 function freshHealth(p){G.p=p;recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana}
@@ -78,7 +79,7 @@ return{
     else if(n==='next'){if(!room.cleared||G.stage>=10)return;enterStage(G.stage+1);afterStage(room)}
     else if(n==='stay'){if(!room.cleared)return;room.cleared=false;G.gate.open=true;ev(['clearDone'])}
   },
-  saveOf(p){const o={},src=p.swarmSave?Object.assign({},p.swarmSave,{swarmBest:p.swarmBest||0}):p;for(const k of SAVE_KEYS)o[k]=src[k];return JSON.parse(JSON.stringify(o))},
+  saveOf(p){const o={},src=p.swarmSave?Object.assign({},p.swarmSave,{swarmBest:p.swarmBest||0,achievements:p.achievements}):p;for(const k of SAVE_KEYS)o[k]=src[k];return JSON.parse(JSON.stringify(o))},
   mapOf(room){return Buffer.from(room.G.w.map).toString('base64')},
-  test:{SWARM,startSwarm,nextWave,swarmTick,endSwarm,restartSwarm,restartCheckpoint,GLOOM,BANSHEE,TIDE,tideAt,envSpeed,dryAt,spawnLurker,lurkRelease,bossWarded,spawnLanterns,lanternLit,inBeam,mobHit,AI,concealed,inThicket,spawnStalker,genCitySeeded,get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,teamTarget,doTeam,chooseBoon,offerBoons,spawnMob,spawnRival,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc,addDecal,GORE,goreTrail,goreSpray,goreChunks,gorePool,ELEMENT,REACTIONS,REACT_NAME,REACT_FX,reactionOf,reactionCoverage,objStep,resetStepState,objectiveSteps,updateBoss,bossGuard,bossTelegraph,bossPhaseCheck,BOSS_TELEGRAPH,BOSS_STAGGER,ultHit,ultDmgFor,ULT_LEN,openLink,linkBonus,linkTier,tickLink,LINK_TIERS,LINK_WINDOW,weaponDamage,moveDamage,recDamage,mobUnit,REC_HITS,MELEE_UP,WEAPONS,statMul,stageScale,recLevel,objTargets,holdStep,zoneNeed,HOLD_ALONE_T,chainAdd,chainBonus,chainReset,chainTick,cdMulOf,CHAIN_BONUS,CHAIN_WINDOW,rageShare,RAGE_SHARE_RANGE,pillarHit,spawnPillars,pillarsUp,breakPillar,startBurrow,startSpray,bossPick}
+  test:{ULT_STYLE,ultOf,achievementCheck,achievementUnlock,stageCleared,waveCleared,GHOUL,clearGhoul,spawnGhoulArena,farthestLiving,startGhoulHook,startGhoulCleave,pickGhoul,ghoulTick,RUST,rustStep,spawnScrapGolem,scrapDisable,scrapPartHit,scrapTick,clearScrap,generatorStep,reactHit,nearestEnemy,FLESH,splitFlesh,fleshTick,fleshAfterDamage,fleshDownBody,fleshRejoin,startFleshGrasp,pickFlesh,VALE,valeTick,valeFall,valeLanding,clearVale,spawnShieldbearer,SPORE_BOSS,sporeBossTick,purifierTick,cleanSporeAt,spawnMushrooms,pickSpore,doMove,doUlt,SPORE,toxinStep,spawnBloater,sporeCloud,bloaterAct,WEBBED,spawnWebber,eggHit,clearWeb,SWARM,startSwarm,nextWave,swarmTick,endSwarm,restartSwarm,restartCheckpoint,GLOOM,BANSHEE,TIDE,tideAt,envSpeed,dryAt,spawnLurker,lurkRelease,bossWarded,spawnLanterns,lanternLit,inBeam,mobHit,AI,concealed,inThicket,spawnStalker,genCitySeeded,get G(){return G},enter(room){G=room.G;EV=room.ev;CUR=room},summonBoss,addRage,gainXp,hurtPlayer,killEnemy,quota,bossUltDamage,hitNpc,fearedPlayer,blocked,ROSTER,auraOf,auraHas,upgradeLevel,doAttack,dmgMul,teamTarget,doTeam,chooseBoon,offerBoons,spawnMob,spawnRival,hitEnemy,updateEnemy,doDash,rusherTarget,nearestPlayer,threatAdd,threatDecay,threatScore,threatTarget,threatHeal,THREAT,doHeal,usePotion,recalc,addDecal,GORE,goreTrail,goreSpray,goreChunks,gorePool,ELEMENT,REACTIONS,REACT_NAME,REACT_FX,reactionOf,reactionCoverage,objStep,resetStepState,objectiveSteps,updateBoss,bossGuard,bossTelegraph,bossPhaseCheck,BOSS_TELEGRAPH,BOSS_STAGGER,ultHit,ultDmgFor,ULT_LEN,openLink,linkBonus,linkTier,tickLink,LINK_TIERS,LINK_WINDOW,weaponDamage,moveDamage,recDamage,mobUnit,REC_HITS,MELEE_UP,WEAPONS,statMul,stageScale,recLevel,objTargets,holdStep,zoneNeed,HOLD_ALONE_T,chainAdd,chainBonus,chainReset,chainTick,cdMulOf,CHAIN_BONUS,CHAIN_WINDOW,rageShare,RAGE_SHARE_RANGE,pillarHit,spawnPillars,pillarsUp,breakPillar,startBurrow,startSpray,bossPick}
 };
