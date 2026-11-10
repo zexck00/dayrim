@@ -6,7 +6,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### Changed
 - Magic Pills now double damage for 20 seconds and the mobile button is labeled “2× damage”.
-- Mobile controls now place Spell, Attack and Shield on the bottom row, with the damage pill, Potion, Ult and Dodge above. Ultimate charge appears on the button.
+- Mobile controls now group Fast, Heal, Team and Revive above the damage pill, Potion, Ult and Dodge, with Spell, Attack and Shield on the bottom row. Ultimate charge appears on the button.
 - Mobile combat controls and HUD now use a dark fantasy style, with Shield beside Attack.
 - Mobile combat now groups attack, shield, potion and fast controls together, with a compact HUD for each orientation and an expandable panel for less frequent actions.
 
