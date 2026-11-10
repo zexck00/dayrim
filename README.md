@@ -41,7 +41,7 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 | L | Fullscreen. Esc leaves it. |
 | Esc or P | Pause alone, room menu online. Both have Return to menu. |
 
-Touch controls appear on phones and tablets. Drag on the game view to move; a stick shows the direction. Hold Attack or Shield to keep using it, and hold Revive beside a downed ally. Buttons show cooldowns, ultimate charge and common unavailable states. Tap Menu for skills and other options. Aim is automatic.
+Touch controls appear on phones and tablets in portrait and landscape. Drag on the game view to move; a temporary stick shows the direction. Aim is automatic. Hold Attack or Shield to keep using it, and hold Revive beside a downed ally or the wounded scout. The combat buttons show cooldowns, ultimate charge and common unavailable states; the nearby Revive button is highlighted. Tap More for Weapon and Special, or Menu for skills and other options. The **2× damage** button consumes a Magic Pill and doubles damage for 20 seconds. **Spell** uses mana for an attack; the three asset villains use their moderate attack instead.
 
 At the safehouse, open the menu and choose **Weapons** to upgrade an owned weapon. The two upgrades cost 80 and 180 gold; the menu shows tier progress, compares effects before purchase and explains unavailable upgrades. Necromancer, Void Empress and Toxin Alchemist upgrade their signature moves instead. At the final tier, pistols and bows pierce one additional enemy, shields interrupt ordinary enemy wind-ups, and healing weapons can restore a nearby ally on a hit.
 
