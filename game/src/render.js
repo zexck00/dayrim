@@ -426,7 +426,7 @@ function drawObjPointer(){
 
 let hudK=1,hudTop=0,hudBottom=0,portraitMode=false;
 const portraitHud=()=>portraitMode;
-const portraitBounds=()=>({top:hudTop+(G.boss?176:124)+(G.mp?100:0),bottom:H-hudBottom-180});
+const portraitBounds=()=>({top:hudTop+(G.boss?176:124)+(G.mp?100:0),bottom:H-hudBottom-238});
 function hud(){if(portraitHud())return hudPortrait();if(touchMode&&H<500)return hudLandscape();const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
 /* Draw the player's current gold as a coin and a number inside a HUD panel. */
 function hudGold(right,y,gold){ctx.save();ctx.font='700 12px Barlow,sans-serif';const amount=String(Math.max(0,Math.floor(gold||0))),tw=Math.min(70,ctx.measureText(amount).width),x=right-tw-16;ctx.fillStyle='#e8b933';ctx.beginPath();ctx.arc(x+6,y-4,5,0,TAU);ctx.fill();ctx.strokeStyle='#fff0a0';ctx.lineWidth=1;ctx.stroke();ctx.textAlign='right';ctx.fillStyle='#ffe48a';ctx.fillText(amount,right,y,70);ctx.restore();return tw+20}
@@ -467,7 +467,7 @@ function hudPortrait(){
   if(G.mp&&G.chain&&G.chain.n>=2)label('Party chain '+G.chain.n,right,combatY+20,12,'#8fe6ff',W/2-20,'right');
   if(G.link&&G.link.t>0){const L=G.link,mine=(L.ids||[]).includes(p.id);label(mine?'Linked '+L.n+(L.dmg?' +'+Math.round(L.dmg*100)+'%':''):'Link now · tap Ult',right,combatY+42,13,'#8fe6ff',W/2-20,'right')}
   if(!G.mp&&p.deadT>0)label('Second Wind in '+Math.ceil(p.deadT),W/2,205,19,'#ffcf65',W-28,'center');
-  const freeBottom=H-hudTop-hudBottom-180;
+  const freeBottom=H-hudTop-hudBottom-238;
   if(p.nearSafe&&!G.boss)label('Menu: shop and upgrades',W/2,Math.min(freeBottom-16,H*.55),14,'#6fdca0',W-28,'center');
   if(G.banner&&H>=700&&!(G.mp&&(net.down||p.deadT>0||p.respawnT>0))){const y=Math.min(H*.42,freeBottom-50);panel(6,y-24,W-12,59);label(G.banner.a,W/2,y,22,'#f2ecd8',W-28,'center');label(G.banner.b,W/2,y+23,13,'#f0c23c',W-28,'center')}
   /* World markers use the unshifted canvas coordinate system. */
