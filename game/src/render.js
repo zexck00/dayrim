@@ -428,24 +428,26 @@ let hudK=1,hudTop=0,hudBottom=0,portraitMode=false;
 const portraitHud=()=>portraitMode;
 const portraitBounds=()=>({top:hudTop+(G.boss?176:124)+(G.mp?100:0),bottom:H-hudBottom-238});
 function hud(){if(portraitHud())return hudPortrait();if(touchMode&&H<500)return hudLandscape();const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
+/* Bronze-edged panels keep mobile text readable over the world. */
+function mobilePanel(x,y,w,h){ctx.save();ctx.fillStyle='rgba(20,17,14,.9)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='#b88743';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,h-1);ctx.strokeStyle='#5d4025';ctx.strokeRect(x+3.5,y+3.5,w-7,h-7);ctx.restore()}
 /* Draw the player's current gold as a coin and a number inside a HUD panel. */
 function hudGold(right,y,gold){ctx.save();ctx.font='700 12px Barlow,sans-serif';const amount=String(Math.max(0,Math.floor(gold||0))),tw=Math.min(70,ctx.measureText(amount).width),x=right-tw-16;ctx.fillStyle='#e8b933';ctx.beginPath();ctx.arc(x+6,y-4,5,0,TAU);ctx.fill();ctx.strokeStyle='#fff0a0';ctx.lineWidth=1;ctx.stroke();ctx.textAlign='right';ctx.fillStyle='#ffe48a';ctx.fillText(amount,right,y,70);ctx.restore();return tw+20}
 /* Short landscape screens keep status in the top corners and combat in the center. */
 function hudLandscape(){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;const p=G.p,cur=objNow(),S=G.swarm,w=Math.min(180,W*.25),x=10,y=10;
-  ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(x-4,y-4,w+8,74);ctx.font='600 12px Barlow,sans-serif';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';const goldW=hudGold(x+w,y+10,p.gold);ctx.fillText('Stage '+G.stage+' · '+STAGES[G.stage-1].n,x,y+10,Math.max(30,w-goldW-4));
+  mobilePanel(x-6,y-6,w+12,78);ctx.font='600 12px Barlow,sans-serif';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';const goldW=hudGold(x+w,y+10,p.gold);ctx.fillText('Stage '+G.stage+' · '+STAGES[G.stage-1].n,x,y+10,Math.max(30,w-goldW-4));
   const obj=S?(S.over?'Run ended · wave '+S.wave:S.breakT>0?'Wave '+S.wave+' · next in '+Math.ceil(S.breakT)+'s':'Wave '+S.wave+' · '+S.left+' left'):G.boss?'Boss fight':G.gate.open?'Boss gate open':cur?(cur.label||'Objective')+' '+Math.min(cur.have,cur.need)+'/'+cur.need:'Defeat '+foeWord()+' '+Math.min(G.killsStage,quota(G.stage))+'/'+quota(G.stage);
   ctx.fillStyle='#d0d8e8';ctx.fillText(obj,x,y+25,w);bar(x,y+30,w,15,p.hp/p.s.maxHp,'#c0392f','Life '+Math.ceil(p.hp));bar(x,y+48,w,13,p.mana/p.s.maxMana,'#2d6fc0','Mana '+Math.floor(p.mana));
   if(G.stage===5||G.stage===7){ctx.fillStyle='#f0c23c';ctx.fillText(G.stage===5?'Toxin '+Math.floor(p.toxin||0)+'%':'Rust '+Math.floor((p.rust||0)+(p.fieldRust||0))+'%',x,y+76,w)}
   if(G.boss){const e=G.boss,bw=Math.min(220,W*.32),bx=(W-bw)/2;ctx.textAlign='center';ctx.fillStyle='#f2ecd8';ctx.fillText(e.name,W/2,16,bw);bar(bx,20,bw,10,(e.fleshTotal==null?e.hp:e.fleshTotal)/e.maxHp,'#e8463f','');bar(bx,32,bw,5,(e.guard||0)/(e.guardMax||100),'#7db6ff','')}
-  const mw=64,mh=mw*MH/MW,mx=W-mw-10;ctx.drawImage(mini,mx,10,mw,mh);const dot=(o,c,size)=>{ctx.fillStyle=c;ctx.fillRect(mx+o.x/T*mw/MW-size/2,10+o.y/T*mh/MH-size/2,size,size)};for(const e of G.enemies)if(dist(e,p)<620&&!concealed(e,p))dot(e,e.kind==='boss'?'#ff2020':'#ff5040',2);dot(G.safe,'#6fdca0',4);dot(G.gate,G.gate.open?'#ff8f80':'#6a7080',3);for(const q of G.players)dot(q,q===p?'#fff':'#6fd8ff',3);ctx.textAlign='center';ctx.fillStyle='#f0c23c';ctx.fillText('Ult '+Math.floor(p.rage)+'%',mx+mw/2,10+mh+14,mw);
+  const mw=64,mh=mw*MH/MW,mx=W-mw-10;mobilePanel(mx-3,7,mw+6,mh+6);ctx.drawImage(mini,mx,10,mw,mh);const dot=(o,c,size)=>{ctx.fillStyle=c;ctx.fillRect(mx+o.x/T*mw/MW-size/2,10+o.y/T*mh/MH-size/2,size,size)};for(const e of G.enemies)if(dist(e,p)<620&&!concealed(e,p))dot(e,e.kind==='boss'?'#ff2020':'#ff5040',2);dot(G.safe,'#6fdca0',4);dot(G.gate,G.gate.open?'#ff8f80':'#6a7080',3);for(const q of G.players)dot(q,q===p?'#fff':'#6fd8ff',3);ctx.textAlign='center';ctx.fillStyle='#f0c23c';ctx.fillText('Ult '+Math.floor(p.rage)+'%',mx+mw/2,10+mh+14,mw);
   if(G.link&&G.link.t>0){ctx.textAlign='center';ctx.fillStyle='#8fe6ff';ctx.fillText((G.link.ids||[]).includes(p.id)?'Linked '+G.link.n:'Link now · tap Ult',W/2,55,180)}if(G.mp)netHud(true,true,true);drawDanger();drawObjPointer();
 }
 /* Portrait uses CSS pixels and a single top panel, leaving the middle of the fight clear. */
 function hudPortrait(){
   ctx.setTransform(dpr,0,0,dpr,0,hudTop*dpr);ctx.imageSmoothingEnabled=false;
   const p=G.p,S=G.swarm,cur=objNow(),left=10,right=W-10,statsW=W-100,st=STAGES[G.stage-1];
-  const panel=(x,y,w,h)=>{ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(x,y,w,h)},label=(t,x,y,size,col,max,align='left')=>{ctx.textAlign=align;ctx.font='600 '+size+'px Barlow,sans-serif';ctx.fillStyle=col;ctx.fillText(t,x,y,max)};
+  const panel=mobilePanel,label=(t,x,y,size,col,max,align='left')=>{ctx.textAlign=align;ctx.font='600 '+size+'px Barlow,sans-serif';ctx.fillStyle=col;ctx.fillText(t,x,y,max)};
   panel(6,6,W-12,106);
   const goldW=hudGold(left+statsW,23,p.gold);label('Stage '+G.stage+' · '+st.n,left,23,15,'#f2ecd8',Math.max(30,statsW-goldW-4));
   const obj=S?(S.over?'Run ended · wave '+S.wave:S.breakT>0?'Wave '+S.wave+' · next in '+Math.ceil(S.breakT)+'s':'Wave '+S.wave+' · '+S.left+' left'):G.boss?'Boss fight':G.gate.open?'Boss gate open':cur?(cur.label||'Objective')+' '+Math.min(cur.have,cur.need)+'/'+cur.need:'Defeat '+foeWord()+' '+Math.min(G.killsStage,quota(G.stage))+'/'+quota(G.stage);

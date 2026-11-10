@@ -200,14 +200,28 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .touch[hidden],.touch-extra[hidden]{display:none}
 .touch-primary{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,52px);grid-auto-rows:52px;gap:6px;align-items:center}
 .touch button{width:52px;height:52px;border-radius:16px;font-size:11px;line-height:1.1}
-.touch-primary .big{width:110px;grid-column:2 / span 2;border-radius:22px;font-size:14px;background:rgba(172,70,48,.88)}
+.touch-primary [data-a="guard"]{grid-column:1;grid-row:4}.touch-primary .big{width:110px;grid-column:2 / span 2;grid-row:4;border-radius:22px;font-size:14px;background:rgba(172,70,48,.88)}
 .touch button[data-a="ult"]{color:#ffe47d;border-color:#ffd860}
 .touch button[data-a="revive"].nearby{border-color:#80e5aa;background:rgba(35,108,78,.95);box-shadow:0 0 0 2px rgba(128,229,170,.45)}
 .touch-tools{position:absolute;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:6px;align-items:end}
 .touch-extra{position:absolute;bottom:58px;left:0;display:grid;grid-template-columns:repeat(3,52px);gap:6px;padding:6px;border-radius:16px;background:rgba(5,15,22,.9)}
 .screen.touch-playing>.sound{display:none}
-@media(max-height:500px){.touch-primary{grid-template-columns:repeat(4,48px);grid-auto-rows:48px;gap:4px}.touch button{width:48px;height:48px}.touch-primary [data-a="guard"]{grid-column:2;grid-row:3}.touch-primary .big{width:100px;grid-column:3 / span 2}.touch-extra{bottom:52px;grid-template-columns:repeat(3,48px)}}
+@media(max-height:500px){.touch-primary{grid-template-columns:repeat(4,48px);grid-auto-rows:48px;gap:4px}.touch button{width:48px;height:48px}.touch-primary [data-a="guard"]{grid-column:2;grid-row:3}.touch-primary .big{width:100px;grid-column:3 / span 2;grid-row:3}.touch-extra{bottom:52px;grid-template-columns:repeat(3,48px)}}
 @media(max-width:360px) and (orientation:portrait){.touch-extra{grid-template-columns:repeat(2,52px)}}
+
+/* Dark fantasy touch controls: labels stay visible alongside their symbols. */
+.touch button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:2px solid #b88743;border-radius:50%;color:#f9efd6;background:radial-gradient(circle at 40% 22%,rgba(91,72,48,.97),rgba(24,20,17,.96) 70%);box-shadow:inset 0 0 0 2px #291c14,0 2px 4px #000b;text-shadow:0 1px 2px #000;font:700 10px/1 var(--body)}
+.touch .touch-icon{font:700 17px/1.05 sans-serif;color:#f2c66d;pointer-events:none}.touch .touch-label{pointer-events:none}
+.touch button[data-status]:not([data-status=""])::after{position:static;font:700 9px/1 var(--mono);color:#ffe09a}
+.touch button[data-status]:not([data-status=""]) .touch-icon{font-size:13px}
+.touch button[data-state="waiting"]{color:#d9cbb5;border-color:#806c50;background:radial-gradient(circle at 40% 22%,#494139,#201e1b 75%)}
+.touch button[data-state="waiting"] .touch-icon{color:#b7a58a}.touch button[data-state="ready"]{border-color:#ffe08a;box-shadow:inset 0 0 0 2px #503519,0 0 7px #e1ac4a}
+.touch button:active,.touch button.held{color:#fff;border-color:#fff0b4;background:radial-gradient(circle,#8a6232,#382316);box-shadow:inset 0 1px 6px #000,0 0 7px #e1ac4a}
+.touch button:focus-visible{outline:3px solid #fff0b4;outline-offset:2px}
+.touch-primary .big{flex-direction:row;gap:5px;border-radius:22px!important;border-color:#e4a24e;background:linear-gradient(#a83e28,#702417);font-size:13px;box-shadow:inset 0 0 0 2px #5c2419,0 2px 5px #000b}
+.touch-primary .big .touch-icon{font-size:20px}.touch-extra{border:1px solid #b88743;background:rgba(24,20,17,.96);box-shadow:0 2px 6px #000b}
+.touch button[data-a="revive"].nearby{border-color:#a7e6a6;background:radial-gradient(circle,#417843,#183921);box-shadow:0 0 0 2px #a7e6a688}
+.joystick{border-color:#d4a867;background:rgba(50,37,23,.5);box-shadow:inset 0 0 0 3px #3b291a,0 2px 5px #0008}.joystick i{background:#b39561;border-color:#f3d293}
 
 </style>
 
@@ -220,22 +234,22 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
       <button class="scout-revive" id="scout-revive" type="button" hidden>Hold to revive scout</button>
       <div class="touch" id="touch" aria-label="Touch controls" hidden>
         <div class="touch-primary">
-          <button type="button" data-a="revive" aria-label="Hold to revive">Revive</button>
-          <button type="button" data-a="team">Team</button>
-          <button type="button" data-a="ult">Ult</button>
-          <button type="button" data-a="heal">Heal</button>
-          <button type="button" data-a="spell">Spell</button>
-          <button type="button" data-a="dash">Dodge</button>
-          <button type="button" data-a="potion">Potion</button>
-          <button type="button" data-a="fast">Fast</button>
-          <button type="button" data-a="guard" aria-label="Hold to shield">Shield</button>
-          <button type="button" data-a="slash" class="big" aria-label="Hold to attack">Attack</button>
+          <button type="button" data-a="revive" aria-label="Hold to revive"><span class="touch-icon" aria-hidden="true">✚</span><span class="touch-label">Revive</span></button>
+          <button type="button" data-a="team"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">Team</span></button>
+          <button type="button" data-a="ult"><span class="touch-icon" aria-hidden="true">✹</span><span class="touch-label">Ult</span></button>
+          <button type="button" data-a="heal"><span class="touch-icon" aria-hidden="true">✚</span><span class="touch-label">Heal</span></button>
+          <button type="button" data-a="spell"><span class="touch-icon" aria-hidden="true">✧</span><span class="touch-label">Spell</span></button>
+          <button type="button" data-a="dash"><span class="touch-icon" aria-hidden="true">➤</span><span class="touch-label">Dodge</span></button>
+          <button type="button" data-a="potion"><span class="touch-icon" aria-hidden="true">⚗</span><span class="touch-label">Potion</span></button>
+          <button type="button" data-a="fast"><span class="touch-icon" aria-hidden="true">ϟ</span><span class="touch-label">Fast</span></button>
+          <button type="button" data-a="guard" aria-label="Hold to shield"><span class="touch-icon" aria-hidden="true">⬟</span><span class="touch-label">Shield</span></button>
+          <button type="button" data-a="slash" class="big" aria-label="Hold to attack"><span class="touch-icon" aria-hidden="true">⚔</span><span class="touch-label">Attack</span></button>
         </div>
         <div class="touch-tools">
-          <button type="button" data-a="more" aria-expanded="false" aria-controls="touch-extra">More</button>
-          <button type="button" data-a="menu">Menu</button>
+          <button type="button" data-a="more" aria-expanded="false" aria-controls="touch-extra"><span class="touch-icon" aria-hidden="true">•••</span><span class="touch-label">More</span></button>
+          <button type="button" data-a="menu"><span class="touch-icon" aria-hidden="true">☰</span><span class="touch-label">Menu</span></button>
           <div class="touch-extra" id="touch-extra" hidden>
-            <button type="button" data-a="magic">Magic</button><button type="button" data-a="swap">Weapon</button><button type="button" data-a="special">Special</button>
+            <button type="button" data-a="magic"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">Magic</span></button><button type="button" data-a="swap"><span class="touch-icon" aria-hidden="true">⇄</span><span class="touch-label">Weapon</span></button><button type="button" data-a="special"><span class="touch-icon" aria-hidden="true">✶</span><span class="touch-label">Special</span></button>
           </div>
         </div>
       </div>
@@ -2225,24 +2239,26 @@ let hudK=1,hudTop=0,hudBottom=0,portraitMode=false;
 const portraitHud=()=>portraitMode;
 const portraitBounds=()=>({top:hudTop+(G.boss?176:124)+(G.mp?100:0),bottom:H-hudBottom-238});
 function hud(){if(portraitHud())return hudPortrait();if(touchMode&&H<500)return hudLandscape();const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
+/* Bronze-edged panels keep mobile text readable over the world. */
+function mobilePanel(x,y,w,h){ctx.save();ctx.fillStyle='rgba(20,17,14,.9)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='#b88743';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,h-1);ctx.strokeStyle='#5d4025';ctx.strokeRect(x+3.5,y+3.5,w-7,h-7);ctx.restore()}
 /* Draw the player's current gold as a coin and a number inside a HUD panel. */
 function hudGold(right,y,gold){ctx.save();ctx.font='700 12px Barlow,sans-serif';const amount=String(Math.max(0,Math.floor(gold||0))),tw=Math.min(70,ctx.measureText(amount).width),x=right-tw-16;ctx.fillStyle='#e8b933';ctx.beginPath();ctx.arc(x+6,y-4,5,0,TAU);ctx.fill();ctx.strokeStyle='#fff0a0';ctx.lineWidth=1;ctx.stroke();ctx.textAlign='right';ctx.fillStyle='#ffe48a';ctx.fillText(amount,right,y,70);ctx.restore();return tw+20}
 /* Short landscape screens keep status in the top corners and combat in the center. */
 function hudLandscape(){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;const p=G.p,cur=objNow(),S=G.swarm,w=Math.min(180,W*.25),x=10,y=10;
-  ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(x-4,y-4,w+8,74);ctx.font='600 12px Barlow,sans-serif';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';const goldW=hudGold(x+w,y+10,p.gold);ctx.fillText('Stage '+G.stage+' · '+STAGES[G.stage-1].n,x,y+10,Math.max(30,w-goldW-4));
+  mobilePanel(x-6,y-6,w+12,78);ctx.font='600 12px Barlow,sans-serif';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';const goldW=hudGold(x+w,y+10,p.gold);ctx.fillText('Stage '+G.stage+' · '+STAGES[G.stage-1].n,x,y+10,Math.max(30,w-goldW-4));
   const obj=S?(S.over?'Run ended · wave '+S.wave:S.breakT>0?'Wave '+S.wave+' · next in '+Math.ceil(S.breakT)+'s':'Wave '+S.wave+' · '+S.left+' left'):G.boss?'Boss fight':G.gate.open?'Boss gate open':cur?(cur.label||'Objective')+' '+Math.min(cur.have,cur.need)+'/'+cur.need:'Defeat '+foeWord()+' '+Math.min(G.killsStage,quota(G.stage))+'/'+quota(G.stage);
   ctx.fillStyle='#d0d8e8';ctx.fillText(obj,x,y+25,w);bar(x,y+30,w,15,p.hp/p.s.maxHp,'#c0392f','Life '+Math.ceil(p.hp));bar(x,y+48,w,13,p.mana/p.s.maxMana,'#2d6fc0','Mana '+Math.floor(p.mana));
   if(G.stage===5||G.stage===7){ctx.fillStyle='#f0c23c';ctx.fillText(G.stage===5?'Toxin '+Math.floor(p.toxin||0)+'%':'Rust '+Math.floor((p.rust||0)+(p.fieldRust||0))+'%',x,y+76,w)}
   if(G.boss){const e=G.boss,bw=Math.min(220,W*.32),bx=(W-bw)/2;ctx.textAlign='center';ctx.fillStyle='#f2ecd8';ctx.fillText(e.name,W/2,16,bw);bar(bx,20,bw,10,(e.fleshTotal==null?e.hp:e.fleshTotal)/e.maxHp,'#e8463f','');bar(bx,32,bw,5,(e.guard||0)/(e.guardMax||100),'#7db6ff','')}
-  const mw=64,mh=mw*MH/MW,mx=W-mw-10;ctx.drawImage(mini,mx,10,mw,mh);const dot=(o,c,size)=>{ctx.fillStyle=c;ctx.fillRect(mx+o.x/T*mw/MW-size/2,10+o.y/T*mh/MH-size/2,size,size)};for(const e of G.enemies)if(dist(e,p)<620&&!concealed(e,p))dot(e,e.kind==='boss'?'#ff2020':'#ff5040',2);dot(G.safe,'#6fdca0',4);dot(G.gate,G.gate.open?'#ff8f80':'#6a7080',3);for(const q of G.players)dot(q,q===p?'#fff':'#6fd8ff',3);ctx.textAlign='center';ctx.fillStyle='#f0c23c';ctx.fillText('Ult '+Math.floor(p.rage)+'%',mx+mw/2,10+mh+14,mw);
+  const mw=64,mh=mw*MH/MW,mx=W-mw-10;mobilePanel(mx-3,7,mw+6,mh+6);ctx.drawImage(mini,mx,10,mw,mh);const dot=(o,c,size)=>{ctx.fillStyle=c;ctx.fillRect(mx+o.x/T*mw/MW-size/2,10+o.y/T*mh/MH-size/2,size,size)};for(const e of G.enemies)if(dist(e,p)<620&&!concealed(e,p))dot(e,e.kind==='boss'?'#ff2020':'#ff5040',2);dot(G.safe,'#6fdca0',4);dot(G.gate,G.gate.open?'#ff8f80':'#6a7080',3);for(const q of G.players)dot(q,q===p?'#fff':'#6fd8ff',3);ctx.textAlign='center';ctx.fillStyle='#f0c23c';ctx.fillText('Ult '+Math.floor(p.rage)+'%',mx+mw/2,10+mh+14,mw);
   if(G.link&&G.link.t>0){ctx.textAlign='center';ctx.fillStyle='#8fe6ff';ctx.fillText((G.link.ids||[]).includes(p.id)?'Linked '+G.link.n:'Link now · tap Ult',W/2,55,180)}if(G.mp)netHud(true,true,true);drawDanger();drawObjPointer();
 }
 /* Portrait uses CSS pixels and a single top panel, leaving the middle of the fight clear. */
 function hudPortrait(){
   ctx.setTransform(dpr,0,0,dpr,0,hudTop*dpr);ctx.imageSmoothingEnabled=false;
   const p=G.p,S=G.swarm,cur=objNow(),left=10,right=W-10,statsW=W-100,st=STAGES[G.stage-1];
-  const panel=(x,y,w,h)=>{ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(x,y,w,h)},label=(t,x,y,size,col,max,align='left')=>{ctx.textAlign=align;ctx.font='600 '+size+'px Barlow,sans-serif';ctx.fillStyle=col;ctx.fillText(t,x,y,max)};
+  const panel=mobilePanel,label=(t,x,y,size,col,max,align='left')=>{ctx.textAlign=align;ctx.font='600 '+size+'px Barlow,sans-serif';ctx.fillStyle=col;ctx.fillText(t,x,y,max)};
   panel(6,6,W-12,106);
   const goldW=hudGold(left+statsW,23,p.gold);label('Stage '+G.stage+' · '+st.n,left,23,15,'#f2ecd8',Math.max(30,statsW-goldW-4));
   const obj=S?(S.over?'Run ended · wave '+S.wave:S.breakT>0?'Wave '+S.wave+' · next in '+Math.ceil(S.breakT)+'s':'Wave '+S.wave+' · '+S.left+' left'):G.boss?'Boss fight':G.gate.open?'Boss gate open':cur?(cur.label||'Objective')+' '+Math.min(cur.have,cur.need)+'/'+cur.need:'Defeat '+foeWord()+' '+Math.min(G.killsStage,quota(G.stage))+'/'+quota(G.stage);
@@ -2484,7 +2500,7 @@ function paintRooms(){const el=$('rl');if(!el)return;
 /* Party list, room code and the respawn message, drawn over the game */
 function netHud(small,portrait=false,landscape=false){
   const me=G.p,x=12;let y=landscape?108:portrait?(G.boss?182:132):touchMode?(H<500?220:195):(small?116:70);ctx.textAlign='left';
-  if(portrait){ctx.fillStyle='rgba(5,10,20,.75)';ctx.fillRect(6,y-14,148,23+(G.players.length-1)*17);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle='#f0c23c';ctx.fillText('Hope '+(G.hope??0)+'/'+(G.hopeMax??0)+' · Difficulty ×'+partyScale().difficulty,x,y,136);y+=18}else{
+  if(portrait){mobilePanel(6,y-14,148,23+(G.players.length-1)*17);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle='#f0c23c';ctx.fillText('Hope '+(G.hope??0)+'/'+(G.hopeMax??0)+' · Difficulty ×'+partyScale().difficulty,x,y,136);y+=18}else{
   ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?180:225,66+G.players.length*17);
   ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+' · Hope '+(G.hope??0)+'/'+(G.hopeMax??0),x,y);y+=15;{const chg=net.scaleNotice>performance.now();ctx.fillStyle=chg?'#8fe6ff':'#f0c23c';ctx.fillText((chg?'Difficulty changed ×':'Difficulty ×')+partyScale().difficulty+' · Spent '+(G.hopeSpent||0),x,y,small?168:210)}y+=15;ctx.fillStyle='#f0c23c';ctx.fillText('Retry: '+(G.gate&&G.gate.open?'boss gate':'objective checkpoint'),x,y,small?168:210);y+=16;}
 
@@ -2738,7 +2754,7 @@ function updateTouchStatus(){if(!touchMode||G.mode!=='play'||!G.p)return;const p
   spell:kit?(p.mv?'Busy':''):(wait(cd.bolt)||(p.mana<p.s.spellCost?'Mana':'')),heal:wait(cd.pull)||(p.mana<22?'Mana':low?'Full':''),
   potion:wait(cd.potion)||(!p.potions?'Empty':low?'Full':''),fast:wait(p.fastT)||(!p.fast?'Empty':''),magic:wait(p.magicT)||(!p.magic?'Empty':'')};
   const near=!(p.deadT>0||p.respawnT>0)&&((G.players||[]).some(q=>q!==p&&q.deadT>0&&dist(p,q)<=(archKey(p.char)==='medic'?120:60))||(G.npcs||[]).some(q=>q.wounded&&!q.dead&&dist(p,q)<=Math.max(archKey(p.char)==='medic'?120:60,80)));$('touch').querySelector('[data-a=revive]').classList.toggle('nearby',near);
-  for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.textContent+(value?', '+value:''))}}
+  for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.querySelector('.touch-label').textContent+(value?', '+value:''))}}
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
   if(a==='more'){const panel=$('touch-extra');panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));return}if(b.closest('#touch-extra'))closeTouchExtra();
   if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});

@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 ## [Unreleased]
 
 ### Changed
+- Mobile combat controls and HUD now use a dark fantasy style, with Shield beside Attack.
 - Mobile combat now groups attack, shield, potion and fast controls together, with a compact HUD for each orientation and an expandable panel for less frequent actions.
 
 ### Fixed
