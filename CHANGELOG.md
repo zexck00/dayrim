@@ -11,6 +11,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Mobile combat now groups attack, shield, potion and fast controls together, with a compact HUD for each orientation and an expandable panel for less frequent actions.
 
 ### Fixed
+- Docker builds include the game assets required by the shipped page.
 - A revive button now appears near the wounded Stage 1 scout for mouse players, and the objective instructions mention the touch control.
 
 ### Added
