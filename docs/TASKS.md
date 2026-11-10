@@ -253,7 +253,7 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 | D-31 | D | M | Darkness and light rendering that works on phones | Passes D-25 test | C-50 |
 | D-32 | D | S | Version check: tells players to reload when the server updates | No mismatch errors | |
 | D-33 | D | M | Load test with bot parties on the real server | Maximum rooms known and documented | D-06 |
-| Z-30 | Z | M | Signature passive ideas for all 40 characters, matching their art | List approved | |
+| Z-30 | Z | M | **Done 2026-11-10** (all 40 passives are in `PASSIVES` in game.js and shown on the character menu). Signature passive ideas for all 40 characters, matching their art | List approved | |
 | Z-31 | Z | L | **Third art batch:** remaining villains (17). The Necromancer, Void Empress and Toxin Alchemist need extra poses only. | Delivered to spec | Z-10 |
 | Z-32 | Z | L | Boss art: Cyber Dread, Void Weaver, Nameless King | Delivered to spec | Z-11 |
 | Z-33 | Z | M | Art for Lightbreaker, Corruptor, and set pieces for stages 8 to 10 | Delivered | Z-12 |
