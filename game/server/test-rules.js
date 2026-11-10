@@ -195,6 +195,13 @@ ok(eRoster.length===40&&eRoster.every(n=>T.ELEMENT[n]),'every character in the r
 ok(eNames.length===40&&eNames.every(n=>eRoster.includes(n)),'the element table names no character the roster lacks');
 ok(eNames.every(n=>['burn','toxin','chill','shock','soak','void','bleed','holy'].includes(T.ELEMENT[n])),'every element is one of the eight in the design');
 ok(T.REACTIONS.length===10&&Object.keys(T.REACT_FX).length===11,'every reaction row has an implemented effect');
+// Signature passives (Z-30): every character has one, the names are all different, and each changes that character's stats.
+{const names=Object.keys(T.PASSIVES),titles=names.map(n=>T.PASSIVES[n][0]);
+ ok(eRoster.every(n=>T.PASSIVES[n])&&names.every(n=>eRoster.includes(n)),'every character has a signature passive');
+ ok(new Set(titles).size===titles.length,'no two characters share a passive name');
+ const base={dmg:10,maxHp:100,maxMana:60,armor:5,crit:.05,speed:165,leech:0,regen:3,blast:64,dashCd:2.4,spellCost:16,cdMul:1,guardMul:1,mendMul:1};
+ ok(names.every(n=>{const t=Object.assign({},base);T.PASSIVES[n][2](t);return Object.keys(base).some(k=>t[k]!==base[k])}),'each passive changes its character\'s stats');
+ const r=mk(),p=s.createRoom(r,'Firefighter',null,'Passive'),q=s.addPlayer(r,'Guardian',null,'Plain');T.enter(r);ok(p.s.maxHp>q.s.maxHp*1.05,'the Firefighter passive adds life in play')}
 const eCov=T.reactionCoverage();
 ok(eCov.total===780&&eCov.byElement===259&&eCov.byResonance===521&&eCov.covered===780,'coverage is pinned: '+eCov.covered+' of '+eCov.total+' ('+eCov.byElement+' by element, '+eCov.byResonance+' by resonance)');
 const rx2=(ca,cb)=>{const r=mk(),a=s.createRoom(r,ca,null,'A'),b=s.addPlayer(r,cb,null,'B');T.enter(r);G().enemies=[];return[a,b]};

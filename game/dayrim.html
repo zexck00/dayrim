@@ -41,6 +41,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .roster{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
 .rc{min-width:0;padding:0;overflow:hidden}
 .rc i{display:block;flex:none;background-image:var(--atlas);background-repeat:no-repeat}
+/* Signature passive line on the character menu */
+.passive{margin:-2px 0 10px;padding:6px 8px;border-left:3px solid var(--lichen);background:rgba(240,194,60,.08);font-size:14px;line-height:1.35;color:var(--bone)}.passive b{color:var(--lichen)}
 /* Heroes and villains: the cards from the update sheets, with the number tab below */
 .rc.h{display:flex;flex-direction:column;align-items:center;background:transparent;border:2px solid transparent;border-radius:3px}
 .rc.h:hover{border-color:var(--foam)}
@@ -534,6 +536,51 @@ const ARCH={
 };
 const ROSTER={hero:{Detective:'shooter',Vigilante:'scout',Guardian:'bruiser',Ranger:'scout',Inventor:'shooter',Firefighter:'bruiser','Hero Shadow':'striker',Prodigy:'striker',Sage:'shooter',Patriot:'striker',Phantom:'scout',Pyromancer:'shooter',Chronomancer:'shooter',Beastmaster:'striker',Voidwalker:'shooter',Exorcist:'medic','Gravity Mage':'shooter',Druid:'medic',Cyborg:'bruiser',Illusionist:'scout'},
 villain:{Necromancer:'shooter','Blood Reaper':'bruiser','Toxin Alchemist':'medic','Soul Stealer':'scout','Shadow Monarch':'striker',Puppeteer:'shooter','Void Empress':'shooter','Plague Doctor':'medic','Mad Scientist':'shooter','Demon Knight':'bruiser','Gravity Weaver':'shooter','Mecha Tyrant':'bruiser','Chrono Thief':'scout','Swarm Queen':'scout','Ice Archmage':'shooter','Deep Siren':'striker','Ash Shaman':'medic','Soul Forger':'bruiser','Mirror Jester':'scout','Cyber Priest':'medic'}};
+/* Signature passives (Z-30): each character has one small bonus of its own, on top of its archetype.
+   [name, description, effect on the stat block]. Kept small so the archetypes and balance still lead. */
+const PASSIVES={
+ Detective:['Keen Eye','6% more critical chance.',s=>{s.crit+=.06}],
+ Vigilante:['Night Prowler','8% faster movement.',s=>{s.speed*=1.08}],
+ Guardian:['Stalwart','6 extra armor.',s=>{s.armor+=6}],
+ Ranger:['Trailwise','Dodge recharges 15% faster.',s=>{s.dashCd*=.85}],
+ Inventor:['Tinkerer','Cooldowns are 6% shorter.',s=>{s.cdMul*=.94}],
+ Firefighter:['Heat Proof','15% more life.',s=>{s.maxHp*=1.15}],
+ 'Hero Shadow':['Backstab','8% more critical chance.',s=>{s.crit+=.08}],
+ Prodigy:['Natural Talent','8% more damage.',s=>{s.dmg*=1.08}],
+ Sage:['Deep Wisdom','25% more mana.',s=>{s.maxMana*=1.25}],
+ Patriot:['Rally','Regenerates 2 extra life per second.',s=>{s.regen+=2}],
+ Phantom:['Ethereal','Dodge recharges 20% faster.',s=>{s.dashCd*=.8}],
+ Pyromancer:['Kindling','Spell blasts are 20% wider.',s=>{s.blast*=1.2}],
+ Chronomancer:['Borrowed Time','Cooldowns are 8% shorter.',s=>{s.cdMul*=.92}],
+ Beastmaster:['Pack Leader','Heals 1.5 life per hit.',s=>{s.leech+=1.5}],
+ Voidwalker:['Void Step','10% faster movement.',s=>{s.speed*=1.1}],
+ Exorcist:['Blessed','Healing is 12% stronger.',s=>{s.mendMul+=.12}],
+ 'Gravity Mage':['Mass','Spells cost 3 less mana.',s=>{s.spellCost-=3}],
+ Druid:['Regrowth','Regenerates 3 extra life per second.',s=>{s.regen+=3}],
+ Cyborg:['Plating','8 extra armor.',s=>{s.armor+=8}],
+ Illusionist:['Misdirection','4% more critical chance, and the dodge recharges 10% faster.',s=>{s.crit+=.04;s.dashCd*=.9}],
+ Necromancer:['Soul Harvest','Heals 2 life per hit.',s=>{s.leech+=2}],
+ 'Blood Reaper':['Bloodlust','5% more damage, and heals 1 life per hit.',s=>{s.dmg*=1.05;s.leech+=1}],
+ 'Toxin Alchemist':['Virulent','Spell blasts are 15% wider.',s=>{s.blast*=1.15}],
+ 'Soul Stealer':['Siphon','20% more mana.',s=>{s.maxMana*=1.2}],
+ 'Shadow Monarch':['Dominion','10% more damage.',s=>{s.dmg*=1.1}],
+ Puppeteer:['Strings Attached','Cooldowns are 7% shorter.',s=>{s.cdMul*=.93}],
+ 'Void Empress':['Event Horizon','Spell blasts are 25% wider.',s=>{s.blast*=1.25}],
+ 'Plague Doctor':['Black Remedy','Healing is 15% stronger.',s=>{s.mendMul+=.15}],
+ 'Mad Scientist':['Overclocked','Cooldowns are 8% shorter.',s=>{s.cdMul*=.92}],
+ 'Demon Knight':['Infernal Hide','10% more life and 3 extra armor.',s=>{s.maxHp*=1.1;s.armor+=3}],
+ 'Gravity Weaver':['Orbital Guard','Shield blocks 15% more.',s=>{s.guardMul+=.15}],
+ 'Mecha Tyrant':['Armored Core','10 extra armor.',s=>{s.armor+=10}],
+ 'Chrono Thief':['Quick Hands','Dodge recharges 20% faster.',s=>{s.dashCd*=.8}],
+ 'Swarm Queen':['Hive Mind','Regenerates 2 extra life per second.',s=>{s.regen+=2}],
+ 'Ice Archmage':['Frostbite','5% more critical chance.',s=>{s.crit+=.05}],
+ 'Deep Siren':['Undertow','8% faster movement.',s=>{s.speed*=1.08}],
+ 'Ash Shaman':['Ember Mend','Healing is 12% stronger, and regenerates 1 extra life per second.',s=>{s.mendMul+=.12;s.regen+=1}],
+ 'Soul Forger':['Tempered','12% more life.',s=>{s.maxHp*=1.12}],
+ 'Mirror Jester':['Reflection','7% more critical chance.',s=>{s.crit+=.07}],
+ 'Cyber Priest':['Firmware','15% more mana, and the shield blocks 10% more.',s=>{s.maxMana*=1.15;s.guardMul+=.1}]
+};
+const passiveOf=n=>PASSIVES[n]||null;
 /* The action methods. Each character's stats (1 to 5) set how strong each method is for them. */
 const METHODS={unarmed:{n:'Unarmed',st:'pow'},melee:{n:'Weapon melee',st:'pow'},shoot:{n:'Shoot',st:'aim'},spell:{n:'Spell',st:'mag'},shield:{n:'Shield',st:'grd'},heal:{n:'Heal',st:'hea'}};
 const STAT_NAMES={pow:'Melee',aim:'Shooting',mag:'Magic',grd:'Shield',hea:'Healing'};
@@ -796,7 +843,7 @@ function freshPlayer(name){return{char:name,id:1,x:0,y:0,r:13,hp:100,mana:50,lvl
 function recalc(){
   const p=G.p,sk=id=>p.skills[id]||0,s={dmg:11+p.lvl*2.6+p.train.str*2,maxHp:95+p.lvl*18+p.train.end*15,maxMana:60+p.lvl*4,armor:p.lvl*1.6,crit:.05,speed:165+p.train.agi*2,leech:0,regen:3,blast:64,dashCd:2.4,mana:0,hp:0,spellCost:16,cdMul:1-.012*(p.lvl-1)-.03*p.train.agi,guardMul:1,mendMul:1};
   Object.values(p.gear).forEach(it=>{if(!it)return;for(const k in it.aff)s[k]=(s[k]||0)+it.aff[k]});
-  s.maxHp+=s.hp;s.maxMana+=s.mana;archOf(p.char).f(s);
+  s.maxHp+=s.hp;s.maxMana+=s.mana;archOf(p.char).f(s);{const ps=passiveOf(p.char);if(ps)ps[2](s)}
   s.maxHp*=1+sk('tough')*.06;s.speed=Math.min(290,s.speed*(1+sk('foot')*.02));s.regen+=sk('focus');s.crit+=sk('crit')*.015;s.leech+=sk('leech')*.5;s.guardMul+=sk('guard')*.12;s.mendMul+=sk('mend')*.1;
   /* Haste: levels and Agility shorten every ability cooldown, but never past 60% of the base timer. Character quirks apply first, so the floor holds for them too. */
   s.cdMul=Math.max(.6,Math.min(1,s.cdMul));
@@ -2538,7 +2585,7 @@ function renderSelect(){
   c.innerHTML='<div class="sel-top"><h2>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
   (sv?'<div class="cont"><span>Saved: The '+esc(label(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
   '<div class="sel-body"><div class="roster">'+names.map((n,ri)=>'<button class="rc h" type="button" data-c="'+esc(n)+'" aria-pressed="'+(n===chosen)+'" aria-label="The '+esc(label(n))+', '+ARCH[ROSTER[selTab][n]].n+'"><i style="'+cardStyle(n)+'"></i><b>'+String(ri+1).padStart(2,'0')+'</b></button>').join('')+'</div>'+
-  '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p><button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
+  '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p>'+(passiveOf(chosen)?'<p class="passive"><b>Passive · '+esc(passiveOf(chosen)[0])+':</b> '+esc(passiveOf(chosen)[1])+'</p>':'')+'<button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
   c.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{selTab=b.dataset.tab;playSound(selTab==='hero'?'heroBrowse':'villainBrowse');renderSelect()});
   c.querySelectorAll('.rc').forEach(b=>{b.onclick=()=>{chosen=b.dataset.c;playSound(factionOf(chosen)==='hero'?'heroBrowse':'villainBrowse');confirmNew=false;try{localStorage.setItem('dayrim-char',chosen)}catch(e){}G.p.char=chosen;recalc();renderSelect()}});
   $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();announce('start',2);clearSave();newRun(chosen);addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
