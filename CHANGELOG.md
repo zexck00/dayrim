@@ -8,6 +8,8 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - A revive button now appears near the wounded Stage 1 scout for mouse players, and the objective instructions mention the touch control.
 
 ### Added
+- New sounds for going down, reviving, linked ultimates (with Duo, Trio and Full Party calls) and each of the ten reactions, made from scratch by tools/make_audio.py.
+- The announcer voice lines are remade with a free public-domain voice (tools/make_free_voice.py), replacing the macOS voice that couldn't be used commercially.
 - More achievements for combat actions, teamwork, encounter mechanics and longer-term milestones.
 - Achievements for story milestones, combat, progression, teamwork and the Swarm, with a collection menu and unlock notifications.
 - Weapon and signature upgrades now reach tier 5. Three new safehouse upgrades increase power while keeping melee reach and swing coverage in check.

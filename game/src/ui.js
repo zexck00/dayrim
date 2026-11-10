@@ -185,10 +185,12 @@ const FIRST_BLOOD_GAP=10*60*1000;let firstBloodAt=-Infinity,killSeen=null;
 function watchFirstBlood(){const k=(G.killsStage||0)+((G.p&&G.p.kills)||0);if(killSeen===null||k<killSeen){killSeen=k;return}if(k===killSeen)return;killSeen=k;
   const now=performance.now();if(now-firstBloodAt<FIRST_BLOOD_GAP)return;if(announce('kill_1',3))firstBloodAt=now}
 /* Rule sounds that have the owner's recording. Anything else falls back to the synth. */
+const GEN_VOL={react:.6,link:.75,revive:.5,downed:.6,ping:.5};
 const ASSET_SFX={slash:{keys:['sfx_melee_1','sfx_melee_2','sfx_melee_3'],vol:.45},pull:{keys:['sfx_heal_1','sfx_heal_2','sfx_heal_3'],vol:.3}};
 let rivalAnnT=0;
 function playAsset(n){if(n==='rivalDown'){if(performance.now()-rivalAnnT>6000){rivalAnnT=performance.now();announce('rival_down',1)}return true}
-  const a=ASSET_SFX[n];if(!a)return false;const ks=a.keys.filter(k=>SOUND_BUF[k]);if(!ks.length)return false;
+  /* Generated sounds (tools/make_audio.py) play under their own name: sfx('react_inferno') plays sfx_react_inferno */
+  const a=ASSET_SFX[n]||(SOUND_BUF['sfx_'+n]?{keys:['sfx_'+n],vol:GEN_VOL[n.split('_')[0]]||.55}:null);if(!a)return false;const ks=a.keys.filter(k=>SOUND_BUF[k]);if(!ks.length)return false;
   try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[ks[Math.floor(Math.random()*ks.length)]];s.playbackRate.value=.95+Math.random()*.1;g.gain.value=a.vol;s.connect(g).connect(ac.destination);s.start()}catch(e){}return true}
 /* Boss music: the entrance track for the first minute, then the "not defeated yet" track, back to ambience after */
 const BOSS_MUS={mus_boss:.35,mus_boss_late:.3};let bossMus=null,bossT0=0,bossSeen=null,bossLastHp=1,downSeen={},stageSeen=0;

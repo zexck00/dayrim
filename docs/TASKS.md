@@ -181,7 +181,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | Z-10 | Z | L | **First art batch:** one of each job, 5 heroes (Guardian, Detective, Prodigy, Exorcist, Vigilante) | Delivered to the Asset specification below | Z-03 |
 | Z-11 | Z | L | Boss art: Crystal Scurrier, Gloom Eye, Banshee Phantasm | Delivered to spec | Z-03 |
 | Z-12 | Z | M | New enemy art: Stalker, Lurker | Delivered to spec | Z-03 |
-| Z-13 | Z | M | First sounds: revive, ping, reactions and links (section 18) | Delivered as licensed files | Z-50 |
+| Z-13 | Z | M | **Done 2026-11-10** (19 generated sounds from tools/make_audio.py, wired in; the ping sound waits for a ping feature). First sounds: revive, ping, reactions and links (section 18) | Delivered as licensed files | Z-50 |
 | Z-14 | Z | M | **Run the first playtest** with 4 outside players, using a simple form: what was fun, confusing or unfair | Results shared in `docs/playtests/` | D-01, C-25 |
 | D-19 | D | M | Import tool: turns delivered art into game sheets automatically and reports what's missing | One command imports a character | D-03 |
 
@@ -274,7 +274,7 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
-| Z-40 | Z | M | **Replace voice lines** with licensed or hired ones. The current macOS voice isn't cleared for commercial use. | New files in `sprites/voice`, with licenses saved | |
+| Z-40 | Z | M | **Done 2026-11-10** (18 lines remade with a free public-domain voice, tools/make_free_voice.py; see docs/licenses/generated-audio.md). **Replace voice lines** with licensed or hired ones. The current macOS voice isn't cleared for commercial use. | New files in `sprites/voice`, with licenses saved | |
 | Z-41 | Z | M | Remaining music: title themes, lobby, safehouse and short stings, all licensed | Delivered, with licenses saved | Z-50 |
 | Z-45 | Z | M | Final sound mix for all stages, using D-67 | Z approves | D-67 |
 | Z-42 | Z | S | Check every asset's license, including anything AI-generated. Decide public or private repository. | Written record in `docs/` | |
