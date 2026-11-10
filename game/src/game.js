@@ -543,9 +543,16 @@ function spawnNpc(){const o=randomOpen(0,5000);if(!o)return;const hp=26*stageSca
 const BOSS_GUARD_MAX=100,BOSS_STAGGER=5,BOSS_TELEGRAPH=.6,BOSS_ENRAGE_BASE=240,BOSS_ENRAGE_STEP=30,BOSS_ENRAGE_RATE=.66,BOSS_STAGGER_DMG=1.5;
 const BOSS_PHASES={1:[.5],2:[.6,.25],3:[.5],4:[.6,.3],5:[.6,.3],6:[.66],7:[.5,.2]};
 const BOSS_GUARD_GAIN={break:34,reaction:22,special:10,eye:30};
-function bossGuard(e,amt){if(!e||e.kind!=='boss'||e.staggerT>0)return;e.guard=Math.min(e.guardMax||BOSS_GUARD_MAX,(e.guard||0)+amt);if(e.guard>=(e.guardMax||BOSS_GUARD_MAX)){e.guard=0;e.staggerT=BOSS_STAGGER;e.tel=null;e.act='walk';e.actT=BOSS_STAGGER;text(e.x,e.y-e.ah*.8,'STAGGERED','#ffd860',true);shake(8);sfx('boom');addLog('The boss is staggered.')}}
-function bossTelegraph(e,kind,r,dur){e.tel={k:kind,r,r2:r,dur:Math.max(BOSS_TELEGRAPH,dur)};e.actT=e.tel.dur;return e.tel}
-function bossPhaseCheck(e){if(e.kind!=='boss')return;if(e.fleshSplit){fleshAfterDamage(e);return}const th=BOSS_PHASES[e.kit||G.stage]||[];const frac=e.hp/e.maxHp;while((e.phase||0)<th.length&&frac<=th[e.phase]){e.phase=(e.phase||0)+1;G.shots=G.shots.filter(s=>s.from!=='e');const fx=BOSS_PHASE_FX[e.kit||G.stage];if(fx)fx(e);e.breatherT=2;e.act='walk';e.actT=2;e.tel=null;G.banner=(e.kit||G.stage)===7?(e.phase===1?{t:3,a:'Rust Field',b:'Shock it with the charged coil'}:{t:3,a:'Last Stand',b:'Watch the faster combo'}):(e.kit||G.stage)===6&&e.phase===1?{t:3,a:'Keep them apart',b:'Separate the bodies or they heal'}:{t:2.4,a:'Phase '+(e.phase+1),b:'It changes its attack'};shake(6);sfx('boom');burst(e.x,e.y-30,'#ffd8a0',40,240)}}
+function bossGuard(e,amt){if(!e||e.kind!=='boss'||e.staggerT>0)return;e.guard=Math.min(e.guardMax||BOSS_GUARD_MAX,(e.guard||0)+amt);if(e.guard>=(e.guardMax||BOSS_GUARD_MAX)){e.guard=0;e.staggerT=BOSS_STAGGER;sfx('boss_stagger');e.tel=null;e.act='walk';e.actT=BOSS_STAGGER;text(e.x,e.y-e.ah*.8,'STAGGERED','#ffd860',true);shake(8);sfx('boom');addLog('The boss is staggered.')}}
+/* Enemy voices (tools/make_audio.py): weak and strong voices for minions and role enemies (brutes, guards and elites
+   sound strong), and creature voices for Stalkers, Lurkers and art monsters. Bosses and the three kit villains have their own. */
+const mobVoice=e=>e.kind==='boss'||e.vill?null:(e.role==='stalker'||e.role==='lurker'||(e.art&&!e.mob))?'beast':(e.mob==='strong'||e.elite||e.role==='brute'||e.role==='guard'||e.scrapGolem||e.shieldbearer)?'strong':'weak';
+function enemySfx(e,ev){const v=mobVoice(e);if(v)sfx(v+'_'+ev)}
+/* After each enemy update: a voice when it first notices someone, and when it starts any attack (wind-up, strike, cast or shot) */
+function enemyVoiceWatch(e){if(e.dead)return;if(e.aware&&!e.spoke){e.spoke=1;enemySfx(e,'spot')}
+  const busy=(e.wind||0)>0||(e.atkShow||0)>0||(e.castT||0)>0||(e.aimT||0)>0||(e.pounceT||0)>0;if(busy&&!e.attacking)enemySfx(e,'attack');e.attacking=busy}
+function bossTelegraph(e,kind,r,dur){sfx('boss_warn');e.tel={k:kind,r,r2:r,dur:Math.max(BOSS_TELEGRAPH,dur)};e.actT=e.tel.dur;return e.tel}
+function bossPhaseCheck(e){if(e.kind!=='boss')return;if(e.fleshSplit){fleshAfterDamage(e);return}const th=BOSS_PHASES[e.kit||G.stage]||[];const frac=e.hp/e.maxHp;while((e.phase||0)<th.length&&frac<=th[e.phase]){e.phase=(e.phase||0)+1;sfx('boss_phase');G.shots=G.shots.filter(s=>s.from!=='e');const fx=BOSS_PHASE_FX[e.kit||G.stage];if(fx)fx(e);e.breatherT=2;e.act='walk';e.actT=2;e.tel=null;G.banner=(e.kit||G.stage)===7?(e.phase===1?{t:3,a:'Rust Field',b:'Shock it with the charged coil'}:{t:3,a:'Last Stand',b:'Watch the faster combo'}):(e.kit||G.stage)===6&&e.phase===1?{t:3,a:'Keep them apart',b:'Separate the bodies or they heal'}:{t:2.4,a:'Phase '+(e.phase+1),b:'It changes its attack'};shake(6);sfx('boom');burst(e.x,e.y-30,'#ffd8a0',40,240)}}
 function bossEnrage(e,dt){if(e.enrageT===undefined)e.enrageT=BOSS_ENRAGE_BASE+BOSS_ENRAGE_STEP*G.stage;e.enrageT-=dt;if(e.enrageT<=0&&!e.enraged){e.enraged=true;e.cd*=.7;G.banner={t:3,a:'Enraged',b:'Its attacks come faster'};sfx('level');addLog('The boss is enraged.')}}
 const bossCd=e=>e.enraged?BOSS_ENRAGE_RATE:1;
 /* ---------- Stage 1: Crystal Scurrier ----------
@@ -686,7 +693,7 @@ function summonBoss(kit,at){
   const e={kind:'boss',kit:k,name:st.label||st.boss,art:st.boss,ah:st.ah,x:o.x,y:o.y,r:st.r,hp:bossHp(n),maxHp:bossHp(n),dmg:bossDmg(n),sp:58+n*3,xp:xpNeed(recLevel(n)),gold:40*Math.pow(1.25,n-1),cd:1,ang:0,aware:true,flash:0,kx:0,ky:0,ph:rnd(TAU),act:'rise',actT:.95,hitCd:0,atkShow:0,wind:0,walk:0,fs:1,recover:0,recoil:0,release:0,trail:[],guard:0,guardMax:BOSS_GUARD_MAX,staggerT:0,phase:0,breatherT:0,enrageT:BOSS_ENRAGE_BASE+BOSS_ENRAGE_STEP*n,tel:null};
   partyToughen(e);G.enemies.push(e);G.boss=e;G.arena=at?null:{x:G.gate.x,y:G.gate.y-40,r:430};shake(10);sfx('boom');
   if(k===3)spawnLanterns();if(k===5)spawnSporeArena();if(k===7)spawnGhoulArena();
-  const rec=recLevel(n),lv=G.p.lvl;
+  sfx('boss_roar');const rec=recLevel(n),lv=G.p.lvl;
   G.banner={t:3.2,a:e.name,b:k===7?(G.players.length===1?'The coil charges itself. Lure the boss onto it.':'Hold F / Revive at the generator; lure it onto the coil.'):k===6?'Keep the two bodies apart.':k===5?(G.players.length===1?'Clean Toxic Load at the vents.':'Share Toxic Load or carry the purifier to clean it.'):k===4?'Crack the shell: attack its green back':lv<rec?'Recommended level '+rec+'. You are level '+lv+'. Train more if you fall.':'Final boss of stage '+n};
 }
 
@@ -754,7 +761,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){
   else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
   if(e.shatterT>0)base*=1.25;if((e.staggerT||0)>0)base*=BOSS_STAGGER_DMG;
   base*=shellBlock(e,p);base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),facing=Math.abs(Math.atan2(Math.sin(ang-e.ang-Math.PI),Math.cos(ang-e.ang-Math.PI))),block=(e.guarding&&facing<1.05)?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
-  e.hp-=d;e.flash=.11;e.aware=true;threatAdd(e,p.id||0,100*d/Math.max(1,e.maxHp));bossPhaseCheck(e);if(e.kind==='boss')e.recoil=.16;const res=e.kind==='boss'?.15:1;e.kx+=Math.cos(ang)*kb*res;e.ky+=Math.sin(ang)*kb*res;
+  e.hp-=d;e.flash=.11;e.aware=true;if(e.hp>0)enemySfx(e,'hurt');threatAdd(e,p.id||0,100*d/Math.max(1,e.maxHp));bossPhaseCheck(e);if(e.kind==='boss')e.recoil=.16;const res=e.kind==='boss'?.15:1;e.kx+=Math.cos(ang)*kb*res;e.ky+=Math.sin(ang)*kb*res;
   G.fx.push({k:'spark',x:e.x,y:e.y-24,a:ang,t:crit?.26:.18,m:crit?.26:.18,crit:crit?1:0,c:heavy||crit?'255,220,120':'255,250,235'});
   text(e.x,e.y-(e.kind==='boss'?e.ah*.7:66),Math.round(d)+(crit?'!':''),crit?'#ffd86b':'#fff',crit);if(crit||(e.exposedT||0)>0)G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:e.r*1.6,t:.22,m:.22,c:crit?'#ffd86b':'#f2ecd8'});goreSpray(e,ang,d/Math.max(1,e.maxHp),crit);burst(e.x,e.y-20,'#f0805c',crit?4:1);if(crit||heavy)goreChunks(e,ang,crit?2:1);
   if(p.s.leech>0)p.hp=Math.min(p.s.maxHp,p.hp+p.s.leech);sfx('hit');if(crit)shake(2);
@@ -763,7 +770,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){
 function killEnemy(e){
   if(e.fleshSplit){fleshDownBody(e);return}
   if(e.scrapGolem&&!e.scrapFinished){scrapDisable(e);return}
-  if(e.grab)lurkRelease(e,false);if(e.role==='bloater')sporeCloud(e);e.dead=true;const p=G.p,boss=e.kind==='boss';p.kills++;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:8,to:boss?170:58,t:.3,m:.3,c:'#fff2d0'});onKill(e);if(!G.swarm)achievementCheck(p);if(e.vill||e.elite)sfx('rivalDown');burst(e.x,e.y-20,e.elite?'#e8c95c':'#c8c8d0',boss?70:12,boss?300:150);
+  if(e.grab)lurkRelease(e,false);if(e.role==='bloater')sporeCloud(e);e.dead=true;const p=G.p,boss=e.kind==='boss';if(boss)sfx('boss_death');else enemySfx(e,'die');p.kills++;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:8,to:boss?170:58,t:.3,m:.3,c:'#fff2d0'});onKill(e);if(!G.swarm)achievementCheck(p);if(e.vill||e.elite)sfx('rivalDown');burst(e.x,e.y-20,e.elite?'#e8c95c':'#c8c8d0',boss?70:12,boss?300:150);
   const ga=(e.kx||e.ky)?Math.atan2(e.ky,e.kx):rnd(TAU);goreSpray(e,ga,.6,boss);goreChunks(e,ga,boss?26:(e.mob?6:10));gorePool(e,boss?3:1);if(e.vill)G.fx.push({k:'kitdie',key:KIT_OF[e.name],x:e.x,y:e.y,mir:G.p.x>e.x,t:6,m:6});else if(boss||e.art)G.fx.push({k:'bossdie',art:e.art,ah:e.ah,x:e.x,y:e.y,fs:e.fs||1,t:boss?1.5:.8,m:boss?1.5:.8});else G.fx.push({k:'ko',name:e.name,x:e.x,y:e.y,t:.7,m:.7});
   const night=nightness(G.hour)>.5?1.25:1;
   if(!boss&&e.kind==='rival'&&!e.minion)G.killsStage++;
@@ -1088,7 +1095,7 @@ function update(dt){
   for(const c of G.w.cars){if(c.v){c.y+=c.s*dt;if(c.y<-60)c.y=MH*T+60;if(c.y>MH*T+60)c.y=-60}else{c.x+=c.s*dt;if(c.x<-60)c.x=MW*T+60;if(c.x>MW*T+60)c.x=-60}}
   tideTick(dt);lanternTick(dt);sporeBossTick(dt);scrapTick(dt);for(const q of G.players){playerStatus(q,dt);toxinStep(q,dt);rustStep(q,dt)}ghoulTick(dt)
   for(const q of G.players){if(q.lx!==undefined&&dt>0){q.vx=(q.x-q.lx)/dt;q.vy=(q.y-q.ly)/dt}q.lx=q.x;q.ly=q.y}
-  for(const e of G.enemies){G.p=threatTarget(e);e.targetId=G.p?(G.p.id||0):0;const a0=e.ang;updateEnemy(e,dt);if(e.method==='shield'&&!e.dead)e.ang=turnTo(a0||0,e.ang||0,AI.guardTurn*dt);goreTrail(e,dt)}
+  for(const e of G.enemies){G.p=threatTarget(e);e.targetId=G.p?(G.p.id||0):0;const a0=e.ang;updateEnemy(e,dt);enemyVoiceWatch(e);if(e.method==='shield'&&!e.dead)e.ang=turnTo(a0||0,e.ang||0,AI.guardTurn*dt);goreTrail(e,dt)}
   for(let i=0;i<G.enemies.length;i++){const a=G.enemies[i];if(a.dead||a.fleshDown||a.scrapDown||!a.aware)continue;for(let j=i+1;j<G.enemies.length;j++){const b=G.enemies[j];if(b.dead||b.fleshDown||b.scrapDown)continue;const dx=b.x-a.x,dy=b.y-a.y,m=a.r+b.r,d2=dx*dx+dy*dy;if(d2<m*m&&d2>.01){const d=Math.sqrt(d2),o=(m-d)*.5,ox=dx/d*o,oy=dy/d*o;if(a.kind!=='boss')move(a,-ox,-oy);if(b.kind!=='boss')move(b,ox,oy)}}}
   G.enemies=G.enemies.filter(e=>!e.dead);
   for(const s of G.shots){s.life-=dt;const nx=s.x+s.vx*dt,ny=s.y+s.vy*dt;if(s.from==='p')G.p=ownerOf(s);

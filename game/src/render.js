@@ -109,6 +109,35 @@ function drawKitActor(a,moving,walkT,face,opts={}){
   if(a.pillT>0){const q=a.pillT/.8,c=a.pillC||'200,140,255';ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(a.x,a.y-50,4,a.x,a.y-50,70);g.addColorStop(0,'rgba('+c+','+(.5*q)+')');g.addColorStop(1,'rgba('+c+',0)');ctx.fillStyle=g;ctx.fillRect(a.x-70,a.y-120,140,140);ctx.restore();ctx.fillStyle='rgb('+c+')';ctx.fillRect(a.x-6,a.y-96-(1-q)*16,6,5);ctx.fillStyle='#fff';ctx.fillRect(a.x,a.y-96-(1-q)*16,6,5)}
 }
 function drawHazard(h){const q=clamp(h.t/1.2,0,1),c=h.col,tm=G.t;ctx.save();ctx.globalAlpha=.55*q;for(let i=0;i<9;i++){const a=i*.7+tm*.4,R=h.r*(.25+((i*37)%70)/100),px=h.x+Math.cos(a)*R,py=h.y+Math.sin(a)*R*.5,r=h.r*.3+Math.sin(tm*2+i)*2;ctx.fillStyle=i%2?'rgba('+c+',.55)':'rgba(70,150,40,.5)';ctx.beginPath();ctx.ellipse(px,py-6,r,r*.65,0,0,TAU);ctx.fill()}ctx.restore()}
+/* Your own level tag: name and level above your character, always shown while you're up. A level-up makes it glow,
+   and any upgrade (skill rank, weapon or signature tier, gym training, checkpoint boon) shows a note above it for 10 seconds. */
+const MY_TAG={snap:null,char:null,pulse:-1e9,notes:[]},NOTE_LIFE=10000,BOON_NAME={wide:'Safer dodge',opening:'Longer opening'};
+function upgradeSnap(p){return{lvl:p.lvl,sk:Object.assign({},p.skills),tr:Object.assign({},p.train),wu:Object.assign({},p.weaponUpgrades||{}),rb:Object.assign({},p.runBoons||{})}}
+function watchUpgrades(p){const n=upgradeSnap(p),o=MY_TAG.snap;
+  if(!o||MY_TAG.char!==p.char||n.lvl<o.lvl){MY_TAG.snap=n;MY_TAG.char=p.char;MY_TAG.notes=[];return}
+  const now=performance.now(),add=t=>{MY_TAG.notes.push({t,at:now});if(MY_TAG.notes.length>3)MY_TAG.notes.shift()};
+  if(n.lvl>o.lvl){MY_TAG.pulse=now;add('Level up!')}
+  for(const k in n.sk)if((n.sk[k]||0)>(o.sk[k]||0)){const s=SKILLS.find(x=>x.id===k);add((s?s.n:k)+' · rank '+n.sk[k])}
+  for(const k in n.tr)if((n.tr[k]||0)>(o.tr[k]||0)){const g=GYM.find(x=>x.id===k);add((g?g.n:k)+' · '+n.tr[k])}
+  for(const k in n.wu)if((n.wu[k]||0)>(o.wu[k]||0))add((k==='signature'?'Signature move':WEAPONS[k]?WEAPONS[k].n:k)+' · tier '+n.wu[k]);
+  for(const k in n.rb)if((n.rb[k]||0)>(o.rb[k]||0))add((BOON_NAME[k]||k)+' boon · '+n.rb[k]);
+  MY_TAG.snap=n}
+/* A rounded pill behind tag text */
+function tagPill(x,y,w,h,fill,edge){const r=h/2;ctx.beginPath();ctx.moveTo(x-w/2+r,y-h/2);ctx.arcTo(x+w/2,y-h/2,x+w/2,y+h/2,r);ctx.arcTo(x+w/2,y+h/2,x-w/2,y+h/2,r);ctx.arcTo(x-w/2,y+h/2,x-w/2,y-h/2,r);ctx.arcTo(x-w/2,y-h/2,x+w/2,y-h/2,r);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(edge){ctx.lineWidth=1;ctx.strokeStyle=edge;ctx.stroke()}}
+function drawMyTag(p){watchUpgrades(p);const now=performance.now(),name=p.pname||label(p.char),lv='LVL '+p.lvl;
+  const q=clamp((now-MY_TAG.pulse)/700,0,1),pop=q<1?1+.22*Math.sin(q*Math.PI):1,glow=q<1?1-q:0;
+  const y=p.y-72;ctx.save();ctx.translate(p.x,y);ctx.scale(pop,pop);ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='600 11px Barlow,sans-serif';const wn=ctx.measureText(name+'  ').width;ctx.font='700 11px Barlow,sans-serif';const wl=ctx.measureText(lv).width,w=wn+wl+16;
+  if(glow){ctx.shadowColor='rgba(240,194,60,'+glow+')';ctx.shadowBlur=14*glow}
+  tagPill(0,0,w,17,'rgba(8,14,28,.78)',glow?'rgba(240,194,60,'+(.5+.5*glow)+')':'rgba(240,194,60,.35)');ctx.shadowBlur=0;
+  ctx.textAlign='left';ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#f2ecd8';ctx.fillText(name,-w/2+8,.5);
+  ctx.font='700 11px Barlow,sans-serif';ctx.fillStyle='#f0c23c';ctx.fillText(lv,-w/2+8+wn,.5);ctx.restore();
+  /* Upgrade notes stack above the tag: fade in, hold, then fade out over the last second of their 10 */
+  MY_TAG.notes=MY_TAG.notes.filter(n=>now-n.at<NOTE_LIFE);let ny=y-17;
+  for(let i=MY_TAG.notes.length-1;i>=0;i--){const n=MY_TAG.notes[i],age=now-n.at,a=Math.min(1,age/250,(NOTE_LIFE-age)/1000),rise=Math.min(1,age/250)*4;
+    ctx.save();ctx.globalAlpha=a;ctx.font='600 10px Barlow,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const tw=ctx.measureText('▲ '+n.t).width+14;
+    tagPill(p.x,ny-rise+4,tw,15,'rgba(8,14,28,.72)','rgba(111,220,160,.45)');ctx.fillStyle='#8fe6b8';ctx.fillText('▲ '+n.t,p.x,ny-rise+4.5);ctx.restore();ny-=17}
+}
 function drawTag(q){const y=q.y-66;ctx.textAlign='center';ctx.font='700 12px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';const t=(q.pname||'Player')+' · '+q.lvl;ctx.strokeText(t,q.x,y-5);ctx.fillStyle='#8fe0ff';ctx.fillText(t,q.x,y-5);ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(q.x-22,y-2,44,5);ctx.fillStyle='#d8483c';ctx.fillRect(q.x-21,y-1,42*clamp(q.hp/(q.s.maxHp||1),0,1),3)}
 function drawDowned(p){const r=G.players.find(q=>q.reviveTarget===p.id&&q.reviveProgress>0);ctx.textAlign='center';ctx.font='700 14px Barlow,sans-serif';ctx.lineWidth=4;ctx.strokeStyle='#101019';const t=r?'Reviving '+Math.round(r.reviveProgress*100)+'%':'Down · '+Math.ceil(p.deadT)+'s';ctx.strokeText(t,p.x,p.y-125);ctx.fillStyle='#ffcf65';ctx.fillText(t,p.x,p.y-125)}
 function drawPlayer(p){
@@ -345,6 +374,7 @@ function render(){
   G.fx.forEach(f=>{if(f.k==='ko')blit(ctx,f.name,f.x,f.y,2,'ko',0,false,Math.PI/2,clamp(f.t/f.m,0,1))});
   const list=[...G.enemies.filter(e=>!concealed(e,G.p)),...G.players.filter(q=>!(q.respawnT>0)),...G.loot,...G.npcs,...G.w.props.filter(inView)].filter(inView).sort((a,b)=>a.y-b.y);
   list.forEach(o=>{if(o.stats){drawPlayer(o);if(G.mp&&o!==G.p)drawTag(o);if(o.deadT>0)drawDowned(o)}else if(typeof o.t==='string')drawProp(o);else if(o.kind==='boss'){drawBoss(o);drawCombatMarker(o);drawTargetMark(o)}else if(o.kind==='rival'){drawRival(o);drawCombatMarker(o);drawTargetMark(o)}else if(o.name&&o.quip!==undefined)drawNpc(o);else drawLoot(o)});
+  {const me=G.p;if(me&&me.stats&&!(me.deadT>0)&&!(me.respawnT>0)&&inView(me))drawMyTag(me)}
   G.shots.forEach(drawShot);
   drawFxTop();
   /* Single-player props carry kind and done; the network shape is k and d. Draw both the same way. */

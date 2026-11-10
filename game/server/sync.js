@@ -1,7 +1,7 @@
 'use strict';
 /* Builds one snapshot per client. Each client is sent only what changed since its last snapshot, and only what is near its player. */
 const AOI=1300,EVENT_AOI=1500;
-const ENEMY_SKIP=new Set(['xp','gold','dmg','sp','cd','wander','wa','still','kx','ky','spT','smT','mdT','healT','hitCd','pid','dead','id','th','tok','tokT','slotA','windMax','delayed','comboLeft','rushT','punishCd','lostT','alerted','strafeT','strafeD','hideT','hideAt','struck','reactAt','dragA','biteT','wailHit','driftTo','wardT','eyeCd']);
+const ENEMY_SKIP=new Set(['spoke','attacking','xp','gold','dmg','sp','cd','wander','wa','still','kx','ky','spT','smT','mdT','healT','hitCd','pid','dead','id','th','tok','tokT','slotA','windMax','delayed','comboLeft','rushT','punishCd','lostT','alerted','strafeT','strafeD','hideT','hideAt','struck','reactAt','dragA','biteT','wailHit','driftTo','wardT','eyeCd']);
 const NPC_SKIP=new Set(['kx','ky','t','sp','scare','dead','id']);
 const LOOT_SKIP=new Set(['t','amt','id']);
 const OWN_SKIP=new Set(['input','actions','ack','id','combo_','x','y','vx','vy','lx','ly','toxinTick','fallT']);

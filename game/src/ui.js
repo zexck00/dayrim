@@ -186,12 +186,19 @@ const FIRST_BLOOD_GAP=10*60*1000;let firstBloodAt=-Infinity,killSeen=null;
 function watchFirstBlood(){const k=(G.killsStage||0)+((G.p&&G.p.kills)||0);if(killSeen===null||k<killSeen){killSeen=k;return}if(k===killSeen)return;killSeen=k;
   const now=performance.now();if(now-firstBloodAt<FIRST_BLOOD_GAP)return;if(announce('kill_1',3))firstBloodAt=now}
 /* Rule sounds that have the owner's recording. Anything else falls back to the synth. */
-const GEN_VOL={react:.6,link:.75,revive:.5,downed:.6,ping:.5};
+const GEN_VOL={react:.6,link:.75,revive:.5,downed:.6,ping:.5,weak:.32,strong:.4,beast:.42,boss:.7};
+/* A generated sound plays under its own name, or one of its numbered versions: sfx('weak_hurt') picks sfx_weak_hurt_1 to _3 */
+const genSets={};
+function genSet(n){const have=Object.keys(SOUND_BUF).length;if(genSets[n]&&genSets[n].have===have)return genSets[n].keys.length?genSets[n]:null;const k='sfx_'+n,keys=Object.keys(SOUND_BUF).filter(x=>x===k||(x.startsWith(k+'_')&&/^\d+$/.test(x.slice(k.length+1))));
+  genSets[n]={keys,have,vol:GEN_VOL[n.split('_')[0]]||.55};return keys.length?genSets[n]:null}
+/* Crowds of minions would flood the mix, so each enemy sound waits a moment before it can play again (milliseconds) */
+const GEN_GAP={weak_spot:500,strong_spot:600,beast_spot:700,weak_attack:180,strong_attack:220,beast_attack:250,weak_hurt:110,strong_hurt:140,beast_hurt:160,weak_die:90,strong_die:120,beast_die:150,boss_warn:300},genLast={};
 const ASSET_SFX={slash:{keys:['sfx_melee_1','sfx_melee_2','sfx_melee_3'],vol:.45},pull:{keys:['sfx_heal_1','sfx_heal_2','sfx_heal_3'],vol:.3}};
 let rivalAnnT=0;
 function playAsset(n){if(n==='rivalDown'){if(performance.now()-rivalAnnT>6000){rivalAnnT=performance.now();announce('rival_down',1)}return true}
   /* Generated sounds (tools/make_audio.py) play under their own name: sfx('react_inferno') plays sfx_react_inferno */
-  const a=ASSET_SFX[n]||(SOUND_BUF['sfx_'+n]?{keys:['sfx_'+n],vol:GEN_VOL[n.split('_')[0]]||.55}:null);if(!a)return false;const ks=a.keys.filter(k=>SOUND_BUF[k]);if(!ks.length)return false;
+  if(n in GEN_GAP){const now=performance.now();if(now-(genLast[n]||0)<GEN_GAP[n])return true;genLast[n]=now}
+  const a=ASSET_SFX[n]||genSet(n);if(!a)return false;if(!ASSET_SFX[n])(window.__genLog=window.__genLog||[]).push(n);const ks=a.keys.filter(k=>SOUND_BUF[k]);if(!ks.length)return false;
   try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[ks[Math.floor(Math.random()*ks.length)]];s.playbackRate.value=.95+Math.random()*.1;g.gain.value=a.vol;s.connect(g).connect(ac.destination);s.start()}catch(e){}return true}
 /* Boss music: the entrance track for the first minute, then the "not defeated yet" track, back to ambience after */
 const BOSS_MUS={mus_boss:.35,mus_boss_late:.3};let bossMus=null,bossT0=0,bossSeen=null,bossLastHp=1,downSeen={},stageSeen=0;
