@@ -99,6 +99,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .joystick{position:absolute;width:92px;height:92px;margin:-46px 0 0 -46px;border:2px solid rgba(190,225,244,.65);border-radius:50%;background:rgba(12,32,48,.25);pointer-events:none;z-index:2}
 .joystick i{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border-radius:50%;background:rgba(190,225,244,.7);border:2px solid #eef8ff}
 .touch .big{background:rgba(240,128,92,.55);border-color:var(--coral)}
+.scout-revive{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:3;padding:12px 20px;border:1px solid #80e5aa;border-radius:8px;background:#12343a;color:#fff;font:700 14px var(--body);touch-action:none}
 .fx3{z-index:1;pointer-events:none}
 .fx3b{top:calc(216px*var(--k,1))!important}
 .menub{top:calc(160px*var(--k,1))!important}
@@ -202,6 +203,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
       <canvas id="c" aria-label="Game view"></canvas><canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas>
       <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button>
       <div class="joystick" id="joystick" aria-hidden="true" hidden><i></i></div>
+      <button class="scout-revive" id="scout-revive" type="button" hidden>Hold to revive scout</button>
       <div class="touch" id="touch" aria-label="Touch controls" hidden>
         <button type="button" data-a="potion">Potion</button>
         <button type="button" data-a="revive">Hold to revive</button>

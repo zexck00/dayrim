@@ -326,7 +326,7 @@ function onStepStart(st){if(!st)return;st.have=0;
   else if(st.kind==='generator')spawnGenerator();
   else if(st.kind==='escort')spawnEscort();
   else if(st.kind==='eggs')spawnEggs(st.need);
-  if(st.label)G.banner={t:3,a:st.label,b:st.kind==='eggs'?'Attack the eggs before they hatch':st.kind==='revive'?'Hold F beside the scout':st.kind==='carry'?'Carriers cannot attack':st.kind==='generator'?'Carry fuel, then hold F / Revive':st.kind==='escort'?'Stay close to keep it moving':st.plate?'Hold both. Alone, hold each for 8s.':st.guard?'Hits on the lighter set a beacon back':'Boss gate opens when this is done'}}
+  if(st.label)G.banner={t:3,a:st.label,b:st.kind==='eggs'?'Attack the eggs before they hatch':st.kind==='revive'?'Hold F or Revive beside the scout':st.kind==='carry'?'Carriers cannot attack':st.kind==='generator'?'Carry fuel, then hold F / Revive':st.kind==='escort'?'Stay close to keep it moving':st.plate?'Hold both. Alone, hold each for 8s.':st.guard?'Hits on the lighter set a beacon back':'Boss gate opens when this is done'}}
 function openGate(){if(!G.gate||G.gate.open)return;G.gate.open=true;G.banner={t:3,a:'Boss gate open',b:'Choose a checkpoint boon in Skills'};sfx('level');addLog('The boss gate is open.');offerBoons()}
 /* Hold, carry and escort steps all spawn props: one synced list, one renderer, one set of rules. */
 let propSeq=1;
@@ -404,7 +404,7 @@ function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if
   /* A step is done when its own rule says so. Hold steps need the timer, not just bodies on the plates. */
   if(!(st.met!==undefined?st.met:st.have>=st.need))return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
-function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the wounded scout and hold F'};return c}
+function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the scout and hold F or Revive nearby'};return c}
 function enterStage(n,keepKills){
   const kept=keepKills?G.killsStage:0;
   G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
