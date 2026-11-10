@@ -29,7 +29,8 @@ $('scout-revive').addEventListener('pointerdown',ev=>{if(ev.button!==0)return;ev
 $('scout-revive').addEventListener('keydown',ev=>{if((ev.code==='Space'||ev.code==='Enter')&&!ev.repeat){ev.preventDefault();scoutHold=true;touchHold.revive=true;if(netOn())netAct('revive',true)}});
 $('scout-revive').addEventListener('keyup',ev=>{if(ev.code==='Space'||ev.code==='Enter'){ev.preventDefault();stopScoutRevive()}});
 $('scout-revive').addEventListener('blur',stopScoutRevive);
-function resetTouch(){stopScoutRevive();if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('scout-revive').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
+function closeTouchExtra(){$('touch-extra').hidden=true;const b=$('touch').querySelector('[data-a=more]');b.setAttribute('aria-expanded','false')}
+function resetTouch(){closeTouchExtra();stopScoutRevive();if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('scout-revive').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
 function setMode(m){
   setTimeout(()=>{menuMusic();gameAmbience()},0);
   resetTouch();G.mode=m;mouse.left=mouse.right=false;keys.clear();const ov=$('ov'),c=$('card');
@@ -224,8 +225,10 @@ function updateTouchStatus(){if(!touchMode||G.mode!=='play'||!G.p)return;const p
   dash:wait(cd.dash),team:wait(p.teamCd),ult:p.rage<100?Math.floor(p.rage)+'%':'',special:kit?wait(p.specT):'—',
   spell:kit?(p.mv?'Busy':''):(wait(cd.bolt)||(p.mana<p.s.spellCost?'Mana':'')),heal:wait(cd.pull)||(p.mana<22?'Mana':low?'Full':''),
   potion:wait(cd.potion)||(!p.potions?'Empty':low?'Full':''),fast:wait(p.fastT)||(!p.fast?'Empty':''),magic:wait(p.magicT)||(!p.magic?'Empty':'')};
+  const near=!(p.deadT>0||p.respawnT>0)&&((G.players||[]).some(q=>q!==p&&q.deadT>0&&dist(p,q)<=(archKey(p.char)==='medic'?120:60))||(G.npcs||[]).some(q=>q.wounded&&!q.dead&&dist(p,q)<=Math.max(archKey(p.char)==='medic'?120:60,80)));$('touch').querySelector('[data-a=revive]').classList.toggle('nearby',near);
   for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.textContent+(value?', '+value:''))}}
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
+  if(a==='more'){const panel=$('touch-extra');panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));return}if(b.closest('#touch-extra'))closeTouchExtra();
   if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('touch').addEventListener(n,ev=>{const a=touchPointers.get(ev.pointerId);if(!a)return;touchPointers.delete(ev.pointerId);if(![...touchPointers.values()].includes(a)){touchHold[a]=false;const b=$('touch').querySelector('[data-a="'+a+'"]');if(b)b.classList.remove('held');if(a==='revive'&&netOn())netAct('revive',false)}}));
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.previousElementSibling,done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected';setTimeout(()=>b.textContent='Copy',1400)};try{navigator.clipboard.writeText(pre.textContent).then(done,sel)}catch(e){sel()}}));
@@ -236,6 +239,7 @@ function drawPreview(now){const cv=$('pv');if(!cv)return;const g=cv.getContext('
   const seg=Math.floor(now/1400)%PV.length,[anim,nf,fps,dir,label]=PV[seg],f=Math.floor(now/1000*fps)%nf;g.fillStyle='rgba(10,14,28,.5)';g.beginPath();g.ellipse(48,90,20,5,0,0,TAU);g.fill();blit(g,chosen,48,88,dir,anim,f,false,anim==='dodge'?(now/1000*9)%TAU:0);const l=$('pvl');if(l&&l.textContent!==label)l.textContent=label}
 /* Loop */
 function resize(){const r=$('screen').getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);zoom=Math.max(H/560,W/980);portraitMode=touchMode&&W<640&&H>W;hudK=portraitMode?1:clamp(H/640,1,2.5);const cs=getComputedStyle($('screen'));hudTop=parseFloat(cs.paddingTop)||0;hudBottom=parseFloat(cs.paddingBottom)||0;$('screen').style.setProperty('--k',hudK)}
+addEventListener('orientationchange',resetTouch);
 if('ResizeObserver'in window)new ResizeObserver(resize).observe($('screen'));else addEventListener('resize',resize);
 let last=performance.now(),statT=0,touchStatusT=0;
 function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;

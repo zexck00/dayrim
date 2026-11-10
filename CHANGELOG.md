@@ -4,6 +4,9 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Changed
+- Mobile combat now uses larger grouped controls, a compact HUD for each orientation and an expandable panel for less frequent actions.
+
 ### Fixed
 - A revive button now appears near the wounded Stage 1 scout for mouse players, and the objective instructions mention the touch control.
 
