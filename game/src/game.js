@@ -150,7 +150,7 @@ const SKILLS=[
  {id:'leech',n:'Second Wind',d:'+0.5 life per hit',max:10}
 ];
 const GYM=[{id:'str',n:'Strength drills',d:'+2 base damage'},{id:'end',n:'Endurance run',d:'+15 maximum life'},{id:'agi',n:'Agility course',d:'+2 move speed'}];
-const SHOP=[{id:'potions',n:'Potion',d:'Heals 45% of your life',base:18},{id:'fast',n:'Fast Pill',d:'40% faster for 20 seconds',base:30},{id:'magic',n:'Magic Pill',d:'50% more damage for 20 seconds',base:40}];
+const SHOP=[{id:'potions',n:'Potion',d:'Heals 45% of your life',base:18},{id:'fast',n:'Fast Pill',d:'40% faster for 20 seconds',base:30},{id:'magic',n:'Magic Pill',d:'Double damage for 20 seconds',base:40}];
 const QUIPS=['Stay safe out there!','Is it always like this?','Did you see that?!','Thank goodness you are here.','Traffic is awful today.','Coffee? No time?','Nice boots.','I saw something by the plaza.'];
 const stageScale=s=>Math.pow(1.38,s-1),recLevel=s=>s*3,quota=s=>Math.ceil((8+(s-1)*4)*partyScale().quota);
 /* Enemy health is set in hits, not in a number that runs away from the player: a weak minion
@@ -646,7 +646,7 @@ function summonBoss(kit,at){
 }
 
 /* ---------- Combat ---------- */
-const dmgMul=()=>(G.p.magicT>0?1.5:1)*(auraHas(G.p,'shooter')?1.08:1)*chainBonus().dmg;
+const dmgMul=()=>(G.p.magicT>0?2:1)*(auraHas(G.p,'shooter')?1.08:1)*chainBonus().dmg;
 const statMul=(p,st)=>STAT_MUL[(p.stats[st]||3)-1];
 /* Damage of one attack with a weapon: level and gym base, weapon power, the character's stat, trained skill */
 function weaponDamage(id){const p=G.p,W=WEAPONS[id],M=METHODS[W.m],sk=W.m==='shoot'?1+(p.skills.aim||0)*.08:W.m==='spell'?1+(p.skills.spell||0)*.1:1+(p.skills.power||0)*.08;return p.s.dmg*(1+W.p/25)*statMul(p,M.st)*sk*(W.m==='shoot'?.72:1)}

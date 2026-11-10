@@ -172,7 +172,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | D-15 | D | M | **Rejoin in place:** a reconnecting player returns to the same spot and state, not the safehouse | Disconnect test passes | |
 | D-16 | D | S | Boss bar with guard meter and phase marks. Objective tracker. | Matches design | C-17, C-18 |
 | D-17 | D | M | Keep own-character prediction in step with new states such as crawl, root and drag | No snapping at 200 ms lag | C-10 |
-| D-18 | D | M | Touch controls for G and hold-to-revive are prototyped; a visible movement stick, held-state feedback, cancellation handling and compact landscape layout have browser emulation checks. Add ping and test all controls on real phones. | One full stage played on a phone | C-13 |
+| D-18 | D | M | Touch controls have portrait and landscape layouts, a floating movement stick, held-state feedback, cooldown labels and cancellation handling. Solo Chromium layouts checked at 320×568, 390×844 and 844×390. Add ping; test combat, revive and party play on real phones. | One full stage played on a phone | C-13 |
 
 ### Art and playtest
 
