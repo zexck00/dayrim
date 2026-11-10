@@ -200,7 +200,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .touch[hidden],.touch-extra[hidden]{display:none}
 .touch-primary{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,52px);grid-auto-rows:52px;gap:6px;align-items:center}
 .touch button{width:52px;height:52px;border-radius:16px;font-size:11px;line-height:1.1}
-.touch-primary [data-a="magic"]{grid-column:1;grid-row:3}.touch-primary [data-a="guard"]{grid-column:4;grid-row:3}.touch-primary .big{width:110px;grid-column:2 / span 2;grid-row:3;border-radius:22px;font-size:14px;background:rgba(172,70,48,.88)}
+.touch-primary [data-a="spell"]{grid-column:1;grid-row:3}.touch-primary [data-a="guard"]{grid-column:4;grid-row:3}.touch-primary .big{width:110px;grid-column:2 / span 2;grid-row:3;border-radius:22px;font-size:14px;background:rgba(172,70,48,.88)}
 .touch button[data-a="ult"]{color:#ffe47d;border-color:#ffd860}
 .touch button[data-a="revive"].nearby{border-color:#80e5aa;background:rgba(35,108,78,.95);box-shadow:0 0 0 2px rgba(128,229,170,.45)}
 .touch-tools{position:absolute;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:6px;align-items:end}
@@ -237,13 +237,13 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
         <div class="touch-primary">
           <button type="button" data-a="revive" aria-label="Hold to revive"><span class="touch-icon" aria-hidden="true">✚</span><span class="touch-label">Revive</span></button>
           <button type="button" data-a="team"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">Team</span></button>
-          <button type="button" data-a="ult"><span class="touch-icon" aria-hidden="true">✹</span><span class="touch-label">Ult</span></button>
           <button type="button" data-a="heal"><span class="touch-icon" aria-hidden="true">✚</span><span class="touch-label">Heal</span></button>
-          <button type="button" data-a="spell"><span class="touch-icon" aria-hidden="true">✧</span><span class="touch-label">Spell</span></button>
-          <button type="button" data-a="dash"><span class="touch-icon" aria-hidden="true">➤</span><span class="touch-label">Dodge</span></button>
-          <button type="button" data-a="potion"><span class="touch-icon" aria-hidden="true">⚗</span><span class="touch-label">Potion</span></button>
           <button type="button" data-a="fast"><span class="touch-icon" aria-hidden="true">ϟ</span><span class="touch-label">Fast</span></button>
-          <button type="button" data-a="magic"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">Magic</span></button>
+          <button type="button" data-a="magic"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">2× damage</span></button>
+          <button type="button" data-a="potion"><span class="touch-icon" aria-hidden="true">⚗</span><span class="touch-label">Potion</span></button>
+          <button type="button" data-a="ult"><span class="touch-icon" aria-hidden="true">✹</span><span class="touch-label">Ult</span></button>
+          <button type="button" data-a="dash"><span class="touch-icon" aria-hidden="true">➤</span><span class="touch-label">Dodge</span></button>
+          <button type="button" data-a="spell"><span class="touch-icon" aria-hidden="true">✧</span><span class="touch-label">Spell</span></button>
           <button type="button" data-a="slash" class="big" aria-label="Hold to attack"><span class="touch-icon" aria-hidden="true">⚔</span><span class="touch-label">Attack</span></button>
           <button type="button" data-a="guard" aria-label="Hold to shield"><span class="touch-icon" aria-hidden="true">⬟</span><span class="touch-label">Shield</span></button>
         </div>
@@ -695,7 +695,7 @@ const SKILLS=[
  {id:'leech',n:'Second Wind',d:'+0.5 life per hit',max:10}
 ];
 const GYM=[{id:'str',n:'Strength drills',d:'+2 base damage'},{id:'end',n:'Endurance run',d:'+15 maximum life'},{id:'agi',n:'Agility course',d:'+2 move speed'}];
-const SHOP=[{id:'potions',n:'Potion',d:'Heals 45% of your life',base:18},{id:'fast',n:'Fast Pill',d:'40% faster for 20 seconds',base:30},{id:'magic',n:'Magic Pill',d:'50% more damage for 20 seconds',base:40}];
+const SHOP=[{id:'potions',n:'Potion',d:'Heals 45% of your life',base:18},{id:'fast',n:'Fast Pill',d:'40% faster for 20 seconds',base:30},{id:'magic',n:'Magic Pill',d:'Double damage for 20 seconds',base:40}];
 const QUIPS=['Stay safe out there!','Is it always like this?','Did you see that?!','Thank goodness you are here.','Traffic is awful today.','Coffee? No time?','Nice boots.','I saw something by the plaza.'];
 const stageScale=s=>Math.pow(1.38,s-1),recLevel=s=>s*3,quota=s=>Math.ceil((8+(s-1)*4)*partyScale().quota);
 /* Enemy health is set in hits, not in a number that runs away from the player: a weak minion
@@ -1191,7 +1191,7 @@ function summonBoss(kit,at){
 }
 
 /* ---------- Combat ---------- */
-const dmgMul=()=>(G.p.magicT>0?1.5:1)*(auraHas(G.p,'shooter')?1.08:1)*chainBonus().dmg;
+const dmgMul=()=>(G.p.magicT>0?2:1)*(auraHas(G.p,'shooter')?1.08:1)*chainBonus().dmg;
 const statMul=(p,st)=>STAT_MUL[(p.stats[st]||3)-1];
 /* Damage of one attack with a weapon: level and gym base, weapon power, the character's stat, trained skill */
 function weaponDamage(id){const p=G.p,W=WEAPONS[id],M=METHODS[W.m],sk=W.m==='shoot'?1+(p.skills.aim||0)*.08:W.m==='spell'?1+(p.skills.spell||0)*.1:1+(p.skills.power||0)*.08;return p.s.dmg*(1+W.p/25)*statMul(p,M.st)*sk*(W.m==='shoot'?.72:1)}
