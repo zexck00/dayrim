@@ -4,13 +4,21 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### Changed
+- Magic Pills now double damage for 20 seconds and the mobile button is labeled “2× damage”.
+- Mobile controls now group Fast, Heal, Team and Revive above the damage pill, Potion, Ult and Dodge, with Spell, Attack and Shield on the bottom row. Ultimate charge appears on the button.
+- Mobile combat controls and HUD now use a dark fantasy style, with Shield beside Attack.
+- Mobile combat now groups attack, shield, potion and fast controls together, with a compact HUD for each orientation and an expandable panel for less frequent actions.
+
 ### Fixed
+- Docker builds include the game assets required by the shipped page.
 - A revive button now appears near the wounded Stage 1 scout for mouse players, and the objective instructions mention the touch control.
 
 ### Added
 - New sounds for going down, reviving, linked ultimates (with Duo, Trio and Full Party calls) and each of the ten reactions, made from scratch by tools/make_audio.py.
 - The announcer voice lines are remade with a free public-domain voice (tools/make_free_voice.py), replacing the macOS voice that couldn't be used commercially.
 - Every hero and villain has a signature passive of their own (for example the Detective's Keen Eye or the Mecha Tyrant's Armored Core), shown on the character menu. Each is a small bonus on top of the archetype.
+- A gold coin indicator in the in-game HUD shows your current gold.
 - More achievements for combat actions, teamwork, encounter mechanics and longer-term milestones.
 - Achievements for story milestones, combat, progression, teamwork and the Swarm, with a collection menu and unlock notifications.
 - Weapon and signature upgrades now reach tier 5. Three new safehouse upgrades increase power while keeping melee reach and swing coverage in check.

@@ -1,6 +1,8 @@
 *
 !Dockerfile
 !dayrim.html
+!assets/
+!assets/**
 !src/rig.js
 !src/game.js
 !server/package.json
