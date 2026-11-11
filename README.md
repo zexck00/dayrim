@@ -8,6 +8,8 @@ Version: see [VERSION](VERSION). Changes: see [CHANGELOG.md](CHANGELOG.md).
 
 **Alone, with no server:** open `game/dayrim.html` in a browser. Progress saves in that browser.
 
+Play Game opens the game modes: **Story** (three chapters with their own maps, dialogue and objectives, for the first five heroes or villains), **Quick Game** (the ten stages, the Swarm and online play) and **Warzone** (not open yet). In Story, press **F** or the Talk button beside a named person or a chest.
+
 **Online, on your computer** (needs Node 20 or newer):
 
 ```bash
@@ -64,6 +66,7 @@ The server runs the game rules. Browsers send only what the player presses, and 
 ASSETS/, *.jpeg, *.mp4   Original art and video. Do not edit. The tools read from them.
 game/dayrim.html         The built game: one file with all art and sound inside.
 game/src/                Page, rules, drawing, online client and menus.
+game/src/story*.js       Story mode: the script (story-data.js), the maps (story-map.js) and the engine (story.js).
 game/server/             Multiplayer server and its tests.
 game/tools/              Build script, art pipeline and balance bot.
 game/sprites/            Art produced by the tools.

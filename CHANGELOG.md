@@ -6,6 +6,15 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### Added
 
+**Story mode**
+- A game modes screen opens after Play Game: Story, Quick Game and Warzone (not open yet) in a sidebar on the left, with the developers, the version and a Changelog button below. Quick Game is the stage game as before.
+- Story mode, "The Ten Hours": three chapters, one for each of the first three bosses. Pick one of the first five heroes or the first five villains. The story is told differently for each side: heroes win the stolen Hours back, villains keep them.
+- Each chapter has its own hand-laid map to roam: Sunrise Hollow (a farming village, wheat fields, an orchard and a crystal quarry), Noonshade Thicket (a logging camp, a river, three shrines and the heart-grove) and Duskwater Fen (a canal town, marsh boardwalks, a graveyard and the drowned chapel). They have streets, houses, bridges and their own plants.
+- Chapters are a chain of objectives: talk to people, clear an area, collect things, defend a place, hold shrines, beat a lieutenant, then the boss. A marker and the minimap show where to go.
+- Dialogue with portraits, a Skip button, and one choice per chapter that gives skill points, supplies or gold. Named people can be talked to with F or the Talk button; townsfolk have their own lines for heroes and villains.
+- Treasure chests and enemy camps off the main path, and enemies that roam the wilds between objectives.
+- Story progress saves after every objective, one save for the hero side and one for the villain side. Your character's level, skills and gear carry from chapter to chapter, and finished chapters can be replayed.
+
 **Stages and bosses**
 - Bosses share one framework: a guard bar that fills when you Break them or set off a reaction, a stagger that makes them take more damage and stop acting, a marked area on every big attack that fills up before it lands, an enrage timer that makes their attacks faster, a breather when they change phase that clears their incoming fire, and arena doors that keep the party in the fight until the boss dies.
 - Stage 1's boss has its own fight: a Skitter Rush that charges along a marked line, a Shard Spray cone of crystals, and at half life it burrows and erupts under whoever it resents most while raising two crystal pillars. The pillars heal it until they break, and breaking one is a timing test: two players must hit it within two seconds, or one player must land a charged move.

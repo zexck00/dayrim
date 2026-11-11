@@ -244,7 +244,7 @@ try{const c=localStorage.getItem('dayrim-char');if(c&&archKey(c)){chosen=c;selTa
 function readSave(){try{const r=JSON.parse(localStorage.getItem('dayrim-save')||'null');return r&&archKey(r.char)?r:null}catch(e){return null}}
 /* Starting a Swarm run builds a character and enters a stage, which would normally save. Hold saves until the run is marked. */
 let saveHold=false;
-function writeSave(){if(!G||G.demo||G.mp||G.swarm||saveHold)return;const p=G.p;try{localStorage.setItem('dayrim-save',JSON.stringify({char:p.char,lvl:p.lvl,xp:p.xp,gold:p.gold,potions:p.potions,fast:p.fast,magic:p.magic,gear:p.gear,bag:p.bag,weapons:p.weapons,weapon:p.weapon,skills:p.skills,train:p.train,sp:p.sp,kills:p.kills,rage:p.rage,bestCombo:p.bestCombo,stage:G.stage,runBoons:p.runBoons,weaponUpgrades:p.weaponUpgrades,achievements:p.achievements,secondWind:!!p.secondWind,maxStage:p.maxStage,beaten:p.beaten}))}catch(e){}}
+function writeSave(){if(!G||G.demo||G.mp||G.swarm||G.story||saveHold)return;const p=G.p;try{localStorage.setItem('dayrim-save',JSON.stringify({char:p.char,lvl:p.lvl,xp:p.xp,gold:p.gold,potions:p.potions,fast:p.fast,magic:p.magic,gear:p.gear,bag:p.bag,weapons:p.weapons,weapon:p.weapon,skills:p.skills,train:p.train,sp:p.sp,kills:p.kills,rage:p.rage,bestCombo:p.bestCombo,stage:G.stage,runBoons:p.runBoons,weaponUpgrades:p.weaponUpgrades,achievements:p.achievements,secondWind:!!p.secondWind,maxStage:p.maxStage,beaten:p.beaten}))}catch(e){}}
 function clearSave(){try{localStorage.removeItem('dayrim-save')}catch(e){}}
 
 /* ---------- Audio ---------- */
@@ -445,7 +445,7 @@ function resetStepState(){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.
   else if(st.kind==='carry'||st.kind==='generator'){if(st.kind==='generator'&&o.drop){o.drop.by=0;o.drop.t=0;o.drop.done=false;st.alarm=false;st.met=false;st.label='Carry fuel to the generator'}(o.items||[]).forEach(c=>{c.done=false;c.by=0;c.x=c.startX;c.y=c.startY});(o.vents||[]).forEach(v=>v.done=false);st.have=0;G.players.forEach(p=>p.carry=null)}
   else if(st.kind==='eggs'){for(const e of o.eggs||[]){e.done=false;e.t=WEBBED.eggHatch}st.have=0}
   else if(st.kind==='escort'&&o.escort){o.escort.x=G.safe.x+90;o.escort.y=G.safe.y+70;o.escort.done=false;o.escort.t=0;st.have=0}}
-function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if(!st)return;
+function objStep(dt){const o=G.obj;if(!o||o.done||G.story)return;const st=o.steps[o.i];if(!st)return;
   if(st.kind==='kill')st.have=G.killsStage;
   else if(st.kind==='revive'&&st.have<st.need&&!G.npcs.some(c=>c.wounded&&!c.dead))spawnScout();
   else if(st.kind==='hold')holdStep(st,dt||0);
@@ -459,10 +459,12 @@ function objStep(dt){const o=G.obj;if(!o||o.done)return;const st=o.steps[o.i];if
 function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the scout and hold F or Revive nearby'};return c}
 function enterStage(n,keepKills){for(const q of G.players){q.abil=null;q.abilCast=null}
   const kept=keepKills?G.killsStage:0;
-  G.stage=n;G.seed=Math.random()*2147483647|0;G.w=genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
+  G.stage=n;G.seed=Math.random()*2147483647|0;G.w=G.story?storyMap(G.story.ci):genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
   const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
   G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0;q.boonPending=false;q.weaponHealCd=0;q.teamCd=0;q.breakReady=0;q.tauntGuard=0;q.mendT=0;q.deadT=0;q.respawnT=0;q.reviveHold=0;q.reviveTarget=0;q.reviveProgress=0;q.carry=null;clearEncounterStatus(q);if(!keepKills){q.secondWind=false;q.downCount=0;q.lastDown=-100}});
   G.cam={x:G.p.x,y:G.p.y};
+  /* Story chapters bring their own people, enemies and objectives. */
+  if(G.story){storyEnter();updateFlow();dirty();return}
   for(let i=0;i<12;i++)spawnNpc();
   G.villT=60;G.decals=[];G.hazards=[];
   const start=Math.round((8+n)*partyCrowd());for(let i=0;i<start;i++)useMobs()?spawnMob(380):spawnRival(380,null,null,n===1&&i===2?'Exorcist':null);
@@ -871,7 +873,7 @@ const TALK={
 };
 function say(c,kind,chance=1){if(c.dead||Math.random()>chance)return;const k=kind==='villain'?'villainArrive':kind;if(c.qt>.6&&!['hurt','hurtEnemy','witness'].includes(k))return;c.quip=pick(TALK[k]);c.qt=2.6}
 /* The wounded scout can't be hurt or knocked away until revived, so the objective can't vanish or slide out of reach */
-function hitNpc(c,d,a,byPlayer){if(c.dead||c.wounded)return;c.hp-=d;c.kx=(c.kx||0)+Math.cos(a)*180;c.ky=(c.ky||0)+Math.sin(a)*180;c.scare=4;c.flash=.1;sfx('hit');bleed(c.x,c.y-26,Math.cos(a),Math.sin(a),10);if(c.hp<=0)killNpc(c,a,byPlayer);else say(c,byPlayer?'hurt':'hurtEnemy')}
+function hitNpc(c,d,a,byPlayer){if(c.dead||c.wounded||c.fixed)return;c.hp-=d;c.kx=(c.kx||0)+Math.cos(a)*180;c.ky=(c.ky||0)+Math.sin(a)*180;c.scare=4;c.flash=.1;sfx('hit');bleed(c.x,c.y-26,Math.cos(a),Math.sin(a),10);if(c.hp<=0)killNpc(c,a,byPlayer);else say(c,byPlayer?'hurt':'hurtEnemy')}
 /* ---------- Gore. Blood scales with the damage relative to the target's life, so a pistol pop bleeds little and an ultimate bleeds a lot. ---------- */
 const GORE={hit:26,kill:64,cap:420,trailT:.4,poolMin:16,poolMax:30,mark:.34};
 const GORE_KIT={necro:['#8c1820','#5e0f16','#e8dcc0'],toxic:['#3f6a2a','#26401a','#a8c070'],void:['#6a2a7a','#3e1a4a','#c090d8']};
@@ -1271,9 +1273,9 @@ function update(dt){
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
   // keep the streets populated: more rivals at night, more citizens by day
   const n=nightness(G.hour);G.spawnT-=dt;
-  if(G.swarm)swarmTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue()&&!bloaterDue()&&!shieldbearerDue()&&!scrapGolemDue())useMobs()?spawnMob(520):spawnRival(520);
+  if(G.swarm)swarmTick(dt);else if(G.story)storyTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue()&&!bloaterDue()&&!shieldbearerDue()&&!scrapGolemDue())useMobs()?spawnMob(520):spawnRival(520);
     const wantN=Math.round(14*(1-n)+3);if(G.npcs.length<wantN)spawnNpc();else if(G.npcs.length>wantN)G.npcs.splice(G.npcs.findIndex(c=>!c.wounded&&dist(c,nearestPlayer(c))>500)>>>0,1)}
-  if(useMobs()&&!G.clearPending&&!G.swarm){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
+  if(useMobs()&&!G.clearPending&&!G.swarm&&!G.story){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
   updateNpcs(dt);tickHazards(dt);G.p=G.players[0];
   for(const c of G.w.cars){if(c.v){c.y+=c.s*dt;if(c.y<-60)c.y=MH*T+60;if(c.y>MH*T+60)c.y=-60}else{c.x+=c.s*dt;if(c.x<-60)c.x=MW*T+60;if(c.x>MW*T+60)c.x=-60}}
   tideTick(dt);lanternTick(dt);sporeBossTick(dt);scrapTick(dt);for(const q of G.players){playerStatus(q,dt);toxinStep(q,dt);rustStep(q,dt)}ghoulTick(dt)
@@ -1298,7 +1300,7 @@ function update(dt){
 }
 function fearedPlayer(c){let found=null,bd=170;for(const p of alivePlayers()){const d=dist(p,c);if((p.killerT||0)>0&&d<bd){found=p;bd=d}}return found}
 function updateNpcs(dt){const boss=!!G.boss;G.quipT-=dt;for(const p of G.players)p.killerT=Math.max(0,(p.killerT||0)-dt);
-  for(const c of G.npcs){if(c.dead)continue;const p=nearestPlayer(c);G.p=p;if(c.wounded){c.moving=false;continue}c.t-=dt;c.qt=Math.max(0,c.qt-dt);c.scare=Math.max(0,c.scare-dt);c.flash=Math.max(0,c.flash-dt);
+  for(const c of G.npcs){if(c.dead)continue;const p=nearestPlayer(c);G.p=p;if(c.wounded){c.moving=false;continue}if(c.fixed){c.qt=Math.max(0,c.qt-dt);continue}c.t-=dt;c.qt=Math.max(0,c.qt-dt);c.scare=Math.max(0,c.scare-dt);c.flash=Math.max(0,c.flash-dt);
     if(c.kx||c.ky){move(c,c.kx*dt,c.ky*dt);const de=Math.pow(.01,dt);c.kx*=de;c.ky*=de}
     let threat=null,td=230;for(const e of G.enemies){if(e.dead)continue;const d=dist(e,c);if(d<td){td=d;threat=e}}
     if(!threat)threat=fearedPlayer(c);

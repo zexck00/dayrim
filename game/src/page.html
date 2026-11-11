@@ -172,6 +172,87 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .sheet{height:auto;min-height:0}
 }
 /* Title poster: the first screen. The owner's poster, the DAYRIM letters cut from the title art, and the Play Game button. */
+/* ---------- Game modes screen ---------- */
+.modes{position:absolute;inset:0;z-index:6;display:grid;grid-template-columns:clamp(250px,26vw,350px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);background:#07060c;overflow:hidden}
+.md-art{position:absolute;inset:0;background:#0a0a12 center/cover no-repeat;filter:saturate(1.05) brightness(.82)}
+.modes::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(5,6,12,.9) 0,rgba(5,6,12,.55) 30%,rgba(5,6,12,.05) 60%,rgba(5,6,12,.4) 100%)}
+.md-side{position:relative;z-index:2;display:flex;flex-direction:column;gap:18px;min-height:0;overflow:auto;padding:clamp(14px,3vh,30px) clamp(14px,1.6vw,22px);padding-left:max(clamp(14px,1.6vw,22px),env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(16,17,28,.93),rgba(8,9,16,.97));border-right:1px solid #4a3a26;box-shadow:8px 0 30px #000a}
+.md-logo{width:100%;max-width:290px;align-self:center;filter:drop-shadow(0 4px 10px #000);user-select:none;pointer-events:none}
+.md-nav{display:flex;flex-direction:column;gap:10px;margin:auto 0}
+.md-nav button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:13px 16px;background:linear-gradient(180deg,#2a2218,#17120c);border:1px solid #6a5334;border-left:4px solid #c9973f;color:var(--bone);cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease}
+.md-nav b{font:700 clamp(19px,2.1vw,26px)/1.1 var(--display);letter-spacing:.02em}
+.md-nav small{font:500 12px/1.3 var(--body);color:var(--mist)}
+.md-nav button:hover:not(:disabled),.md-nav button:focus-visible{transform:translateX(6px);border-color:#f0c23c;background:linear-gradient(180deg,#3a2e1c,#20180e);outline:none}
+.md-nav button:disabled{opacity:.5;cursor:not-allowed;border-left-color:#555;filter:grayscale(.7)}
+.md-foot{display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid #3a2f24;font:500 11px/1.4 var(--mono);color:var(--mist)}
+.md-foot b{color:var(--bone);font-weight:600}
+.md-verrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.md-foot button{background:transparent;border:1px solid var(--line);color:var(--bone);font:600 12px var(--body);padding:4px 10px;cursor:pointer}
+.md-foot button:hover{border-color:var(--lichen)}
+.md-panel{position:relative;z-index:2;justify-self:start;align-self:stretch;margin:clamp(8px,2.4vh,22px);width:min(760px,calc(100% - 2*clamp(8px,2.4vh,22px)));padding:clamp(12px,2vw,22px);overflow:auto;min-height:0;background:rgba(10,13,24,.95);border:1px solid var(--line);box-shadow:0 10px 40px #000c}
+.mp-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.mp-head h2{margin:0;font:700 clamp(24px,3vw,36px)/1 var(--display)}
+.mp-back{padding:5px 12px;font-size:14px}
+.mp-kick{margin:0 0 6px;font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--lichen)}
+.mp-lede{margin:0 0 12px;font-size:15px;line-height:1.5;color:var(--bone)}
+.mp-h{margin:14px 0 8px;font:700 17px var(--display);color:var(--bone)}
+.mp-note{margin:10px 0 0;font-size:13px;line-height:1.45;color:var(--mist)}
+.mp-save{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px 12px;background:var(--deep);border:1px solid #c9973f}
+.mp-save i,.mp-char i{display:block;flex:none;background-image:var(--atlas);background-repeat:no-repeat;image-rendering:pixelated}
+.mp-save i{width:44px!important}
+.mp-save div{flex:1;min-width:0;display:flex;flex-direction:column}.mp-save span{font-size:13px;color:var(--mist)}
+.mp-chars{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.mp-char{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:6px 4px 8px;background:var(--deep);border:1px solid var(--line);color:var(--bone);cursor:pointer;overflow:hidden}
+.mp-char b{font:700 13px var(--body);text-align:center;line-height:1.15}.mp-char small{font:500 11px var(--mono);color:var(--mist)}
+.mp-char[aria-pressed="true"]{border-color:var(--lichen);box-shadow:0 0 0 1px var(--lichen) inset;background:#2a2416}
+.mp-chs{display:flex;flex-direction:column;gap:8px}
+.mp-ch{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;text-align:left;padding:10px 12px;background:linear-gradient(180deg,#1b2440,#121a30);border:1px solid var(--line);color:var(--bone);cursor:pointer}
+.mp-ch:hover:not(:disabled),.mp-ch:focus-visible{border-color:var(--lichen);outline:none}
+.mp-ch:disabled{opacity:.45;cursor:not-allowed}
+.mp-num{font:700 30px/1 var(--display);color:var(--lichen);min-width:28px;text-align:center}
+.mp-cht{display:flex;flex-direction:column;min-width:0}.mp-cht b{font:700 17px var(--display)}.mp-cht em{font-size:14px;color:#e8dcc0}.mp-cht small{font:500 11px var(--mono);color:var(--mist)}
+.mp-state{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--lichen)}
+.mp-begin,.mp-new{margin-top:12px;width:100%}
+.mp-log h3{margin:16px 0 6px;font:700 20px var(--display);color:var(--lichen)}.mp-log h4{margin:12px 0 4px;font:700 16px var(--body)}.mp-log h5{margin:10px 0 4px;font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--foam)}
+.mp-log ul{margin:0 0 8px;padding-left:18px}.mp-log li,.mp-log p{font-size:14px;line-height:1.5;color:var(--bone);margin:0 0 5px}.mp-log code{font:500 12px var(--mono);color:var(--foam)}
+.tomodes{margin-right:10px;padding:4px 10px;font:700 14px var(--body);vertical-align:middle}
+/* ---------- Story dialogue ---------- */
+.dlg{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:5;width:min(860px,calc(100% - 24px));display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;padding:14px 18px 10px;background:linear-gradient(180deg,rgba(18,20,34,.97),rgba(9,10,18,.98));border:2px solid #0a0c12;box-shadow:0 0 0 2px #c9973f,0 10px 40px #000c;cursor:pointer;user-select:none;-webkit-user-select:none}
+.dlg-p{position:static;inset:auto;cursor:pointer;width:96px;height:96px;image-rendering:pixelated;background:radial-gradient(circle at 50% 40%,#2a3350,#101422);border:1px solid var(--line)}
+.dlg.noart{grid-template-columns:minmax(0,1fr)}.dlg.noart .dlg-p{display:none}
+.dlg-n{display:block;margin-bottom:2px;font:700 18px var(--display);color:var(--lichen)}
+.dlg.mine .dlg-n{color:#8fe6b8}
+.dlg-t{margin:0;min-height:3em;font:500 17px/1.45 var(--body);color:var(--bone)}
+.dlg.narr .dlg-t{font-style:italic;color:#cfd8ea;text-align:center}
+.dlg-o{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.dlg-o:empty{display:none}
+.dlg-opt{background:var(--deep);border:1px solid #c9973f;color:var(--bone);font:600 14px var(--body);padding:9px 12px;cursor:pointer;text-align:left}
+.dlg-opt:hover,.dlg-opt:focus-visible{background:#3a2e1c;outline:none}
+.dlg-h{display:block;margin-top:4px;min-height:1.3em;font:500 11px var(--mono);color:var(--mist)}
+.dlg-skip{position:absolute;right:0;top:-34px;background:rgba(10,13,24,.9);border:1px solid var(--line);color:var(--mist);font:600 12px var(--body);padding:5px 12px;cursor:pointer}
+.story-act{position:absolute;left:50%;bottom:calc(96px*var(--k,1));transform:translateX(-50%);z-index:4;padding:10px 20px;border:2px solid #0a0c12;box-shadow:0 0 0 2px #f0c23c,0 4px 0 #000;background:linear-gradient(180deg,#3a2e1c,#20180e);color:#ffe9a0;font:700 15px var(--body);cursor:pointer;touch-action:manipulation;white-space:nowrap}
+.screen.touch-playing .story-act{bottom:calc(216px + env(safe-area-inset-bottom,0px));padding:12px 22px}
+@media(max-width:700px){
+  .modes{grid-template-columns:minmax(0,1fr)}
+  .modes::after{background:linear-gradient(180deg,rgba(5,6,12,.55) 0,rgba(5,6,12,.15) 30%,rgba(5,6,12,.9) 62%)}
+  .md-side{background:none;border-right:0;box-shadow:none;padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(14px,env(safe-area-inset-bottom,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+  .md-logo{max-width:230px}.md-nav{margin:auto 0 0}
+    .modes.open .md-side{display:none}
+  .md-panel{margin:0;width:100%;border:0;padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px))}
+  .mp-chars{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.mp-char b{font-size:11px}.mp-char small{display:none}
+  .mp-ch{gap:8px;padding:9px 10px}.mp-num{font-size:24px;min-width:20px}.mp-cht b{font-size:15px}.mp-cht em{font-size:13px}
+  .dlg{gap:10px;padding:10px 12px 8px}.dlg-p{width:64px;height:64px}.dlg-t{font-size:15px;min-height:4.4em}.dlg-n{font-size:16px}.dlg-opt{flex:1 1 100%}
+}
+@media(max-height:500px) and (orientation:landscape){
+  .modes{grid-template-columns:clamp(190px,30vw,250px) minmax(0,1fr)}
+  .md-side{gap:8px;padding:8px 12px;padding-left:max(12px,env(safe-area-inset-left,0px))}
+  .md-logo{max-width:140px}.md-nav{gap:6px}.md-nav button{padding:7px 12px}.md-nav b{font-size:17px}.md-nav small{font-size:11px}
+  .md-foot{font-size:10px;gap:3px;padding-top:6px}.md-foot button{padding:2px 8px}
+    .md-panel{margin:6px;width:calc(100% - 12px);padding:10px 12px;padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .mp-lede{font-size:13px;margin-bottom:8px}.mp-chars{grid-template-columns:repeat(5,minmax(0,90px))}
+  .dlg{padding:8px 12px 6px;bottom:max(6px,env(safe-area-inset-bottom,0px));width:min(760px,calc(100% - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}.dlg-p{width:60px;height:60px}.dlg-t{font-size:14px;min-height:2.9em}.dlg-skip{top:-30px}
+  .screen.touch-playing .story-act{bottom:max(10px,env(safe-area-inset-bottom,0px));padding:9px 18px}
+}
+@media(prefers-reduced-motion:reduce){.md-nav button{transition:none}}
 .splash{position:absolute;inset:0;z-index:8;container-type:size;overflow:hidden;background:#07060c;transition:opacity .7s ease,visibility 0s linear .7s}
 .splash.gone{opacity:0;visibility:hidden;pointer-events:none}
 /* Nothing on the poster shows until both pictures have loaded, so a half-loaded or broken image never flashes */
@@ -299,6 +380,21 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
       </div>
       <div class="ov" id="ov"><div class="card" id="card"></div></div>
       <div class="achievement-toast" id="achievement-toast" role="status" aria-live="polite" hidden><span class="medal" aria-hidden="true">★</span><div><small>Achievement unlocked</small><strong id="achievement-name"></strong></div></div>
+      <button class="story-act" id="story-act" type="button" hidden>Talk</button>
+      <div class="dlg" id="dlg" role="dialog" aria-live="polite" hidden><canvas class="dlg-p" id="dlgp" width="96" height="96" aria-hidden="true"></canvas><div class="dlg-b"><b class="dlg-n" id="dlgn"></b><p class="dlg-t" id="dlgt"></p><div class="dlg-o" id="dlgo"></div><small class="dlg-h" id="dlgh"></small></div><button class="dlg-skip" id="dlgskip" type="button">Skip</button></div>
+      <div class="modes" id="modes" hidden>
+        <div class="md-art" id="mdart"></div>
+        <aside class="md-side">
+          <img class="md-logo" id="mdlogo" alt="Dayrim">
+          <nav class="md-nav" aria-label="Game modes">
+            <button type="button" data-m="story"><b>Story</b><small>The Ten Hours · 3 chapters</small></button>
+            <button type="button" data-m="quick"><b>Quick Game</b><small>Stages, the Swarm and online play</small></button>
+            <button type="button" data-m="war" disabled><b>Warzone</b><small>Coming soon</small></button>
+          </nav>
+          <footer class="md-foot"><span class="md-dev">Developed by <b>zexck00</b>, <b>c4lyp5o</b> and <b>Dvachini</b></span><span class="md-verrow"><span id="mdver"></span><button type="button" id="mdlog">Changelog</button></span></footer>
+        </aside>
+        <section class="md-panel" id="mdpanel" hidden></section>
+      </div>
       <div class="splash" id="splash">
         <img class="sp-poster" id="spposter" alt="">
         <canvas class="sp-fx" id="spfx" aria-hidden="true"></canvas>

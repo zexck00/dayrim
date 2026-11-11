@@ -19,7 +19,7 @@ $('bag').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b
   if(b.dataset.sell!==undefined){const i=+b.dataset.sell,it=p.bag[i];if(!it)return;const g=salvage(it);p.gold+=g;p.bag.splice(i,1);addLog('Sold '+esc(it.name)+' for '+g+' gold.');writeSave()}});
 $('rack').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b&&b.dataset.w){if(netOn())netAct('weapon',b.dataset.w);else equipWeapon(b.dataset.w)}});
 $('wearbest').addEventListener('click',()=>wearBest());
-function returnToMenu(){if(netOn()){netLeave();return}writeSave();demoScene();setMode('title')}
+function returnToMenu(){if(netOn()){netLeave();return}if(G.story&&!G.story.over)storyWrite();writeSave();demoScene();setMode('title');showModes()}
 const touchPointers=new Map();
 let scoutHold=false;
 function stopScoutRevive(){if(!scoutHold)return;scoutHold=false;touchHold.revive=false;if(netOn())netAct('revive',false)}
@@ -37,16 +37,19 @@ function gameCard(c,tone,o){c.classList.add('notice');c.dataset.tone=tone;$('ov'
   c.innerHTML='<div class="notice-k"><span>'+o.kicker+'</span></div><h2 class="notice-t">'+o.title+'</h2>'+(o.line?'<p class="notice-l">'+o.line+'</p>':'')+
     (o.chips&&o.chips.length?'<div class="chips">'+o.chips.map(([k,v])=>'<span class="chip"><b>'+v+'</b><small>'+k+'</small></span>').join('')+'</div>':'')+'<div class="btnrow">'+o.buttons+'</div>'}
 function setMode(m){
+  /* A story chapter ends with its closing scene before the victory card. */
+  if(m==='clear'&&G.story&&!G.story.over){storyOutro();return}
   setTimeout(()=>{menuMusic();gameAmbience()},0);
   resetTouch();G.mode=m;mouse.left=mouse.right=false;keys.clear();const ov=$('ov'),c=$('card');
   $('touch').hidden=!(touchMode&&m==='play');$('screen').classList.toggle('touch-playing',touchMode&&m==='play');
-  if(m==='play'){ov.hidden=true;return}
+  if(m==='play'){ov.hidden=true;return}$('story-act').hidden=true;
   ov.hidden=false;ov.classList.toggle('pick',m==='title'||m==='menu');c.classList.toggle('sel',m==='title'||m==='menu');c.classList.remove('notice');delete c.dataset.tone;delete ov.dataset.tone;
   if(m==='title')renderSelect();
   else if(m==='menu')renderMenu();
   else if(netOn()&&netOverlay(m,c))return;
-  else if(m==='pause'){gameCard(c,'pause',{kicker:'Game paused',title:'Paused',line:'Stage '+G.stage+' · '+esc(STAGES[G.stage-1].n)+'. Your progress saves automatically.',chips:[['Level',G.p.lvl],['Gold',Math.floor(G.p.gold)],['Kills',G.p.kills||0]],buttons:'<button class="go" id="go" type="button">Resume</button><button class="ghost" id="tomenu" type="button">Return to menu</button>'});$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
-  else if(m==='dead'){gameCard(c,'dead',{kicker:'Defeated',title:'You fell',line:'The '+esc(label(G.p.char))+' wakes at the safehouse. Level, gear and stage progress are kept. Train, upgrade skills and stock potions before the boss.',chips:[['Gold lost','20%'],['Stage',G.stage],['Level',G.p.lvl]],buttons:'<button class="go" id="go" type="button">Wake at safehouse</button><button class="ghost" id="tomenu" type="button">Return to main menu</button>'});$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
+  else if(m==='pause'){gameCard(c,'pause',{kicker:'Game paused',title:'Paused',line:(G.story?esc(storyTitle()):'Stage '+G.stage+' · '+esc(STAGES[G.stage-1].n))+'. Your progress saves automatically.',chips:[['Level',G.p.lvl],['Gold',Math.floor(G.p.gold)],['Kills',G.p.kills||0]],buttons:'<button class="go" id="go" type="button">Resume</button><button class="ghost" id="tomenu" type="button">Return to menu</button>'});$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
+  else if(m==='dead'){gameCard(c,'dead',{kicker:'Defeated',title:'You fell',line:'The '+esc(label(G.p.char))+' wakes at the safehouse. Level, gear and '+(G.story?'story':'stage')+' progress are kept. Train, upgrade skills and stock potions before the boss.',chips:[['Gold lost','20%'],['Stage',G.stage],['Level',G.p.lvl]],buttons:'<button class="go" id="go" type="button">Wake at safehouse</button><button class="ghost" id="tomenu" type="button">Return to main menu</button>'});$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
+  else if(m==='clear'&&G.story)storyCard(c);
   else if(m==='clear'){const n=G.stage,last=n>=10,hero=factionOf(G.p.char)==='hero';
     if(last)gameCard(c,'win',{kicker:'Legend of Dayrim',title:hero?'Dayrim is safe':'Dayrim is yours',line:'The crowned horror has fallen and all 10 stages are clear.',chips:[['Level',G.p.lvl],['Defeated',G.p.kills],['Hero',esc(label(G.p.char))]],buttons:'<button class="go" id="go" type="button">Keep playing</button>'});
     else gameCard(c,'win',{kicker:'Victory',title:'Stage '+n+' cleared',line:esc(STAGES[n-1].label||STAGES[n-1].boss)+' is defeated. Next: stage '+(n+1)+', '+esc(STAGES[n].n)+'.',chips:[['Skill points','+2'],['Your level',G.p.lvl],['Recommended',recLevel(n+1)]],buttons:'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>'});
@@ -62,13 +65,14 @@ function renderSelect(){
   const c=$('card'),names=Object.keys(ROSTER[selTab]),a=archOf(chosen),sv=readSave(),foe=factionOf(chosen)==='hero'?'villains':'heroes';
   const abil=ABILITIES[chosen]?' · C '+ABILITIES[chosen].n.toLowerCase()+', click to use':'',controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s)'+abil+' · V ultimate · Hold right click shield · E heal · Space dodge · Hold Shift sprint · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack'+abil+' · Hold right click shield · Q spell · E heal · Space dodge · Hold Shift sprint · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
   const w0=weaponOf(chosen);
-  c.innerHTML='<div class="sel-top"><h2>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
+  c.innerHTML='<div class="sel-top"><h2><button class="ghost tomodes" id="tomodes" type="button" aria-label="Back to game modes">‹ Modes</button>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
   (sv?'<div class="cont"><span>Saved: The '+esc(label(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
   '<div class="sel-body"><div class="roster">'+names.map((n,ri)=>'<button class="rc h" type="button" data-c="'+esc(n)+'" aria-pressed="'+(n===chosen)+'" aria-label="The '+esc(label(n))+', '+ARCH[ROSTER[selTab][n]].n+'"><i style="'+cardStyle(n)+'"></i><b>'+String(ri+1).padStart(2,'0')+'</b></button>').join('')+'</div>'+
   '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p>'+(passiveOf(chosen)?'<p class="passive"><b>Passive · '+esc(passiveOf(chosen)[0])+':</b> '+esc(passiveOf(chosen)[1])+'</p>':'')+(ABILITIES[chosen]?'<p class="passive ability-note"><b>Ability · '+esc(abilityTitle(ABILITIES[chosen]))+':</b> '+esc(ABILITIES[chosen].d)+' <i>C to ready, click to use.</i></p>':'')+'<button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
   c.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{selTab=b.dataset.tab;playSound(selTab==='hero'?'heroBrowse':'villainBrowse');renderSelect()});
   c.querySelectorAll('.rc').forEach(b=>{b.onclick=()=>{chosen=b.dataset.c;playSound(factionOf(chosen)==='hero'?'heroBrowse':'villainBrowse');confirmNew=false;try{localStorage.setItem('dayrim-char',chosen)}catch(e){}G.p.char=chosen;recalc();renderSelect()}});
   $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();announce('start',2);clearSave();newRun(chosen);addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
+  $('tomodes').onclick=showModes;
   const onl=$('online');if(onl)onl.onclick=()=>{audioOn();renderLobby()};
   {const sw=$('swarm');if(sw)sw.onclick=()=>{swarmPick=!swarmPick;renderSelect()}}c.querySelectorAll('[data-swarm]').forEach(b=>b.onclick=()=>{audioOn();announce('start',2);swarmPick=false;startSwarmRun(chosen,+b.dataset.swarm);addLog('The Swarm begins. Nothing here changes your saved game.')});
   const ct=$('cont');if(ct)ct.onclick=()=>{audioOn();announce('start',2);loadRun(sv);addLog('Welcome back, '+esc(label(sv.char))+'.');setMode('play')};
@@ -84,7 +88,7 @@ const SKILL_GROUPS=[['Offense',['power','aim','spell','crit']],['Defense',['guar
 const SKILL_VALUES={power:[8,'% damage'],aim:[8,'% damage'],spell:[10,'% damage'],guard:[12,'% shield armor'],mend:[10,'% self-healing'],tough:[6,'% maximum life'],foot:[2,'% move speed (cap 290)'],focus:[1,' mana per second'],crit:[1.5,'% critical chance'],leech:[.5,' life per hit']};
 function skillValue(s,r){const v=SKILL_VALUES[s.id];return '+'+(Math.round(v[0]*r*10)/10)+v[1]}
 function renderMenu(){
-  const c=$('card'),p=G.p,tabs=[['skills','Skills'],['weapons','Weapons'],['achievements','Achievements'],['gym','Gym'],['shop','Shop'],['travel','Travel'],['settings','Settings']],safe=G.p.nearSafe;
+  const c=$('card'),p=G.p,tabs=[['skills','Skills'],['weapons','Weapons'],['achievements','Achievements'],['gym','Gym'],['shop','Shop'],...(G.story?[]:[['travel','Travel']]),['settings','Settings']],safe=G.p.nearSafe;
   let body='';
   if(menuTab==='skills'){const aura=auraOf(p),team=TEAM_ABILITY[archKey(p.char)],boon=p.boonPending?'<div class="boons"><p class="mhead">Checkpoint boon: choose one for this run.</p><button class="boon" type="button" data-boon="wide"'+((p.runBoons.wide||0)>=3?' disabled':'')+'><strong>Safer dodge</strong><span>Longer dodge protection.</span></button><button class="boon" type="button" data-boon="opening"'+((p.runBoons.opening||0)>=3?' disabled':'')+'><strong>Longer opening</strong><span>Dodged brute attacks stay open longer.</span></button></div>':'';const ab=abilityOf(p);body=boon+(ab?'<p class="mhead">Ability (C): <b>'+abilityTitle(ab)+'</b> · '+ab.d+' '+ABILITY_HOW+'</p>':'')+'<p class="mhead">Team ability (G): <b>'+team.n+'</b> · '+team.d+'</p><p class="mhead">Aura: <b>'+aura.n+'</b> · '+aura.d+' for you and nearby allies.</p><p class="mhead">Element: <b>'+ELEMENT[p.char]+'</b>. Different players combine statuses for reactions; other pairs resonate. Alone, a second hit triggers weaker resonance.</p><p class="mhead">Skill points: <b>'+p.sp+'</b>. You earn 1 per level and 2 per boss.</p>'+SKILL_GROUPS.map(([name,ids])=>'<h3 class="skill-group">'+name+'</h3>'+ids.map(id=>{const s=SKILLS.find(x=>x.id===id),r=p.skills[id]||0,full=r>=s.max;return'<div class="mrow skill-row"><div><strong>'+s.n+'</strong><span>'+s.d+'</span><span>Now: '+skillValue(s,r)+(full?'':' · Next: '+skillValue(s,r+1))+'</span><span class="skill-progress" role="progressbar" aria-label="'+s.n+' rank" aria-valuemin="0" aria-valuemax="'+s.max+'" aria-valuenow="'+r+'"><i style="width:'+(100*r/s.max)+'%"></i></span></div><em>'+r+'/'+s.max+'</em><button type="button" class="buy" data-skill="'+s.id+'"'+(p.sp<=0||full?' disabled':'')+'>'+(full?'Max':p.sp<=0?'No points':'Train')+'</button></div>'}).join('')).join('')}
   else if(menuTab==='weapons'){const gold=Math.floor(p.gold),intro='<p class="mhead">Upgrade at the safehouse · Gold: <b>'+gold+'</b></p>';
@@ -131,9 +135,12 @@ const GAME_CODES=new Set(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','Arrow
 addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyL'&&!ev.repeat&&ev.target.tagName!=='INPUT'){toggleFullscreen();return}
   if(splashOn()){if((ev.code==='Enter'||ev.code==='Space')&&!ev.repeat){ev.preventDefault();leaveSplash()}return}
+  if(modesOn()){if(ev.code==='Escape'){const b=$('mdpanel').querySelector('.mp-back');if(b)b.click()}return}
+  if(G.mode==='talk'){if(ev.target.closest&&ev.target.closest('.dlg-opt,.dlg-skip'))return;if(ev.code==='Escape')dlgSkip();else if(['Space','Enter','KeyF','KeyE'].includes(ev.code)&&!ev.repeat){ev.preventDefault();dlgNext()}return}
   if(ev.code==='Escape'||ev.code==='KeyP'){if(G.mode==='play'){setMode('pause');return}if(G.mode==='pause'||G.mode==='menu'){writeSave();setMode('play');return}}
   if(G.mode==='menu'&&(ev.code==='KeyT'||ev.code==='KeyR')){writeSave();setMode('play');return}
   if(G.mode!=='play')return;if(GAME_CODES.has(ev.code))ev.preventDefault();if(ev.repeat)return;keys.add(ev.code);
+  if(ev.code==='KeyF'&&G.story&&storyAct())return;
   if(ev.code==='KeyM')toggleSound();
   if(ev.code==='Space')doAct('dash');
   if(ev.code==='ShiftLeft'||ev.code==='ShiftRight')sprintKey=true;
@@ -270,9 +277,10 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   if(netOn()){if(G.mode==='play'&&!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}netUpdate(dt)}
   else if(G.mode==='play'){if(!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}update(G.hitStop>0?(G.hitStop-=dt,dt*.08):dt)}
   else if(G.mode==='title'||G.mode==='menu'){G.t+=dt;if(G.mode==='title')drawPreview(now)}
+  else if(G.mode==='talk'){G.t+=dt;dlgTick(dt,now)}
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
   footsteps();soundWatch();
-  touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus();updateScoutButton()}
+  touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus();updateScoutButton();storyButton()}
   try{render();drawFx3(now)}catch(err){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}
@@ -281,7 +289,7 @@ if(matchMedia('(pointer:coarse)').matches)touchMode=true;
 const SPLASH=$('splash');
 function splashOn(){return !!SPLASH&&!SPLASH.classList.contains('gone')}
 function leaveSplash(){if(!splashOn())return;const b=$('spplay');if(b.classList.contains('go'))return;b.classList.add('go');
-  setTimeout(()=>{SPLASH.classList.add('gone');titleMusic();if(G.mode!=='title')setMode('title');menuMusic()},350)}
+  setTimeout(()=>{SPLASH.classList.add('gone');titleMusic();if(G.mode!=='title')setMode('title');showModes();menuMusic()},350)}
 function initSplash(){if(!SPLASH)return;const ims=[$('spposter'),$('spwords')];ims[0].src=TITLE_URLS.poster;SPLASH.style.setProperty('--poster','url('+TITLE_URLS.poster+')');ims[1].src=TITLE_URLS.words;
   /* Show the poster only once both pictures are decoded */
   Promise.all(ims.map(im=>im.decode?im.decode().catch(()=>{}):Promise.resolve())).then(()=>SPLASH.classList.add('ready'));
@@ -302,6 +310,6 @@ function splashTick(now){if(!splashOn())return;const dt=Math.min(.05,(now-(spLas
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&Math.random()<dt*14)spEmbers.push(newEmber());
   drawEmbers($('spfx'),spEmbers,dt);requestAnimationFrame(splashTick)}
 demoScene();resize();setMode('title');
-initSplash();
-window.__dayrim={get state(){return G},net,objTargets,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,firstBloodAt:firstBloodAt===-Infinity?null:Math.round(firstBloodAt),titlePlaying:!!titleSrc,titleGain:titleGain&&+titleGain.gain.value.toFixed(2),ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
+initModes();initSplash();
+window.__dayrim={get state(){return G},net,objTargets,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,firstBloodAt:firstBloodAt===-Infinity?null:Math.round(firstBloodAt),titlePlaying:!!titleSrc,titleGain:titleGain&&+titleGain.gain.value.toFixed(2),ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER,STORY,storyBegin,storyMap,storyDone,storyAct,dlgNext,dlgSkip,showModes,killEnemy};
 requestAnimationFrame(tick);
