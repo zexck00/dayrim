@@ -42,7 +42,11 @@ data+='const SOUND_CLIPS='+J({k:asset(sx/f) for k,f in clips})+';\n'
 ti=root/'sprites'/'title'
 data+='const TITLE_URLS='+J({k:asset(ti/f,'title-'+k) for k,f in [('poster','poster.webp'),('words','words.webp'),('stone','stone.webp')]})+';\n'
 data+='const THREE_LAYER_URL='+J(asset(root/'vendor'/'three-layer.js','three-layer'))+';\n'
-js=data+''.join((root/'src'/f).read_text()+'\n' for f in ['rig.js','game.js','render.js','net.js','effects3d.js','ui.js'])
+# The modes screen shows the version and the changelog, both read from the repository root
+repo=root.parent
+data+='const GAME_VERSION='+J((repo/'VERSION').read_text().strip())+';\n'
+data+='const CHANGELOG_MD='+J((repo/'CHANGELOG.md').read_text())+';\n'
+js=data+''.join((root/'src'/f).read_text()+'\n' for f in ['rig.js','game.js','render.js','story-map.js','story-data.js','story.js','net.js','effects3d.js','ui.js'])
 page=(root/'src/page.html').read_text()
 assert '/*GAME*/' in page
 out=page.replace('/*GAME*/','(()=>{\n"use strict";\n'+js+'})();')

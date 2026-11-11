@@ -441,7 +441,7 @@ Today, 24 game hours take 8 minutes. At night, enemies deal 15% more damage, gol
 
 ## 17. Power-ups
 
-**Today:** Potion heals 45%. Fast Pill gives 40% speed for 20 s. Magic Pill gives 50% damage for 20 s. Up to 9 of each. They come from drops and the shop.
+**Today:** Potion heals 45%. Fast Pill gives 40% speed for 20 s. Magic Pill gives double damage for 20 s. Up to 9 of each. They come from drops and the shop.
 
 **Keep those**, and add three new kinds.
 

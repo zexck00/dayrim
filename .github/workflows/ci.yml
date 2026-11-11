@@ -49,3 +49,11 @@ jobs:
             exit 1
           fi
           echo "dayrim.html and its assets are in sync with their sources."
+
+  docker-build:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image with packaged assets
+        run: docker build -t dayrim-ci game

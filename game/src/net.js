@@ -58,7 +58,7 @@ function netStage(m){
 }
 
 /* Apply what the server says changed */
-const OWN_PREDICTED=new Set(['face','walk','moving','moveA']);
+const OWN_PREDICTED=new Set(['face','walk','moving','moveA','sprint']);
 function patch(o,d,glide,own){for(const k in d){if(k==='id')continue;if(own&&OWN_PREDICTED.has(k))continue;let v=d[k];if(typeof v==='string'&&(v[0]==='{'||v[0]==='['))v=JSON.parse(v);
   if(k==='x'&&glide){o.tx=v;continue}if(k==='y'&&glide){o.ty=v;continue}o[k]=v===null?undefined:v}}
 function applyList(rec,map,kind){if(!rec)return false;const [upd,rm]=rec;let changed=rm.length>0;
@@ -105,16 +105,16 @@ function netUpdate(dt){
   const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
   if(me.webT>0)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
-  else if(v.x||v.y){const sp=envSpeed(me)*me.s.speed*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
+  else if(v.x||v.y){me.sprint=canSprint(me,v);const sp=envSpeed(me)*me.s.speed*abilSpeed(me)*(me.sprint?SPRINT.mul:1)*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11*(me.sprint?SPRINT.stride:1);me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
   if(me.x!==bx||me.y!==by)net.pending.push({s:net.seq+1,dx:me.x-bx,dy:me.y-by});if(net.pending.length>240)net.pending.shift();
   net.reviveT-=dt;if(net.reviveT<=0&&G.mode==='play'&&(keys.has('KeyF')||touchHold.revive)){net.reviveT=.2;netSend({t:'a',n:'revive',v:true})}net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}
   tickFx(dt);
 }
 function netSendInput(force,v,playing){
-  const me=G.p;if(playing===undefined)playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0);v=v||(G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0});const aim=touchMode?{x:me.x+Math.cos(me.face)*120,y:me.y-22+Math.sin(me.face)*120}:mouse;
+  const me=G.p;if(playing===undefined)playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0);v=v||(G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0});const aim=touchMode?(me.abil?abilAim(me):{x:me.x+Math.cos(me.face)*120,y:me.y-22+Math.sin(me.face)*120}):mouse;
   const l=playing&&!!(mouse.left||touchHold.slash),r=playing&&!!(mouse.right||touchHold.guard);
-  const body={x:+v.x.toFixed(3),y:+v.y.toFixed(3),ax:Math.round(aim.x||0),ay:Math.round(aim.y||0),l,r},str=JSON.stringify(body),same=str===net.last;
+  const body={x:+v.x.toFixed(3),y:+v.y.toFixed(3),ax:Math.round(aim.x||0),ay:Math.round(aim.y||0),l,r,sp:playing&&sprintKey},str=JSON.stringify(body),same=str===net.last;
   if(same&&!force&&!(v.x||v.y)&&net.dash<=0&&net.idleT<.25)return;
   net.idleT=0;net.last=str;net.seq++;netSend(Object.assign({t:'i',s:net.seq},body));
 }
@@ -127,9 +127,9 @@ function netAct(n,v){
 
 /* Screens */
 function netOverlay(m,c){
-  if(m==='pause'){c.innerHTML='<h2>Room '+esc(net.code)+'</h2><p>The game keeps running while this is open. Give friends this code so they can join. Returning to the menu leaves the room.</p><div class="btnrow"><button class="go" id="go" type="button">Back to the game</button><button class="ghost" id="leave" type="button">Return to menu</button></div>';$('go').onclick=()=>setMode('play');$('leave').onclick=netLeave;return true}
+  if(m==='pause'){gameCard(c,'pause',{kicker:'Party room',title:'Room '+esc(net.code),line:'The game keeps running while this is open. Give friends this code so they can join. Returning to the menu leaves the room.',chips:[['Players',G.players.length],['Stage',G.stage]],buttons:'<button class="go" id="go" type="button">Back to the game</button><button class="ghost" id="leave" type="button">Return to menu</button>'});$('go').onclick=()=>setMode('play');$('leave').onclick=netLeave;return true}
   if(m==='clear'){const n=G.stage,last=n>=10,host=netIsHost(),next=last?'':' Next is stage '+(n+1)+': '+esc(STAGES[n].n)+'.';
-    c.innerHTML='<h2>'+(last?'All 10 stages clear':'Stage '+n+' cleared')+'</h2><p>Your party defeated the boss and everyone earned 2 skill points.'+next+(host||last?'':' The room host chooses when to move on.')+'</p><div class="btnrow">'+(host&&!last?'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>':'<button class="go" id="stay" type="button">Keep fighting</button>')+'</div>';
+    gameCard(c,'win',{kicker:last?'Legend of Dayrim':'Party victory',title:last?'All 10 stages clear':'Stage '+n+' cleared',line:'Your party defeated the boss.'+next+(host||last?'':' The room host chooses when to move on.'),chips:[['Skill points','+2'],['Party',G.players.length]],buttons:(host&&!last?'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>':'<button class="go" id="stay" type="button">Keep fighting</button>')});
     c.querySelector('.btnrow').insertAdjacentHTML('beforeend','<button class="ghost" id="tomenu" type="button">Return to main menu</button>');$('tomenu').onclick=netLeave;const g=$('go');if(g)g.onclick=()=>{netAct('next');setMode('play')};$('stay').onclick=()=>{if(host)netAct('stay');setMode('play')};return true}
   return false;
 }
@@ -154,15 +154,15 @@ function paintRooms(){const el=$('rl');if(!el)return;
   el.innerHTML=net.rooms.length?'<p class="mhead">Open rooms</p>'+net.rooms.map(r=>'<div class="mrow"><div><strong>'+esc(r.host)+'</strong><span>'+(r.side==='hero'?'Heroes':'Villains')+' · '+(r.mode==='swarm'?'The Swarm, stage '+r.stage+', wave '+(r.wave||0):'Stage '+r.stage)+' · Difficulty ×'+PARTY_SCALE[Math.max(0,Math.min(3,r.count-1))].difficulty+'</span></div><em>'+r.count+'/'+r.max+'</em><button type="button" class="buy" data-room="'+esc(r.code)+'"'+(r.side!==factionOf(chosen)?' disabled title="Choose a character from this side to join"':'')+'>Join</button></div>').join(''):'<p class="mhead">No open rooms right now. Create one.</p>';
   el.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>{const nm=$('nm');net.name=nm?nm.value.slice(0,16):net.name;store.set('dayrim-name',net.name);net.err='';netConnect(()=>{netSend({t:'name',name:net.name});netSend({t:'join',code:b.dataset.room,char:chosen})})})}
 /* Party list, room code and the respawn message, drawn over the game */
-function netHud(small,portrait=false){
-  const me=G.p,x=12;let y=portrait?(G.boss?182:132):touchMode?(H<500?220:195):(small?116:70);ctx.textAlign='left';
-  if(portrait){ctx.fillStyle='rgba(5,10,20,.75)';ctx.fillRect(6,y-14,148,23+(G.players.length-1)*17);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle='#f0c23c';ctx.fillText('Hope '+(G.hope??0)+'/'+(G.hopeMax??0)+' · Difficulty ×'+partyScale().difficulty,x,y,136);y+=18}else{
+function netHud(small,portrait=false,landscape=false){
+  const me=G.p,x=12;let y=landscape?108:portrait?(G.boss?182:132):touchMode?(H<500?220:195):(small?116:70);ctx.textAlign='left';
+  if(portrait){mobilePanel(6,y-14,148,23+(G.players.length-1)*17);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle='#f0c23c';ctx.fillText('Hope '+(G.hope??0)+'/'+(G.hopeMax??0)+' · Difficulty ×'+partyScale().difficulty,x,y,136);y+=18}else{
   ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?180:225,66+G.players.length*17);
   ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+' · Hope '+(G.hope??0)+'/'+(G.hopeMax??0),x,y);y+=15;{const chg=net.scaleNotice>performance.now();ctx.fillStyle=chg?'#8fe6ff':'#f0c23c';ctx.fillText((chg?'Difficulty changed ×':'Difficulty ×')+partyScale().difficulty+' · Spent '+(G.hopeSpent||0),x,y,small?168:210)}y+=15;ctx.fillStyle='#f0c23c';ctx.fillText('Retry: '+(G.gate&&G.gate.open?'boss gate':'objective checkpoint'),x,y,small?168:210);y+=16;}
 
   for(const q of G.players){if(portrait&&q===me)continue;const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';const rev=G.players.find(z=>z.reviveTarget===q.id&&z.reviveProgress>0),status=q.respawnT>0?' · '+Math.ceil(q.respawnT)+'s':q.deadT>0?(rev?' · '+Math.round(rev.reviveProgress*100)+'%':' · down '+Math.ceil(q.deadT)+'s'):'';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player')+status,x+(small?55:76),y,portrait?84:small?113:149);y+=17}
   const selected=G.players.find(q=>q.id===me.reviveTarget&&q.deadT>0);if(selected){ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#8fe6ff';ctx.fillText('Reviving '+(selected.pname||label(selected.char))+' · '+Math.round(me.reviveProgress*100)+'%',x,y,portrait?136:W-24);y+=16}else if(G.players.some(q=>q!==me&&q.deadT>0)){ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#d8e9ff';ctx.fillText((touchMode?'Hold revive':'Hold F')+' near an ally ('+(archKey(me.char)==='medic'?120:60)+')',x,y,portrait?136:W-24);y+=16}
-  const big=(a,b)=>{const y=portrait?Math.max(portraitBounds().top+20,Math.min(H*.45,portraitBounds().bottom-30)):H*.45;ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.font='700 '+(small?26:42)+'px "Pixelify Sans",monospace';ctx.strokeText(a,W/2,y,portrait?W-24:W);ctx.fillStyle='#ff8f80';ctx.fillText(a,W/2,y,portrait?W-24:W);ctx.font='600 15px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(b,W/2,y+26,portrait?W-24:W);ctx.fillStyle='#f2ecd8';ctx.fillText(b,W/2,y+26,portrait?W-24:W)};
+  const big=(a,b)=>{const y=portrait&&!landscape?Math.max(portraitBounds().top+20,Math.min(H*.45,portraitBounds().bottom-30)):H*.45;ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.font='700 '+(small?26:42)+'px "Pixelify Sans",monospace';ctx.strokeText(a,W/2,y,portrait?W-24:W);ctx.fillStyle='#ff8f80';ctx.fillText(a,W/2,y,portrait?W-24:W);ctx.font='600 15px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(b,W/2,y+26,portrait?W-24:W);ctx.fillStyle='#f2ecd8';ctx.fillText(b,W/2,y+26,portrait?W-24:W)};
   if(net.down)big('Reconnecting','Trying to get back to room '+net.code);
   else if(me.respawnT>0)big('You bled out','Waking at the safehouse in '+Math.ceil(me.respawnT));else if(me.deadT>0)big('You are down',me.windDown?'Second Wind in '+Math.ceil(me.deadT):'Crawl to an ally · Bleeding out in '+Math.ceil(me.deadT));
 }

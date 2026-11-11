@@ -19,7 +19,7 @@ $('bag').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b
   if(b.dataset.sell!==undefined){const i=+b.dataset.sell,it=p.bag[i];if(!it)return;const g=salvage(it);p.gold+=g;p.bag.splice(i,1);addLog('Sold '+esc(it.name)+' for '+g+' gold.');writeSave()}});
 $('rack').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b&&b.dataset.w){if(netOn())netAct('weapon',b.dataset.w);else equipWeapon(b.dataset.w)}});
 $('wearbest').addEventListener('click',()=>wearBest());
-function returnToMenu(){if(netOn()){netLeave();return}writeSave();demoScene();setMode('title')}
+function returnToMenu(){if(netOn()){netLeave();return}if(G.story&&!G.story.over)storyWrite();writeSave();demoScene();setMode('title');showModes()}
 const touchPointers=new Map();
 let scoutHold=false;
 function stopScoutRevive(){if(!scoutHold)return;scoutHold=false;touchHold.revive=false;if(netOn())netAct('revive',false)}
@@ -29,20 +29,30 @@ $('scout-revive').addEventListener('pointerdown',ev=>{if(ev.button!==0)return;ev
 $('scout-revive').addEventListener('keydown',ev=>{if((ev.code==='Space'||ev.code==='Enter')&&!ev.repeat){ev.preventDefault();scoutHold=true;touchHold.revive=true;if(netOn())netAct('revive',true)}});
 $('scout-revive').addEventListener('keyup',ev=>{if(ev.code==='Space'||ev.code==='Enter'){ev.preventDefault();stopScoutRevive()}});
 $('scout-revive').addEventListener('blur',stopScoutRevive);
-function resetTouch(){stopScoutRevive();if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('scout-revive').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
+function closeTouchExtra(){$('touch-extra').hidden=true;const b=$('touch').querySelector('[data-a=more]');b.setAttribute('aria-expanded','false')}
+function resetTouch(){closeTouchExtra();stopScoutRevive();if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('scout-revive').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
+/* Game-style notice card, used for being downed, stage clear, the final victory and pause.
+   tone sets the colour: dead (red), win (gold), pause (blue). chips: [label, value] pairs shown as stat plates. */
+function gameCard(c,tone,o){c.classList.add('notice');c.dataset.tone=tone;$('ov').dataset.tone=tone;
+  c.innerHTML='<div class="notice-k"><span>'+o.kicker+'</span></div><h2 class="notice-t">'+o.title+'</h2>'+(o.line?'<p class="notice-l">'+o.line+'</p>':'')+
+    (o.chips&&o.chips.length?'<div class="chips">'+o.chips.map(([k,v])=>'<span class="chip"><b>'+v+'</b><small>'+k+'</small></span>').join('')+'</div>':'')+'<div class="btnrow">'+o.buttons+'</div>'}
 function setMode(m){
+  /* A story chapter ends with its closing scene before the victory card. */
+  if(m==='clear'&&G.story&&!G.story.over){storyOutro();return}
   setTimeout(()=>{menuMusic();gameAmbience()},0);
   resetTouch();G.mode=m;mouse.left=mouse.right=false;keys.clear();const ov=$('ov'),c=$('card');
   $('touch').hidden=!(touchMode&&m==='play');$('screen').classList.toggle('touch-playing',touchMode&&m==='play');
-  if(m==='play'){ov.hidden=true;return}
-  ov.hidden=false;ov.classList.toggle('pick',m==='title'||m==='menu');c.classList.toggle('sel',m==='title'||m==='menu');
+  if(m==='play'){ov.hidden=true;return}$('story-act').hidden=true;
+  ov.hidden=false;ov.classList.toggle('pick',m==='title'||m==='menu');c.classList.toggle('sel',m==='title'||m==='menu');c.classList.remove('notice');delete c.dataset.tone;delete ov.dataset.tone;
   if(m==='title')renderSelect();
   else if(m==='menu')renderMenu();
   else if(netOn()&&netOverlay(m,c))return;
-  else if(m==='pause'){c.innerHTML='<h2>Paused</h2><p>Stage '+G.stage+'. Your progress saves automatically.</p><div class="btnrow"><button class="go" id="go" type="button">Resume</button><button class="ghost" id="tomenu" type="button">Return to menu</button></div>';$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
-  else if(m==='dead'){c.innerHTML='<h2>The '+esc(label(G.p.char))+' is down</h2><p>You lost 20% of your gold and wake at the safehouse. Your level, gear and stage progress are safe. Bosses get much harder each stage, so train, upgrade skills and stock up on potions.</p><div class="btnrow"><button class="go" id="go" type="button">Wake at safehouse</button><button class="ghost" id="tomenu" type="button">Return to main menu</button></div>';$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
+  else if(m==='pause'){gameCard(c,'pause',{kicker:'Game paused',title:'Paused',line:(G.story?esc(storyTitle()):'Stage '+G.stage+' · '+esc(STAGES[G.stage-1].n))+'. Your progress saves automatically.',chips:[['Level',G.p.lvl],['Gold',Math.floor(G.p.gold)],['Kills',G.p.kills||0]],buttons:'<button class="go" id="go" type="button">Resume</button><button class="ghost" id="tomenu" type="button">Return to menu</button>'});$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
+  else if(m==='dead'){gameCard(c,'dead',{kicker:'Defeated',title:'You fell',line:'The '+esc(label(G.p.char))+' wakes at the safehouse. Level, gear and '+(G.story?'story':'stage')+' progress are kept. Train, upgrade skills and stock potions before the boss.',chips:[['Gold lost','20%'],['Stage',G.stage],['Level',G.p.lvl]],buttons:'<button class="go" id="go" type="button">Wake at safehouse</button><button class="ghost" id="tomenu" type="button">Return to main menu</button>'});$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
+  else if(m==='clear'&&G.story)storyCard(c);
   else if(m==='clear'){const n=G.stage,last=n>=10,hero=factionOf(G.p.char)==='hero';
-    c.innerHTML=last?'<h2>'+(hero?'Dayrim is safe':'Dayrim is yours')+'</h2><p>The crowned horror has fallen and all 10 stages are clear. You finished as a level '+G.p.lvl+' '+esc(label(G.p.char))+' with '+G.p.kills+' defeated.</p><div class="btnrow"><button class="go" id="go" type="button">Keep playing</button></div>':'<h2>Stage '+n+' cleared</h2><p>You defeated '+esc(STAGES[n-1].label||STAGES[n-1].boss)+' and earned 2 skill points. Next is stage '+(n+1)+': '+esc(STAGES[n].n)+'. The recommended level is '+recLevel(n+1)+'. You are level '+G.p.lvl+'.</p><div class="btnrow"><button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button></div>';
+    if(last)gameCard(c,'win',{kicker:'Legend of Dayrim',title:hero?'Dayrim is safe':'Dayrim is yours',line:'The crowned horror has fallen and all 10 stages are clear.',chips:[['Level',G.p.lvl],['Defeated',G.p.kills],['Hero',esc(label(G.p.char))]],buttons:'<button class="go" id="go" type="button">Keep playing</button>'});
+    else gameCard(c,'win',{kicker:'Victory',title:'Stage '+n+' cleared',line:esc(STAGES[n-1].label||STAGES[n-1].boss)+' is defeated. Next: stage '+(n+1)+', '+esc(STAGES[n].n)+'.',chips:[['Skill points','+2'],['Your level',G.p.lvl],['Recommended',recLevel(n+1)]],buttons:'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>'});
     c.querySelector('.btnrow').insertAdjacentHTML('beforeend','<button class="ghost" id="tomenu" type="button">Return to main menu</button>');$('tomenu').onclick=returnToMenu;
     $('go').onclick=()=>{if(!last)enterStage(n+1);setMode('play')};const st=$('stay');if(st)st.onclick=()=>{G.gate.open=true;setMode('play')}}
 }
@@ -53,15 +63,16 @@ function swarmPanel(sv){const top=sv&&sv.char===chosen?Math.max(sv.stage||1,sv.m
   return '<div class="cont"><span>The Swarm: endless waves on a stage map. Nothing carries over to your saved game.'+(best?' Best: wave '+best+'.':'')+'</span>'+Array.from({length:Math.min(10,top)},(_,i)=>'<button class="buy" type="button" data-swarm="'+(i+1)+'">Stage '+(i+1)+'</button>').join('')+'</div>'}
 function renderSelect(){
   const c=$('card'),names=Object.keys(ROSTER[selTab]),a=archOf(chosen),sv=readSave(),foe=factionOf(chosen)==='hero'?'villains':'heroes';
-  const controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s) · V ultimate · Hold right click shield · E heal · Space dodge · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack · Hold right click shield · Q spell · E heal · Space dodge · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
+  const abil=ABILITIES[chosen]?' · C '+ABILITIES[chosen].n.toLowerCase()+', click to use':'',controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s)'+abil+' · V ultimate · Hold right click shield · E heal · Space dodge · Hold Shift sprint · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack'+abil+' · Hold right click shield · Q spell · E heal · Space dodge · Hold Shift sprint · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
   const w0=weaponOf(chosen);
-  c.innerHTML='<div class="sel-top"><h2>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
+  c.innerHTML='<div class="sel-top"><h2><button class="ghost tomodes" id="tomodes" type="button" aria-label="Back to game modes">‹ Modes</button>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
   (sv?'<div class="cont"><span>Saved: The '+esc(label(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
   '<div class="sel-body"><div class="roster">'+names.map((n,ri)=>'<button class="rc h" type="button" data-c="'+esc(n)+'" aria-pressed="'+(n===chosen)+'" aria-label="The '+esc(label(n))+', '+ARCH[ROSTER[selTab][n]].n+'"><i style="'+cardStyle(n)+'"></i><b>'+String(ri+1).padStart(2,'0')+'</b></button>').join('')+'</div>'+
-  '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p><button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
+  '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p>'+(passiveOf(chosen)?'<p class="passive"><b>Passive · '+esc(passiveOf(chosen)[0])+':</b> '+esc(passiveOf(chosen)[1])+'</p>':'')+(ABILITIES[chosen]?'<p class="passive ability-note"><b>Ability · '+esc(abilityTitle(ABILITIES[chosen]))+':</b> '+esc(ABILITIES[chosen].d)+' <i>C to ready, click to use.</i></p>':'')+'<button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
   c.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{selTab=b.dataset.tab;playSound(selTab==='hero'?'heroBrowse':'villainBrowse');renderSelect()});
   c.querySelectorAll('.rc').forEach(b=>{b.onclick=()=>{chosen=b.dataset.c;playSound(factionOf(chosen)==='hero'?'heroBrowse':'villainBrowse');confirmNew=false;try{localStorage.setItem('dayrim-char',chosen)}catch(e){}G.p.char=chosen;recalc();renderSelect()}});
   $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();announce('start',2);clearSave();newRun(chosen);addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
+  $('tomodes').onclick=showModes;
   const onl=$('online');if(onl)onl.onclick=()=>{audioOn();renderLobby()};
   {const sw=$('swarm');if(sw)sw.onclick=()=>{swarmPick=!swarmPick;renderSelect()}}c.querySelectorAll('[data-swarm]').forEach(b=>b.onclick=()=>{audioOn();announce('start',2);swarmPick=false;startSwarmRun(chosen,+b.dataset.swarm);addLog('The Swarm begins. Nothing here changes your saved game.')});
   const ct=$('cont');if(ct)ct.onclick=()=>{audioOn();announce('start',2);loadRun(sv);addLog('Welcome back, '+esc(label(sv.char))+'.');setMode('play')};
@@ -77,9 +88,9 @@ const SKILL_GROUPS=[['Offense',['power','aim','spell','crit']],['Defense',['guar
 const SKILL_VALUES={power:[8,'% damage'],aim:[8,'% damage'],spell:[10,'% damage'],guard:[12,'% shield armor'],mend:[10,'% self-healing'],tough:[6,'% maximum life'],foot:[2,'% move speed (cap 290)'],focus:[1,' mana per second'],crit:[1.5,'% critical chance'],leech:[.5,' life per hit']};
 function skillValue(s,r){const v=SKILL_VALUES[s.id];return '+'+(Math.round(v[0]*r*10)/10)+v[1]}
 function renderMenu(){
-  const c=$('card'),p=G.p,tabs=[['skills','Skills'],['weapons','Weapons'],['achievements','Achievements'],['gym','Gym'],['shop','Shop'],['travel','Travel'],['settings','Settings']],safe=G.p.nearSafe;
+  const c=$('card'),p=G.p,tabs=[['skills','Skills'],['weapons','Weapons'],['achievements','Achievements'],['gym','Gym'],['shop','Shop'],...(G.story?[]:[['travel','Travel']]),['settings','Settings']],safe=G.p.nearSafe;
   let body='';
-  if(menuTab==='skills'){const aura=auraOf(p),team=TEAM_ABILITY[archKey(p.char)],boon=p.boonPending?'<div class="boons"><p class="mhead">Checkpoint boon: choose one for this run.</p><button class="boon" type="button" data-boon="wide"'+((p.runBoons.wide||0)>=3?' disabled':'')+'><strong>Safer dodge</strong><span>Longer dodge protection.</span></button><button class="boon" type="button" data-boon="opening"'+((p.runBoons.opening||0)>=3?' disabled':'')+'><strong>Longer opening</strong><span>Dodged brute attacks stay open longer.</span></button></div>':'';body=boon+'<p class="mhead">Team ability (G): <b>'+team.n+'</b> · '+team.d+'</p><p class="mhead">Aura: <b>'+aura.n+'</b> · '+aura.d+' for you and nearby allies.</p><p class="mhead">Element: <b>'+ELEMENT[p.char]+'</b>. Different players combine statuses for reactions; other pairs resonate. Alone, a second hit triggers weaker resonance.</p><p class="mhead">Skill points: <b>'+p.sp+'</b>. You earn 1 per level and 2 per boss.</p>'+SKILL_GROUPS.map(([name,ids])=>'<h3 class="skill-group">'+name+'</h3>'+ids.map(id=>{const s=SKILLS.find(x=>x.id===id),r=p.skills[id]||0,full=r>=s.max;return'<div class="mrow skill-row"><div><strong>'+s.n+'</strong><span>'+s.d+'</span><span>Now: '+skillValue(s,r)+(full?'':' · Next: '+skillValue(s,r+1))+'</span><span class="skill-progress" role="progressbar" aria-label="'+s.n+' rank" aria-valuemin="0" aria-valuemax="'+s.max+'" aria-valuenow="'+r+'"><i style="width:'+(100*r/s.max)+'%"></i></span></div><em>'+r+'/'+s.max+'</em><button type="button" class="buy" data-skill="'+s.id+'"'+(p.sp<=0||full?' disabled':'')+'>'+(full?'Max':p.sp<=0?'No points':'Train')+'</button></div>'}).join('')).join('')}
+  if(menuTab==='skills'){const aura=auraOf(p),team=TEAM_ABILITY[archKey(p.char)],boon=p.boonPending?'<div class="boons"><p class="mhead">Checkpoint boon: choose one for this run.</p><button class="boon" type="button" data-boon="wide"'+((p.runBoons.wide||0)>=3?' disabled':'')+'><strong>Safer dodge</strong><span>Longer dodge protection.</span></button><button class="boon" type="button" data-boon="opening"'+((p.runBoons.opening||0)>=3?' disabled':'')+'><strong>Longer opening</strong><span>Dodged brute attacks stay open longer.</span></button></div>':'';const ab=abilityOf(p);body=boon+(ab?'<p class="mhead">Ability (C): <b>'+abilityTitle(ab)+'</b> · '+ab.d+' '+ABILITY_HOW+'</p>':'')+'<p class="mhead">Team ability (G): <b>'+team.n+'</b> · '+team.d+'</p><p class="mhead">Aura: <b>'+aura.n+'</b> · '+aura.d+' for you and nearby allies.</p><p class="mhead">Element: <b>'+ELEMENT[p.char]+'</b>. Different players combine statuses for reactions; other pairs resonate. Alone, a second hit triggers weaker resonance.</p><p class="mhead">Skill points: <b>'+p.sp+'</b>. You earn 1 per level and 2 per boss.</p>'+SKILL_GROUPS.map(([name,ids])=>'<h3 class="skill-group">'+name+'</h3>'+ids.map(id=>{const s=SKILLS.find(x=>x.id===id),r=p.skills[id]||0,full=r>=s.max;return'<div class="mrow skill-row"><div><strong>'+s.n+'</strong><span>'+s.d+'</span><span>Now: '+skillValue(s,r)+(full?'':' · Next: '+skillValue(s,r+1))+'</span><span class="skill-progress" role="progressbar" aria-label="'+s.n+' rank" aria-valuemin="0" aria-valuemax="'+s.max+'" aria-valuenow="'+r+'"><i style="width:'+(100*r/s.max)+'%"></i></span></div><em>'+r+'/'+s.max+'</em><button type="button" class="buy" data-skill="'+s.id+'"'+(p.sp<=0||full?' disabled':'')+'>'+(full?'Max':p.sp<=0?'No points':'Train')+'</button></div>'}).join('')).join('')}
   else if(menuTab==='weapons'){const gold=Math.floor(p.gold),intro='<p class="mhead">Upgrade at the safehouse · Gold: <b>'+gold+'</b></p>';
     if(kitOf(p)){const lv=upgradeLevel(p,'signature'),cost=upgradeCost(lv),now=Math.round((MELEE_UP[lv]-1)*100),next=cost?Math.round((MELEE_UP[lv+1]-1)*100):now,reason=upgradeReason(lv,safe,cost,p.gold);body=intro+'<p class="mhead">Small, moderate and special signature moves gain damage.</p><div class="mrow weapon-row"><div class="weapon-choice"><div class="weapon-info"><strong>Signature moves</strong>'+weaponTier(lv)+'<span>Now: damage +'+now+'%</span>'+(cost?'<span>Next: damage +'+next+'%</span>':'')+(reason?'<span class="weapon-reason">'+reason+'</span>':'')+'</div></div><button type="button" class="buy" data-upgrade="signature"'+(!safe||!cost||p.gold<cost?' disabled':'')+'>'+(cost?'Upgrade '+cost+' gold':'Max')+'</button></div>'}
     else body=intro+p.weapons.map(id=>{const w=WEAPONS[id],on=id===p.weapon,lv=upgradeLevel(p,id),cost=upgradeCost(lv),effect=weaponEffect(id,w),reason=upgradeReason(lv,safe,cost,p.gold);return '<div class="mrow weapon-row"><div class="weapon-choice"><canvas class="weapon-icon" width="44" height="44" data-icon="'+id+'" aria-hidden="true"></canvas><div class="weapon-info"><strong>'+esc(w.n)+'</strong><span>'+METHODS[w.m].n+' · power '+w.p+'</span>'+weaponTier(lv)+'<span>Now: '+upgradeSummary(w,lv)+'</span>'+(cost?'<span>Next: '+upgradeSummary(w,lv+1)+'</span>':'')+(effect?'<span class="weapon-effect">'+(lv>=2?'Effect: ':'Tier 2: ')+effect+'</span>':'')+(reason?'<span class="weapon-reason">'+reason+'</span>':'')+'</div></div><em>'+(on?'In hand':'')+'</em><button type="button" class="buy" data-weapon="'+id+'"'+(on?' disabled':'')+'>'+(on?'Equipped':'Equip')+'</button><button type="button" class="buy" data-upgrade="'+id+'"'+(!safe||!cost||p.gold<cost?' disabled':'')+'>'+(cost?'Upgrade '+cost+' gold':'Max')+'</button></div>'}).join('')}
@@ -105,32 +116,40 @@ function renderMenu(){
 }
 
 /* Input. Online, actions go to the server. Alone, they run here. */
-const LOCAL_ACT={dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
-function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
+const LOCAL_ACT={dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),ability:()=>doAbility(),use:()=>doUse(),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
+/* Name shown in menus: Ability → what using it does. How to use it is the same for everyone. */
+const abilityTitle=ab=>ab.n+' → '+ab.use,ABILITY_HOW='Press C to ready it, then click to use it (on touch, tap Ability again). C again cancels; for buffs and grabs it fires the finisher.';
+function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(n==='ability')touchAim=null;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
 function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}
 function setTouch(on){if(touchMode===on)return;resetTouch();touchMode=on;resize();$('touch').hidden=!(on&&G.mode==='play');$('screen').classList.toggle('touch-playing',on&&G.mode==='play')}
 function mouseButtons(ev){if(G.mode!=='play')return;mouse.left=!!(ev.buttons&1);mouse.right=!!(ev.buttons&2)}
-canvas.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch'){setTouch(true);if(G.mode!=='play')return;const r=canvas.getBoundingClientRect();if(!joy.on){joy.on=true;joy.id=ev.pointerId;joy.ox=ev.clientX-r.left;joy.oy=ev.clientY-r.top;joy.dx=0;joy.dy=0;const el=$('joystick');el.style.left=joy.ox+'px';el.style.top=joy.oy+'px';el.firstElementChild.style.transform='';el.hidden=false;canvas.setPointerCapture(ev.pointerId)}return}
+let aimPointer=null;
+const dragsAim=ev=>{const a=G.p&&G.p.abil;return !!a&&(a.aim==='spot'||a.aim==='line'||a.fx==='hurl'||a.fx==='blitz')&&(joy.on||ev.clientX-canvas.getBoundingClientRect().left>W/2)};
+canvas.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch'){setTouch(true);if(G.mode!=='play')return;const r=canvas.getBoundingClientRect();if(dragsAim(ev)){aimPointer=ev.pointerId;touchAim=screenToWorld(ev);try{canvas.setPointerCapture(ev.pointerId)}catch(e){}return}if(!joy.on){joy.on=true;joy.id=ev.pointerId;joy.ox=ev.clientX-r.left;joy.oy=ev.clientY-r.top;joy.dx=0;joy.dy=0;const el=$('joystick');el.style.left=joy.ox+'px';el.style.top=joy.oy+'px';el.firstElementChild.style.transform='';el.hidden=false;canvas.setPointerCapture(ev.pointerId)}return}
   setTouch(false);trackMouse(ev);mouseButtons(ev);if(G.mode==='play')try{canvas.setPointerCapture(ev.pointerId)}catch(e){}});
-canvas.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'){if(joy.on&&ev.pointerId===joy.id){const r=canvas.getBoundingClientRect(),dx=ev.clientX-r.left-joy.ox,dy=ev.clientY-r.top-joy.oy,m=Math.max(1,Math.hypot(dx,dy)),k=Math.min(1,m/46);joy.dx=dx/m*k;joy.dy=dy/m*k;$('joystick').firstElementChild.style.transform='translate('+joy.dx*46+'px,'+joy.dy*46+'px)'}return}trackMouse(ev);mouseButtons(ev)});
-const up=ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===joy.id){joy.on=false;joy.id=null;joy.dx=0;joy.dy=0;$('joystick').hidden=true}return}mouseButtons(ev)};
+canvas.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer){touchAim=screenToWorld(ev);return}if(joy.on&&ev.pointerId===joy.id){const r=canvas.getBoundingClientRect(),dx=ev.clientX-r.left-joy.ox,dy=ev.clientY-r.top-joy.oy,m=Math.max(1,Math.hypot(dx,dy)),k=Math.min(1,m/46);sprintKey=m>SPRINT.drag;$('joystick').classList.toggle('sprint',sprintKey);joy.dx=dx/m*k;joy.dy=dy/m*k;$('joystick').firstElementChild.style.transform='translate('+joy.dx*46+'px,'+joy.dy*46+'px)'}return}trackMouse(ev);mouseButtons(ev)});
+const up=ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer)aimPointer=null;if(ev.pointerId===joy.id){sprintKey=false;$('joystick').classList.remove('sprint');joy.on=false;joy.id=null;joy.dx=0;joy.dy=0;$('joystick').hidden=true}return}mouseButtons(ev)};
 canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('lostpointercapture',up);canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{if(G.mode!=='play')return;e.preventDefault();doAct('cycle',e.deltaY>0?1:-1)},{passive:false});
 const GAME_CODES=new Set(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
 addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyL'&&!ev.repeat&&ev.target.tagName!=='INPUT'){toggleFullscreen();return}
   if(splashOn()){if((ev.code==='Enter'||ev.code==='Space')&&!ev.repeat){ev.preventDefault();leaveSplash()}return}
+  if(modesOn()){if(ev.code==='Escape'){const b=$('mdpanel').querySelector('.mp-back');if(b)b.click()}return}
+  if(G.mode==='talk'){if(ev.target.closest&&ev.target.closest('.dlg-opt,.dlg-skip'))return;if(ev.code==='Escape')dlgSkip();else if(['Space','Enter','KeyF','KeyE'].includes(ev.code)&&!ev.repeat){ev.preventDefault();dlgNext()}return}
   if(ev.code==='Escape'||ev.code==='KeyP'){if(G.mode==='play'){setMode('pause');return}if(G.mode==='pause'||G.mode==='menu'){writeSave();setMode('play');return}}
   if(G.mode==='menu'&&(ev.code==='KeyT'||ev.code==='KeyR')){writeSave();setMode('play');return}
   if(G.mode!=='play')return;if(GAME_CODES.has(ev.code))ev.preventDefault();if(ev.repeat)return;keys.add(ev.code);
+  if(ev.code==='KeyF'&&G.story&&storyAct())return;
   if(ev.code==='KeyM')toggleSound();
-  if(ev.code==='Space'||ev.code==='ShiftLeft')doAct('dash');
-  if(ev.code==='KeyG')doAct('team');if(ev.code==='KeyV')doAct('ult');if(ev.code==='KeyX')doAct('special');if(ev.code==='KeyQ')doAct('spell');if(ev.code==='KeyE')doAct('heal');if(ev.code==='Tab'){ev.preventDefault();doAct('cycle',ev.shiftKey?-1:1)}
+  if(ev.code==='Space')doAct('dash');
+  if(ev.code==='ShiftLeft'||ev.code==='ShiftRight')sprintKey=true;
+  if(ev.code==='KeyG')doAct('team');if(ev.code==='KeyV')doAct('ult');if(ev.code==='KeyX')doAct('special');if(ev.code==='KeyC')doAct('ability');if(ev.code==='KeyQ')doAct('spell');if(ev.code==='KeyE')doAct('heal');if(ev.code==='Tab'){ev.preventDefault();doAct('cycle',ev.shiftKey?-1:1)}
   if(ev.code==='Digit1')doAct('potion');if(ev.code==='KeyF'&&netOn())netAct('revive',true);if(ev.code==='Digit2')doAct('fast');if(ev.code==='Digit3')doAct('magic');
   if(ev.code==='KeyT'){menuTab='skills';setMode('menu')}
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
-addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
-addEventListener('blur',()=>{keys.clear();resetTouch();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
+addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='ShiftLeft'||ev.code==='ShiftRight')sprintKey=false;if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
+addEventListener('blur',()=>{keys.clear();sprintKey=false;resetTouch();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
 function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';titleMusic();menuMusic();gameAmbience()}
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
 const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
@@ -185,10 +204,19 @@ const FIRST_BLOOD_GAP=10*60*1000;let firstBloodAt=-Infinity,killSeen=null;
 function watchFirstBlood(){const k=(G.killsStage||0)+((G.p&&G.p.kills)||0);if(killSeen===null||k<killSeen){killSeen=k;return}if(k===killSeen)return;killSeen=k;
   const now=performance.now();if(now-firstBloodAt<FIRST_BLOOD_GAP)return;if(announce('kill_1',3))firstBloodAt=now}
 /* Rule sounds that have the owner's recording. Anything else falls back to the synth. */
+const GEN_VOL={react:.6,link:.75,revive:.5,downed:.6,ping:.5,weak:.32,strong:.4,beast:.42,boss:.7};
+/* A generated sound plays under its own name, or one of its numbered versions: sfx('weak_hurt') picks sfx_weak_hurt_1 to _3 */
+const genSets={};
+function genSet(n){const have=Object.keys(SOUND_BUF).length;if(genSets[n]&&genSets[n].have===have)return genSets[n].keys.length?genSets[n]:null;const k='sfx_'+n,keys=Object.keys(SOUND_BUF).filter(x=>x===k||(x.startsWith(k+'_')&&/^\d+$/.test(x.slice(k.length+1))));
+  genSets[n]={keys,have,vol:GEN_VOL[n.split('_')[0]]||.55};return keys.length?genSets[n]:null}
+/* Crowds of minions would flood the mix, so each enemy sound waits a moment before it can play again (milliseconds) */
+const GEN_GAP={weak_spot:500,strong_spot:600,beast_spot:700,weak_attack:180,strong_attack:220,beast_attack:250,weak_hurt:110,strong_hurt:140,beast_hurt:160,weak_die:90,strong_die:120,beast_die:150,boss_warn:300},genLast={};
 const ASSET_SFX={slash:{keys:['sfx_melee_1','sfx_melee_2','sfx_melee_3'],vol:.45},pull:{keys:['sfx_heal_1','sfx_heal_2','sfx_heal_3'],vol:.3}};
 let rivalAnnT=0;
 function playAsset(n){if(n==='rivalDown'){if(performance.now()-rivalAnnT>6000){rivalAnnT=performance.now();announce('rival_down',1)}return true}
-  const a=ASSET_SFX[n];if(!a)return false;const ks=a.keys.filter(k=>SOUND_BUF[k]);if(!ks.length)return false;
+  /* Generated sounds (tools/make_audio.py) play under their own name: sfx('react_inferno') plays sfx_react_inferno */
+  if(n in GEN_GAP){const now=performance.now();if(now-(genLast[n]||0)<GEN_GAP[n])return true;genLast[n]=now}
+  const a=ASSET_SFX[n]||genSet(n);if(!a)return false;if(!ASSET_SFX[n])(window.__genLog=window.__genLog||[]).push(n);const ks=a.keys.filter(k=>SOUND_BUF[k]);if(!ks.length)return false;
   try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[ks[Math.floor(Math.random()*ks.length)]];s.playbackRate.value=.95+Math.random()*.1;g.gain.value=a.vol;s.connect(g).connect(ac.destination);s.start()}catch(e){}return true}
 /* Boss music: the entrance track for the first minute, then the "not defeated yet" track, back to ambience after */
 const BOSS_MUS={mus_boss:.35,mus_boss_late:.3};let bossMus=null,bossT0=0,bossSeen=null,bossLastHp=1,downSeen={},stageSeen=0;
@@ -220,31 +248,39 @@ document.addEventListener('fullscreenchange',onFullscreen);document.addEventList
 $('fsbtn').hidden=!canFullscreen;$('fsbtn').onclick=ev=>{ev.currentTarget.blur();toggleFullscreen()};
 $('menubtn').onclick=ev=>{ev.currentTarget.blur();if(G.mode==='play'){menuTab='skills';setMode('menu')}};
 /* Indicators describe known local or server-confirmed state; action validation stays in the rules. */
-function updateTouchStatus(){if(!touchMode||G.mode!=='play'||!G.p)return;const p=G.p,cd=p.cd||{},kit=!!kitOf(p),wait=t=>t>0?Math.ceil(t)+'s':'',low=p.hp>=p.s.maxHp,states={
-  dash:wait(cd.dash),team:wait(p.teamCd),ult:p.rage<100?Math.floor(p.rage)+'%':'',special:kit?wait(p.specT):'—',
+/* The touch Ability and Use buttons carry the character's own move names. */
+let touchAbilFor=null;
+function touchAbilityLabels(ab){const box=$('touch-ability');box.hidden=!ab;if(!ab)return;const p=G.p,name=p.abil?ab.use:ab.n,b=box.querySelector('[data-a="ability"]');b.classList.toggle('armed',!!p.abil);if(touchAbilFor===name)return;touchAbilFor=name;
+  const l=b.querySelector('.touch-label');l.textContent=name;l.classList.toggle('long',name.length>8)}
+function updateTouchStatus(){if(!touchMode||G.mode!=='play'||!G.p)return;touchAbilityLabels(abilityOf(G.p));const p=G.p,cd=p.cd||{},kit=!!kitOf(p),wait=t=>t>0?Math.ceil(t)+'s':'',low=p.hp>=p.s.maxHp,states={
+  dash:wait(cd.dash),team:wait(p.teamCd),ability:p.abilCast?'Casting':p.abil?'Tap again':wait(p.abilT),ult:p.rage<100?Math.floor(p.rage)+'%':'',special:kit?wait(p.specT):'—',
   spell:kit?(p.mv?'Busy':''):(wait(cd.bolt)||(p.mana<p.s.spellCost?'Mana':'')),heal:wait(cd.pull)||(p.mana<22?'Mana':low?'Full':''),
   potion:wait(cd.potion)||(!p.potions?'Empty':low?'Full':''),fast:wait(p.fastT)||(!p.fast?'Empty':''),magic:wait(p.magicT)||(!p.magic?'Empty':'')};
-  for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.textContent+(value?', '+value:''))}}
+  const near=!(p.deadT>0||p.respawnT>0)&&((G.players||[]).some(q=>q!==p&&q.deadT>0&&dist(p,q)<=(archKey(p.char)==='medic'?120:60))||(G.npcs||[]).some(q=>q.wounded&&!q.dead&&dist(p,q)<=Math.max(archKey(p.char)==='medic'?120:60,80)));$('touch').querySelector('[data-a=revive]').classList.toggle('nearby',near);
+  for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.querySelector('.touch-label').textContent+(value?', '+value:''))}}
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
-  if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
+  if(a==='more'){const panel=$('touch-extra');panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));return}if(b.closest('#touch-extra'))closeTouchExtra();
+  if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(a==='ability'){doAct(G.p&&G.p.abil?'use':'ability')}if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('touch').addEventListener(n,ev=>{const a=touchPointers.get(ev.pointerId);if(!a)return;touchPointers.delete(ev.pointerId);if(![...touchPointers.values()].includes(a)){touchHold[a]=false;const b=$('touch').querySelector('[data-a="'+a+'"]');if(b)b.classList.remove('held');if(a==='revive'&&netOn())netAct('revive',false)}}));
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.previousElementSibling,done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected';setTimeout(()=>b.textContent='Copy',1400)};try{navigator.clipboard.writeText(pre.textContent).then(done,sel)}catch(e){sel()}}));
 if('IntersectionObserver'in window)new IntersectionObserver(es=>{es.forEach(e=>{if(e.intersectionRatio<.35&&G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')})},{threshold:[.35]}).observe($('screen'));
 /* Select-screen preview cycles through every animation */
-const PV=[['walk',4,9,2,'Walking'],['attack',3,7,2,'Attacking'],['dodge',1,1,2,'Dodging'],['pickup',3,4,2,'Picking up'],['walk',4,9,0,'Walking'],['walk',4,9,1,'Walking']];
+const PV=[['walk',WALK_N,18,2,'Walking'],['run',WALK_N,26,2,'Sprinting'],['attack',ATTACK_N,12,2,'Attacking'],['dodge',1,1,2,'Dodging'],['pickup',3,4,2,'Picking up'],['walk',WALK_N,18,0,'Walking'],['walk',WALK_N,18,1,'Walking']];
 function drawPreview(now){const cv=$('pv');if(!cv)return;const g=cv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,96,96);
   const seg=Math.floor(now/1400)%PV.length,[anim,nf,fps,dir,label]=PV[seg],f=Math.floor(now/1000*fps)%nf;g.fillStyle='rgba(10,14,28,.5)';g.beginPath();g.ellipse(48,90,20,5,0,0,TAU);g.fill();blit(g,chosen,48,88,dir,anim,f,false,anim==='dodge'?(now/1000*9)%TAU:0);const l=$('pvl');if(l&&l.textContent!==label)l.textContent=label}
 /* Loop */
 function resize(){const r=$('screen').getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);zoom=Math.max(H/560,W/980);portraitMode=touchMode&&W<640&&H>W;hudK=portraitMode?1:clamp(H/640,1,2.5);const cs=getComputedStyle($('screen'));hudTop=parseFloat(cs.paddingTop)||0;hudBottom=parseFloat(cs.paddingBottom)||0;$('screen').style.setProperty('--k',hudK)}
+addEventListener('orientationchange',resetTouch);
 if('ResizeObserver'in window)new ResizeObserver(resize).observe($('screen'));else addEventListener('resize',resize);
 let last=performance.now(),statT=0,touchStatusT=0;
 function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   if(netOn()){if(G.mode==='play'&&!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}netUpdate(dt)}
-  else if(G.mode==='play'){if(!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}update(dt)}
+  else if(G.mode==='play'){if(!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}update(G.hitStop>0?(G.hitStop-=dt,dt*.08):dt)}
   else if(G.mode==='title'||G.mode==='menu'){G.t+=dt;if(G.mode==='title')drawPreview(now)}
+  else if(G.mode==='talk'){G.t+=dt;dlgTick(dt,now)}
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
   footsteps();soundWatch();
-  touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus();updateScoutButton()}
+  touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus();updateScoutButton();storyButton()}
   try{render();drawFx3(now)}catch(err){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}
@@ -253,7 +289,7 @@ if(matchMedia('(pointer:coarse)').matches)touchMode=true;
 const SPLASH=$('splash');
 function splashOn(){return !!SPLASH&&!SPLASH.classList.contains('gone')}
 function leaveSplash(){if(!splashOn())return;const b=$('spplay');if(b.classList.contains('go'))return;b.classList.add('go');
-  setTimeout(()=>{SPLASH.classList.add('gone');titleMusic();if(G.mode!=='title')setMode('title');menuMusic()},350)}
+  setTimeout(()=>{SPLASH.classList.add('gone');titleMusic();if(G.mode!=='title')setMode('title');showModes();menuMusic()},350)}
 function initSplash(){if(!SPLASH)return;const ims=[$('spposter'),$('spwords')];ims[0].src=TITLE_URLS.poster;SPLASH.style.setProperty('--poster','url('+TITLE_URLS.poster+')');ims[1].src=TITLE_URLS.words;
   /* Show the poster only once both pictures are decoded */
   Promise.all(ims.map(im=>im.decode?im.decode().catch(()=>{}):Promise.resolve())).then(()=>SPLASH.classList.add('ready'));
@@ -274,6 +310,6 @@ function splashTick(now){if(!splashOn())return;const dt=Math.min(.05,(now-(spLas
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&Math.random()<dt*14)spEmbers.push(newEmber());
   drawEmbers($('spfx'),spEmbers,dt);requestAnimationFrame(splashTick)}
 demoScene();resize();setMode('title');
-initSplash();
-window.__dayrim={get state(){return G},net,objTargets,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,firstBloodAt:firstBloodAt===-Infinity?null:Math.round(firstBloodAt),titlePlaying:!!titleSrc,titleGain:titleGain&&+titleGain.gain.value.toFixed(2),ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER};
+initModes();initSplash();
+window.__dayrim={get state(){return G},net,objTargets,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,firstBloodAt:firstBloodAt===-Infinity?null:Math.round(firstBloodAt),titlePlaying:!!titleSrc,titleGain:titleGain&&+titleGain.gain.value.toFixed(2),ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER,STORY,storyBegin,storyMap,storyDone,storyAct,dlgNext,dlgSkip,showModes,killEnemy};
 requestAnimationFrame(tick);

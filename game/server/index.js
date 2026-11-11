@@ -81,7 +81,7 @@ const cleanName=s=>{const n=String(s==null?'':s).replace(/[^\p{L}\p{N} _-]/gu,''
 const finite=(v,lo,hi)=>typeof v==='number'&&Number.isFinite(v)?Math.max(lo,Math.min(hi,v)):0;
 const roomList=()=>[...rooms.values()].filter(r=>!r.private&&r.clients.size<MAX_PLAYERS&&r.clients.size>0).slice(0,30).map(r=>({code:r.code,side:r.faction,stage:r.G.stage,mode:r.G.swarm?'swarm':'story',wave:r.G.swarm?r.G.swarm.wave:0,count:r.clients.size,max:MAX_PLAYERS,host:r.hostName}));
 function handle(c,m){
-  if(m.t==='i'){const p=c.player;if(!p)return;const seq=typeof m.s==='number'&&m.s>=p.input.s?m.s:p.input.s;p.input={s:seq,x:finite(m.x,-1,1),y:finite(m.y,-1,1),ax:finite(m.ax,-500,5000),ay:finite(m.ay,-500,5000),l:!!m.l,r:!!m.r};return}
+  if(m.t==='i'){const p=c.player;if(!p)return;const seq=typeof m.s==='number'&&m.s>=p.input.s?m.s:p.input.s;p.input={s:seq,x:finite(m.x,-1,1),y:finite(m.y,-1,1),ax:finite(m.ax,-500,5000),ay:finite(m.ay,-500,5000),l:!!m.l,r:!!m.r,sp:!!m.sp};return}
   if(m.t==='ping'){send(c.ws,{t:'pong',c:m.c});return}
   if(m.t==='hello'){
     if(c.token)return;

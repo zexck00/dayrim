@@ -172,7 +172,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | D-15 | D | M | **Rejoin in place:** a reconnecting player returns to the same spot and state, not the safehouse | Disconnect test passes | |
 | D-16 | D | S | Boss bar with guard meter and phase marks. Objective tracker. | Matches design | C-17, C-18 |
 | D-17 | D | M | Keep own-character prediction in step with new states such as crawl, root and drag | No snapping at 200 ms lag | C-10 |
-| D-18 | D | M | Touch controls for G and hold-to-revive are prototyped; a visible movement stick, held-state feedback, cancellation handling and compact landscape layout have browser emulation checks. Add ping and test all controls on real phones. | One full stage played on a phone | C-13 |
+| D-18 | D | M | Touch controls have portrait and landscape layouts, a floating movement stick, held-state feedback, cooldown labels and cancellation handling. Solo Chromium layouts checked at 320×568, 390×844 and 844×390. Add ping; test combat, revive and party play on real phones. | One full stage played on a phone | C-13 |
 
 ### Art and playtest
 
@@ -181,7 +181,7 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | Z-10 | Z | L | **First art batch:** one of each job, 5 heroes (Guardian, Detective, Prodigy, Exorcist, Vigilante) | Delivered to the Asset specification below | Z-03 |
 | Z-11 | Z | L | Boss art: Crystal Scurrier, Gloom Eye, Banshee Phantasm | Delivered to spec | Z-03 |
 | Z-12 | Z | M | New enemy art: Stalker, Lurker | Delivered to spec | Z-03 |
-| Z-13 | Z | M | First sounds: revive, ping, reactions and links (section 18) | Delivered as licensed files | Z-50 |
+| Z-13 | Z | M | **Done 2026-11-10** (19 generated sounds from tools/make_audio.py, wired in; the ping sound waits for a ping feature). First sounds: revive, ping, reactions and links (section 18) | Delivered as licensed files | Z-50 |
 | Z-14 | Z | M | **Run the first playtest** with 4 outside players, using a simple form: what was fun, confusing or unfair | Results shared in `docs/playtests/` | D-01, C-25 |
 | D-19 | D | M | Import tool: turns delivered art into game sheets automatically and reports what's missing | One command imports a character | D-03 |
 
@@ -253,7 +253,7 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 | D-31 | D | M | Darkness and light rendering that works on phones | Passes D-25 test | C-50 |
 | D-32 | D | S | Version check: tells players to reload when the server updates | No mismatch errors | |
 | D-33 | D | M | Load test with bot parties on the real server | Maximum rooms known and documented | D-06 |
-| Z-30 | Z | M | Signature passive ideas for all 40 characters, matching their art | List approved | |
+| Z-30 | Z | M | **Done 2026-11-10** (all 40 passives are in `PASSIVES` in game.js and shown on the character menu). Signature passive ideas for all 40 characters, matching their art | List approved | |
 | Z-31 | Z | L | **Third art batch:** remaining villains (17). The Necromancer, Void Empress and Toxin Alchemist need extra poses only. | Delivered to spec | Z-10 |
 | Z-32 | Z | L | Boss art: Cyber Dread, Void Weaver, Nameless King | Delivered to spec | Z-11 |
 | Z-33 | Z | M | Art for Lightbreaker, Corruptor, and set pieces for stages 8 to 10 | Delivered | Z-12 |
@@ -274,7 +274,7 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
-| Z-40 | Z | M | **Replace voice lines** with licensed or hired ones. The current macOS voice isn't cleared for commercial use. | New files in `sprites/voice`, with licenses saved | |
+| Z-40 | Z | M | **Done 2026-11-10** (18 lines remade with a free public-domain voice, tools/make_free_voice.py; see docs/licenses/generated-audio.md). **Replace voice lines** with licensed or hired ones. The current macOS voice isn't cleared for commercial use. | New files in `sprites/voice`, with licenses saved | |
 | Z-41 | Z | M | Remaining music: title themes, lobby, safehouse and short stings, all licensed | Delivered, with licenses saved | Z-50 |
 | Z-45 | Z | M | Final sound mix for all stages, using D-67 | Z approves | D-67 |
 | Z-42 | Z | S | Check every asset's license, including anything AI-generated. Decide public or private repository. | Written record in `docs/` | |

@@ -41,6 +41,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .roster{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
 .rc{min-width:0;padding:0;overflow:hidden}
 .rc i{display:block;flex:none;background-image:var(--atlas);background-repeat:no-repeat}
+/* Signature passive line on the character menu */
+.passive{margin:-2px 0 10px;padding:6px 8px;border-left:3px solid var(--lichen);background:rgba(240,194,60,.08);font-size:14px;line-height:1.35;color:var(--bone)}.passive b{color:var(--lichen)}
 /* Heroes and villains: the cards from the update sheets, with the number tab below */
 .rc.h{display:flex;flex-direction:column;align-items:center;background:transparent;border:2px solid transparent;border-radius:3px}
 .rc.h:hover{border-color:var(--foam)}
@@ -105,6 +107,34 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .menub{top:calc(160px*var(--k,1))!important}
 .fsb{top:calc(188px*var(--k,1))!important}
 .ov:not(.pick) .card{zoom:var(--k,1)}
+/* ---------- Game-style notices: downed, stage clear, victory, pause ----------
+   A dark stone plate with a glowing frame in the notice's colour, a kicker between rules, a big title that
+   slams in with a shine, stat plates, and a tinted vignette behind. */
+.ov[data-tone]{background:radial-gradient(ellipse at center,rgba(6,12,20,.55),rgba(3,6,12,.9))}
+.ov[data-tone="dead"]{background:radial-gradient(ellipse at center,rgba(40,6,10,.45),rgba(16,2,4,.92))}
+.ov[data-tone="win"]{background:radial-gradient(ellipse at center,rgba(40,30,6,.4),rgba(10,7,2,.9))}
+.card.notice{--tone:#8fc4ff;--tone2:#2c4a6e;text-align:center;max-width:520px;padding:26px 24px 22px;background:linear-gradient(180deg,#1b1f2b,#0e1118 70%);border:2px solid var(--tone);border-radius:6px;
+  box-shadow:0 0 0 4px #0a0c12,0 0 0 6px var(--tone2),0 0 38px color-mix(in srgb,var(--tone) 45%,transparent),inset 0 0 40px rgba(0,0,0,.6);position:relative;animation:noticeIn .5s cubic-bezier(.2,1.4,.4,1) both}
+.card.notice[data-tone="dead"]{--tone:#e8463f;--tone2:#5a1a1c}.card.notice[data-tone="win"]{--tone:#f0c23c;--tone2:#5a4614}
+.card.notice::before,.card.notice::after{content:"";position:absolute;top:50%;width:14px;height:14px;background:var(--tone);transform:translateY(-50%) rotate(45deg);box-shadow:0 0 10px var(--tone)}
+.card.notice::before{left:-9px}.card.notice::after{right:-9px}
+.notice-k{display:flex;align-items:center;gap:10px;justify-content:center;font:600 12px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--tone);margin-bottom:6px}
+.notice-k::before,.notice-k::after{content:"";flex:1;max-width:90px;height:2px;background:linear-gradient(90deg,transparent,var(--tone))}.notice-k::after{transform:scaleX(-1)}
+.card.notice .notice-t{font:700 clamp(34px,7vw,58px)/1 var(--display);margin:4px 0 10px;text-transform:uppercase;letter-spacing:.04em;color:#fff;
+  background:linear-gradient(180deg,#fff 0%,var(--tone) 75%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 3px 0 #000) drop-shadow(0 0 14px color-mix(in srgb,var(--tone) 55%,transparent));animation:noticeTitle .7s .1s cubic-bezier(.2,1.6,.4,1) both}
+.notice-l{color:var(--bone);font-size:15px;line-height:1.4;margin:0 auto 14px;max-width:420px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 18px}
+.chip{display:grid;min-width:84px;padding:7px 10px;background:#0a0c12;border:1px solid var(--tone2);border-radius:4px;box-shadow:inset 0 0 12px rgba(0,0,0,.6);animation:noticeIn .4s both}
+.chip:nth-child(2){animation-delay:.08s}.chip:nth-child(3){animation-delay:.16s}
+.chip b{font:700 21px/1.15 var(--mono);color:var(--tone)}.chip small{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+.card.notice .btnrow{justify-content:center}
+.card.notice .go{background:linear-gradient(180deg,color-mix(in srgb,var(--tone) 85%,#fff),color-mix(in srgb,var(--tone) 70%,#000));color:#120c06;border:2px solid #0a0c12;box-shadow:0 0 0 2px var(--tone),0 4px 0 #000;text-transform:uppercase;letter-spacing:.06em;font-family:Barlow,sans-serif;font-weight:700;transition:transform .12s,filter .12s}
+.card.notice .go:hover,.card.notice .go:focus-visible{transform:translateY(-2px) scale(1.04);filter:brightness(1.15)}
+@keyframes noticeIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}
+@keyframes noticeTitle{0%{opacity:0;transform:scale(1.9);letter-spacing:.3em}60%{opacity:1}100%{transform:none}}
+@media(prefers-reduced-motion:reduce){.card.notice,.card.notice .notice-t,.chip{animation:none}}
+@media(max-width:480px){.card.notice{padding:20px 14px 16px}.chip{min-width:70px}.card.notice .btnrow{flex-direction:column;align-items:stretch}}
 .screen:fullscreen{width:100vw;height:100vh;aspect-ratio:auto;border:0}
 .screen:-webkit-full-screen{width:100vw;height:100vh;aspect-ratio:auto;border:0}
 .sound{position:absolute;right:10px;top:calc(132px*var(--k,1));z-index:2;background:rgba(12,32,38,.7);border:1px solid var(--line);font:500 calc(11px*var(--k,1)) var(--mono);padding:3px 7px;color:var(--mist)}
@@ -142,6 +172,87 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .sheet{height:auto;min-height:0}
 }
 /* Title poster: the first screen. The owner's poster, the DAYRIM letters cut from the title art, and the Play Game button. */
+/* ---------- Game modes screen ---------- */
+.modes{position:absolute;inset:0;z-index:6;display:grid;grid-template-columns:clamp(250px,26vw,350px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);background:#07060c;overflow:hidden}
+.md-art{position:absolute;inset:0;background:#0a0a12 center/cover no-repeat;filter:saturate(1.05) brightness(.82)}
+.modes::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(5,6,12,.9) 0,rgba(5,6,12,.55) 30%,rgba(5,6,12,.05) 60%,rgba(5,6,12,.4) 100%)}
+.md-side{position:relative;z-index:2;display:flex;flex-direction:column;gap:18px;min-height:0;overflow:auto;padding:clamp(14px,3vh,30px) clamp(14px,1.6vw,22px);padding-left:max(clamp(14px,1.6vw,22px),env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(16,17,28,.93),rgba(8,9,16,.97));border-right:1px solid #4a3a26;box-shadow:8px 0 30px #000a}
+.md-logo{width:100%;max-width:290px;align-self:center;filter:drop-shadow(0 4px 10px #000);user-select:none;pointer-events:none}
+.md-nav{display:flex;flex-direction:column;gap:10px;margin:auto 0}
+.md-nav button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:13px 16px;background:linear-gradient(180deg,#2a2218,#17120c);border:1px solid #6a5334;border-left:4px solid #c9973f;color:var(--bone);cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease}
+.md-nav b{font:700 clamp(19px,2.1vw,26px)/1.1 var(--display);letter-spacing:.02em}
+.md-nav small{font:500 12px/1.3 var(--body);color:var(--mist)}
+.md-nav button:hover:not(:disabled),.md-nav button:focus-visible{transform:translateX(6px);border-color:#f0c23c;background:linear-gradient(180deg,#3a2e1c,#20180e);outline:none}
+.md-nav button:disabled{opacity:.5;cursor:not-allowed;border-left-color:#555;filter:grayscale(.7)}
+.md-foot{display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid #3a2f24;font:500 11px/1.4 var(--mono);color:var(--mist)}
+.md-foot b{color:var(--bone);font-weight:600}
+.md-verrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.md-foot button{background:transparent;border:1px solid var(--line);color:var(--bone);font:600 12px var(--body);padding:4px 10px;cursor:pointer}
+.md-foot button:hover{border-color:var(--lichen)}
+.md-panel{position:relative;z-index:2;justify-self:start;align-self:stretch;margin:clamp(8px,2.4vh,22px);width:min(760px,calc(100% - 2*clamp(8px,2.4vh,22px)));padding:clamp(12px,2vw,22px);overflow:auto;min-height:0;background:rgba(10,13,24,.95);border:1px solid var(--line);box-shadow:0 10px 40px #000c}
+.mp-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.mp-head h2{margin:0;font:700 clamp(24px,3vw,36px)/1 var(--display)}
+.mp-back{padding:5px 12px;font-size:14px}
+.mp-kick{margin:0 0 6px;font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--lichen)}
+.mp-lede{margin:0 0 12px;font-size:15px;line-height:1.5;color:var(--bone)}
+.mp-h{margin:14px 0 8px;font:700 17px var(--display);color:var(--bone)}
+.mp-note{margin:10px 0 0;font-size:13px;line-height:1.45;color:var(--mist)}
+.mp-save{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px 12px;background:var(--deep);border:1px solid #c9973f}
+.mp-save i,.mp-char i{display:block;flex:none;background-image:var(--atlas);background-repeat:no-repeat;image-rendering:pixelated}
+.mp-save i{width:44px!important}
+.mp-save div{flex:1;min-width:0;display:flex;flex-direction:column}.mp-save span{font-size:13px;color:var(--mist)}
+.mp-chars{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.mp-char{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:6px 4px 8px;background:var(--deep);border:1px solid var(--line);color:var(--bone);cursor:pointer;overflow:hidden}
+.mp-char b{font:700 13px var(--body);text-align:center;line-height:1.15}.mp-char small{font:500 11px var(--mono);color:var(--mist)}
+.mp-char[aria-pressed="true"]{border-color:var(--lichen);box-shadow:0 0 0 1px var(--lichen) inset;background:#2a2416}
+.mp-chs{display:flex;flex-direction:column;gap:8px}
+.mp-ch{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;text-align:left;padding:10px 12px;background:linear-gradient(180deg,#1b2440,#121a30);border:1px solid var(--line);color:var(--bone);cursor:pointer}
+.mp-ch:hover:not(:disabled),.mp-ch:focus-visible{border-color:var(--lichen);outline:none}
+.mp-ch:disabled{opacity:.45;cursor:not-allowed}
+.mp-num{font:700 30px/1 var(--display);color:var(--lichen);min-width:28px;text-align:center}
+.mp-cht{display:flex;flex-direction:column;min-width:0}.mp-cht b{font:700 17px var(--display)}.mp-cht em{font-size:14px;color:#e8dcc0}.mp-cht small{font:500 11px var(--mono);color:var(--mist)}
+.mp-state{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--lichen)}
+.mp-begin,.mp-new{margin-top:12px;width:100%}
+.mp-log h3{margin:16px 0 6px;font:700 20px var(--display);color:var(--lichen)}.mp-log h4{margin:12px 0 4px;font:700 16px var(--body)}.mp-log h5{margin:10px 0 4px;font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--foam)}
+.mp-log ul{margin:0 0 8px;padding-left:18px}.mp-log li,.mp-log p{font-size:14px;line-height:1.5;color:var(--bone);margin:0 0 5px}.mp-log code{font:500 12px var(--mono);color:var(--foam)}
+.tomodes{margin-right:10px;padding:4px 10px;font:700 14px var(--body);vertical-align:middle}
+/* ---------- Story dialogue ---------- */
+.dlg{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:5;width:min(860px,calc(100% - 24px));display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;padding:14px 18px 10px;background:linear-gradient(180deg,rgba(18,20,34,.97),rgba(9,10,18,.98));border:2px solid #0a0c12;box-shadow:0 0 0 2px #c9973f,0 10px 40px #000c;cursor:pointer;user-select:none;-webkit-user-select:none}
+.dlg-p{position:static;inset:auto;cursor:pointer;width:96px;height:96px;image-rendering:pixelated;background:radial-gradient(circle at 50% 40%,#2a3350,#101422);border:1px solid var(--line)}
+.dlg.noart{grid-template-columns:minmax(0,1fr)}.dlg.noart .dlg-p{display:none}
+.dlg-n{display:block;margin-bottom:2px;font:700 18px var(--display);color:var(--lichen)}
+.dlg.mine .dlg-n{color:#8fe6b8}
+.dlg-t{margin:0;min-height:3em;font:500 17px/1.45 var(--body);color:var(--bone)}
+.dlg.narr .dlg-t{font-style:italic;color:#cfd8ea;text-align:center}
+.dlg-o{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.dlg-o:empty{display:none}
+.dlg-opt{background:var(--deep);border:1px solid #c9973f;color:var(--bone);font:600 14px var(--body);padding:9px 12px;cursor:pointer;text-align:left}
+.dlg-opt:hover,.dlg-opt:focus-visible{background:#3a2e1c;outline:none}
+.dlg-h{display:block;margin-top:4px;min-height:1.3em;font:500 11px var(--mono);color:var(--mist)}
+.dlg-skip{position:absolute;right:0;top:-34px;background:rgba(10,13,24,.9);border:1px solid var(--line);color:var(--mist);font:600 12px var(--body);padding:5px 12px;cursor:pointer}
+.story-act{position:absolute;left:50%;bottom:calc(96px*var(--k,1));transform:translateX(-50%);z-index:4;padding:10px 20px;border:2px solid #0a0c12;box-shadow:0 0 0 2px #f0c23c,0 4px 0 #000;background:linear-gradient(180deg,#3a2e1c,#20180e);color:#ffe9a0;font:700 15px var(--body);cursor:pointer;touch-action:manipulation;white-space:nowrap}
+.screen.touch-playing .story-act{bottom:calc(216px + env(safe-area-inset-bottom,0px));padding:12px 22px}
+@media(max-width:700px){
+  .modes{grid-template-columns:minmax(0,1fr)}
+  .modes::after{background:linear-gradient(180deg,rgba(5,6,12,.55) 0,rgba(5,6,12,.15) 30%,rgba(5,6,12,.9) 62%)}
+  .md-side{background:none;border-right:0;box-shadow:none;padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(14px,env(safe-area-inset-bottom,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+  .md-logo{max-width:230px}.md-nav{margin:auto 0 0}
+    .modes.open .md-side{display:none}
+  .md-panel{margin:0;width:100%;border:0;padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px))}
+  .mp-chars{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.mp-char b{font-size:11px}.mp-char small{display:none}
+  .mp-ch{gap:8px;padding:9px 10px}.mp-num{font-size:24px;min-width:20px}.mp-cht b{font-size:15px}.mp-cht em{font-size:13px}
+  .dlg{gap:10px;padding:10px 12px 8px}.dlg-p{width:64px;height:64px}.dlg-t{font-size:15px;min-height:4.4em}.dlg-n{font-size:16px}.dlg-opt{flex:1 1 100%}
+}
+@media(max-height:500px) and (orientation:landscape){
+  .modes{grid-template-columns:clamp(190px,30vw,250px) minmax(0,1fr)}
+  .md-side{gap:8px;padding:8px 12px;padding-left:max(12px,env(safe-area-inset-left,0px))}
+  .md-logo{max-width:140px}.md-nav{gap:6px}.md-nav button{padding:7px 12px}.md-nav b{font-size:17px}.md-nav small{font-size:11px}
+  .md-foot{font-size:10px;gap:3px;padding-top:6px}.md-foot button{padding:2px 8px}
+    .md-panel{margin:6px;width:calc(100% - 12px);padding:10px 12px;padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .mp-lede{font-size:13px;margin-bottom:8px}.mp-chars{grid-template-columns:repeat(5,minmax(0,90px))}
+  .dlg{padding:8px 12px 6px;bottom:max(6px,env(safe-area-inset-bottom,0px));width:min(760px,calc(100% - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}.dlg-p{width:60px;height:60px}.dlg-t{font-size:14px;min-height:2.9em}.dlg-skip{top:-30px}
+  .screen.touch-playing .story-act{bottom:max(10px,env(safe-area-inset-bottom,0px));padding:9px 18px}
+}
+@media(prefers-reduced-motion:reduce){.md-nav button{transition:none}}
 .splash{position:absolute;inset:0;z-index:8;container-type:size;overflow:hidden;background:#07060c;transition:opacity .7s ease,visibility 0s linear .7s}
 .splash.gone{opacity:0;visibility:hidden;pointer-events:none}
 /* Nothing on the poster shows until both pictures have loaded, so a half-loaded or broken image never flashes */
@@ -182,7 +293,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .sel-body{grid-template-columns:minmax(0,1fr)}
   .detail{order:-1;grid-template-columns:90px minmax(0,1fr);column-gap:10px}
   .pv{grid-row:span 4}
-  .detail .go{grid-column:1/-1}
+  .detail .go,.detail .ability-note{grid-column:1/-1}
   .detail .ctl{display:none}
   .roster{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
@@ -195,6 +306,44 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .touch .big{border-radius:16px!important}
 }
 
+/* Mobile combat controls: keep the middle of the screen open. */
+.touch{inset:0;display:block;pointer-events:none;z-index:2}
+.touch[hidden],.touch-extra[hidden]{display:none}
+.touch-primary{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,52px);grid-auto-rows:52px;gap:6px;align-items:center}
+.touch button{width:52px;height:52px;border-radius:16px;font-size:11px;line-height:1.1}
+.touch-primary [data-a="spell"]{grid-column:1;grid-row:3}.touch-primary [data-a="guard"]{grid-column:4;grid-row:3}.touch-primary .big{width:110px;grid-column:2 / span 2;grid-row:3;border-radius:22px;font-size:14px;background:rgba(172,70,48,.88)}
+.touch button[data-a="ult"]{color:#ffe47d;border-color:#ffd860}
+.touch button[data-a="revive"].nearby{border-color:#80e5aa;background:rgba(35,108,78,.95);box-shadow:0 0 0 2px rgba(128,229,170,.45)}
+.touch-tools{position:absolute;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:6px;align-items:end}
+.touch-ability{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:calc(max(8px,env(safe-area-inset-bottom)) + 182px);display:flex;gap:6px}
+.touch-ability[hidden]{display:none}
+.touch button[data-a="ability"].armed{border-color:#ffcf70;color:#ffe7a8;box-shadow:0 0 0 2px rgba(255,207,112,.45)}
+.touch-extra{position:absolute;bottom:58px;left:0;display:grid;grid-template-columns:repeat(3,52px);gap:6px;padding:6px;border-radius:16px;background:rgba(5,15,22,.9)}
+.screen.touch-playing>.sound{display:none}
+@media(max-height:500px){.touch-primary{grid-template-columns:repeat(4,48px);grid-auto-rows:48px;gap:4px}.touch button{width:48px;height:48px}.touch-primary .big{width:100px}.touch-extra{bottom:52px;grid-template-columns:repeat(3,48px)}}
+@media(orientation:portrait){.touch-tools{flex-direction:column;align-items:start}.touch-extra{bottom:116px;grid-template-columns:repeat(2,52px)}}
+@media(max-width:360px) and (orientation:portrait){.touch-extra{grid-template-columns:52px}}
+
+/* Dark fantasy touch controls: labels stay visible alongside their symbols. */
+.touch button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:2px solid #b88743;border-radius:50%;color:#f9efd6;background:radial-gradient(circle at 40% 22%,rgba(91,72,48,.97),rgba(24,20,17,.96) 70%);box-shadow:inset 0 0 0 2px #291c14,0 2px 4px #000b;text-shadow:0 1px 2px #000;font:700 10px/1 var(--body)}
+.touch .touch-icon{font:700 17px/1.05 sans-serif;color:#f2c66d;pointer-events:none}.touch .touch-label{pointer-events:none}
+.touch button[data-status]:not([data-status=""])::after{position:static;font:700 9px/1 var(--mono);color:#ffe09a}
+.touch button[data-status]:not([data-status=""]) .touch-icon{font-size:13px}
+.touch button[data-state="waiting"]{color:#d9cbb5;border-color:#806c50;background:radial-gradient(circle at 40% 22%,#494139,#201e1b 75%)}
+.touch button[data-state="waiting"] .touch-icon{color:#b7a58a}.touch button[data-state="ready"]{border-color:#ffe08a;box-shadow:inset 0 0 0 2px #503519,0 0 7px #e1ac4a}
+.touch button:active,.touch button.held{color:#fff;border-color:#fff0b4;background:radial-gradient(circle,#8a6232,#382316);box-shadow:inset 0 1px 6px #000,0 0 7px #e1ac4a}
+.touch button:focus-visible{outline:3px solid #fff0b4;outline-offset:2px}
+.touch-primary .big{flex-direction:row;gap:5px;border-radius:22px!important;border-color:#e4a24e;background:linear-gradient(#a83e28,#702417);font-size:13px;box-shadow:inset 0 0 0 2px #5c2419,0 2px 5px #000b}
+.touch-primary .big .touch-icon{font-size:20px}.touch-extra{border:1px solid #b88743;background:rgba(24,20,17,.96);box-shadow:0 2px 6px #000b}
+.touch button[data-a="revive"].nearby{border-color:#a7e6a6;background:radial-gradient(circle,#417843,#183921);box-shadow:0 0 0 2px #a7e6a688}
+.joystick{border-color:#d4a867;background:rgba(50,37,23,.5);box-shadow:inset 0 0 0 3px #3b291a,0 2px 5px #0008}.joystick i{background:#b39561;border-color:#f3d293}
+/* Dragging the stick far out sprints: the ring glows while it does. */
+.joystick.sprint{border-color:#8fffe0;box-shadow:inset 0 0 0 3px #1d4a42,0 0 14px rgba(143,255,224,.65)}.joystick.sprint i{background:#6fd6c0;border-color:#d8fff4}
+/* Ability and Use show the character's own move names; long names shrink to fit. */
+.touch-ability .touch-label{font-size:10px;line-height:1.05;max-width:46px;overflow-wrap:anywhere}.touch-ability .touch-label.long{font-size:8.5px}
+/* Landscape phones: Ability and Use stand in a column beside the main buttons instead of a row on top, so the controls stay low. */
+@media(orientation:landscape) and (max-height:500px){.touch-ability{flex-direction:column;bottom:max(8px,env(safe-area-inset-bottom));right:calc(max(8px,env(safe-area-inset-right)) + 4*48px + 3*4px + 6px)}}
+
 </style>
 
 <div class="wrap">
@@ -205,23 +354,47 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
       <div class="joystick" id="joystick" aria-hidden="true" hidden><i></i></div>
       <button class="scout-revive" id="scout-revive" type="button" hidden>Hold to revive scout</button>
       <div class="touch" id="touch" aria-label="Touch controls" hidden>
-        <button type="button" data-a="potion">Potion</button>
-        <button type="button" data-a="revive">Hold to revive</button>
-        <button type="button" data-a="fast">Fast</button>
-        <button type="button" data-a="magic">Magic</button>
-        <button type="button" data-a="heal">Heal</button>
-        <button type="button" data-a="spell">Spell</button>
-        <button type="button" data-a="swap">Weapon</button>
-        <button type="button" data-a="special">Special</button>
-        <button type="button" data-a="team">Team</button>
-        <button type="button" data-a="ult" style="border-color:#ffd860;color:#ffd860">Ult</button>
-        <button type="button" data-a="menu">Menu</button>
-        <button type="button" data-a="dash">Dodge</button>
-        <button type="button" data-a="guard" aria-label="Hold to shield">Shield</button>
-        <button type="button" data-a="slash" class="big" aria-label="Hold to attack" style="grid-column:span 2;border-radius:27px">Attack</button>
+        <div class="touch-primary">
+          <button type="button" data-a="fast"><span class="touch-icon" aria-hidden="true">ϟ</span><span class="touch-label">Fast</span></button>
+          <button type="button" data-a="heal"><span class="touch-icon" aria-hidden="true">✚</span><span class="touch-label">Heal</span></button>
+          <button type="button" data-a="team"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">Team</span></button>
+          <button type="button" data-a="revive" aria-label="Hold to revive"><span class="touch-icon" aria-hidden="true">✚</span><span class="touch-label">Revive</span></button>
+          <button type="button" data-a="magic"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">2× damage</span></button>
+          <button type="button" data-a="potion"><span class="touch-icon" aria-hidden="true">⚗</span><span class="touch-label">Potion</span></button>
+          <button type="button" data-a="ult"><span class="touch-icon" aria-hidden="true">✹</span><span class="touch-label">Ult</span></button>
+          <button type="button" data-a="dash"><span class="touch-icon" aria-hidden="true">➤</span><span class="touch-label">Dodge</span></button>
+          <button type="button" data-a="spell"><span class="touch-icon" aria-hidden="true">✧</span><span class="touch-label">Spell</span></button>
+          <button type="button" data-a="slash" class="big" aria-label="Hold to attack"><span class="touch-icon" aria-hidden="true">⚔</span><span class="touch-label">Attack</span></button>
+          <button type="button" data-a="guard" aria-label="Hold to shield"><span class="touch-icon" aria-hidden="true">⬟</span><span class="touch-label">Shield</span></button>
+        </div>
+        <div class="touch-ability" id="touch-ability" hidden>
+          <button type="button" data-a="ability"><span class="touch-icon" aria-hidden="true">◎</span><span class="touch-label">Ability</span></button>
+        </div>
+        <div class="touch-tools">
+          <button type="button" data-a="more" aria-expanded="false" aria-controls="touch-extra"><span class="touch-icon" aria-hidden="true">•••</span><span class="touch-label">More</span></button>
+          <button type="button" data-a="menu"><span class="touch-icon" aria-hidden="true">☰</span><span class="touch-label">Menu</span></button>
+          <div class="touch-extra" id="touch-extra" hidden>
+            <button type="button" data-a="swap"><span class="touch-icon" aria-hidden="true">⇄</span><span class="touch-label">Weapon</span></button><button type="button" data-a="special"><span class="touch-icon" aria-hidden="true">✶</span><span class="touch-label">Special</span></button>
+          </div>
+        </div>
       </div>
       <div class="ov" id="ov"><div class="card" id="card"></div></div>
       <div class="achievement-toast" id="achievement-toast" role="status" aria-live="polite" hidden><span class="medal" aria-hidden="true">★</span><div><small>Achievement unlocked</small><strong id="achievement-name"></strong></div></div>
+      <button class="story-act" id="story-act" type="button" hidden>Talk</button>
+      <div class="dlg" id="dlg" role="dialog" aria-live="polite" hidden><canvas class="dlg-p" id="dlgp" width="96" height="96" aria-hidden="true"></canvas><div class="dlg-b"><b class="dlg-n" id="dlgn"></b><p class="dlg-t" id="dlgt"></p><div class="dlg-o" id="dlgo"></div><small class="dlg-h" id="dlgh"></small></div><button class="dlg-skip" id="dlgskip" type="button">Skip</button></div>
+      <div class="modes" id="modes" hidden>
+        <div class="md-art" id="mdart"></div>
+        <aside class="md-side">
+          <img class="md-logo" id="mdlogo" alt="Dayrim">
+          <nav class="md-nav" aria-label="Game modes">
+            <button type="button" data-m="story"><b>Story</b><small>The Ten Hours · 3 chapters</small></button>
+            <button type="button" data-m="quick"><b>Quick Game</b><small>Stages, the Swarm and online play</small></button>
+            <button type="button" data-m="war" disabled><b>Warzone</b><small>Coming soon</small></button>
+          </nav>
+          <footer class="md-foot"><span class="md-dev">Developed by <b>zexck00</b>, <b>c4lyp5o</b> and <b>Dvachini</b></span><span class="md-verrow"><span id="mdver"></span><button type="button" id="mdlog">Changelog</button></span></footer>
+        </aside>
+        <section class="md-panel" id="mdpanel" hidden></section>
+      </div>
       <div class="splash" id="splash">
         <img class="sp-poster" id="spposter" alt="">
         <canvas class="sp-fx" id="spfx" aria-hidden="true"></canvas>

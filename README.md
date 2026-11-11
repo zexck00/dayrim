@@ -8,6 +8,8 @@ Version: see [VERSION](VERSION). Changes: see [CHANGELOG.md](CHANGELOG.md).
 
 **Alone, with no server:** open `game/dayrim.html` in a browser. Progress saves in that browser.
 
+Play Game opens the game modes: **Story** (three chapters with their own maps, dialogue and objectives, for the first five heroes or villains), **Quick Game** (the ten stages, the Swarm and online play) and **Warzone** (not open yet). In Story, press **F** or the Talk button beside a named person or a chest.
+
 **Online, on your computer** (needs Node 20 or newer):
 
 ```bash
@@ -30,9 +32,11 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 | Hold right click | Shield |
 | Q | Spell (moderate attack for asset villains) |
 | X | Special attack, asset villains only, every 60 seconds |
+| C | Ready your ability: lock a target, pick an ally, aim a spot or line, grab an enemy, or start a buff. Left click uses it. C again cancels an aimed ability, or fires the finisher of a buff or grab. It hits for ten basic attacks; 60 second cooldown (Max Heal: 90). |
 | E | Heal |
 | V | Ultimate, when the rage gauge is full |
 | Space | Dodge |
+| Hold Shift | Sprint: 1.5 times as fast, costs mana, stops while attacking or shielding. On touch, drag the stick far out. |
 | Tab or mouse wheel | Change weapon |
 | 1, 2, 3 | Potion, Fast Pill, Magic Pill |
 | T | Skills and menu |
@@ -41,7 +45,7 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 | L | Fullscreen. Esc leaves it. |
 | Esc or P | Pause alone, room menu online. Both have Return to menu. |
 
-Touch controls appear on phones and tablets. Drag on the game view to move; a stick shows the direction. Hold Attack or Shield to keep using it, and hold Revive beside a downed ally. Buttons show cooldowns, ultimate charge and common unavailable states. Tap Menu for skills and other options. Aim is automatic.
+Touch controls appear on phones and tablets in portrait and landscape. Drag on the game view to move; a temporary stick shows the direction. Aim is automatic. Hold Attack or Shield to keep using it, and hold Revive beside a downed ally or the wounded scout. The combat buttons show cooldowns, ultimate charge and common unavailable states; the nearby Revive button is highlighted. Every character gets an **Ability** button above the others: tap it to ready the ability, then tap it again to use it. While a spot or line is armed, drag with a second finger (or on the right half of the screen) to place it. Tap More for Weapon and Special, or Menu for skills and other options. The **2× damage** button consumes a Magic Pill and doubles damage for 20 seconds. **Spell** uses mana for an attack; the three asset villains use their moderate attack instead.
 
 At the safehouse, open the menu and choose **Weapons** to upgrade an owned weapon. The two upgrades cost 80 and 180 gold; the menu shows tier progress, compares effects before purchase and explains unavailable upgrades. Necromancer, Void Empress and Toxin Alchemist upgrade their signature moves instead. At the final tier, pistols and bows pierce one additional enemy, shields interrupt ordinary enemy wind-ups, and healing weapons can restore a nearby ally on a hit.
 
@@ -62,6 +66,7 @@ The server runs the game rules. Browsers send only what the player presses, and 
 ASSETS/, *.jpeg, *.mp4   Original art and video. Do not edit. The tools read from them.
 game/dayrim.html         The built game: one file with all art and sound inside.
 game/src/                Page, rules, drawing, online client and menus.
+game/src/story*.js       Story mode: the script (story-data.js), the maps (story-map.js) and the engine (story.js).
 game/server/             Multiplayer server and its tests.
 game/tools/              Build script, art pipeline and balance bot.
 game/sprites/            Art produced by the tools.
