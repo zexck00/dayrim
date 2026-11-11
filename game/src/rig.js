@@ -76,6 +76,13 @@ Puppeteer:C({hat:'top',hc:'#30323c',hb:'#7a3a8a',o:'coat',t:'#2a2228',t2:'#7a3a8
 'Soul Forger':C({hat:'helm',hc:'#30323c',o:'vest',t:'#30323c',t2:'#e8892a',b:'#30323c',f:'#e8892a',w:'hammer'}),
 'Mirror Jester':C({s:'#e8e4d8',hat:'jester',hc:'#a02a70',m:'domino',mc:'#a01818',o:'stripes',t:'#20222c',t2:'#a02a70',b:'#20222c',f:'#a02a70',w:'knife'}),
 'Cyber Priest':C({s:'#10121a',hat:'hood',hc:'#22242e',m:'void',mc:'#a050d8',o:'robe',t:'#22242e',t2:'#6fe0d8',w:'medkit'}),
+/* villain minions: weak ones, then the strong ones drawn larger */
+Skeleton:C({s:'#e4dcc4',h:'#e4dcc4',hs:'bald',m:'skull',o:'ribs',t:'#2a2a32',t2:'#e4dcc4',b:'#d8d0b8',f:'#a8a090',w:'sword',wc:'#a8b0b8'}),
+'Bone Goliath':C({s:'#e4dcc4',h:'#e4dcc4',hs:'bald',hat:'horn',hc:'#bdb59c',m:'skull',o:'ribs',t:'#30302e',t2:'#e4dcc4',b:'#d8d0b8',f:'#6a6458',w:'hammer'}),
+Voidling:C({s:'#14142a',hat:'hood',hc:'#2a2048',m:'void',o:'robe',t:'#2a2048',t2:'#a050d8',w:'knife'}),
+'Void Goliath':C({s:'#14142a',hs:'bald',h:'#14142a',hat:'horn',hc:'#3a2a58',m:'void',o:'vest',t:'#2a2048',t2:'#7a4ad8',b:'#20183a',f:'#a050d8',w:'fist',wc:'#a050d8'}),
+'Toxin Grunt':C({s:'#5a6038',hat:'hood',hc:'#8aa83a',m:'goggles',mc:'#3ac85a',o:'hivis',t:'#6a8a2a',t2:'#d8e84a',b:'#4a5a28',f:'#2a3018',w:'flask',wc:'#8cf046'}),
+'Toxin Enforcer':C({s:'#5a6038',hat:'helm',hc:'#4a5a28',o:'vest',t:'#5a7028',t2:'#b6e02a',b:'#3a4a20',f:'#b6e02a',cp:'#3a4a20',w:'cleaver'}),
 /* city people */
 Clerk:C({o:'suit',t:'#c8d8ea',t2:'#20305a',b:'#4a4c56'}),Busker:C({hat:'beanie',hc:'#3a3e48',hs:'long',h:'#7a5230',t:'#59603c',b:'#3a5a80'}),
 Sweeper:C({s:DARK,hat:'cap',hc:'#5ab020',o:'hivis',t:'#b6e02a',t2:'#c8ccc0',b:'#2f7040'}),Mail:C({s:DARK,hat:'police',hc:'#2c3f7a',t:'#2f55a0',b:'#2f55a0'}),
@@ -164,6 +171,7 @@ function buildFrame(sp,dir,anim,f){
      case'vest':if(front){P(x+1,y+1,w-2,9,sp.t2)}else P(x+1,y+1,w-2,9,sp.t2);break;
      case'hivis':P(x,y+3,w,2,sp.t2);P(x,y+7,w,2,sp.t2);if(hipY)P(bx-5,hipY+7,11,2,sp.t2);break;
      case'belt':P(x,y+9,w,2,sp.t2===WHT?BLK:'#20222c');if(front)P(mid,y+9,2,2,sp.t2);if(front)P(mid-3,y+2,2,2,sp.t2);break;
+     case'ribs':if(front){P(mid,y,2,h,sp.t2);for(let i=1;i<h-2;i+=3)P(x+1,y+i,w-2,1,sp.t2)}else P(mid,y,2,h,sp.t2);break;
      case'stripes':for(let i=0;i<h;i+=3)P(x,y+i,w,1,sp.t2);if(front)P(x+2,y,w-4,3,'#2c3f7a');break;
      case'stripe2':if(front){P(mid,y,2,11,sp.t2)}P(x,y,1,11,sp.t2);P(x+w-1,y,1,11,sp.t2);break;
      case'overalls':P(x+1,y+4,w-2,7,sp.t2);if(front){P(x+1,y,2,4,sp.t2);P(x+w-3,y,2,4,sp.t2)}else{P(x+1,y,2,4,sp.t2);P(x+w-3,y,2,4,sp.t2)}break;
@@ -245,8 +253,8 @@ const FRAMES=new Map();
 function frame(name,dir,anim,f,wpn){const k=name+'|'+dir+'|'+anim+'|'+f+'|'+(wpn||'');let c=FRAMES.get(k);if(!c){let sp=SPECS[name]||SPECS.Tourist;if(wpn){const rw=wpn==='fists'?'fist':wpn;sp=Object.assign({},sp,{w:rw,wc:sp.w===rw?sp.wc:undefined})}c=buildFrame(sp,dir,anim,f);FRAMES.set(k,c)}return c}
 const dirOf=a=>{const c=Math.cos(a),s=Math.sin(a);return Math.abs(c)>=Math.abs(s)*.9?2:(s<0?1:0)};
 const PS=1.6;
-function blit(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn){
-  const im=frame(name,dir,anim,f,wpn);c2.save();c2.imageSmoothingEnabled=false;c2.translate(x,y);if(flip)c2.scale(-1,1);
+function blit(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size=1){
+  const im=frame(name,dir,anim,f,wpn);c2.save();c2.imageSmoothingEnabled=false;c2.translate(x,y);if(size!==1)c2.scale(size,size);if(flip)c2.scale(-1,1);
   if(rot){c2.translate(0,-14*PS);c2.rotate(rot);c2.translate(0,14*PS)}
   if(alpha!==undefined)c2.globalAlpha=alpha;
   c2.drawImage(im,-24*PS,-45*PS,48*PS,48*PS);c2.restore();

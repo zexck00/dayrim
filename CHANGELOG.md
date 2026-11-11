@@ -27,6 +27,30 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Rustleaf Woods, Stage 7: rust weakens armor at night, a fueled generator must be defended while it is repaired, and Scrap Golems rebuild unless their parts are destroyed. Solo players can break both parts.
 - Rusted Ghoul, the Stage 7 boss: dodge its hook and cleaves, then power the generator and lure it onto the coil to stagger it and clear Rust Field. The coil charges itself for a lone standing player.
 
+**Abilities**
+- Every playable character has an Ability (C) and a Use (Z). Ability arms the move and Use fires it, with the same damage, cast delay and 60 second cooldown as a special attack, so it grows with level, stats and Spellcraft. Touch players get Ability and Use buttons, and drag to place a spot or aim a line. The character screen and the skills menu describe each one.
+- Sixteen kinds, shared out to fit each character:
+  - Lock On → Execute (Detective): shoot a locked enemy; ordinary enemies under a quarter of their life die outright.
+  - Aimed pools (Toxin Alchemist, Pyromancer, Druid, Swarm Queen, Ash Shaman): throw to a spot in range; a burst and a damaging pool.
+  - Leaps (Beastmaster, Demon Knight): mark an enemy, leap onto it and slam.
+  - Piercing lines (Ranger, Necromancer): aim a line that charges for 2 seconds, then hit every enemy on it.
+  - Ranged stuns (Inventor, Sage, Mad Scientist) and freezes (Chronomancer, Ice Archmage); the Inventor's and Mad Scientist's arc to two more enemies.
+  - Domes (Guardian, Soul Forger): you and allies inside take half damage; Use is a shockwave that pushes and stuns.
+  - Max Heal (Exorcist, Plague Doctor, Cyber Priest): fully heal the most hurt ally in range and clear poison, webs and stuns. 90 second cooldown.
+  - Invisibility (Hero Shadow, Shadow Monarch): 5 seconds unseen and unhurt; Use ambushes the nearest enemy for double damage.
+  - Roars (Patriot, Blood Reaper): taunt nearby enemies and take 30% less damage; Use slams the ground.
+  - Singularities (Gravity Mage, Void Empress): pull every enemy near a spot into it and crush them.
+  - Decoys (Illusionist, Mirror Jester): leave a copy; Use swaps you back to it and it bursts.
+  - Hooks (Vigilante, Soul Stealer, Deep Siren): drag the first enemy on the line to you and daze it.
+  - Grab and throw (Prodigy, Puppeteer): lift the nearest enemy and hurl it where you aim; not bosses or villains.
+  - Overdrive (Phantom, Chrono Thief): twice as fast for 6 seconds; Use dashes through enemies, untouchable.
+  - Titan form (Cyborg, Mecha Tyrant): twice the size for 8 seconds, 50% more damage, a third less damage taken; Use stomps and stuns.
+  - Force rings (Firefighter, Voidwalker, Gravity Weaver): charge a growing ring, then push every enemy in it away and break their attacks.
+- Enemies show their level beside their life bar, and bosses show it in the boss bar. It is the stage's recommended level, plus 1 for strong minions and elites, 3 for villains and 4 for bosses. Their life and damage already rise with each stage.
+
+**Minions**
+- Weak and strong minions (Skeleton, Bone Goliath, Voidling, Void Goliath, Toxin Grunt, Toxin Enforcer) use the same pixel rig as the cast, with its walk, attack and hit frames. Strong minions are drawn 1.4 times larger.
+
 **Modes and progression**
 - Levels and Agility give Haste: every cooldown is shorter, down to 60% of its base time. The character sheet shows the percentage.
 - The Swarm: an endless mode on any stage you have reached, alone or online. Every wave is bigger, a boss joins every fifth wave, and the safehouse only shelters you between waves. Nothing you earn carries back to your saved character; your best wave is kept.
@@ -77,6 +101,16 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Brighter attacks: swing crescents and tip flares, glowing bullets and muzzle flashes, hit sparks with bigger bursts on critical hits, a flash on kills, and pulsing enemy wind-ups.
 
 ### Changed
+
+**Minions**
+- Strong minions have twice the life, damage and move speed they had.
+- Minions keep up with the party: their level is the stage's recommended level, or the party's average level when that is higher, and their life and damage follow that level.
+
+**Casters**
+- Characters whose own weapon is a spell (book, orb, staff, candle, cards or flask) regain mana twice as fast, since every basic attack costs mana: Sage, Phantom, Pyromancer, Chronomancer, Voidwalker, Gravity Mage, Illusionist, Soul Stealer, Puppeteer, Gravity Weaver, Swarm Queen and Ice Archmage. The three asset villains attack without mana and are unchanged.
+
+**Skills**
+- Every skill now trains to rank 100 instead of 10 or 15, and each rank keeps its bonus. Critical chance stops at 60% so Precision cannot make every hit a critical.
 
 **Loading**
 - The game page is about 390 KB instead of 10 MB. Pictures, sounds and the 3D effects library are separate files in `game/assets`, named by content hash, that load as needed and stay cached; the character menu appears straight away even on slow connections. Sounds load a few at a time, title and menu music first. The server sends these files with long-term caching, the Docker image includes them, and CI checks they are committed and current. `tools/build.py --inline` still makes a single self-contained file.

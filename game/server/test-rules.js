@@ -9,12 +9,12 @@ const step=(k=1)=>{for(let i=0;i<k;i++){s.step(room,1/30);room.ev.length=0}};
 T.enter(room);
 const cityA=T.genCitySeeded(12345),cityB=T.genCitySeeded(12345);ok(cityA.boss.x===cityB.boss.x&&cityA.boss.y===cityB.boss.y&&Buffer.from(cityA.map).equals(Buffer.from(cityB.map)),'party runner reconstructs a seeded map deterministically');
 ok(new Set(G().players.map(p=>p.id)).size===2,'two players, different ids');
-const solo=mk(),sp=s.createRoom(solo,'Detective',null,'S');T.enter(solo);const soloHp=G().enemies[0].maxHp/ (G().enemies[0].mob==='strong'?3.2:.6);T.enter(room);
+const solo=mk(),sp=s.createRoom(solo,'Detective',null,'S');T.enter(solo);const soloHp=G().enemies[0].maxHp/ T.MOB[G().enemies[0].mob].hp;T.enter(room);
 // Membership changes rescale living enemies without changing their life percentage.
 const scaleRoom=mk(),scalePlayers=[s.createRoom(scaleRoom,'Detective',null,'Scale')];T.enter(scaleRoom);T.summonBoss();const boss=G().boss,minion=G().enemies.find(e=>e.mob),baseBossHp=boss.maxHp,baseBossDmg=boss.dmg,baseMinionHp=minion.maxHp,baseMinionDmg=minion.dmg;boss.hp*=.37;minion.hp*=.6;
 for(let i=1;i<4;i++){scalePlayers.push(s.addPlayer(scaleRoom,'Detective',null,'Scale'));T.enter(scaleRoom);ok(Math.abs(boss.maxHp/baseBossHp-[1,2,4,8][i])<1e-8&&Math.abs(boss.dmg/baseBossDmg-[1,2,4,8][i])<1e-8&&Math.abs(boss.hp/boss.maxHp-.37)<1e-8,'boss scales on join '+(i+1));ok(Math.abs(minion.maxHp/baseMinionHp-[1,1.6,2.2,2.8][i])<1e-8&&minion.dmg===baseMinionDmg&&Math.abs(minion.hp/minion.maxHp-.6)<1e-8,'minion scales on join '+(i+1));ok(T.quota(1)===Math.ceil(8*[1,1.4,1.8,2.2][i]),'quota scales for '+(i+1));ok(Math.abs(T.bossUltDamage(boss,0)/boss.maxHp*(i+1)-.04)<1e-10,'ultimates share boss percent damage for '+(i+1))}
 for(let i=3;i>0;i--){s.removePlayer(scaleRoom,scalePlayers[i]);T.enter(scaleRoom);ok(Math.abs(boss.maxHp/baseBossHp-[1,2,4,8][i-1])<1e-8&&Math.abs(boss.hp/boss.maxHp-.37)<1e-8,'boss rescales on leave to '+i)}
-ok(T.quota(1)===8,'solo quota unchanged');T.enter(solo);ok(G().players.length===1&&G().enemies[0].maxHp/(G().enemies[0].mob==='strong'?3.2:.6)===soloHp,'another room is untouched');T.enter(room);
+ok(T.quota(1)===8,'solo quota unchanged');T.enter(solo);ok(G().players.length===1&&G().enemies[0].maxHp/T.MOB[G().enemies[0].mob].hp===soloHp,'another room is untouched');T.enter(room);
 // Citizen fear belongs to the player responsible, including when another ally is closer.
 T.enter(room);const witness={x:a.x+70,y:a.y},victim=G().npcs[0];G().p=a;T.hitNpc(victim,1e9,0,true);b.x=witness.x+10;b.y=witness.y;ok(a.killerT===45&&!b.killerT,'civilian kill marks only its owner');ok(T.fearedPlayer(witness)===a,'citizen fears the killer even when an ally is closer');a.x=witness.x+200;ok(!T.fearedPlayer(witness),'citizen does not fear an innocent nearby ally');a.killerT=b.killerT=0;
 // Objective NPCs can use a display name without a matching art spec.
@@ -540,7 +540,7 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
   hits.push(weak.maxHp/dmg);brutes.push(brute.maxHp/weak.maxHp)}
  ok(Math.max(...hits)/Math.min(...hits)<1.001,'a weak minion takes the same number of hits at every stage: '+hits[0].toFixed(2));
  ok(hits[0]>1.2&&hits[0]<3,'and that number is snappy rather than spongy: '+hits[0].toFixed(2)+' hits at the recommended level');
- ok(Math.abs(brutes[0]-3.2/.6)<1e-9&&Math.max(...brutes)/Math.min(...brutes)<1.001,'brutes keep their place in the family at every stage: '+(brutes[0]).toFixed(2)+' times a weak minion');
+ ok(Math.abs(brutes[0]-T.MOB.strong.hp/T.MOB.weak.hp)<1e-9&&Math.max(...brutes)/Math.min(...brutes)<1.001,'brutes keep their place in the family at every stage: '+(brutes[0]).toFixed(2)+' times a weak minion');
  ok(Math.abs(T.mobUnit(10)/T.mobUnit(1)-(11+2.6*30)/(11+2.6*3))<1e-9,'the unit follows recommended-level damage instead of a runaway curve')}
 // A melee upgrade now buys damage as well as reach.
 {const mr=mk(),mp=s.createRoom(mr,'Firefighter',null,'Melee');T.enter(mr);const H=T.G;H.enemies=[];
@@ -754,6 +754,49 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  {const {p,b}=setup();G().p=p;b.hp=b.maxHp*.51;T.reactHit(b,b.maxHp*.02,'#fff');ok(b.phase===1&&b.rustField,'reaction splash crossing half life activates Rust Field');T.restartCheckpoint();G().p=p;T.summonBoss();const next=G().boss;next.hp=next.maxHp*.51;next.rotT=2;next.rotRate=next.maxHp*.02;G().p=p;T.updateEnemy(next,1);ok(next.phase===1&&next.rustField,'damage over time crossing half life activates Rust Field')}
 
 }
+// Abilities: Ability arms, Use fires after the special attack's cast delay, then the special cooldown runs.
+{const r=mk(),p=s.createRoom(r,'Detective',null,'Mark');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+30,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
+ const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;
+ p.actions.push({n:'use'});run(1);ok(!p.abilCast&&!(p.abilT>0),'Use does nothing until the Ability is armed');
+ p.actions.push({n:'ability'});run(1);ok(p.abil&&p.abil.fx==='mark'&&Math.abs(p.abil.x-e.x)<1,'Detective Ability locks onto the enemy nearest the aim');
+ p.actions.push({n:'use'});run(1);ok(p.abilCast&&!p.abil&&p.abilT>T.SPECIAL_CD*.5,'Use starts the cast and the special cooldown');
+ const hp=e.hp;G().p=p;const d=T.abilityDamage(p);run(40);ok(!p.abilCast&&hp-e.hp>d*.5,'Execute hits the marked enemy for special-attack damage');
+ p.actions.push({n:'ability'});run(1);ok(!p.abil,'the Ability waits for its cooldown');
+ p.abilT=0;e.hp=e.maxHp*.2;p.actions.push({n:'ability'});run(1);p.actions.push({n:'use'});run(40);ok(e.dead,'Execute finishes an enemy below a quarter of its life');
+ G().enemies=[];p.abilT=0;p.actions.push({n:'ability'});run(1);ok(!p.abil,'Mark needs a target in range')}
+{const r=mk(),p=s.createRoom(r,'Toxin Alchemist',null,'Flask');T.enter(r);G().enemies=[];G().p=p;const ab=T.ABILITIES['Toxin Alchemist'],e=T.spawnMob(0,{x:p.x+30,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
+ const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=p.x+5000;p.input.ay=p.y;
+ p.actions.push({n:'ability'});run(1);ok(p.abil&&p.abil.fx==='pool'&&Math.abs(Math.hypot(p.abil.x-p.x,p.abil.y-p.y)-ab.range)<2,'the flask aim stops at its range');
+ p.input.ax=e.x;p.input.ay=e.y;run(1);ok(Math.hypot(p.abil.x-e.x,p.abil.y-e.y)<2,'the flask aim follows the cursor');
+ const hp=e.hp,hz=G().hazards.length;p.actions.push({n:'use'});run(40);ok(hp-e.hp>0&&G().hazards.length>hz,'Throw bursts on the spot and leaves a poison pool')}
+// Strong minions: twice the old brute life, damage and speed. Minions follow the party's level when it is above the stage's.
+{const r=mk(),p=s.createRoom(r,'Detective',null,'Grow');T.enter(r);G().p=p;G().stage=2;p.lvl=1;const w=T.spawnMob(0,{x:p.x+30,y:p.y},false),st=T.spawnMob(0,{x:p.x+30,y:p.y},true);
+ ok(Math.abs(st.maxHp/w.maxHp-2*3.2/.6)<1e-9&&Math.abs(st.dmg/w.dmg-2*1.7/.7)<1e-6&&st.sp===2*60*(1+2*.012),'a strong minion has twice the old life, damage and speed');
+ ok(T.enemyLevel(w)===T.recLevel(2),'below the stage level, minions keep the stage level');
+ p.lvl=30;const w2=T.spawnMob(0,{x:p.x+30,y:p.y},false);ok(T.enemyLevel(w2)===30&&w2.maxHp>w.maxHp*2&&w2.dmg>w.dmg,'minions grow with a higher-level party')}
+// Characters whose own weapon is a spell regain mana twice as fast.
+{const r=mk(),c=s.createRoom(r,'Sage',null,'Cast'),d=s.addPlayer(r,'Detective',null,'Shoot'),n=s.addPlayer(r,'Necromancer',null,'Kit');T.enter(r);for(const q of [c,d,n]){G().p=q;T.recalc()}
+ ok(T.isCaster('Sage')&&!T.isCaster('Detective')&&!T.isCaster('Necromancer'),'spell-weapon characters count as casters; asset villains do not');
+ ok(Math.abs(c.s.regen/d.s.regen-T.CASTER_REGEN)<1e-9&&n.s.regen===d.s.regen,'casters regain mana twice as fast')}
+// Every character has an Ability and Use pair, and each one lands.
+const PLAY=Object.keys(T.ROSTER.hero).concat(Object.keys(T.ROSTER.villain));
+ok(PLAY.every(n=>T.ABILITIES[n]&&T.ABILITY_FIRE[T.ABILITIES[n].fx]&&T.ABILITIES[n].n&&T.ABILITIES[n].use),'all '+PLAY.length+' playable characters have an Ability and a Use');
+for(const ch of PLAY){const ab=T.ABILITIES[ch],r=mk(),p=s.createRoom(r,ch,null,'Ab');T.enter(r);G().enemies=[];G().npcs=[];G().p=p;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;
+ const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;if(ab.fx==='heal')p.hp=p.s.maxHp*.3;
+ p.actions.push({n:'ability'});run(ab.charge?Math.ceil(ab.charge*30)+2:1);const armed=!!p.abil;const x0=e.x,y0=e.y;p.actions.push({n:'use'});run(45);
+ const landed=ab.fx==='heal'?p.hp>=p.s.maxHp-1e-6:e.hp<e.maxHp||Math.hypot(e.x-x0,e.y-y0)>20;
+ ok(armed&&landed&&!p.abil&&!p.abilCast&&p.abilT>0,ch+': '+ab.n+' then '+ab.use+' lands')}
+// Buffs change the rules only while they are armed.
+{const r=mk(),p=s.createRoom(r,'Cyborg',null,'Titan'),q=s.addPlayer(r,'Guardian',null,'Wall');T.enter(r);G().enemies=[];G().p=p;const base=T.abilityDamage(p);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;G().p=p;
+ ok(T.abilSize(p)===2&&Math.abs(T.abilityDamage(p)/base-1.5)<1e-9&&T.abilGuard(p)<.7,'Titan Form doubles size, adds half again to damage and cuts damage taken');
+ q.x=p.x+30;q.y=p.y;q.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(Math.abs(T.abilGuard(p)/.67-.5)<1e-9,'a Guardian dome halves damage for allies inside')}
+{const r=mk(),p=s.createRoom(r,'Phantom',null,'Fast');T.enter(r);G().p=p;ok(T.abilSpeed(p)===1,'no speed boost before Overdrive');p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(T.abilSpeed(p)===2&&p.abilT>0,'Overdrive doubles speed and starts its cooldown')}
+{const r=mk(),p=s.createRoom(r,'Hero Shadow',null,'Gone');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+60,y:p.y},false);e.aware=true;p.actions.push({n:'ability'});for(let i=0;i<10;i++){s.step(r,1/30);r.ev.length=0}ok(!e.aware&&p.inv>0,'enemies lose track of an invisible player, who cannot be hurt')}
+{const r=mk(),p=s.createRoom(r,'Blood Reaper',null,'Roar');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+150,y:p.y},false);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(e.tauntT>0&&e.tauntId===(p.id||0),'a roar taunts nearby enemies')}
+// Skills train to 100, and enemies carry a level from the stage.
+ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains to rank 100');
+{const r=mk(),p=s.createRoom(r,'Detective',null,'Rank');T.enter(r);p.sp=3;p.skills.power=15;p.actions.push({n:'skill',v:'power'});s.step(r,1/30);r.ev.length=0;ok(p.skills.power===16,'a skill trains past the old cap of 15');
+ G().stage=3;const w=T.spawnMob(0,{x:p.x+30,y:p.y},false),st=T.spawnMob(0,{x:p.x+30,y:p.y},true);ok(T.enemyLevel(w)===T.recLevel(3)&&T.enemyLevel(st)===T.recLevel(3)+1,'enemy level follows the stage')}
 console.log('\n'+n+' checks passed');
 
 
