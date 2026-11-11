@@ -764,7 +764,9 @@ function reactRage(e,p,factor=1){const other=G.players.find(q=>(q.id||0)===(e.st
 function reactionCoverage(){const names=Object.keys(ELEMENT),miss=[],same=[];let named=0,resonance=0;for(let i=0;i<names.length;i++)for(let j=i+1;j<names.length;j++){const a=names[i],b=names[j],ea=ELEMENT[a],eb=ELEMENT[b],id=reactionOf(ea,eb);if(ea===eb)same.push([a,b]);if(!REACT_FX[id])miss.push([a,b]);else if(id==='resonance')resonance++;else named++}const total=names.length*(names.length-1)/2;return{total,byElement:named,byResonance:resonance,covered:total-miss.length,missing:miss,same}}
 
 function expose(e,duration=2){if(e.dead)return;e.exposedT=Math.max(e.exposedT||0,duration);text(e.x,e.y-100,'OPEN','#ffe27a',true)}
-function hitEnemy(e,base,ang,kb,heavy=false){
+/* Hit-stop: heavy hits freeze the action for a moment so they land with weight. Solo only; the main loop slows time while it runs. */
+const HIT_STOP=.06;
+function hitEnemy(e,base,ang,kb,heavy=false){if(heavy&&kb>0)G.hitStop=Math.max(G.hitStop||0,HIT_STOP);
   if(e.dead||e.buried||e.fleshDown||e.scrapDown)return;const p=G.p;if(bossWarded(e)){if(!(e.wardT>G.t)){e.wardT=G.t+1;text(e.x,e.y-110,e.ghostT>0?'UNTOUCHABLE':'NEEDS LANTERN LIGHT','#c8b8ff',true)}return}if(e.role==='lurker'&&e.grab&&(G.players.length===1||(p.id||1)!==e.grab))lurkRelease(e,true);if(e.eyeT>0&&eyeBehind(e,p)&&!(e.eyeCd>G.t)){e.eyeCd=G.t+.4;bossGuard(e,BOSS_GUARD_GAIN.eye);base*=1.5;text(e.x,e.y-e.ah,'EYE HIT','#ffd860',true)}let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
   if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
   if(justBroke)bossGuard(e,BOSS_GUARD_GAIN.break);
@@ -819,7 +821,7 @@ function doAttack(){
   p.cd.slash=W.cd*cdMulOf(p);p.atkT=Math.min(.3,p.cd.slash);p.atkDur=p.atkT;const dmg=weaponDamage(id)*dmgMul(),up=upgradeLevel(p,id),fx=Math.cos(p.face),fy=Math.sin(p.face);
   if(up)G.fx.push({k:'ring',x:p.x+fx*12,y:p.y-24+fy*12,r:6,to:22+up*10,t:.24,m:.24,shape:up>=2?'diamond':'circle',c:up===1?'#ffd166':'#80eaff'});
   if(W.m==='shoot'){sfx('shot');const sty={bow:'arrow',blaster:'plasma',tommy:'tracer',camera:'flash'}[id]||'bullet',sp=sty==='arrow'?470:sty==='plasma'?430:640;for(const off of GUN_UP[up].angles){const a=p.face+off;G.shots.push({x:p.x+fx*24,y:p.y-24+fy*24,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:sty==='plasma'?7:4,from:'p',life:.8,dmg:dmg*GUN_UP[up].damage,small:true,tier:up,pierce:up>=2&&PIERCING_WEAPONS.has(id)?1:0,piercing:up>=2&&PIERCING_WEAPONS.has(id),fx:sty,col:sty==='plasma'?'111,220,255':'255,220,120',a})}muzzle(p.x+fx*30,p.y-24+fy*30,p.face,sty);return}
-  if(W.m==='spell'){p.mana-=W.cost;sfx('bolt');const sty={book:'arcane',flask:'flask',candle:'ember',staff:'skull',cards:'card'}[id]||'orb';for(const off of SPELL_UP[up].angles){const a=p.face+off;G.shots.push({x:p.x+fx*20,y:p.y-24+fy*20,vx:Math.cos(a)*390,vy:Math.sin(a)*390,r:6,from:'p',life:.9,dmg:dmg*SPELL_UP[up].damage,blast:SPELL_UP[up].blast,tier:up,fx:sty,col:spellCol(p.char,sty),a})}return}
+  if(W.m==='spell'){p.mana-=W.cost;sfx('bolt');const sty={book:'arcane',flask:'flask',candle:'ember',staff:'skull',cards:'card'}[id]||'orb';for(const off of SPELL_UP[up].angles){const a=p.face+off;G.shots.push({x:p.x+fx*20,y:p.y-24+fy*20,vx:Math.cos(a)*390,vy:Math.sin(a)*390,r:6,from:'p',life:.9,dmg:dmg*SPELL_UP[up].damage,blast:SPELL_UP[up].blast,tier:up,fx:sty,col:spellCol(p.char,sty),a,hopT:THROWN_HOP[sty]?.9:0})}return}
   const mdmg=dmg*MELEE_UP[up],reach=meleeReach(W,up),arc=meleeArc(up);p.swingArc=arc;p.swing=.17;p.swingA=p.face;p.swingR=reach;sfx(W.m==='unarmed'?'hit':'slash');let n=0,landed=false;
   for(const e of G.enemies.slice()){if(e.dead||e.fleshDown||e.scrapDown)continue;const d=dist(e,p);if(d>reach+e.r)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc||d<e.r+p.r+4){if(!e.buried)landed=true;hitEnemy(e,mdmg,a,W.m==='shield'?300:W.m==='unarmed'?90:170);if(W.m==='shield'&&up>=2)shieldInterrupt(e);n++}}
   for(const c of G.npcs){if(c.dead)continue;const d=dist(c,p);if(d>reach+10)continue;const a=Math.atan2(c.y-p.y,c.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc)hitNpc(c,mdmg,a,true)}
@@ -849,7 +851,7 @@ function doHeal(){const p=G.p;if(p.guard||p.cd.pull>0||p.mana<22||p.hp>=p.s.maxH
 function spellCol(ch,sty){const w=SPECS[ch]&&SPECS[ch].wc;if(sty==='flask')return'90,240,110';if(sty==='ember')return'255,150,60';if(sty==='card')return'255,90,200';if(w&&w[0]==='#'&&w.length===7)return parseInt(w.slice(1,3),16)+','+parseInt(w.slice(3,5),16)+','+parseInt(w.slice(5,7),16);return'190,120,255'}
 function glowP(x,y,c,n=1,sp=60,t=.4,s=3){for(let i=0;i<n;i++){const a=rnd(TAU),v=rnd(sp*.2,sp);G.fx.push({k:'g',x:x+rnd(-3,3),y:y+rnd(-3,3),vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:rnd(t*.5,t),m:t,c,s:rnd(s*.5,s)})}}
 function muzzle(x,y,a,sty){G.fx.push({k:'muz',x,y,a,t:.09,m:.09,big:sty==='plasma'||sty==='tracer'});glowP(x,y,'255,210,110',4,150,.18,2.5);if(sty!=='arrow')G.fx.push({k:'p',x,y,vx:-Math.cos(a)*40+rnd(-30,30),vy:-60,t:.4,m:.5,c:'#e8c070',s:2.5})}
-function impact(s,R){const c=s.col||'190,120,255';G.fx.push({k:'nova',x:s.x,y:s.y,r:R||20,t:.32,m:.32,c,a:rnd(TAU)});glowP(s.x,s.y,c,R?22:8,R?260:150,.5,4);if(R)shake(.5)}
+function impact(s,R){const c=s.col||'190,120,255';if(s.fx==='flask')burst(s.x,s.y+6,'rgb('+c+')',16,210);else if(s.fx==='skull')burst(s.x,s.y,'#e4dcc4',10,170);if(s.pool&&!s.pooled){s.pooled=1;G.hazards.push({x:s.x,y:s.y+22,r:s.pool.r,t:s.pool.t,dps:s.pool.dps,from:s.from,pid:s.pid,col:c})}G.fx.push({k:'nova',x:s.x,y:s.y,r:R||20,t:.32,m:.32,c,a:rnd(TAU)});glowP(s.x,s.y,c,R?22:8,R?260:150,.5,4);if(R)shake(.5)}
 /* ---------- NPCs, gore and talk ---------- */
 const TALK={
  idleDay:['Lovely day, if nothing eats you.','The berries here are safe. Mostly.','Mind the shrubs, things live in them.','Have you seen my goat?'],
@@ -914,7 +916,7 @@ function fireMove(a,mv,hitN){
   const {key,id,side}=mv,d=moveDamage(a,key,id),col=KIT[key].col,from=a.char?'p':'e',band=(y,h)=>Math.abs(y)<h;
   if(a.char&&hitN===0){const up=upgradeLevel(a,'signature');if(up)G.fx.push({k:'ring',x:a.x,y:a.y-22,r:8,to:30+up*14,t:.3,m:.3,shape:up>=2?'diamond':'circle',c:'#'+col.split(',').map(v=>(+v).toString(16).padStart(2,'0')).join('')})}
   if(key==='necro'){
-    if(id==='small'){strike(a,(x,y)=>x*side>18&&x*side<112&&band(y,46),d,120);glowP(a.x+side*72,a.y-46,col,12,170,.4,3)}
+    if(id==='small')throwKit(a,side,d,from,col,KIT_THROW.necro.small);
     if(id==='moderate'){strike(a,(x,y)=>Math.hypot(x,y*1.2)<112&&x*side>-22,d,240);shake(2)}
     if(id==='special'){strike(a,(x,y)=>x*side>16&&x*side<390&&band(y+6,44),d,70);shake(2.2);glowP(a.x+side*rnd(60,380),a.y-40,col,5,120,.35,4)}
   }else if(key==='void'){
@@ -922,40 +924,54 @@ function fireMove(a,mv,hitN){
     if(id==='moderate'){strike(a,(x,y)=>Math.hypot(x,y*1.2)<112,d*(hitN?1:.7),160);shake(3);glowP(a.x,a.y-16,col,14,190,.45,3.5)}
     if(id==='special'){const R=70+hitN*48;strike(a,(x,y)=>Math.hypot(x,y)<R,d,80);shake(3);G.fx.push({k:'nova',x:a.x,y:a.y-44,r:R,t:.3,m:.3,c:col,a:rnd(TAU)})}
   }else{
-    if(id==='small'){G.hazards.push({x:a.x+side*78,y:a.y+2,r:46,t:2.2,dps:d*.3,from,col});strike(a,(x,y)=>Math.hypot(x-side*78,y)<58,d,90)}
-    if(id==='moderate'){G.hazards.push({x:a.x+side*88,y:a.y+2,r:80,t:3.4,dps:d*.55,from,col});strike(a,(x,y)=>x*side>26&&x*side<150&&band(y,60),d,120);shake(2)}
+    if(id==='small')throwKit(a,side,d,from,col,KIT_THROW.toxic.small);
+    if(id==='moderate')throwKit(a,side,d,from,col,KIT_THROW.toxic.moderate);
     if(id==='special'){if(!hitN)G.hazards.push({x:a.x,y:a.y,r:215,t:4.2,dps:d*.75,from,col});strike(a,(x,y)=>Math.hypot(x,y)<215,d*.8,90);shake(2.5)}
   }
 }
+/* The asset villains throw things: the Toxin Alchemist its flasks, the Necromancer a skull.
+   Toxin Alchemist throws its flasks. small: a fast flask thrown straight, it breaks on the first enemy
+   or wall, or at its range. moderate: a heavier flask lobbed in an arc over enemies to the aimed spot.
+   Both burst and leave a poison pool. Enemy alchemists throw them at their target the same way. */
+const KIT_THROW={
+ toxic:{small:{fx:'flask',sp:430,range:250,blast:46,pool:46,t:2.2,dps:.3},moderate:{fx:'flask',sp:340,range:300,min:110,blast:80,pool:80,t:3.4,dps:.55,lob:1}},
+ necro:{small:{fx:'skull',sp:460,range:240,blast:40}}};
+function throwKit(a,side,d,from,col,F){const to=a.char?abilAim(a):{x:G.p.x,y:G.p.y},x=a.x+side*20,y=a.y-24,ang=Math.atan2(to.y-a.y,to.x-a.x),dist0=clamp(Math.hypot(to.x-a.x,to.y-a.y),F.min||0,F.range),
+    life=dist0/F.sp,gy=a.y-22;
+  G.shots.push({x,y:F.lob?gy:y,vx:Math.cos(ang)*F.sp,vy:Math.sin(ang)*F.sp,r:F.lob?10:8,from,life,dmg:d,blast:F.blast,fx:F.fx,col,a:ang,heavy:!!F.lob,lob:F.lob?life:0,hopT:F.lob?0:life,breaks:1,pid:a.id||0,
+    pool:F.pool?{r:F.pool,t:F.t,dps:d*F.dps}:undefined});sfx('bolt')}
 function updateMove(a,dt){const mv=a.mv;if(!mv)return;mv.t+=dt;const M=KIT[mv.key][mv.id];while(mv.hit<M.hits.length&&mv.t>=M.hits[mv.hit]*mv.dur){fireMove(a,mv,mv.hit);mv.hit++}if(mv.t>=mv.dur)a.mv=null}
 function doMove(id){const p=G.p;if(p.carry||!kitOf(p)||p.guard||p.mv||p.stunT>0)return;if(id==='special'){if((p.specT||0)>0)return;p.specT=SPECIAL_CD*cdMulOf(p);G.banner=null}startMove(p,id,mouseAimX());if(id==='special')addLog('Special attack used. Ready again in '+Math.round(SPECIAL_CD*p.s.cdMul)+' seconds.')}
 const mouseAimX=()=>{const p=G.p;return touchMode?p.x+Math.cos(p.face):mouse.x};
 /* ---------- Abilities ----------
+   One button (C). How it behaves depends on the kind:
+   tap: lock or pick, then fire at once · hold: aim while held, fire on release (lines and rings charge)
+   again: the first press starts a buff or a grab, the next press fires its finisher.
    Every character has one Ability (C) and its Use (Z). Ability arms the move: it locks a target, picks
    an ally, aims a spot or a line, grabs an enemy, or starts a short buff. Use fires it after the special
-   attack's cast delay. Damage matches a special attack, so it grows with level, stats and Spellcraft.
+   attack's cast delay. It hits for ten of the character's basic attacks.
    aim  foe: enemy nearest the aim · ally: most hurt ally in range · spot: a point in range
         line: a direction, len long · grab: the nearest enemy in reach
         self: a buff around you; its cooldown starts when it is armed, and Use is its finisher
    fx   what Use does; see ABILITY_FIRE. */
-const ABILITY_CAST=KIT.toxic.special.hits[0]*KIT.toxic.special.dur,ABILITY_ARMED=10,ABILITY_SPECIAL_HITS=4,EXECUTE_BELOW=.25;
+const ABILITY_CAST=KIT.toxic.special.hits[0]*KIT.toxic.special.dur,ABILITY_ARMED=10,EXECUTE_BELOW=.25;
 const ABILITY_FX={
- mark:{aim:'foe',range:560,col:'255,207,112',d:'Lock onto the enemy nearest your aim, then shoot it. Enemies other than bosses and villains below a quarter of their life die outright.'},
- pool:{aim:'spot',range:440,r:110,col:'140,240,70',d:'Aim anywhere in range, then throw. It bursts and leaves a damaging pool.'},
- leap:{aim:'foe',range:420,r:95,col:'255,170,90',d:'Mark an enemy, then leap onto it and slam the ground around it.'},
- pierce:{aim:'line',len:650,w:34,charge:2,col:'255,230,140',d:'Aim a line; it grows stronger the longer you hold it (2 s). Use fires through every enemy on the line.'},
- stun:{aim:'foe',range:520,stun:2.5,col:'120,220,255',d:'Lock onto an enemy at range, then stun it (shorter on bosses).'},
- brace:{aim:'self',dur:8,r:160,col:'120,200,255',d:'Raise a dome: you and allies inside take half damage. Use releases it as a shockwave that pushes and stuns.'},
- heal:{aim:'ally',range:420,cd:90,col:'130,255,170',d:'Pick the most hurt ally in range (or yourself), then restore all their life and clear poison, webs and stuns. 90 second cooldown.'},
- vanish:{aim:'self',dur:5,r:160,col:'180,160,220',d:'Turn invisible for 5 seconds: enemies lose track of you and cannot hurt you. Use strikes the nearest enemy from stealth for double damage.'},
- roar:{aim:'self',dur:6,r:320,col:'255,110,90',d:'Roar: every enemy nearby turns on you, and you take 30% less damage. Use slams the ground around you.'},
- collapse:{aim:'spot',range:460,r:220,col:'190,130,255',d:'Aim a dark point, then pull every enemy nearby into it and crush them.'},
- decoy:{aim:'self',dur:10,r:110,col:'255,140,210',d:'Leave a copy of yourself where you stand. Use swaps you back to it and the copy bursts.'},
- hook:{aim:'line',len:450,w:30,col:'200,210,230',d:'Aim the hook, then fire it: the first enemy hit is dragged to you and dazed. Bosses only take the damage.'},
- hurl:{aim:'grab',range:90,throw:420,r:90,col:'255,190,110',d:'Grab the nearest enemy in reach and lift it, then hurl it where you aim. It knocks down enemies where it lands. Not bosses or villains.'},
- blitz:{aim:'self',dur:6,len:320,col:'130,255,220',d:'Overdrive: twice as fast for 6 seconds. Use dashes where you aim, untouchable, hitting every enemy you pass through.'},
- titan:{aim:'self',dur:8,r:220,col:'255,140,80',d:'Grow to twice your size for 8 seconds: 50% more damage and a third less damage taken. Use stomps a wide shockwave that stuns, and ends the form.'},
- push:{aim:'self',dur:10,r:110,grow:110,charge:1.5,col:'170,140,255',d:'Charge a force ring that grows while held (1.5 s). Use blasts every enemy in it away and breaks their attacks; at full charge it also hurts.'}
+ mark:{aim:'foe',range:560,shot:{kind:'bullet',sp:1100},col:'255,207,112',d:'Tap to lock onto the enemy nearest your aim and shoot it. Enemies other than bosses and villains below a quarter of their life die outright.'},
+ pool:{aim:'spot',range:440,r:110,shot:{kind:'lob',t:.6},col:'140,240,70',d:'Hold to aim a spot in range, release to throw. It bursts and leaves a damaging pool.'},
+ leap:{aim:'foe',range:420,r:95,col:'255,170,90',d:'Tap to leap onto the enemy nearest your aim and slam the ground around it.'},
+ pierce:{aim:'line',len:650,w:34,charge:2,shot:{kind:'spear',sp:950},col:'255,230,140',d:'Hold to aim a line; it charges for 2 seconds. Release to fire through every enemy on it.'},
+ stun:{aim:'foe',range:520,stun:2.5,shot:{kind:'bolt',sp:720},col:'120,220,255',d:'Tap to fire at the enemy nearest your aim and stun it (shorter on bosses).'},
+ brace:{aim:'self',dur:8,r:160,col:'120,200,255',d:'Tap to raise a dome: you and allies inside take half damage. Tap again to release it as a shockwave that pushes and stuns.'},
+ heal:{aim:'ally',range:420,cd:90,col:'130,255,170',d:'Tap to fully heal the most hurt ally in range (or yourself) and clear poison, webs and stuns. 90 second cooldown.'},
+ vanish:{aim:'self',dur:5,r:160,col:'180,160,220',d:'Tap to turn invisible for 5 seconds: enemies lose track of you and cannot hurt you. Tap again to ambush the nearest enemy for double damage.'},
+ roar:{aim:'self',dur:6,r:320,col:'255,110,90',d:'Tap to roar: nearby enemies turn on you and you take 30% less damage. Tap again to slam the ground.'},
+ collapse:{aim:'spot',range:460,r:220,shot:{kind:'lob',t:.7},col:'190,130,255',d:'Hold to aim a dark point, release to pull every enemy nearby into it and crush them.'},
+ decoy:{aim:'self',dur:10,r:110,col:'255,140,210',d:'Tap to leave a copy of yourself where you stand. Tap again to swap back to it; the copy bursts.'},
+ hook:{aim:'line',len:450,w:30,shot:{kind:'hook',sp:900},col:'200,210,230',d:'Hold to aim the hook, release to fire it. The first enemy hit is dragged to you and dazed. Bosses only take the damage.'},
+ hurl:{aim:'grab',range:90,throw:420,r:90,col:'255,190,110',d:'Tap to grab the nearest enemy in reach, tap again to hurl it where you aim. It knocks down enemies where it lands. Not bosses or villains.'},
+ blitz:{aim:'self',dur:6,len:320,col:'130,255,220',d:'Tap for Overdrive: twice as fast for 6 seconds. Tap again to dash where you aim, untouchable, hitting everything you pass.'},
+ titan:{aim:'self',dur:8,r:220,col:'255,140,80',d:'Tap to grow to twice your size for 8 seconds: 50% more damage and a third less damage taken. Tap again to stomp a stunning shockwave and end it.'},
+ push:{aim:'self',dur:10,r:110,grow:110,charge:1.5,col:'170,140,255',d:'Hold to charge a force ring (1.5 s), release to blast every enemy in it away and break their attacks. At full charge it also hurts.'}
 };
 const defAbility=(fx,n,use,o={})=>Object.assign({fx},ABILITY_FX[fx],{n,use},o);
 const ABILITIES={
@@ -964,16 +980,26 @@ const ABILITIES={
  Sage:defAbility('stun','Arcane Bind','Seal',{col:'211,168,255'}),Patriot:defAbility('roar','Rally Cry','Star Slam',{col:'255,108,105'}),Phantom:defAbility('blitz','Phase Run','Phase Dash'),Pyromancer:defAbility('pool','Fire Rune','Ignite',{col:'255,130,60'}),
  Chronomancer:defAbility('stun','Time Lock','Time Stop',{freeze:1,col:'112,221,255'}),Beastmaster:defAbility('leap','Stalk','Pounce'),Voidwalker:defAbility('push','Repulse','Force Push'),Exorcist:defAbility('heal','Triage','Sacred Mend',{col:'255,229,159'}),
  'Gravity Mage':defAbility('collapse','Singularity','Collapse'),Druid:defAbility('pool','Thorn Field','Bloom',{col:'139,238,139'}),Cyborg:defAbility('titan','Titan Form','Titan Stomp',{col:'105,224,255'}),Illusionist:defAbility('decoy','Decoy','Swap'),
- Necromancer:defAbility('pierce','Bone Lance','Impale',{col:'110,255,170'}),'Blood Reaper':defAbility('roar','Blood Roar','Ground Pound'),'Toxin Alchemist':defAbility('pool','Flask','Throw'),'Soul Stealer':defAbility('hook','Soul Chain','Drag Soul',{col:'204,146,255'}),
+ Necromancer:defAbility('pierce','Bone Lance','Impale',{col:'110,255,170'}),'Blood Reaper':defAbility('roar','Blood Roar','Ground Pound'),'Toxin Alchemist':defAbility('pool','Flask','Throw',{thrown:'flask'}),'Soul Stealer':defAbility('hook','Soul Chain','Drag Soul',{col:'204,146,255'}),
  'Shadow Monarch':defAbility('vanish','Shadow Veil','Execution',{col:'192,108,255'}),Puppeteer:defAbility('hurl','String Grab','Fling',{col:'237,147,255'}),'Void Empress':defAbility('collapse','Event Point','Implode'),'Plague Doctor':defAbility('heal','Triage','Black Remedy',{col:'169,227,117'}),
  'Mad Scientist':defAbility('stun','Tesla Lock','Arc Shock',{chain:2,col:'101,245,236'}),'Demon Knight':defAbility('leap','Hellmark','Infernal Leap',{col:'255,126,66'}),'Gravity Weaver':defAbility('push','Gravity Ring','Repel'),'Mecha Tyrant':defAbility('titan','Overcharge','Iron Stomp'),
  'Chrono Thief':defAbility('blitz','Haste','Time Dash',{col:'255,214,111'}),'Swarm Queen':defAbility('pool','Swarm Mark','Release Swarm',{col:'229,221,98'}),'Ice Archmage':defAbility('stun','Frost Lock','Freeze',{freeze:1,col:'168,232,255'}),'Deep Siren':defAbility('hook','Siren Lure','Undertow',{col:'110,230,255'}),
  'Ash Shaman':defAbility('pool','Ash Circle','Eruption',{col:'255,120,60'}),'Soul Forger':defAbility('brace','Forge Ward','Anvil Bash',{col:'232,137,42'}),'Mirror Jester':defAbility('decoy','Mirror Image','Swap',{col:'255,118,193'}),'Cyber Priest':defAbility('heal','Diagnose','Full Restore',{col:'111,224,216'})
 };
 const abilityOf=p=>ABILITIES[p.char]||null;
+const abilityMode=ab=>ab.aim==='foe'||ab.aim==='ally'?'tap':ab.aim==='spot'||ab.aim==='line'||(ab.aim==='self'&&ab.charge)?'hold':'again';
 const abilFoe=new WeakMap();
 let touchAim=null;
-function abilityDamage(p){const top=Object.keys(p.stats).reduce((a,b)=>p.stats[b]>p.stats[a]?b:a);return p.s.dmg*statMul(p,top)*(1+(p.skills.spell||0)*.1)*dmgMul()*1.7*ABILITY_SPECIAL_HITS}
+/* Sprint: hold Shift (or drag the touch stick far out). Faster with a longer stride; costs mana; stops while attacking, shielding or dodging. */
+const SPRINT={mul:1.5,stride:1.35,mana:8,drag:80};
+let sprintKey=false;
+const canSprint=(p,v)=>sprintKey&&!!(v.x||v.y)&&!p.guard&&!mouse.left&&!touchHold.slash&&!(p.dashT>0)&&!p.mv&&!p.carry&&!(p.stunT>0)&&p.mana>0;
+/* An ability hits for ten basic attacks: a basic hit is a tenth of an ability. The basic hit is the character's own
+   weapon (or the small move of an asset villain), so both grow together with level, stats, skills and upgrades. */
+const ABILITY_BASIC_X=10;
+/* Pills, auras, links and Titan Form apply on top (the asset villains' small move already includes them). */
+const basicHit=p=>{const k=kitOf(p);return k?moveDamage(p,k,'small'):weaponDamage(weaponOf(p.char))*dmgMul()};
+const abilityDamage=p=>basicHit(p)*ABILITY_BASIC_X;
 /* Where the player is aiming: the mouse, or on touch a dragged point, else the nearest enemy */
 function abilAim(p){if(!touchMode)return{x:mouse.x,y:mouse.y};if(touchAim)return touchAim;const n=nearestEnemy();return n?{x:n.x,y:n.y}:{x:p.x+Math.cos(p.face)*200,y:p.y+Math.sin(p.face)*200}}
 function clampRange(p,pt,range){const a=Math.atan2(pt.y-p.y,pt.x-p.x),d=Math.min(range,Math.hypot(pt.x-p.x,pt.y-p.y));return{x:p.x+Math.cos(a)*d,y:p.y+Math.sin(a)*d}}
@@ -992,24 +1018,26 @@ const abilCharge=(a,ab)=>ab.charge?clamp((a.armed||0)/ab.charge,0,1):1;
 const abilityBlocked=p=>p.carry||p.stunT>0||p.guard||p.mv||p.ult||G.mode!=='play';
 function abilityEnd(p){const e=abilFoe.get(p);if(e&&p.abil&&p.abil.aim==='grab')e.stunT=Math.max(e.stunT||0,.4);p.abil=null;abilFoe.delete(p)}
 function doAbility(){const p=G.p,ab=abilityOf(p);if(!ab||abilityBlocked(p)||p.abilCast)return;
-  if(p.abil){abilityEnd(p);return}
+  if(p.abil){if(abilityMode(ab)==='again')doUse();return}
   if((p.abilT||0)>0){addLog(ab.n+' ready in '+Math.ceil(p.abilT)+' seconds.');return}
   const a={fx:ab.fx,aim:ab.aim,t:ab.dur||ABILITY_ARMED,armed:0,x:p.x,y:p.y};
   if(ab.aim==='foe'||ab.aim==='grab'){const e=ab.aim==='foe'?markTarget(p,ab):grabTarget(p,ab);if(!e){text(p.x,p.y-70,ab.aim==='grab'?'Nothing to grab':'No target in range','#ffb080');return}abilFoe.set(p,e);a.x=e.x;a.y=e.y}
   else if(ab.aim==='ally'){const q=hurtAlly(p,ab);a.pid=q.id||0;a.x=q.x;a.y=q.y}
   else if(ab.aim==='spot')Object.assign(a,clampRange(p,abilAim(p),ab.range));
   else if(ab.aim==='line'){const m=abilAim(p);a.a=Math.atan2(m.y-p.y,m.x-p.x);a.x=p.x+Math.cos(a.a)*ab.len;a.y=p.y+Math.sin(a.a)*ab.len}
-  p.abil=a;if(ab.aim==='self'){p.abilT=(ab.cd||SPECIAL_CD)*cdMulOf(p);abilityArm(p,ab)}sfx('lock')}
+  p.abil=a;if(ab.aim==='self'){p.abilT=(ab.cd||SPECIAL_CD)*cdMulOf(p);abilityArm(p,ab)}sfx('lock');
+  if(abilityMode(ab)==='tap')doUse()}
 function abilityArm(p,ab){
   if(ab.fx==='roar'){for(const e of G.enemies)if(foeAlive(e)&&dist(e,p)<ab.r){e.tauntT=Math.max(e.tauntT||0,ab.dur);e.tauntId=p.id||0}text(p.x,p.y-80,ab.n.toUpperCase(),'#ff8a70',true);shake(3)}
   else glowP(p.x,p.y-24,ab.col,12,160,.5,3)}
 function doUse(){const p=G.p,ab=abilityOf(p),a=p.abil;if(!ab||!a||abilityBlocked(p)||p.abilCast)return;
   if((ab.aim==='foe'||ab.aim==='grab')&&!foeValid(p,ab))return;
-  p.abilCast={fx:a.fx,aim:a.aim,t:ABILITY_CAST,m:ABILITY_CAST,x:a.x,y:a.y,a:a.a,pid:a.pid,k:abilCharge(a,ab)};
+  const wind=ab.shot?ABILITY_CAST*SHOT_WINDUP:ABILITY_CAST;
+  p.abilCast={fx:a.fx,aim:a.aim,t:wind,m:wind,x:a.x,y:a.y,a:a.a,pid:a.pid,k:abilCharge(a,ab)};
   /* Aimed abilities are spent on Use; buffs and a held enemy stay until the cast fires */
   if(ab.aim!=='self'&&ab.aim!=='grab'){p.abil=null;p.abilT=(ab.cd||SPECIAL_CD)*cdMulOf(p)}
   if(ab.aim==='grab')p.abilT=SPECIAL_CD*cdMulOf(p);
-  p.castT=ABILITY_CAST;sfx('charge')}
+  p.castT=wind;sfx('charge')}
 function foeValid(p,ab){const e=abilFoe.get(p);if(foeAlive(e)&&dist(e,p)<=ab.range*1.25+(ab.aim==='grab'?60:0))return e;abilFoe.delete(p);if(p.abil&&(p.abil.aim==='foe'||p.abil.aim==='grab')){p.abil=null;text(p.x,p.y-70,'Target lost','#ffb080')}return null}
 /* Shared pieces for the effects */
 function stepMove(o,ang,d){const n=Math.max(1,Math.ceil(d/12));for(let i=0;i<n;i++)if(move(o,Math.cos(ang)*d/n,Math.sin(ang)*d/n))break}
@@ -1020,12 +1048,31 @@ function blast(x,y,r,dmg,kb,stun){for(const e of G.enemies.slice()){if(!foeAlive
 const segDist=(o,x0,y0,x1,y1)=>{const dx=x1-x0,dy=y1-y0,L=dx*dx+dy*dy||1,t=clamp(((o.x-x0)*dx+(o.y-y0)*dy)/L,0,1);return Math.hypot(o.x-(x0+dx*t),o.y-(y0+dy*t))};
 function onLine(x0,y0,ang,len,w){const x1=x0+Math.cos(ang)*len,y1=y0+Math.sin(ang)*len;return G.enemies.filter(e=>foeAlive(e)&&segDist(e,x0,y0,x1,y1)<w+e.r).sort((a,b)=>Math.hypot(a.x-x0,a.y-y0)-Math.hypot(b.x-x0,b.y-y0))}
 const fxAt=(x,y,col,n=16)=>{burst(x,y-10,'rgb('+col+')',n,220);glowP(x,y-20,col,n,200,.6,4)};
+/* ---------- Ability projectiles ----------
+   Ranged abilities wind up for part of the cast, then launch a projectile that travels and lands the
+   effect on arrival. bullet and bolt home in on the locked enemy; spear flies a line and hits every
+   enemy it passes; hook stops at the first enemy; lob arcs to the aimed spot over walls. Walls stop
+   the others. The projectile's position lives on the cast (px, py), so allies see it too. */
+const SHOT_WINDUP=.45,SHOT_Y=24;
+const shotHits=new WeakMap();
+function launchShot(p,ab,c){c.fly=1;c.px=p.x;c.py=p.y;c.gone=0;c.lt=0;if(ab.shot.kind==='lob'){c.ox=p.x;c.oy=p.y}shotHits.set(p,new Set());sfx(ab.shot.kind==='lob'?'bolt':'shot')}
+/* Moves the projectile one step; returns true when it has landed. */
+function flyShot(p,ab,c,dt,d){const S=ab.shot;
+  if(S.kind==='lob'){c.lt=Math.min(1,c.lt+dt/S.t);c.px=c.ox+(c.x-c.ox)*c.lt;c.py=c.oy+(c.y-c.oy)*c.lt;return c.lt>=1}
+  const step=S.sp*dt;
+  if(S.kind==='bullet'||S.kind==='bolt'){const e=abilFoe.get(p);if(foeAlive(e)){c.x=e.x;c.y=e.y}const L=Math.hypot(c.x-c.px,c.y-c.py);c.a=Math.atan2(c.y-c.py,c.x-c.px);if(L<=step+(foeAlive(e)?e.r:4)){c.px=c.x;c.py=c.y;return true}c.px+=Math.cos(c.a)*step;c.py+=Math.sin(c.a)*step;return false}
+  /* spear and hook fly straight along the aimed line */
+  const x0=c.px,y0=c.py,x1=x0+Math.cos(c.a)*step,y1=y0+Math.sin(c.a)*step,seen=shotHits.get(p)||new Set();c.gone+=step;
+  for(const e of G.enemies.slice()){if(!foeAlive(e)||seen.has(e)||segDist(e,x0,y0,x1,y1)>ab.w+e.r)continue;seen.add(e);
+    if(S.kind==='hook'){abilFoe.set(p,e);c.px=e.x;c.py=e.y;return true}
+    const k=(.5+.5*c.k)*(c.k>=1?1.3:1);hitEnemy(e,d*k,c.a,160,true);fxAt(e.x,e.y,ab.col,8)}
+  c.px=x1;c.py=y1;return c.gone>=ab.len||wall(x1/T|0,y1/T|0)}
 /* What Use does, for each kind. c: the cast, d: special-attack damage. */
 const ABILITY_FIRE={
  mark(p,ab,c,d){const e=abilFoe.get(p);if(!foeAlive(e))return;const kill=e.kind!=='boss'&&!e.vill&&e.hp<e.maxHp*EXECUTE_BELOW;hitEnemy(e,kill?e.hp+1:d,Math.atan2(e.y-p.y,e.x-p.x),220,true);if(kill&&!e.dead){e.hp=0;killEnemy(e)}text(e.x,e.y-90,kill?'EXECUTED':'CASE CLOSED','#ffcf70',true);fxAt(e.x,e.y,ab.col,14);shake(5)},
  pool(p,ab,c,d){G.hazards.push({x:c.x,y:c.y,r:ab.r,t:4.2,dps:d*.5/9,from:'p',pid:p.id,col:ab.col});blast(c.x,c.y,ab.r,d*.5,140,0);fxAt(c.x,c.y,ab.col,26);shake(4)},
  leap(p,ab,c,d){stepMove(p,Math.atan2(c.y-p.y,c.x-p.x),Math.max(0,Math.hypot(c.x-p.x,c.y-p.y)-24));p.inv=Math.max(p.inv,.3);blast(p.x,p.y,ab.r,d,240,.6);fxAt(p.x,p.y,ab.col,22);shake(6)},
- pierce(p,ab,c,d){const k=(.5+.5*c.k)*(c.k>=1?1.3:1);for(const e of onLine(p.x,p.y,c.a,ab.len,ab.w))hitEnemy(e,d*k,c.a,160,true);fxAt(p.x+Math.cos(c.a)*ab.len*.5,p.y+Math.sin(c.a)*ab.len*.5,ab.col,18);shake(3)},
+ pierce(p,ab,c,d){fxAt(c.px,c.py,ab.col,14);shake(3)},
  stun(p,ab,c,d){const e=abilFoe.get(p);if(!foeAlive(e))return;hitEnemy(e,d*.5,Math.atan2(e.y-p.y,e.x-p.x),60,true);if(!e.dead){if(ab.freeze&&e.kind!=='boss')e.frozenT=Math.max(e.frozenT||0,ab.stun);else stunFor(e,ab.stun)}fxAt(e.x,e.y,ab.col,16);
    if(ab.chain)for(const o of G.enemies.filter(o=>o!==e&&foeAlive(o)&&dist(o,e)<170).sort((a,b)=>dist(a,e)-dist(b,e)).slice(0,ab.chain)){hitEnemy(o,d*.25,0,30,true);if(!o.dead)stunFor(o,ab.stun*.5);fxAt(o.x,o.y,ab.col,6)}},
  brace(p,ab,c,d){abilityEnd(p);blast(p.x,p.y,ab.r,d*.5,300,1);fxAt(p.x,p.y,ab.col,24);shake(5)},
@@ -1034,14 +1081,16 @@ const ABILITY_FIRE={
  roar(p,ab,c,d){abilityEnd(p);blast(p.x,p.y,170,d,220,.5);fxAt(p.x,p.y,ab.col,24);shake(7)},
  collapse(p,ab,c,d){for(const e of G.enemies)if(foeAlive(e)){const r=Math.hypot(e.x-c.x,e.y-c.y);if(r<ab.r)shove(e,Math.atan2(c.y-e.y,c.x-e.x),Math.max(0,r-20))}blast(c.x,c.y,90,d,0,.8);fxAt(c.x,c.y,ab.col,28);shake(6)},
  decoy(p,ab,c,d){abilityEnd(p);fxAt(p.x,p.y,ab.col,10);p.x=c.x;p.y=c.y;p.inv=Math.max(p.inv,.5);blast(c.x,c.y,ab.r,d*.8,200,.6);fxAt(c.x,c.y,ab.col,22);shake(4)},
- hook(p,ab,c,d){const e=onLine(p.x,p.y,c.a,ab.len,ab.w)[0];if(!e)return;hitEnemy(e,d*.6,c.a+Math.PI,0,true);if(!e.dead&&e.kind!=='boss'){shove(e,Math.atan2(p.y-e.y,p.x-e.x),Math.max(0,dist(e,p)-34));stunFor(e,1)}fxAt(e.x,e.y,ab.col,12)},
+ hook(p,ab,c,d){const e=abilFoe.get(p);abilFoe.delete(p);if(!foeAlive(e)){fxAt(c.px,c.py,ab.col,6);return}hitEnemy(e,d*.6,c.a+Math.PI,0,true);if(!e.dead&&e.kind!=='boss'){shove(e,Math.atan2(p.y-e.y,p.x-e.x),Math.max(0,dist(e,p)-34));stunFor(e,1)}fxAt(e.x,e.y,ab.col,12)},
  hurl(p,ab,c,d){const e=abilFoe.get(p);abilityEnd(p);if(!foeAlive(e))return;const to=clampRange(p,abilAim(p),ab.throw),ang=Math.atan2(to.y-e.y,to.x-e.x);shove(e,ang,Math.hypot(to.x-e.x,to.y-e.y));hitEnemy(e,d*.6,ang,0,true);blast(e.x,e.y,ab.r,d*.4,180,1);fxAt(e.x,e.y,ab.col,20);shake(5)},
  blitz(p,ab,c,d){abilityEnd(p);const m=abilAim(p),ang=Math.atan2(m.y-p.y,m.x-p.x),x0=p.x,y0=p.y;stepMove(p,ang,ab.len);p.inv=Math.max(p.inv,.4);for(const e of G.enemies.slice())if(foeAlive(e)&&segDist(e,x0,y0,p.x,p.y)<30+e.r)hitEnemy(e,d*.7,ang,160,true);fxAt(p.x,p.y,ab.col,14)},
  titan(p,ab,c,d){blast(p.x,p.y,ab.r,d,260,1.5);abilityEnd(p);fxAt(p.x,p.y,ab.col,30);shake(9)},
  push(p,ab,c,d){const r=ab.r+ab.grow*c.k;abilityEnd(p);for(const e of G.enemies.slice()){if(!foeAlive(e)||dist(e,p)>r+e.r)continue;const ang=Math.atan2(e.y-p.y,e.x-p.x);e.wind=0;e.castT=0;shove(e,ang,220);if(c.k>=1)hitEnemy(e,d*.6,ang,0,true);else e.flash=.15}fxAt(p.x,p.y,ab.col,26);shake(4)}
 };
 function tickAbility(p,dt){p.abilT=Math.max(0,(p.abilT||0)-dt);const ab=abilityOf(p);if(!ab)return;
-  const c=p.abilCast;if(c){c.t-=dt;const e=abilFoe.get(p);if(c.aim==='foe'&&foeAlive(e)){c.x=e.x;c.y=e.y}if(c.t<=0){p.abilCast=null;ABILITY_FIRE[c.fx](p,ab,c,abilityDamage(p));if(c.aim==='foe')abilFoe.delete(p)}}
+  const c=p.abilCast;if(c){const e=abilFoe.get(p);if(c.aim==='foe'&&foeAlive(e)&&!c.fly){c.x=e.x;c.y=e.y}
+    let land=false;if(c.fly)land=flyShot(p,ab,c,dt,abilityDamage(p));else{c.t-=dt;if(c.t<=0){if(ab.shot)launchShot(p,ab,c);else land=true}}
+    if(land){p.abilCast=null;ABILITY_FIRE[c.fx](p,ab,c,abilityDamage(p));if(c.aim==='foe')abilFoe.delete(p);shotHits.delete(p)}}
   const a=p.abil;if(!a)return;a.t-=dt;a.armed+=dt;if(a.t<=0||p.carry){abilityEnd(p);return}
   if(a.aim==='foe'){if(!c){const e=foeValid(p,ab);if(e){a.x=e.x;a.y=e.y}}}
   else if(a.aim==='grab'){const e=foeValid(p,ab);if(e){e.x=p.x+Math.cos(p.face)*26;e.y=p.y-2;e.stunT=Math.max(e.stunT||0,.2);a.x=e.x;a.y=e.y}}
@@ -1190,9 +1239,9 @@ function updatePlayer(p,dt){
   p.inv=Math.max(0,p.inv-dt);p.swing=Math.max(0,p.swing-dt);p.atkT=Math.max(0,p.atkT-dt);p.pickT=Math.max(0,p.pickT-dt);p.hitT=Math.max(0,p.hitT-dt);p.castT=Math.max(0,p.castT-dt);p.guard=(mouse.right||touchHold.guard)&&p.dashT<=0;
   if(p.fastT>0)p.fastT-=dt;if(p.magicT>0)p.magicT-=dt;
   p.mana=Math.min(p.s.maxMana,p.mana+p.s.regen*dt*chainBonus().mana);if(auraHas(p,'medic'))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.006*dt);
-  p.specT=Math.max(0,(p.specT||0)-dt);tickAbility(p,dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec(),drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*abilSpeed(p)*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*chainBonus().spd;p.moving=!!(v.x||v.y);
+  p.specT=Math.max(0,(p.specT||0)-dt);tickAbility(p,dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec();p.sprint=canSprint(p,v);if(p.sprint)p.mana=Math.max(0,p.mana-SPRINT.mana*dt);const drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*abilSpeed(p)*(p.sprint?SPRINT.mul:1)*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*chainBonus().spd;p.moving=!!(v.x||v.y);
   if(p.dashT>0&&!(p.webT>0)){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
-  else{move(p,v.x*sp*dt,v.y*sp*dt);if(p.moving){p.walk+=dt*11;p.moveA=Math.atan2(v.y,v.x)}}
+  else{move(p,v.x*sp*dt,v.y*sp*dt);if(p.moving){p.walk+=dt*11*(p.sprint?SPRINT.stride:1);p.moveA=Math.atan2(v.y,v.x)}}
   if(drag)move(drag,p.x-ox,p.y-oy);
   /* Arena doors: a living boss keeps the party inside. */
   if(G.arena&&G.boss){const ad=Math.hypot(p.x-G.arena.x,p.y-G.arena.y);if(ad>G.arena.r){const aa=Math.atan2(p.y-G.arena.y,p.x-G.arena.x);p.x=G.arena.x+Math.cos(aa)*G.arena.r;p.y=G.arena.y+Math.sin(aa)*G.arena.r}}
@@ -1231,11 +1280,13 @@ function update(dt){
   for(let i=0;i<G.enemies.length;i++){const a=G.enemies[i];if(a.dead||a.fleshDown||a.scrapDown||!a.aware)continue;for(let j=i+1;j<G.enemies.length;j++){const b=G.enemies[j];if(b.dead||b.fleshDown||b.scrapDown)continue;const dx=b.x-a.x,dy=b.y-a.y,m=a.r+b.r,d2=dx*dx+dy*dy;if(d2<m*m&&d2>.01){const d=Math.sqrt(d2),o=(m-d)*.5,ox=dx/d*o,oy=dy/d*o;if(a.kind!=='boss')move(a,-ox,-oy);if(b.kind!=='boss')move(b,ox,oy)}}}
   G.enemies=G.enemies.filter(e=>!e.dead);
   for(const s of G.shots){s.life-=dt;const nx=s.x+s.vx*dt,ny=s.y+s.vy*dt;if(s.from==='p')G.p=ownerOf(s);
+    if(s.lob){s.x=nx;s.y=ny;trail(s,dt);continue}
     if(wall(nx/T|0,(ny+22)/T|0)){s.life=0;if(s.from==='p'&&!s.small)explode(s);else impact(s);continue}
     s.x=nx;s.y=ny;trail(s,dt);
     if(s.from==='e'||s.from==='p'){for(const c of G.npcs){if(!c.dead&&!c.wounded&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+3){s.life=0;if(s.from==='p'&&!s.small)explode(s);else{impact(s);hitNpc(c,s.dmg,Math.atan2(s.vy,s.vx),s.from==='p')}break}}if(s.life<=0)continue}
     if(s.from==='p'){let propHit=false;for(const c of G.props||[])if((c.kind==='egg'||c.kind==='scrapPart')&&!c.done&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+4){if(c.kind==='egg')eggHit(c);else scrapPartHit(c,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const q of G.players)if(q!==G.p&&q.webT>0&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+4){clearWeb(q,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const e of G.enemies){if(!e.dead&&!e.fleshDown&&!e.scrapDown&&!(s.hitTargets&&s.hitTargets.includes(e))&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){if(s.small){impact(s);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),90);if(s.pierce>0){G.fx.push({k:'pierceFx',x:s.x,y:s.y,a:Math.atan2(s.vy,s.vx),t:.22,m:.22});(s.hitTargets||(s.hitTargets=[])).push(e);s.pierce--}else s.life=0}else{s.life=0;explode(s)}break}}}
     else for(const q of G.players){if(!(q.respawnT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;if(s.web&&!(q.inv>0||q.deadT>0)){q.webT=WEBBED.webTime;q.dashT=0;G.banner={t:2.5,a:'Webbed',b:G.players.length>1?'An ally can attack the web to free you':'The web breaks after 5 seconds'};text(q.x,q.y-70,'WEBBED','#e6e6c8',true)}hurtPlayer(s.dmg);impact(s);break}}}
+  for(const s of G.shots)if(s.life<=0&&s.breaks&&!s.pooled){s.pooled=s.pooled||!s.pool;if(s.from==='p'){G.p=ownerOf(s);explode(s)}else{impact(s,s.blast);for(const q of G.players){G.p=q;if(Math.hypot(q.x-s.x,q.y-22-s.y)<s.blast+q.r)hurtPlayer(s.dmg)}}}
   G.shots=G.shots.filter(s=>s.life>0);G.enemies=G.enemies.filter(e=>!e.dead);
   G.loot=G.loot.filter(l=>{l.t+=dt;const p=nearestPlayer(l);G.p=p;const d=dist(l,p),mag=(l.kind==='item'||(l.kind==='weapon'&&!p.weapons.includes(l.w)))?0:96;if(mag&&d<mag){const a=Math.atan2(p.y-l.y,p.x-l.x);l.x+=Math.cos(a)*300*dt;l.y+=Math.sin(a)*300*dt}if(d<(l.kind==='item'||l.kind==='weapon'?30:18)){pickup(l);return false}return true});
   for(const q of alivePlayers()){if(G.gate.open&&!G.boss&&!G.clearPending&&!(q.deadT>0||q.respawnT>0)&&dist(q,G.gate)<46){G.p=q;summonBoss()}}
@@ -1256,8 +1307,12 @@ function updateNpcs(dt){const boss=!!G.boss;G.quipT-=dt;for(const p of G.players
   }
   G.npcs=G.npcs.filter(c=>!c.dead);
 }
-function trail(s,dt){const c=s.col||'255,200,120',f=s.fx;s.tr=(s.tr||0)-dt;s.spin=(s.spin||0)+dt*(f==='card'?22:6);if(s.tr>0)return;s.tr=f==='comet'?.012:.03;
-  if(f==='comet'){glowP(s.x,s.y,c,2,50,.5,5);glowP(s.x,s.y,'255,255,255',1,20,.2,2)}else if(f==='orb'||f==='arcane'||f==='skull')glowP(s.x,s.y,c,1,40,.45,4);else if(f==='ember'){glowP(s.x,s.y,'255,140,50',2,60,.5,4)}else if(f==='flask')glowP(s.x,s.y,c,1,30,.5,3.5);else if(f==='plasma')glowP(s.x,s.y,c,1,30,.25,3);else if(f==='card')glowP(s.x,s.y,c,1,50,.35,2.5)}
+/* How high a thrown or lobbed shot is above its ground track right now. */
+const thrownLift=s=>{const k=v=>Math.sin(clamp(v,0,1)*Math.PI);return s.lob?k((s.age||0)/s.lob)*90:s.hopT?k((s.age||0)/s.hopT)*(THROWN_HOP[s.fx]||12):0};
+/* Thrown objects hop as they fly (height in units) and spin; the rest fly flat. */
+const THROWN_HOP={flask:22,skull:14,card:10},THROWN_SPIN={flask:15,skull:11,card:22};
+function trail(s,dt){const c=s.col||'255,200,120',f=s.fx;s.age=(s.age||0)+dt;s.tr=(s.tr||0)-dt;s.spin=(s.spin||0)+dt*(THROWN_SPIN[f]||6);if(s.tr>0)return;s.tr=f==='comet'?.012:.03;
+  if(f==='comet'){glowP(s.x,s.y,c,2,50,.5,5);glowP(s.x,s.y,'255,255,255',1,20,.2,2)}else if(f==='orb'||f==='arcane'||f==='skull')glowP(s.x,s.y,c,1,40,.45,4);else if(f==='ember'){glowP(s.x,s.y,'255,140,50',2,60,.5,4)}else if(f==='flask'){glowP(s.x,s.y-thrownLift(s),c,1,30,.5,3.5);if(Math.random()<.5)G.fx.push({k:'p',x:s.x+rnd(-3,3),y:s.y-thrownLift(s)+4,vx:rnd(-10,10),vy:rnd(30,70),t:.35,m:.35,c:'rgb('+c+')',s:rnd(1.5,3)})}else if(f==='plasma')glowP(s.x,s.y,c,1,30,.25,3);else if(f==='card')glowP(s.x,s.y,c,1,50,.35,2.5)}
 function tickFx(dt){for(const f of G.fx){f.t-=dt;if(f.k==='p'){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.92;f.vy*=.92}}G.fx=G.fx.filter(f=>f.t>0);
   for(const f of G.fx){if(f.k==='g'){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.93;f.vy*=.93}else if(f.k==='blood'||f.k==='gib'){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vz+=760*dt;f.z+=f.vz*dt;if(f.spin)f.rot+=f.spin*dt;if(f.z>=0&&f.vz>0){if(f.k==='blood'){if(Math.random()<GORE.mark)addDecal(f.x,f.y,f.s*rnd(.9,2.2),false);f.t=0}else{addDecal(f.x,f.y,f.s*.8,false);f.vz*=-.32;f.vx*=.5;f.vy*=.5;f.spin*=.5;f.z=0}}}}
   for(const x of G.texts){x.t-=dt;x.y-=34*dt}G.texts=G.texts.filter(x=>x.t>0);G.shake*=Math.pow(.002,dt);

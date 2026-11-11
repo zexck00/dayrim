@@ -144,10 +144,15 @@ function buildFrame(sp,dir,anim,f){
   const L=(x,y,a,len,w,c)=>{g.fillStyle=c;for(let i=0;i<=len;i++)g.fillRect(Math.round(x+Math.cos(a)*i-w/2),Math.round(y+Math.sin(a)*i-w/2),w,w);return[x+Math.cos(a)*len,y+Math.sin(a)*len]};
   const ranged=RANGED_W.has(sp.w);
   let by=0,lean=0,lDx=0,rDx=0,lUp=0,rUp=0,aF=Math.PI/2+.08,aB=Math.PI/2-.08,tuck=false,glint=false;
-  if(anim==='walk'){const sw=[1,.3,-1,-.3][f];by=(f%2)?-1:0;if(dir===2){lDx=4*sw;rDx=-4*sw;lUp=sw<0?2:0;rUp=sw>0?2:0}else{lUp=f===1?3:0;rUp=f===3?3:0}aF=Math.PI/2+.55*sw;aB=Math.PI/2-.55*sw}
+  /* Walk and run are sampled from one smooth stride cycle; run has a longer stride, higher knees, a deeper bounce and a forward lean. */
+  if(anim==='walk'||anim==='run'){const run=anim==='run',ph=f/WALK_N*TAU,sw=Math.cos(ph),up=Math.sin(ph),stride=run?6:4,lift=run?3:2,arm=run?.95:.55;
+    by=Math.abs(up)>.5?(run?-2:-1):0;if(run&&dir===2)lean=2;
+    if(dir===2){lDx=stride*sw;rDx=-stride*sw;lUp=Math.round(Math.max(0,-up)*lift);rUp=Math.round(Math.max(0,up)*lift)}else{lUp=Math.round(Math.max(0,up)*(lift+1));rUp=Math.round(Math.max(0,-up)*(lift+1))}
+    aF=Math.PI/2+arm*sw;aB=Math.PI/2-arm*sw}
   else if(anim==='idle'){by=f?1:0}
-  else if(anim==='attack'){lean=[-1,2,2][f];lDx=3;rDx=-3;
-    if(sp.w==='fist')aF=[2.6,-.05,.25][f];else if(ranged||sp.w==='shield')aF=[.5,-.05,.08][f];else aF=[-2.3,-.5,.75][f];aB=Math.PI/2+.5}
+  /* Attack: wind-up, swing, impact, follow-through, recover */
+  else if(anim==='attack'){lean=[-2,-1,2,2,1][f];lDx=[2,3,4,3,2][f];rDx=-lDx;
+    if(sp.w==='fist')aF=[2.8,2.6,-.05,.25,.9][f];else if(ranged||sp.w==='shield')aF=[.7,.5,-.05,.08,.4][f];else aF=[-2.6,-2.3,-.5,.75,1.1][f];aB=Math.PI/2+.5}
   else if(anim==='pickup'){if(f<2){by=6;aF=1.2;aB=1.9;lDx=2;rDx=-2}else{aF=-1.45;aB=Math.PI/2;glint=true}}
   else if(anim==='hit'){lean=-2;aF=-.6;aB=-2.5;lDx=2;rDx=-2}
   else if(anim==='dodge'){by=7;tuck=true;aF=.6;aB=.9}
@@ -249,12 +254,22 @@ function buildFrame(sp,dir,anim,f){
   return cv;
 }
 function shade(hex){if(hex.length!==7)return hex;const n=parseInt(hex.slice(1),16),f=.72,r=(n>>16)*f|0,g=((n>>8)&255)*f|0,b=(n&255)*f|0;return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1)}
+/* Frame counts for the smooth cycles, and how game timers pick a frame. A stride is 4 units of walk. */
+const WALK_N=8,ATTACK_N=5;
+const walkFrame=w=>((Math.floor((w||0)*WALK_N/4)%WALK_N)+WALK_N)%WALK_N;
+const attackFrame=q=>Math.max(0,Math.min(ATTACK_N-1,Math.floor(q*ATTACK_N)));
+/* Enemies keep their own timers: a wind-up shows the first pose, the strike plays the rest. */
+const ENEMY_STRIKE=.2,enemyAttackFrame=e=>e.wind>0?0:Math.min(ATTACK_N-1,1+Math.floor((1-Math.max(0,e.atkShow)/ENEMY_STRIKE)*(ATTACK_N-1)));
 const FRAMES=new Map();
 function frame(name,dir,anim,f,wpn){const k=name+'|'+dir+'|'+anim+'|'+f+'|'+(wpn||'');let c=FRAMES.get(k);if(!c){let sp=SPECS[name]||SPECS.Tourist;if(wpn){const rw=wpn==='fists'?'fist':wpn;sp=Object.assign({},sp,{w:rw,wc:sp.w===rw?sp.wc:undefined})}c=buildFrame(sp,dir,anim,f);FRAMES.set(k,c)}return c}
 const dirOf=a=>{const c=Math.cos(a),s=Math.sin(a);return Math.abs(c)>=Math.abs(s)*.9?2:(s<0?1:0)};
 const PS=1.6;
-function blit(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size=1){
-  const im=frame(name,dir,anim,f,wpn);c2.save();c2.imageSmoothingEnabled=false;c2.translate(x,y);if(size!==1)c2.scale(size,size);if(flip)c2.scale(-1,1);
+/* mo: smooth motion added while drawing, so it moves every frame instead of in pose steps.
+   dx, dy: offset · rot: lean about the feet · sx, sy: squash and stretch about the feet. */
+function blit(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size=1,mo){
+  const im=frame(name,dir,anim,f,wpn);c2.save();c2.imageSmoothingEnabled=false;c2.translate(x,y);
+  if(mo){c2.translate(mo.dx||0,mo.dy||0);if(mo.rot)c2.rotate(mo.rot);if(mo.sx||mo.sy)c2.scale(mo.sx||1,mo.sy||1)}
+  if(size!==1)c2.scale(size,size);if(flip)c2.scale(-1,1);
   if(rot){c2.translate(0,-14*PS);c2.rotate(rot);c2.translate(0,14*PS)}
   if(alpha!==undefined)c2.globalAlpha=alpha;
   c2.drawImage(im,-24*PS,-45*PS,48*PS,48*PS);c2.restore();

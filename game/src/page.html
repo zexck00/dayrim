@@ -184,7 +184,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .sel-body{grid-template-columns:minmax(0,1fr)}
   .detail{order:-1;grid-template-columns:90px minmax(0,1fr);column-gap:10px}
   .pv{grid-row:span 4}
-  .detail .go{grid-column:1/-1}
+  .detail .go,.detail .ability-note{grid-column:1/-1}
   .detail .ctl{display:none}
   .roster{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
@@ -208,7 +208,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .touch-tools{position:absolute;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:6px;align-items:end}
 .touch-ability{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:calc(max(8px,env(safe-area-inset-bottom)) + 182px);display:flex;gap:6px}
 .touch-ability[hidden]{display:none}
-.touch button[data-a="use"]:not([data-state="waiting"]){border-color:#ffcf70;color:#ffe7a8}
+.touch button[data-a="ability"].armed{border-color:#ffcf70;color:#ffe7a8;box-shadow:0 0 0 2px rgba(255,207,112,.45)}
 .touch-extra{position:absolute;bottom:58px;left:0;display:grid;grid-template-columns:repeat(3,52px);gap:6px;padding:6px;border-radius:16px;background:rgba(5,15,22,.9)}
 .screen.touch-playing>.sound{display:none}
 @media(max-height:500px){.touch-primary{grid-template-columns:repeat(4,48px);grid-auto-rows:48px;gap:4px}.touch button{width:48px;height:48px}.touch-primary .big{width:100px}.touch-extra{bottom:52px;grid-template-columns:repeat(3,48px)}}
@@ -228,6 +228,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .touch-primary .big .touch-icon{font-size:20px}.touch-extra{border:1px solid #b88743;background:rgba(24,20,17,.96);box-shadow:0 2px 6px #000b}
 .touch button[data-a="revive"].nearby{border-color:#a7e6a6;background:radial-gradient(circle,#417843,#183921);box-shadow:0 0 0 2px #a7e6a688}
 .joystick{border-color:#d4a867;background:rgba(50,37,23,.5);box-shadow:inset 0 0 0 3px #3b291a,0 2px 5px #0008}.joystick i{background:#b39561;border-color:#f3d293}
+/* Dragging the stick far out sprints: the ring glows while it does. */
+.joystick.sprint{border-color:#8fffe0;box-shadow:inset 0 0 0 3px #1d4a42,0 0 14px rgba(143,255,224,.65)}.joystick.sprint i{background:#6fd6c0;border-color:#d8fff4}
+/* Ability and Use show the character's own move names; long names shrink to fit. */
+.touch-ability .touch-label{font-size:10px;line-height:1.05;max-width:46px;overflow-wrap:anywhere}.touch-ability .touch-label.long{font-size:8.5px}
+/* Landscape phones: Ability and Use stand in a column beside the main buttons instead of a row on top, so the controls stay low. */
+@media(orientation:landscape) and (max-height:500px){.touch-ability{flex-direction:column;bottom:max(8px,env(safe-area-inset-bottom));right:calc(max(8px,env(safe-area-inset-right)) + 4*48px + 3*4px + 6px)}}
 
 </style>
 
@@ -254,7 +260,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
         </div>
         <div class="touch-ability" id="touch-ability" hidden>
           <button type="button" data-a="ability"><span class="touch-icon" aria-hidden="true">◎</span><span class="touch-label">Ability</span></button>
-          <button type="button" data-a="use"><span class="touch-icon" aria-hidden="true">✷</span><span class="touch-label">Use</span></button>
         </div>
         <div class="touch-tools">
           <button type="button" data-a="more" aria-expanded="false" aria-controls="touch-extra"><span class="touch-icon" aria-hidden="true">•••</span><span class="touch-label">More</span></button>

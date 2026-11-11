@@ -91,7 +91,7 @@ for(const [ch,id] of [['Detective','pistol'],['Necromancer','signature']]){const
 for(const ch of ['Necromancer','Void Empress','Toxin Alchemist']){const r=mk(),p=s.createRoom(r,ch,null,'Signature');T.enter(r);G().enemies=[];G().p=p;p.gold=500;p.nearSafe=false;p.actions.push({n:'upgrade',v:'signature'});s.step(r,1/30);ok(!T.upgradeLevel(p,'signature')&&p.gold===500,ch+' cannot upgrade away from the safehouse');p.nearSafe=true;p.actions.push({n:'upgrade',v:'fists'},{n:'upgrade',v:'__proto__'});s.step(r,1/30);ok(p.gold===500&&!T.upgradeLevel(p,'signature'),ch+' rejects forged weapon upgrades');T.enter(r);G().p=p;const base=['small','moderate','special'].map(id=>T.moveDamage(p,'',id));p.nearSafe=true;p.actions.push({n:'upgrade',v:'signature'});s.step(r,1/30);T.enter(r);G().p=p;ok(T.upgradeLevel(p,'signature')===1&&p.gold===420&&['small','moderate','special'].every((id,i)=>Math.abs(T.moveDamage(p,'',id)/base[i]-1.2)<1e-9),ch+' first signature upgrade improves every move by 20 percent');p.nearSafe=true;p.actions.push({n:'upgrade',v:'signature'});s.step(r,1/30);T.enter(r);G().p=p;ok(T.upgradeLevel(p,'signature')===2&&p.gold===240&&['small','moderate','special'].every((id,i)=>Math.abs(T.moveDamage(p,'',id)/base[i]-1.5)<1e-9),ch+' second signature upgrade improves every move by 50 percent');p.nearSafe=true;p.actions.push({n:'upgrade',v:'signature'});s.step(r,1/30);ok(p.gold===240&&T.upgradeLevel(p,'signature')===2,ch+' third signature upgrade requires enough gold');const saved=s.saveOf(p),reload=mk(),q=s.createRoom(reload,ch,saved,'Reload');ok(T.upgradeLevel(q,'signature')===2,ch+' signature upgrade survives saving')}
 {const r=mk(),p=s.createRoom(r,'Necromancer',null,'Kit effects'),q=s.addPlayer(r,'Void Empress',null,'Observer');T.enter(r);G().enemies=[];p.weaponUpgrades.signature=2;p.input.l=true;p.input.ax=p.x+100;p.input.ay=p.y;q.x=p.x+20;q.y=p.y;r.ev.length=0;for(let i=0;i<20;i++)s.step(r,1/30);p.input.l=false;const sync=require('./sync'),snap=sync.snapshot(r,q,sync.newClient(),1);ok(snap.v&&snap.v.some(v=>v[0]==='f'&&v[1].k==='ring'&&v[1].c==='#6effaa'),'upgraded signature pulse reaches nearby online allies')}
 // Signature upgrades reach the real damage-over-time hazard, not only the preview.
-{const r=mk(),p=s.createRoom(r,'Toxin Alchemist',null,'Kit hazard');T.enter(r);G().enemies=[];p.input.ax=p.x+100;p.input.ay=p.y;p.input.l=true;for(let i=0;i<18;i++)s.step(r,1/30);p.input.l=false;const first=G().hazards.find(h=>h.from==='p'),dps=first&&first.dps;p.mv=null;G().hazards=[];p.weaponUpgrades.signature=2;p.input.l=true;for(let i=0;i<18;i++)s.step(r,1/30);p.input.l=false;const next=G().hazards.find(h=>h.from==='p');ok(dps>0&&next&&Math.abs(next.dps/dps-1.5)<1e-9&&next.pid===p.id,'signature upgrade scales the owned poison hazard by 50 percent')}
+{const r=mk(),p=s.createRoom(r,'Toxin Alchemist',null,'Kit hazard');T.enter(r);G().enemies=[];p.input.ax=p.x+100;p.input.ay=p.y;p.input.l=true;for(let i=0;i<18;i++)s.step(r,1/30);p.input.l=false;for(let i=0;i<12;i++)s.step(r,1/30);const first=G().hazards.find(h=>h.from==='p'),dps=first&&first.dps;p.mv=null;G().hazards=[];G().shots=[];p.weaponUpgrades.signature=2;p.input.l=true;for(let i=0;i<18;i++)s.step(r,1/30);p.input.l=false;for(let i=0;i<12;i++)s.step(r,1/30);p.input.l=false;const next=G().hazards.find(h=>h.from==='p');ok(dps>0&&next&&Math.abs(next.dps/dps-1.5)<1e-9&&next.pid===p.id,'signature upgrade scales the owned poison hazard by 50 percent')}
 {const r=mk(),p=s.createRoom(r,'Detective',null,'No kit');T.enter(r);p.nearSafe=true;p.gold=500;p.actions.push({n:'upgrade',v:'signature'});s.step(r,1/30);ok(p.gold===500&&!T.upgradeLevel(p,'signature'),'ordinary characters cannot buy signature upgrades')}
 // Stage 1 gives both factions an interruptible healer encounter.
 for(const ch of ['Detective','Necromancer']){const r=mk();s.createRoom(r,ch,null,'Stage');T.enter(r);ok(G().enemies.some(e=>e.role==='healer'),ch+' encounters a Stage 1 healer')}T.enter(room);
@@ -754,15 +754,14 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  {const {p,b}=setup();G().p=p;b.hp=b.maxHp*.51;T.reactHit(b,b.maxHp*.02,'#fff');ok(b.phase===1&&b.rustField,'reaction splash crossing half life activates Rust Field');T.restartCheckpoint();G().p=p;T.summonBoss();const next=G().boss;next.hp=next.maxHp*.51;next.rotT=2;next.rotRate=next.maxHp*.02;G().p=p;T.updateEnemy(next,1);ok(next.phase===1&&next.rustField,'damage over time crossing half life activates Rust Field')}
 
 }
-// Abilities: Ability arms, Use fires after the special attack's cast delay, then the special cooldown runs.
+// Abilities: one button. Lock On is a tap: it locks and fires at once, then the special cooldown runs.
 {const r=mk(),p=s.createRoom(r,'Detective',null,'Mark');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+30,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;
  p.actions.push({n:'use'});run(1);ok(!p.abilCast&&!(p.abilT>0),'Use does nothing until the Ability is armed');
- p.actions.push({n:'ability'});run(1);ok(p.abil&&p.abil.fx==='mark'&&Math.abs(p.abil.x-e.x)<1,'Detective Ability locks onto the enemy nearest the aim');
- p.actions.push({n:'use'});run(1);ok(p.abilCast&&!p.abil&&p.abilT>T.SPECIAL_CD*.5,'Use starts the cast and the special cooldown');
+ p.actions.push({n:'ability'});run(1);ok(p.abilCast&&p.abilCast.fx==='mark'&&!p.abil&&Math.abs(p.abilCast.x-e.x)<1&&p.abilT>T.SPECIAL_CD*.5,'one tap of Lock On locks the nearest enemy, fires, and starts the cooldown');
  const hp=e.hp;G().p=p;const d=T.abilityDamage(p);run(40);ok(!p.abilCast&&hp-e.hp>d*.5,'Execute hits the marked enemy for special-attack damage');
  p.actions.push({n:'ability'});run(1);ok(!p.abil,'the Ability waits for its cooldown');
- p.abilT=0;e.hp=e.maxHp*.2;p.actions.push({n:'ability'});run(1);p.actions.push({n:'use'});run(40);ok(e.dead,'Execute finishes an enemy below a quarter of its life');
+ p.abilT=0;e.hp=e.maxHp*.2;p.actions.push({n:'ability'});run(40);ok(e.dead,'Execute finishes an enemy below a quarter of its life');
  G().enemies=[];p.abilT=0;p.actions.push({n:'ability'});run(1);ok(!p.abil,'Mark needs a target in range')}
 {const r=mk(),p=s.createRoom(r,'Toxin Alchemist',null,'Flask');T.enter(r);G().enemies=[];G().p=p;const ab=T.ABILITIES['Toxin Alchemist'],e=T.spawnMob(0,{x:p.x+30,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=p.x+5000;p.input.ay=p.y;
@@ -783,9 +782,29 @@ const PLAY=Object.keys(T.ROSTER.hero).concat(Object.keys(T.ROSTER.villain));
 ok(PLAY.every(n=>T.ABILITIES[n]&&T.ABILITY_FIRE[T.ABILITIES[n].fx]&&T.ABILITIES[n].n&&T.ABILITIES[n].use),'all '+PLAY.length+' playable characters have an Ability and a Use');
 for(const ch of PLAY){const ab=T.ABILITIES[ch],r=mk(),p=s.createRoom(r,ch,null,'Ab');T.enter(r);G().enemies=[];G().npcs=[];G().p=p;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;if(ab.fx==='heal')p.hp=p.s.maxHp*.3;
- p.actions.push({n:'ability'});run(ab.charge?Math.ceil(ab.charge*30)+2:1);const armed=!!p.abil;const x0=e.x,y0=e.y;p.actions.push({n:'use'});run(45);
+ p.actions.push({n:'ability'});run(ab.charge?Math.ceil(ab.charge*30)+2:1);const armed=!!(p.abil||p.abilCast);const x0=e.x,y0=e.y;p.actions.push({n:'use'});run(45);
  const landed=ab.fx==='heal'?p.hp>=p.s.maxHp-1e-6:e.hp<e.maxHp||Math.hypot(e.x-x0,e.y-y0)>20;
  ok(armed&&landed&&!p.abil&&!p.abilCast&&p.abilT>0,ch+': '+ab.n+' then '+ab.use+' lands')}
+// One button: a hold kind fires on release, an again kind fires its finisher on the second press.
+{const r=mk(),p=s.createRoom(r,'Cyborg',null,'Again');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+60,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ p.actions.push({n:'ability'});run(1);const on=T.abilSize(p)===2;p.actions.push({n:'ability'});run(40);ok(on&&e.hp<e.maxHp&&!p.abil,'pressing Titan Form again fires Titan Stomp')}
+ok(T.abilityMode(T.ABILITIES.Detective)==='tap'&&T.abilityMode(T.ABILITIES.Ranger)==='hold'&&T.abilityMode(T.ABILITIES['Toxin Alchemist'])==='hold'&&T.abilityMode(T.ABILITIES.Voidwalker)==='hold'&&T.abilityMode(T.ABILITIES.Cyborg)==='again'&&T.abilityMode(T.ABILITIES.Prodigy)==='again','each kind gets the right one-button behaviour');
+// The Necromancer throws a skull with its small attack.
+{const r=mk(),p=s.createRoom(r,'Necromancer',null,'Skull');T.enter(r);G().enemies=[];G().shots=[];G().p=p;const e=T.spawnMob(0,{x:p.x+150,y:p.y},false);e.x=p.x+150;e.y=p.y;e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;p.input.ax=p.x+240;p.input.ay=p.y;T.doMove('small');let skull=false;for(let i=0;i<40;i++){s.step(r,1/30);r.ev.length=0;if(G().shots.some(o=>o.fx==='skull'&&o.from==='p'))skull=true}
+ ok(skull&&e.hp<e.maxHp,'the Necromancer small attack throws a skull that hits')}
+// Ranged abilities launch a projectile that travels before it lands.
+{const r=mk(),p=s.createRoom(r,'Detective',null,'Shot');T.enter(r);G().enemies=[];G().p=p;const W=G().w;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;e.x=p.x+40;
+ const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;p.actions.push({n:'ability'});run(1);p.actions.push({n:'use'});run(1);
+ let flew=false,landedHp=null;for(let i=0;i<60&&p.abilCast;i++){if(p.abilCast.fly&&e.hp===e.maxHp)flew=true;run(1)}
+ ok(flew&&e.hp<e.maxHp&&!p.abilCast,'Execute fires a bullet that flies before it hits')}
+{const r=mk(),p=s.createRoom(r,'Vigilante',null,'Hook');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;
+ const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x+300;p.input.ay=e.y;p.actions.push({n:'ability'});run(1);p.actions.push({n:'use'});let fly=false;for(let i=0;i<60;i++){run(1);if(p.abilCast&&p.abilCast.fly)fly=true;if(!p.abilCast&&i>2)break}
+ ok(fly&&e.hp<e.maxHp,'the hook flies out and catches the first enemy on its line')}
+// Toxin Alchemist throws flasks: a straight one for the small attack, a lobbed one for the moderate.
+for(const [id,lob] of [['small',false],['moderate',true]]){const r=mk(),p=s.createRoom(r,'Toxin Alchemist',null,'Flask');T.enter(r);G().enemies=[];G().shots=[];G().hazards=[];G().p=p;const e=T.spawnMob(0,{x:p.x+150,y:p.y},false);e.x=p.x+150;e.y=p.y;e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
+ p.input.ax=p.x+240;p.input.ay=p.y;T.doMove(id);let shot=null;for(let i=0;i<40;i++){s.step(r,1/30);r.ev.length=0;const f=G().shots.find(o=>o.fx==='flask'&&o.from==='p');if(f)shot=f}
+ ok(shot&&!!shot.lob===lob&&G().hazards.some(h=>h.from==='p'),'Toxin Alchemist '+id+' attack throws a '+(lob?'lobbed':'straight')+' flask that leaves a poison pool');
+ if(!lob)ok(e.hp<e.maxHp,'the straight flask breaks on the first enemy it meets')}
 // Buffs change the rules only while they are armed.
 {const r=mk(),p=s.createRoom(r,'Cyborg',null,'Titan'),q=s.addPlayer(r,'Guardian',null,'Wall');T.enter(r);G().enemies=[];G().p=p;const base=T.abilityDamage(p);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;G().p=p;
  ok(T.abilSize(p)===2&&Math.abs(T.abilityDamage(p)/base-1.5)<1e-9&&T.abilGuard(p)<.7,'Titan Form doubles size, adds half again to damage and cuts damage taken');
@@ -793,6 +812,11 @@ for(const ch of PLAY){const ab=T.ABILITIES[ch],r=mk(),p=s.createRoom(r,ch,null,'
 {const r=mk(),p=s.createRoom(r,'Phantom',null,'Fast');T.enter(r);G().p=p;ok(T.abilSpeed(p)===1,'no speed boost before Overdrive');p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(T.abilSpeed(p)===2&&p.abilT>0,'Overdrive doubles speed and starts its cooldown')}
 {const r=mk(),p=s.createRoom(r,'Hero Shadow',null,'Gone');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+60,y:p.y},false);e.aware=true;p.actions.push({n:'ability'});for(let i=0;i<10;i++){s.step(r,1/30);r.ev.length=0}ok(!e.aware&&p.inv>0,'enemies lose track of an invisible player, who cannot be hurt')}
 {const r=mk(),p=s.createRoom(r,'Blood Reaper',null,'Roar');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+150,y:p.y},false);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(e.tauntT>0&&e.tauntId===(p.id||0),'a roar taunts nearby enemies')}
+// Sprint: faster with Shift held, costs mana, and stops while attacking.
+{const go=(sp,l)=>{const r=mk(),p=s.createRoom(r,'Detective',null,'Run');T.enter(r);G().enemies=[];p.mana=p.s.maxMana;const W=G().w;p.x=G().safe.x;p.y=G().safe.y;const x0=p.x,m0=p.mana;p.input.x=1;p.input.y=0;p.input.sp=sp;p.input.l=l;p.input.ax=p.x+500;p.input.ay=p.y;for(let i=0;i<15;i++){s.step(r,1/30);r.ev.length=0}return{d:p.x-x0,mana:p.mana-m0,sprint:p.sprint}};
+ const walk=go(false,false),run=go(true,false),hit=go(true,true);
+ ok(run.sprint&&Math.abs(run.d/walk.d-T.SPRINT.mul)<.08,'sprinting moves '+T.SPRINT.mul+' times as far: '+(run.d/walk.d).toFixed(2));
+ ok(run.mana<walk.mana,'sprinting costs mana');ok(!hit.sprint,'attacking stops a sprint')}
 // Skills train to 100, and enemies carry a level from the stage.
 ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains to rank 100');
 {const r=mk(),p=s.createRoom(r,'Detective',null,'Rank');T.enter(r);p.sp=3;p.skills.power=15;p.actions.push({n:'skill',v:'power'});s.step(r,1/30);r.ev.length=0;ok(p.skills.power===16,'a skill trains past the old cap of 15');

@@ -58,7 +58,7 @@ function netStage(m){
 }
 
 /* Apply what the server says changed */
-const OWN_PREDICTED=new Set(['face','walk','moving','moveA']);
+const OWN_PREDICTED=new Set(['face','walk','moving','moveA','sprint']);
 function patch(o,d,glide,own){for(const k in d){if(k==='id')continue;if(own&&OWN_PREDICTED.has(k))continue;let v=d[k];if(typeof v==='string'&&(v[0]==='{'||v[0]==='['))v=JSON.parse(v);
   if(k==='x'&&glide){o.tx=v;continue}if(k==='y'&&glide){o.ty=v;continue}o[k]=v===null?undefined:v}}
 function applyList(rec,map,kind){if(!rec)return false;const [upd,rm]=rec;let changed=rm.length>0;
@@ -105,7 +105,7 @@ function netUpdate(dt){
   const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
   if(me.webT>0)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
-  else if(v.x||v.y){const sp=envSpeed(me)*me.s.speed*abilSpeed(me)*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11;me.moveA=Math.atan2(v.y,v.x)}
+  else if(v.x||v.y){me.sprint=canSprint(me,v);const sp=envSpeed(me)*me.s.speed*abilSpeed(me)*(me.sprint?SPRINT.mul:1)*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11*(me.sprint?SPRINT.stride:1);me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
   if(me.x!==bx||me.y!==by)net.pending.push({s:net.seq+1,dx:me.x-bx,dy:me.y-by});if(net.pending.length>240)net.pending.shift();
   net.reviveT-=dt;if(net.reviveT<=0&&G.mode==='play'&&(keys.has('KeyF')||touchHold.revive)){net.reviveT=.2;netSend({t:'a',n:'revive',v:true})}net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}
@@ -114,7 +114,7 @@ function netUpdate(dt){
 function netSendInput(force,v,playing){
   const me=G.p;if(playing===undefined)playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0);v=v||(G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0});const aim=touchMode?(me.abil?abilAim(me):{x:me.x+Math.cos(me.face)*120,y:me.y-22+Math.sin(me.face)*120}):mouse;
   const l=playing&&!!(mouse.left||touchHold.slash),r=playing&&!!(mouse.right||touchHold.guard);
-  const body={x:+v.x.toFixed(3),y:+v.y.toFixed(3),ax:Math.round(aim.x||0),ay:Math.round(aim.y||0),l,r},str=JSON.stringify(body),same=str===net.last;
+  const body={x:+v.x.toFixed(3),y:+v.y.toFixed(3),ax:Math.round(aim.x||0),ay:Math.round(aim.y||0),l,r,sp:playing&&sprintKey},str=JSON.stringify(body),same=str===net.last;
   if(same&&!force&&!(v.x||v.y)&&net.dash<=0&&net.idleT<.25)return;
   net.idleT=0;net.last=str;net.seq++;netSend(Object.assign({t:'i',s:net.seq},body));
 }
