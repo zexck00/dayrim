@@ -754,14 +754,15 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  {const {p,b}=setup();G().p=p;b.hp=b.maxHp*.51;T.reactHit(b,b.maxHp*.02,'#fff');ok(b.phase===1&&b.rustField,'reaction splash crossing half life activates Rust Field');T.restartCheckpoint();G().p=p;T.summonBoss();const next=G().boss;next.hp=next.maxHp*.51;next.rotT=2;next.rotRate=next.maxHp*.02;G().p=p;T.updateEnemy(next,1);ok(next.phase===1&&next.rustField,'damage over time crossing half life activates Rust Field')}
 
 }
-// Abilities: one button. Lock On is a tap: it locks and fires at once, then the special cooldown runs.
+// Abilities: C readies Lock On, a click fires it, then the special cooldown runs.
 {const r=mk(),p=s.createRoom(r,'Detective',null,'Mark');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+30,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;
  p.actions.push({n:'use'});run(1);ok(!p.abilCast&&!(p.abilT>0),'Use does nothing until the Ability is armed');
- p.actions.push({n:'ability'});run(1);ok(p.abilCast&&p.abilCast.fx==='mark'&&!p.abil&&Math.abs(p.abilCast.x-e.x)<1&&p.abilT>T.SPECIAL_CD*.5,'one tap of Lock On locks the nearest enemy, fires, and starts the cooldown');
+ p.actions.push({n:'ability'});run(1);ok(p.abil&&p.abil.fx==='mark'&&Math.abs(p.abil.x-e.x)<1&&!p.abilCast,'C readies Lock On on the enemy nearest the aim');
+ p.input.l=true;run(1);ok(p.abilCast&&!p.abil&&p.abilT>T.SPECIAL_CD*.5&&!(p.cd.slash>0),'a click fires it and starts the cooldown, without a normal attack');run(1);ok(!p.abil&&!(p.cd.slash>0),'holding the click does not attack until it is let go');p.input.l=false;
  const hp=e.hp;G().p=p;const d=T.abilityDamage(p);run(40);ok(!p.abilCast&&hp-e.hp>d*.5,'Execute hits the marked enemy for special-attack damage');
  p.actions.push({n:'ability'});run(1);ok(!p.abil,'the Ability waits for its cooldown');
- p.abilT=0;e.hp=e.maxHp*.2;p.actions.push({n:'ability'});run(40);ok(e.dead,'Execute finishes an enemy below a quarter of its life');
+ p.abilT=0;e.hp=e.maxHp*.2;p.actions.push({n:'ability'});run(1);p.actions.push({n:'use'});run(40);ok(e.dead,'Execute finishes an enemy below a quarter of its life');
  G().enemies=[];p.abilT=0;p.actions.push({n:'ability'});run(1);ok(!p.abil,'Mark needs a target in range')}
 {const r=mk(),p=s.createRoom(r,'Toxin Alchemist',null,'Flask');T.enter(r);G().enemies=[];G().p=p;const ab=T.ABILITIES['Toxin Alchemist'],e=T.spawnMob(0,{x:p.x+30,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=p.x+5000;p.input.ay=p.y;
@@ -788,7 +789,8 @@ for(const ch of PLAY){const ab=T.ABILITIES[ch],r=mk(),p=s.createRoom(r,ch,null,'
 // One button: a hold kind fires on release, an again kind fires its finisher on the second press.
 {const r=mk(),p=s.createRoom(r,'Cyborg',null,'Again');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+60,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
  p.actions.push({n:'ability'});run(1);const on=T.abilSize(p)===2;p.actions.push({n:'ability'});run(40);ok(on&&e.hp<e.maxHp&&!p.abil,'pressing Titan Form again fires Titan Stomp')}
-ok(T.abilityMode(T.ABILITIES.Detective)==='tap'&&T.abilityMode(T.ABILITIES.Ranger)==='hold'&&T.abilityMode(T.ABILITIES['Toxin Alchemist'])==='hold'&&T.abilityMode(T.ABILITIES.Voidwalker)==='hold'&&T.abilityMode(T.ABILITIES.Cyborg)==='again'&&T.abilityMode(T.ABILITIES.Prodigy)==='again','each kind gets the right one-button behaviour');
+ok(T.hasFinisher(T.ABILITIES.Cyborg)&&T.hasFinisher(T.ABILITIES.Prodigy)&&!T.hasFinisher(T.ABILITIES.Detective)&&!T.hasFinisher(T.ABILITIES.Ranger),'buffs and grabs fire their finisher on a second C; aimed abilities do not');
+{const r=mk(),p=s.createRoom(r,'Ranger',null,'Cancel');T.enter(r);G().enemies=[];G().p=p;p.actions.push({n:'ability'});s.step(r,1/30);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(!p.abil&&!p.abilCast&&!(p.abilT>0),'C again cancels an aimed ability without a cooldown')}
 // The Necromancer throws a skull with its small attack.
 {const r=mk(),p=s.createRoom(r,'Necromancer',null,'Skull');T.enter(r);G().enemies=[];G().shots=[];G().p=p;const e=T.spawnMob(0,{x:p.x+150,y:p.y},false);e.x=p.x+150;e.y=p.y;e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;p.input.ax=p.x+240;p.input.ay=p.y;T.doMove('small');let skull=false;for(let i=0;i<40;i++){s.step(r,1/30);r.ev.length=0;if(G().shots.some(o=>o.fx==='skull'&&o.from==='p'))skull=true}
  ok(skull&&e.hp<e.maxHp,'the Necromancer small attack throws a skull that hits')}

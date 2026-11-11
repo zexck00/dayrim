@@ -107,6 +107,34 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .menub{top:calc(160px*var(--k,1))!important}
 .fsb{top:calc(188px*var(--k,1))!important}
 .ov:not(.pick) .card{zoom:var(--k,1)}
+/* ---------- Game-style notices: downed, stage clear, victory, pause ----------
+   A dark stone plate with a glowing frame in the notice's colour, a kicker between rules, a big title that
+   slams in with a shine, stat plates, and a tinted vignette behind. */
+.ov[data-tone]{background:radial-gradient(ellipse at center,rgba(6,12,20,.55),rgba(3,6,12,.9))}
+.ov[data-tone="dead"]{background:radial-gradient(ellipse at center,rgba(40,6,10,.45),rgba(16,2,4,.92))}
+.ov[data-tone="win"]{background:radial-gradient(ellipse at center,rgba(40,30,6,.4),rgba(10,7,2,.9))}
+.card.notice{--tone:#8fc4ff;--tone2:#2c4a6e;text-align:center;max-width:520px;padding:26px 24px 22px;background:linear-gradient(180deg,#1b1f2b,#0e1118 70%);border:2px solid var(--tone);border-radius:6px;
+  box-shadow:0 0 0 4px #0a0c12,0 0 0 6px var(--tone2),0 0 38px color-mix(in srgb,var(--tone) 45%,transparent),inset 0 0 40px rgba(0,0,0,.6);position:relative;animation:noticeIn .5s cubic-bezier(.2,1.4,.4,1) both}
+.card.notice[data-tone="dead"]{--tone:#e8463f;--tone2:#5a1a1c}.card.notice[data-tone="win"]{--tone:#f0c23c;--tone2:#5a4614}
+.card.notice::before,.card.notice::after{content:"";position:absolute;top:50%;width:14px;height:14px;background:var(--tone);transform:translateY(-50%) rotate(45deg);box-shadow:0 0 10px var(--tone)}
+.card.notice::before{left:-9px}.card.notice::after{right:-9px}
+.notice-k{display:flex;align-items:center;gap:10px;justify-content:center;font:600 12px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--tone);margin-bottom:6px}
+.notice-k::before,.notice-k::after{content:"";flex:1;max-width:90px;height:2px;background:linear-gradient(90deg,transparent,var(--tone))}.notice-k::after{transform:scaleX(-1)}
+.card.notice .notice-t{font:700 clamp(34px,7vw,58px)/1 var(--display);margin:4px 0 10px;text-transform:uppercase;letter-spacing:.04em;color:#fff;
+  background:linear-gradient(180deg,#fff 0%,var(--tone) 75%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 3px 0 #000) drop-shadow(0 0 14px color-mix(in srgb,var(--tone) 55%,transparent));animation:noticeTitle .7s .1s cubic-bezier(.2,1.6,.4,1) both}
+.notice-l{color:var(--bone);font-size:15px;line-height:1.4;margin:0 auto 14px;max-width:420px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 18px}
+.chip{display:grid;min-width:84px;padding:7px 10px;background:#0a0c12;border:1px solid var(--tone2);border-radius:4px;box-shadow:inset 0 0 12px rgba(0,0,0,.6);animation:noticeIn .4s both}
+.chip:nth-child(2){animation-delay:.08s}.chip:nth-child(3){animation-delay:.16s}
+.chip b{font:700 21px/1.15 var(--mono);color:var(--tone)}.chip small{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+.card.notice .btnrow{justify-content:center}
+.card.notice .go{background:linear-gradient(180deg,color-mix(in srgb,var(--tone) 85%,#fff),color-mix(in srgb,var(--tone) 70%,#000));color:#120c06;border:2px solid #0a0c12;box-shadow:0 0 0 2px var(--tone),0 4px 0 #000;text-transform:uppercase;letter-spacing:.06em;font-family:Barlow,sans-serif;font-weight:700;transition:transform .12s,filter .12s}
+.card.notice .go:hover,.card.notice .go:focus-visible{transform:translateY(-2px) scale(1.04);filter:brightness(1.15)}
+@keyframes noticeIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}
+@keyframes noticeTitle{0%{opacity:0;transform:scale(1.9);letter-spacing:.3em}60%{opacity:1}100%{transform:none}}
+@media(prefers-reduced-motion:reduce){.card.notice,.card.notice .notice-t,.chip{animation:none}}
+@media(max-width:480px){.card.notice{padding:20px 14px 16px}.chip{min-width:70px}.card.notice .btnrow{flex-direction:column;align-items:stretch}}
 .screen:fullscreen{width:100vw;height:100vh;aspect-ratio:auto;border:0}
 .screen:-webkit-full-screen{width:100vw;height:100vh;aspect-ratio:auto;border:0}
 .sound{position:absolute;right:10px;top:calc(132px*var(--k,1));z-index:2;background:rgba(12,32,38,.7);border:1px solid var(--line);font:500 calc(11px*var(--k,1)) var(--mono);padding:3px 7px;color:var(--mist)}
@@ -1526,9 +1554,9 @@ function updateMove(a,dt){const mv=a.mv;if(!mv)return;mv.t+=dt;const M=KIT[mv.ke
 function doMove(id){const p=G.p;if(p.carry||!kitOf(p)||p.guard||p.mv||p.stunT>0)return;if(id==='special'){if((p.specT||0)>0)return;p.specT=SPECIAL_CD*cdMulOf(p);G.banner=null}startMove(p,id,mouseAimX());if(id==='special')addLog('Special attack used. Ready again in '+Math.round(SPECIAL_CD*p.s.cdMul)+' seconds.')}
 const mouseAimX=()=>{const p=G.p;return touchMode?p.x+Math.cos(p.face):mouse.x};
 /* ---------- Abilities ----------
-   One button (C). How it behaves depends on the kind:
-   tap: lock or pick, then fire at once · hold: aim while held, fire on release (lines and rings charge)
-   again: the first press starts a buff or a grab, the next press fires its finisher.
+   C readies the ability: it locks a target, picks an ally, aims a spot or line, grabs an enemy, or starts a
+   buff. A left click uses it (online, the attack input; on touch, tapping Ability again). C again cancels an
+   aimed ability, and fires the finisher of a buff or a grab.
    Every character has one Ability (C) and its Use (Z). Ability arms the move: it locks a target, picks
    an ally, aims a spot or a line, grabs an enemy, or starts a short buff. Use fires it after the special
    attack's cast delay. It hits for ten of the character's basic attacks.
@@ -1538,22 +1566,22 @@ const mouseAimX=()=>{const p=G.p;return touchMode?p.x+Math.cos(p.face):mouse.x};
    fx   what Use does; see ABILITY_FIRE. */
 const ABILITY_CAST=KIT.toxic.special.hits[0]*KIT.toxic.special.dur,ABILITY_ARMED=10,EXECUTE_BELOW=.25;
 const ABILITY_FX={
- mark:{aim:'foe',range:560,shot:{kind:'bullet',sp:1100},col:'255,207,112',d:'Tap to lock onto the enemy nearest your aim and shoot it. Enemies other than bosses and villains below a quarter of their life die outright.'},
- pool:{aim:'spot',range:440,r:110,shot:{kind:'lob',t:.6},col:'140,240,70',d:'Hold to aim a spot in range, release to throw. It bursts and leaves a damaging pool.'},
- leap:{aim:'foe',range:420,r:95,col:'255,170,90',d:'Tap to leap onto the enemy nearest your aim and slam the ground around it.'},
- pierce:{aim:'line',len:650,w:34,charge:2,shot:{kind:'spear',sp:950},col:'255,230,140',d:'Hold to aim a line; it charges for 2 seconds. Release to fire through every enemy on it.'},
- stun:{aim:'foe',range:520,stun:2.5,shot:{kind:'bolt',sp:720},col:'120,220,255',d:'Tap to fire at the enemy nearest your aim and stun it (shorter on bosses).'},
- brace:{aim:'self',dur:8,r:160,col:'120,200,255',d:'Tap to raise a dome: you and allies inside take half damage. Tap again to release it as a shockwave that pushes and stuns.'},
- heal:{aim:'ally',range:420,cd:90,col:'130,255,170',d:'Tap to fully heal the most hurt ally in range (or yourself) and clear poison, webs and stuns. 90 second cooldown.'},
- vanish:{aim:'self',dur:5,r:160,col:'180,160,220',d:'Tap to turn invisible for 5 seconds: enemies lose track of you and cannot hurt you. Tap again to ambush the nearest enemy for double damage.'},
- roar:{aim:'self',dur:6,r:320,col:'255,110,90',d:'Tap to roar: nearby enemies turn on you and you take 30% less damage. Tap again to slam the ground.'},
- collapse:{aim:'spot',range:460,r:220,shot:{kind:'lob',t:.7},col:'190,130,255',d:'Hold to aim a dark point, release to pull every enemy nearby into it and crush them.'},
- decoy:{aim:'self',dur:10,r:110,col:'255,140,210',d:'Tap to leave a copy of yourself where you stand. Tap again to swap back to it; the copy bursts.'},
- hook:{aim:'line',len:450,w:30,shot:{kind:'hook',sp:900},col:'200,210,230',d:'Hold to aim the hook, release to fire it. The first enemy hit is dragged to you and dazed. Bosses only take the damage.'},
- hurl:{aim:'grab',range:90,throw:420,r:90,col:'255,190,110',d:'Tap to grab the nearest enemy in reach, tap again to hurl it where you aim. It knocks down enemies where it lands. Not bosses or villains.'},
- blitz:{aim:'self',dur:6,len:320,col:'130,255,220',d:'Tap for Overdrive: twice as fast for 6 seconds. Tap again to dash where you aim, untouchable, hitting everything you pass.'},
- titan:{aim:'self',dur:8,r:220,col:'255,140,80',d:'Tap to grow to twice your size for 8 seconds: 50% more damage and a third less damage taken. Tap again to stomp a stunning shockwave and end it.'},
- push:{aim:'self',dur:10,r:110,grow:110,charge:1.5,col:'170,140,255',d:'Hold to charge a force ring (1.5 s), release to blast every enemy in it away and break their attacks. At full charge it also hurts.'}
+ mark:{aim:'foe',range:560,shot:{kind:'bullet',sp:1100},col:'255,207,112',d:'Locks onto the enemy nearest your aim and shoots it. Enemies other than bosses and villains below a quarter of their life die outright.'},
+ pool:{aim:'spot',range:440,r:110,shot:{kind:'lob',t:.6},col:'140,240,70',d:'Throws to a spot in range. It bursts and leaves a damaging pool.'},
+ leap:{aim:'foe',range:420,r:95,col:'255,170,90',d:'Leaps onto the enemy nearest your aim and slams the ground around it.'},
+ pierce:{aim:'line',len:650,w:34,charge:2,shot:{kind:'spear',sp:950},col:'255,230,140',d:'Fires along your aim through every enemy on the line. It charges for 2 seconds while ready.'},
+ stun:{aim:'foe',range:520,stun:2.5,shot:{kind:'bolt',sp:720},col:'120,220,255',d:'Fires at the enemy nearest your aim and stuns it (shorter on bosses).'},
+ brace:{aim:'self',dur:8,r:160,col:'120,200,255',d:'Raises a dome: you and allies inside take half damage. The finisher releases it as a shockwave that pushes and stuns.'},
+ heal:{aim:'ally',range:420,cd:90,col:'130,255,170',d:'Fully heals the most hurt ally in range (or you) and clears poison, webs and stuns. 90 second cooldown.'},
+ vanish:{aim:'self',dur:5,r:160,col:'180,160,220',d:'You turn invisible for 5 seconds: enemies lose track of you and cannot hurt you. The finisher ambushes the nearest enemy for double damage.'},
+ roar:{aim:'self',dur:6,r:320,col:'255,110,90',d:'You roar: nearby enemies turn on you and you take 30% less damage. The finisher slams the ground.'},
+ collapse:{aim:'spot',range:460,r:220,shot:{kind:'lob',t:.7},col:'190,130,255',d:'Pulls every enemy near the aimed point into it and crushes them.'},
+ decoy:{aim:'self',dur:10,r:110,col:'255,140,210',d:'Leaves a copy of you where you stand. The finisher swaps you back to it and the copy bursts.'},
+ hook:{aim:'line',len:450,w:30,shot:{kind:'hook',sp:900},col:'200,210,230',d:'Fires a hook along your aim. The first enemy hit is dragged to you and dazed. Bosses only take the damage.'},
+ hurl:{aim:'grab',range:90,throw:420,r:90,col:'255,190,110',d:'Grabs the nearest enemy in reach; the finisher hurls it where you aim. It knocks down enemies where it lands. Not bosses or villains.'},
+ blitz:{aim:'self',dur:6,len:320,col:'130,255,220',d:'Overdrive: twice as fast for 6 seconds. The finisher dashes where you aim, untouchable, hitting everything you pass.'},
+ titan:{aim:'self',dur:8,r:220,col:'255,140,80',d:'You grow to twice your size for 8 seconds: 50% more damage and a third less damage taken. The finisher stomps a stunning shockwave and ends it.'},
+ push:{aim:'self',dur:10,r:110,grow:110,charge:1.5,col:'170,140,255',d:'Charges a force ring while ready (1.5 s). Using it blasts every enemy in the ring away and breaks their attacks; at full charge it also hurts.'}
 };
 const defAbility=(fx,n,use,o={})=>Object.assign({fx},ABILITY_FX[fx],{n,use},o);
 const ABILITIES={
@@ -1569,7 +1597,8 @@ const ABILITIES={
  'Ash Shaman':defAbility('pool','Ash Circle','Eruption',{col:'255,120,60'}),'Soul Forger':defAbility('brace','Forge Ward','Anvil Bash',{col:'232,137,42'}),'Mirror Jester':defAbility('decoy','Mirror Image','Swap',{col:'255,118,193'}),'Cyber Priest':defAbility('heal','Diagnose','Full Restore',{col:'111,224,216'})
 };
 const abilityOf=p=>ABILITIES[p.char]||null;
-const abilityMode=ab=>ab.aim==='foe'||ab.aim==='ally'?'tap':ab.aim==='spot'||ab.aim==='line'||(ab.aim==='self'&&ab.charge)?'hold':'again';
+/* Buffs and grabs are already running once readied, so pressing C again fires their finisher instead of cancelling. */
+const hasFinisher=ab=>ab.aim==='self'||ab.aim==='grab';
 const abilFoe=new WeakMap();
 let touchAim=null;
 /* Sprint: hold Shift (or drag the touch stick far out). Faster with a longer stride; costs mana; stops while attacking, shielding or dodging. */
@@ -1600,15 +1629,14 @@ const abilCharge=(a,ab)=>ab.charge?clamp((a.armed||0)/ab.charge,0,1):1;
 const abilityBlocked=p=>p.carry||p.stunT>0||p.guard||p.mv||p.ult||G.mode!=='play';
 function abilityEnd(p){const e=abilFoe.get(p);if(e&&p.abil&&p.abil.aim==='grab')e.stunT=Math.max(e.stunT||0,.4);p.abil=null;abilFoe.delete(p)}
 function doAbility(){const p=G.p,ab=abilityOf(p);if(!ab||abilityBlocked(p)||p.abilCast)return;
-  if(p.abil){if(abilityMode(ab)==='again')doUse();return}
+  if(p.abil){if(hasFinisher(ab))doUse();else abilityEnd(p);return}
   if((p.abilT||0)>0){addLog(ab.n+' ready in '+Math.ceil(p.abilT)+' seconds.');return}
   const a={fx:ab.fx,aim:ab.aim,t:ab.dur||ABILITY_ARMED,armed:0,x:p.x,y:p.y};
   if(ab.aim==='foe'||ab.aim==='grab'){const e=ab.aim==='foe'?markTarget(p,ab):grabTarget(p,ab);if(!e){text(p.x,p.y-70,ab.aim==='grab'?'Nothing to grab':'No target in range','#ffb080');return}abilFoe.set(p,e);a.x=e.x;a.y=e.y}
   else if(ab.aim==='ally'){const q=hurtAlly(p,ab);a.pid=q.id||0;a.x=q.x;a.y=q.y}
   else if(ab.aim==='spot')Object.assign(a,clampRange(p,abilAim(p),ab.range));
   else if(ab.aim==='line'){const m=abilAim(p);a.a=Math.atan2(m.y-p.y,m.x-p.x);a.x=p.x+Math.cos(a.a)*ab.len;a.y=p.y+Math.sin(a.a)*ab.len}
-  p.abil=a;if(ab.aim==='self'){p.abilT=(ab.cd||SPECIAL_CD)*cdMulOf(p);abilityArm(p,ab)}sfx('lock');
-  if(abilityMode(ab)==='tap')doUse()}
+  p.abil=a;if(ab.aim==='self'){p.abilT=(ab.cd||SPECIAL_CD)*cdMulOf(p);abilityArm(p,ab)}sfx('lock')}
 function abilityArm(p,ab){
   if(ab.fx==='roar'){for(const e of G.enemies)if(foeAlive(e)&&dist(e,p)<ab.r){e.tauntT=Math.max(e.tauntT||0,ab.dur);e.tauntId=p.id||0}text(p.x,p.y-80,ab.n.toUpperCase(),'#ff8a70',true);shake(3)}
   else glowP(p.x,p.y-24,ab.col,12,160,.5,3)}
@@ -1828,7 +1856,9 @@ function updatePlayer(p,dt){
   /* Arena doors: a living boss keeps the party inside. */
   if(G.arena&&G.boss){const ad=Math.hypot(p.x-G.arena.x,p.y-G.arena.y);if(ad>G.arena.r){const aa=Math.atan2(p.y-G.arena.y,p.x-G.arena.x);p.x=G.arena.x+Math.cos(aa)*G.arena.r;p.y=G.arena.y+Math.sin(aa)*G.arena.r}}
   if(touchMode){const n=nearestEnemy();if(n)p.face=Math.atan2(n.y-p.y,n.x-p.x);else if(p.moving)p.face=Math.atan2(v.y,v.x)}else p.face=Math.atan2(mouse.y-(p.y-22),mouse.x-p.x);
-  if(mouse.left||touchHold.slash)doAttack();
+  /* A click uses a readied ability; that click is spent and does not attack until the button is let go. */
+  if(!mouse.left)p.clickLatch=0;else if(p.abil&&!p.clickLatch){p.clickLatch=1;doUse()}
+  if((mouse.left&&!p.clickLatch&&!p.abil)||(touchHold.slash&&!p.abil))doAttack();
   tagOwned(p);
   /* Carry steps: walk over an item to lift it, walk into the drop zone to deliver it. */
   if(G.obj){const st=G.obj.steps[G.obj.i];
@@ -2379,6 +2409,23 @@ function drawAbilityShot(q,ab,c,rgba){const x=c.px,y=c.py-SHOT_Y,a=c.a||0,kind=a
     ctx.strokeStyle=rgba(.6);ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.beginPath();ctx.ellipse(c.x,c.y,ab.r,ab.r*.55,0,0,TAU);ctx.stroke();ctx.setLineDash([]);
     const g=ctx.createRadialGradient(c.px,oy,1,c.px,oy,16);g.addColorStop(0,rgba(.8));g.addColorStop(1,rgba(0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(c.px,oy,16,0,TAU);ctx.fill();ctx.fillStyle=col;ctx.beginPath();ctx.arc(c.px,oy,6,0,TAU);ctx.fill();ctx.fillStyle='#ffffff';ctx.fillRect(c.px-1,oy-4,2,2)}
   ctx.restore()}
+/* In-game banner, game style: a ribbon plate with gold (or red, for danger) edges and diamond ends that
+   snaps open, a shine across the title, then a fade at the end. b: {a: title, b: subtitle, t: time left}. */
+const BANNER_DANGER=/arriv|boss|web|possess|storm|danger|ambush|swarm|wave|warning/i;
+function drawBanner(b,cx,cy,small){if(!b.m0||b.t>b.m0)b.m0=b.t;const age=b.m0-b.t,open=reduced?1:clamp(age/.28,0,1),ease=1-Math.pow(1-open,3),fade=clamp(b.t/.5,0,1);
+  const danger=BANNER_DANGER.test((b.a||'')+' '+(b.b||'')),edge=danger?'#e8463f':'#f0c23c',glow=danger?'232,70,63':'240,194,60',fs=small?22:38,sub=small?12:15;
+  ctx.save();ctx.globalAlpha=fade;ctx.font='700 '+fs+'px "Pixelify Sans",monospace';const tw=ctx.measureText(b.a||'').width;ctx.font='600 '+sub+'px Barlow,sans-serif';
+  const w=Math.min(W-24,Math.max(tw,ctx.measureText(b.b||'').width)+(small?60:110))*ease,h=small?54:76,x=cx-w/2,y=cy-h*.62;
+  if(w>8){const g=ctx.createLinearGradient(0,y,0,y+h);g.addColorStop(0,'rgba(20,16,10,.92)');g.addColorStop(1,'rgba(8,8,12,.92)');ctx.fillStyle=g;
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w+14,y+h/2);ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.lineTo(x-14,y+h/2);ctx.closePath();ctx.fill();
+    ctx.shadowColor='rgba('+glow+',.7)';ctx.shadowBlur=14;ctx.strokeStyle=edge;ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba('+glow+',.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+6,y+5);ctx.lineTo(x+w-6,y+5);ctx.moveTo(x+6,y+h-5);ctx.lineTo(x+w-6,y+h-5);ctx.stroke();
+    for(const dx of [x-14,x+w+14]){ctx.fillStyle=edge;ctx.beginPath();ctx.moveTo(dx,y+h/2-7);ctx.lineTo(dx+7,y+h/2);ctx.lineTo(dx,y+h/2+7);ctx.lineTo(dx-7,y+h/2);ctx.closePath();ctx.fill()}}
+  if(open>.55){const ta=clamp((open-.55)/.45,0,1);ctx.globalAlpha=fade*ta;ctx.textAlign='center';ctx.font='700 '+fs+'px "Pixelify Sans",monospace';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,8,14,.95)';const ty=cy-(small?2:6);ctx.strokeText(b.a,cx,ty);
+    const tg=ctx.createLinearGradient(0,ty-fs,0,ty);tg.addColorStop(0,'#ffffff');tg.addColorStop(1,danger?'#ff9a8a':'#f6d77a');ctx.fillStyle=tg;ctx.fillText(b.a,cx,ty);
+    if(!reduced&&age<.9){const sx=cx-tw/2+(tw+80)*clamp((age-.2)/.6,0,1)-40;ctx.save();ctx.beginPath();ctx.rect(cx-tw/2,ty-fs,tw,fs+6);ctx.clip();const sg=ctx.createLinearGradient(sx-24,0,sx+24,0);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(.5,'rgba(255,255,255,.75)');sg.addColorStop(1,'rgba(255,255,255,0)');ctx.globalCompositeOperation='lighter';ctx.fillStyle=sg;ctx.fillRect(sx-24,ty-fs,48,fs+6);ctx.restore()}
+    if(b.b){ctx.font='600 '+sub+'px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,8,14,.9)';ctx.strokeText(b.b,cx,ty+(small?17:24));ctx.fillStyle=danger?'#ffb8a8':'#f0c23c';ctx.fillText(b.b,cx,ty+(small?17:24))}}
+  ctx.restore()}
 /* Life bar with the enemy's level beside it */
 function enemyBar(e,w,y,h,col){ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(e.x-w/2,y,w,h);ctx.fillStyle=col;ctx.fillRect(e.x-w/2,y,w*Math.max(0,e.hp/e.maxHp),h);
   ctx.font='700 9px "Pixelify Sans",monospace';ctx.textAlign='right';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';const t='LVL '+enemyLevel(e);ctx.strokeText(t,e.x-w/2-3,y+h);ctx.fillStyle='#f2ecd8';ctx.fillText(t,e.x-w/2-3,y+h)}
@@ -2594,7 +2641,7 @@ function render(){
     G.w.cars.forEach(c=>{if(inView(c))glow(c.x+(c.v?0:Math.sign(c.s)*44),c.y+(c.v?Math.sign(c.s)*44:0),60,'255,245,190',(.28*n).toFixed(2))});
     glow(G.p.x,G.p.y-24,150,'170,190,230',(.2*n).toFixed(2));glow(G.safe.x,G.safe.y,110,'111,220,160',(.22*n).toFixed(2));if(G.gate.open&&!G.boss)glow(G.gate.x,G.gate.y,120,'255,90,80',(.3*n).toFixed(2));
     ctx.globalCompositeOperation='source-over'}
-  ctx.textAlign='center';G.texts.forEach(x=>{ctx.globalAlpha=clamp(x.t/.35,0,1);ctx.font=(x.big?'700 18px':'700 14px')+' Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(x.s,x.x,x.y);ctx.fillStyle=x.c;ctx.fillText(x.s,x.x,x.y)});ctx.globalAlpha=1;
+  ctx.textAlign='center';G.texts.forEach(x=>{ctx.globalAlpha=clamp(x.t/.35,0,1);if(x.big){/* Callouts pop in large and settle */const age=.8-x.t,k=1+.6*Math.max(0,1-age/.14);ctx.save();ctx.translate(x.x,x.y);ctx.scale(k,k);ctx.font='700 19px "Pixelify Sans",monospace';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,8,14,.95)';ctx.strokeText(x.s,0,0);const g=ctx.createLinearGradient(0,-14,0,4);g.addColorStop(0,'#ffffff');g.addColorStop(1,x.c);ctx.fillStyle=g;ctx.fillText(x.s,0,0);ctx.restore()}else{ctx.font='700 14px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(x.s,x.x,x.y);ctx.fillStyle=x.c;ctx.fillText(x.s,x.x,x.y)}});ctx.globalAlpha=1;
   hud();
   if(G.p.ult)drawUlt(G.p.ult);
   if(aimHidden()&&mouse.sx!==undefined)drawCrosshair();
@@ -2703,7 +2750,7 @@ function hudPortrait(){
   if(!G.mp&&p.deadT>0)label('Second Wind in '+Math.ceil(p.deadT),W/2,205,19,'#ffcf65',W-28,'center');
   const freeBottom=H-hudTop-hudBottom-180;
   if(p.nearSafe&&!G.boss)label('Menu: shop and upgrades',W/2,Math.min(freeBottom-16,H*.55),14,'#6fdca0',W-28,'center');
-  if(G.banner&&H>=700&&!(G.mp&&(net.down||p.deadT>0||p.respawnT>0))){const y=Math.min(H*.42,freeBottom-50);panel(6,y-24,W-12,59);label(G.banner.a,W/2,y,22,'#f2ecd8',W-28,'center');label(G.banner.b,W/2,y+23,13,'#f0c23c',W-28,'center')}
+  if(G.banner&&H>=700&&!(G.mp&&(net.down||p.deadT>0||p.respawnT>0)))drawBanner(G.banner,W/2,Math.min(H*.42,freeBottom-50),true);
   /* World markers use the unshifted canvas coordinate system. */
   ctx.setTransform(dpr,0,0,dpr,0,0);drawDanger();drawObjPointer();
 }
@@ -2740,7 +2787,7 @@ function hudBody(){
   let bx=12+bw+6;[[p.fastT,'FAST','#6fb4ff'],[p.magicT,'POWER','#c88cff']].forEach(([v,l,c])=>{if(v>0){ctx.fillStyle='rgba(5,10,20,.82)';ctx.fillRect(bx,barY,54,22);ctx.font='500 10px "IBM Plex Mono",monospace';ctx.textAlign='center';ctx.fillStyle=c;ctx.fillText(l+' '+Math.ceil(v),bx+27,barY+15);bx+=58}});
   if(!touchMode&&W>=660){
     const kit=kitOf(p),WP=WEAPONS[p.weapon],slots=kit?[['LMB','Small',p.mv&&p.mv.id==='small'?1:0,false],['Q','Moder',p.mv&&p.mv.id==='moderate'?1:0,false],['X',(p.specT||0)>0?Math.ceil(p.specT)+'s':'SPECIAL',(p.specT||0)/SPECIAL_CD,(p.specT||0)>0],['RMB','Shield',p.guard?1:0,false],['E','Heal',p.cd.pull/5,p.mana<22],['Space','Dodge',p.cd.dash/p.s.dashCd,false],['1','Pot '+p.potions,p.cd.potion,p.potions<=0],['2','Fast '+p.fast,p.fastT>0?1:0,p.fast<=0],['3','Pill '+p.magic,p.magicT>0?1:0,p.magic<=0]]:[['LMB',{unarmed:'Punch',melee:'Melee',shoot:'Shoot',spell:'Cast',shield:'Bash',heal:'Mend'}[WP.m],p.cd.slash/(WP.cd*p.s.cdMul),WP.m==='spell'&&p.mana<WP.cost],['RMB','Shield',p.guard?1:0,false],['Q','Spell',p.cd.bolt/.7,p.mana<p.s.spellCost],['E','Heal',p.cd.pull/5,p.mana<22],['Space','Dodge',p.cd.dash/p.s.dashCd,false],['1','Pot '+p.potions,p.cd.potion,p.potions<=0],['2','Fast '+p.fast,p.fastT>0?1:0,p.fast<=0],['3','Pill '+p.magic,p.magicT>0?1:0,p.magic<=0]];
-    {const ab=abilityOf(p);if(ab){const cd=p.abilT||0;slots.splice(1,0,['C',p.abil?(abilityMode(ab)==='again'?ab.use:'AIM'):cd>0?Math.ceil(cd)+'s':ab.n,p.abilCast?1-p.abilCast.t/p.abilCast.m:cd/SPECIAL_CD,cd>0&&!p.abil])}}
+    {const ab=abilityOf(p);if(ab){const cd=p.abilT||0;slots.splice(1,0,['C',p.abil?'CLICK':cd>0?Math.ceil(cd)+'s':ab.n,p.abilCast?1-p.abilCast.t/p.abilCast.m:cd/SPECIAL_CD,cd>0&&!p.abil])}}
     const sw=Math.min(50,(W-bw-40)/slots.length-4),gap=4;let x=W-(slots.length*(sw+gap)-gap)-10;const y=H-54;
     slots.forEach(s=>{ctx.fillStyle='rgba(5,10,20,.82)';ctx.fillRect(x,y,sw,44);ctx.strokeStyle=s[3]?'#7b4a3d':'#30446e';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,sw-1,43);
       if(s[2]>0){ctx.fillStyle='rgba(111,180,255,.3)';const hh=42*clamp(s[2],0,1);ctx.fillRect(x+1,y+43-hh,sw-2,hh)}
@@ -2758,7 +2805,7 @@ function hudBody(){
     ctx.fillStyle='rgba(5,10,20,.8)';ctx.fillRect(x,gy,bwid,6);ctx.fillStyle=(e.staggerT||0)>0?'#ffd860':'#7db6ff';ctx.fillRect(x+1,gy+1,(bwid-2)*gf,4);
     if(!small){ctx.font='700 12px Barlow,sans-serif';if(e.fleshTime>0){ctx.fillStyle='#ffd080';ctx.fillText('OTHER BODY: '+Math.ceil(e.fleshTime)+'s',W/2,gy+22)}else if((e.staggerT||0)>0){ctx.fillStyle='#ffd860';ctx.fillText('STAGGERED '+Math.ceil(e.staggerT)+'s',W/2,gy+22)}else if(e.enraged){ctx.fillStyle='#ff8f80';ctx.fillText('ENRAGED',W/2,gy+22)}else{const pu=pillarsUp();if(pu){ctx.fillStyle='#8fd6ff';ctx.fillText('PILLARS '+pu,W/2,gy+22)}}}}
   if(G.mp)netHud(small);
-  if(G.banner){const bannerY=small?H*.55:H*.3;ctx.globalAlpha=clamp(G.banner.t/.5,0,1);ctx.textAlign='center';ctx.font='700 '+(small?24:40)+'px "Pixelify Sans",monospace';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.85)';ctx.strokeText(G.banner.a,W/2,bannerY);ctx.fillStyle='#f2ecd8';ctx.fillText(G.banner.a,W/2,bannerY);ctx.font='600 '+(small?13:16)+'px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(G.banner.b,W/2,bannerY+24);ctx.fillStyle='#f0c23c';ctx.fillText(G.banner.b,W/2,bannerY+24);ctx.globalAlpha=1}
+  if(G.banner)drawBanner(G.banner,W/2,small?H*.55:H*.3,small);
   /* Where the objective is, drawn last so it sits over the HUD */
   drawDanger();
   drawObjPointer();
@@ -2893,9 +2940,9 @@ function netAct(n,v){
 
 /* Screens */
 function netOverlay(m,c){
-  if(m==='pause'){c.innerHTML='<h2>Room '+esc(net.code)+'</h2><p>The game keeps running while this is open. Give friends this code so they can join. Returning to the menu leaves the room.</p><div class="btnrow"><button class="go" id="go" type="button">Back to the game</button><button class="ghost" id="leave" type="button">Return to menu</button></div>';$('go').onclick=()=>setMode('play');$('leave').onclick=netLeave;return true}
+  if(m==='pause'){gameCard(c,'pause',{kicker:'Party room',title:'Room '+esc(net.code),line:'The game keeps running while this is open. Give friends this code so they can join. Returning to the menu leaves the room.',chips:[['Players',G.players.length],['Stage',G.stage]],buttons:'<button class="go" id="go" type="button">Back to the game</button><button class="ghost" id="leave" type="button">Return to menu</button>'});$('go').onclick=()=>setMode('play');$('leave').onclick=netLeave;return true}
   if(m==='clear'){const n=G.stage,last=n>=10,host=netIsHost(),next=last?'':' Next is stage '+(n+1)+': '+esc(STAGES[n].n)+'.';
-    c.innerHTML='<h2>'+(last?'All 10 stages clear':'Stage '+n+' cleared')+'</h2><p>Your party defeated the boss and everyone earned 2 skill points.'+next+(host||last?'':' The room host chooses when to move on.')+'</p><div class="btnrow">'+(host&&!last?'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>':'<button class="go" id="stay" type="button">Keep fighting</button>')+'</div>';
+    gameCard(c,'win',{kicker:last?'Legend of Dayrim':'Party victory',title:last?'All 10 stages clear':'Stage '+n+' cleared',line:'Your party defeated the boss.'+next+(host||last?'':' The room host chooses when to move on.'),chips:[['Skill points','+2'],['Party',G.players.length]],buttons:(host&&!last?'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>':'<button class="go" id="stay" type="button">Keep fighting</button>')});
     c.querySelector('.btnrow').insertAdjacentHTML('beforeend','<button class="ghost" id="tomenu" type="button">Return to main menu</button>');$('tomenu').onclick=netLeave;const g=$('go');if(g)g.onclick=()=>{netAct('next');setMode('play')};$('stay').onclick=()=>{if(host)netAct('stay');setMode('play')};return true}
   return false;
 }
@@ -2981,19 +3028,25 @@ $('scout-revive').addEventListener('keyup',ev=>{if(ev.code==='Space'||ev.code===
 $('scout-revive').addEventListener('blur',stopScoutRevive);
 function closeTouchExtra(){$('touch-extra').hidden=true;const b=$('touch').querySelector('[data-a=more]');b.setAttribute('aria-expanded','false')}
 function resetTouch(){closeTouchExtra();stopScoutRevive();if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('scout-revive').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
+/* Game-style notice card, used for being downed, stage clear, the final victory and pause.
+   tone sets the colour: dead (red), win (gold), pause (blue). chips: [label, value] pairs shown as stat plates. */
+function gameCard(c,tone,o){c.classList.add('notice');c.dataset.tone=tone;$('ov').dataset.tone=tone;
+  c.innerHTML='<div class="notice-k"><span>'+o.kicker+'</span></div><h2 class="notice-t">'+o.title+'</h2>'+(o.line?'<p class="notice-l">'+o.line+'</p>':'')+
+    (o.chips&&o.chips.length?'<div class="chips">'+o.chips.map(([k,v])=>'<span class="chip"><b>'+v+'</b><small>'+k+'</small></span>').join('')+'</div>':'')+'<div class="btnrow">'+o.buttons+'</div>'}
 function setMode(m){
   setTimeout(()=>{menuMusic();gameAmbience()},0);
   resetTouch();G.mode=m;mouse.left=mouse.right=false;keys.clear();const ov=$('ov'),c=$('card');
   $('touch').hidden=!(touchMode&&m==='play');$('screen').classList.toggle('touch-playing',touchMode&&m==='play');
   if(m==='play'){ov.hidden=true;return}
-  ov.hidden=false;ov.classList.toggle('pick',m==='title'||m==='menu');c.classList.toggle('sel',m==='title'||m==='menu');
+  ov.hidden=false;ov.classList.toggle('pick',m==='title'||m==='menu');c.classList.toggle('sel',m==='title'||m==='menu');c.classList.remove('notice');delete c.dataset.tone;delete ov.dataset.tone;
   if(m==='title')renderSelect();
   else if(m==='menu')renderMenu();
   else if(netOn()&&netOverlay(m,c))return;
-  else if(m==='pause'){c.innerHTML='<h2>Paused</h2><p>Stage '+G.stage+'. Your progress saves automatically.</p><div class="btnrow"><button class="go" id="go" type="button">Resume</button><button class="ghost" id="tomenu" type="button">Return to menu</button></div>';$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
-  else if(m==='dead'){c.innerHTML='<h2>The '+esc(label(G.p.char))+' is down</h2><p>You lost 20% of your gold and wake at the safehouse. Your level, gear and stage progress are safe. Bosses get much harder each stage, so train, upgrade skills and stock up on potions.</p><div class="btnrow"><button class="go" id="go" type="button">Wake at safehouse</button><button class="ghost" id="tomenu" type="button">Return to main menu</button></div>';$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
+  else if(m==='pause'){gameCard(c,'pause',{kicker:'Game paused',title:'Paused',line:'Stage '+G.stage+' · '+esc(STAGES[G.stage-1].n)+'. Your progress saves automatically.',chips:[['Level',G.p.lvl],['Gold',Math.floor(G.p.gold)],['Kills',G.p.kills||0]],buttons:'<button class="go" id="go" type="button">Resume</button><button class="ghost" id="tomenu" type="button">Return to menu</button>'});$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
+  else if(m==='dead'){gameCard(c,'dead',{kicker:'Defeated',title:'You fell',line:'The '+esc(label(G.p.char))+' wakes at the safehouse. Level, gear and stage progress are kept. Train, upgrade skills and stock potions before the boss.',chips:[['Gold lost','20%'],['Stage',G.stage],['Level',G.p.lvl]],buttons:'<button class="go" id="go" type="button">Wake at safehouse</button><button class="ghost" id="tomenu" type="button">Return to main menu</button>'});$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
   else if(m==='clear'){const n=G.stage,last=n>=10,hero=factionOf(G.p.char)==='hero';
-    c.innerHTML=last?'<h2>'+(hero?'Dayrim is safe':'Dayrim is yours')+'</h2><p>The crowned horror has fallen and all 10 stages are clear. You finished as a level '+G.p.lvl+' '+esc(label(G.p.char))+' with '+G.p.kills+' defeated.</p><div class="btnrow"><button class="go" id="go" type="button">Keep playing</button></div>':'<h2>Stage '+n+' cleared</h2><p>You defeated '+esc(STAGES[n-1].label||STAGES[n-1].boss)+' and earned 2 skill points. Next is stage '+(n+1)+': '+esc(STAGES[n].n)+'. The recommended level is '+recLevel(n+1)+'. You are level '+G.p.lvl+'.</p><div class="btnrow"><button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button></div>';
+    if(last)gameCard(c,'win',{kicker:'Legend of Dayrim',title:hero?'Dayrim is safe':'Dayrim is yours',line:'The crowned horror has fallen and all 10 stages are clear.',chips:[['Level',G.p.lvl],['Defeated',G.p.kills],['Hero',esc(label(G.p.char))]],buttons:'<button class="go" id="go" type="button">Keep playing</button>'});
+    else gameCard(c,'win',{kicker:'Victory',title:'Stage '+n+' cleared',line:esc(STAGES[n-1].label||STAGES[n-1].boss)+' is defeated. Next: stage '+(n+1)+', '+esc(STAGES[n].n)+'.',chips:[['Skill points','+2'],['Your level',G.p.lvl],['Recommended',recLevel(n+1)]],buttons:'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>'});
     c.querySelector('.btnrow').insertAdjacentHTML('beforeend','<button class="ghost" id="tomenu" type="button">Return to main menu</button>');$('tomenu').onclick=returnToMenu;
     $('go').onclick=()=>{if(!last)enterStage(n+1);setMode('play')};const st=$('stay');if(st)st.onclick=()=>{G.gate.open=true;setMode('play')}}
 }
@@ -3004,12 +3057,12 @@ function swarmPanel(sv){const top=sv&&sv.char===chosen?Math.max(sv.stage||1,sv.m
   return '<div class="cont"><span>The Swarm: endless waves on a stage map. Nothing carries over to your saved game.'+(best?' Best: wave '+best+'.':'')+'</span>'+Array.from({length:Math.min(10,top)},(_,i)=>'<button class="buy" type="button" data-swarm="'+(i+1)+'">Stage '+(i+1)+'</button>').join('')+'</div>'}
 function renderSelect(){
   const c=$('card'),names=Object.keys(ROSTER[selTab]),a=archOf(chosen),sv=readSave(),foe=factionOf(chosen)==='hero'?'villains':'heroes';
-  const abil=ABILITIES[chosen]?' · C '+ABILITIES[chosen].n.toLowerCase()+(abilityMode(ABILITIES[chosen])==='hold'?' (hold to aim)':''):'',controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s)'+abil+' · V ultimate · Hold right click shield · E heal · Space dodge · Hold Shift sprint · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack'+abil+' · Hold right click shield · Q spell · E heal · Space dodge · Hold Shift sprint · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
+  const abil=ABILITIES[chosen]?' · C '+ABILITIES[chosen].n.toLowerCase()+', click to use':'',controls=touchMode?'Drag on the game to move. Aim is automatic.':KIT_OF[chosen]?'WASD move · Left click small attack · Q moderate attack · X special (60s)'+abil+' · V ultimate · Hold right click shield · E heal · Space dodge · Hold Shift sprint · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack'+abil+' · Hold right click shield · Q spell · E heal · Space dodge · Hold Shift sprint · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
   const w0=weaponOf(chosen);
   c.innerHTML='<div class="sel-top"><h2>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
   (sv?'<div class="cont"><span>Saved: The '+esc(label(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
   '<div class="sel-body"><div class="roster">'+names.map((n,ri)=>'<button class="rc h" type="button" data-c="'+esc(n)+'" aria-pressed="'+(n===chosen)+'" aria-label="The '+esc(label(n))+', '+ARCH[ROSTER[selTab][n]].n+'"><i style="'+cardStyle(n)+'"></i><b>'+String(ri+1).padStart(2,'0')+'</b></button>').join('')+'</div>'+
-  '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p>'+(passiveOf(chosen)?'<p class="passive"><b>Passive · '+esc(passiveOf(chosen)[0])+':</b> '+esc(passiveOf(chosen)[1])+'</p>':'')+(ABILITIES[chosen]?'<p class="passive ability-note"><b>Ability · '+esc(abilityTitle(ABILITIES[chosen]))+':</b> '+esc(ABILITIES[chosen].d)+'</p>':'')+'<button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
+  '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>The '+esc(label(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p>'+(passiveOf(chosen)?'<p class="passive"><b>Passive · '+esc(passiveOf(chosen)[0])+':</b> '+esc(passiveOf(chosen)[1])+'</p>':'')+(ABILITIES[chosen]?'<p class="passive ability-note"><b>Ability · '+esc(abilityTitle(ABILITIES[chosen]))+':</b> '+esc(ABILITIES[chosen].d)+' <i>C to ready, click to use.</i></p>':'')+'<button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
   c.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{selTab=b.dataset.tab;playSound(selTab==='hero'?'heroBrowse':'villainBrowse');renderSelect()});
   c.querySelectorAll('.rc').forEach(b=>{b.onclick=()=>{chosen=b.dataset.c;playSound(factionOf(chosen)==='hero'?'heroBrowse':'villainBrowse');confirmNew=false;try{localStorage.setItem('dayrim-char',chosen)}catch(e){}G.p.char=chosen;recalc();renderSelect()}});
   $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();announce('start',2);clearSave();newRun(chosen);addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
@@ -3030,7 +3083,7 @@ function skillValue(s,r){const v=SKILL_VALUES[s.id];return '+'+(Math.round(v[0]*
 function renderMenu(){
   const c=$('card'),p=G.p,tabs=[['skills','Skills'],['weapons','Weapons'],['achievements','Achievements'],['gym','Gym'],['shop','Shop'],['travel','Travel'],['settings','Settings']],safe=G.p.nearSafe;
   let body='';
-  if(menuTab==='skills'){const aura=auraOf(p),team=TEAM_ABILITY[archKey(p.char)],boon=p.boonPending?'<div class="boons"><p class="mhead">Checkpoint boon: choose one for this run.</p><button class="boon" type="button" data-boon="wide"'+((p.runBoons.wide||0)>=3?' disabled':'')+'><strong>Safer dodge</strong><span>Longer dodge protection.</span></button><button class="boon" type="button" data-boon="opening"'+((p.runBoons.opening||0)>=3?' disabled':'')+'><strong>Longer opening</strong><span>Dodged brute attacks stay open longer.</span></button></div>':'';const ab=abilityOf(p);body=boon+(ab?'<p class="mhead">Ability (C): <b>'+abilityTitle(ab)+'</b> · '+ab.d+'</p>':'')+'<p class="mhead">Team ability (G): <b>'+team.n+'</b> · '+team.d+'</p><p class="mhead">Aura: <b>'+aura.n+'</b> · '+aura.d+' for you and nearby allies.</p><p class="mhead">Element: <b>'+ELEMENT[p.char]+'</b>. Different players combine statuses for reactions; other pairs resonate. Alone, a second hit triggers weaker resonance.</p><p class="mhead">Skill points: <b>'+p.sp+'</b>. You earn 1 per level and 2 per boss.</p>'+SKILL_GROUPS.map(([name,ids])=>'<h3 class="skill-group">'+name+'</h3>'+ids.map(id=>{const s=SKILLS.find(x=>x.id===id),r=p.skills[id]||0,full=r>=s.max;return'<div class="mrow skill-row"><div><strong>'+s.n+'</strong><span>'+s.d+'</span><span>Now: '+skillValue(s,r)+(full?'':' · Next: '+skillValue(s,r+1))+'</span><span class="skill-progress" role="progressbar" aria-label="'+s.n+' rank" aria-valuemin="0" aria-valuemax="'+s.max+'" aria-valuenow="'+r+'"><i style="width:'+(100*r/s.max)+'%"></i></span></div><em>'+r+'/'+s.max+'</em><button type="button" class="buy" data-skill="'+s.id+'"'+(p.sp<=0||full?' disabled':'')+'>'+(full?'Max':p.sp<=0?'No points':'Train')+'</button></div>'}).join('')).join('')}
+  if(menuTab==='skills'){const aura=auraOf(p),team=TEAM_ABILITY[archKey(p.char)],boon=p.boonPending?'<div class="boons"><p class="mhead">Checkpoint boon: choose one for this run.</p><button class="boon" type="button" data-boon="wide"'+((p.runBoons.wide||0)>=3?' disabled':'')+'><strong>Safer dodge</strong><span>Longer dodge protection.</span></button><button class="boon" type="button" data-boon="opening"'+((p.runBoons.opening||0)>=3?' disabled':'')+'><strong>Longer opening</strong><span>Dodged brute attacks stay open longer.</span></button></div>':'';const ab=abilityOf(p);body=boon+(ab?'<p class="mhead">Ability (C): <b>'+abilityTitle(ab)+'</b> · '+ab.d+' '+ABILITY_HOW+'</p>':'')+'<p class="mhead">Team ability (G): <b>'+team.n+'</b> · '+team.d+'</p><p class="mhead">Aura: <b>'+aura.n+'</b> · '+aura.d+' for you and nearby allies.</p><p class="mhead">Element: <b>'+ELEMENT[p.char]+'</b>. Different players combine statuses for reactions; other pairs resonate. Alone, a second hit triggers weaker resonance.</p><p class="mhead">Skill points: <b>'+p.sp+'</b>. You earn 1 per level and 2 per boss.</p>'+SKILL_GROUPS.map(([name,ids])=>'<h3 class="skill-group">'+name+'</h3>'+ids.map(id=>{const s=SKILLS.find(x=>x.id===id),r=p.skills[id]||0,full=r>=s.max;return'<div class="mrow skill-row"><div><strong>'+s.n+'</strong><span>'+s.d+'</span><span>Now: '+skillValue(s,r)+(full?'':' · Next: '+skillValue(s,r+1))+'</span><span class="skill-progress" role="progressbar" aria-label="'+s.n+' rank" aria-valuemin="0" aria-valuemax="'+s.max+'" aria-valuenow="'+r+'"><i style="width:'+(100*r/s.max)+'%"></i></span></div><em>'+r+'/'+s.max+'</em><button type="button" class="buy" data-skill="'+s.id+'"'+(p.sp<=0||full?' disabled':'')+'>'+(full?'Max':p.sp<=0?'No points':'Train')+'</button></div>'}).join('')).join('')}
   else if(menuTab==='weapons'){const gold=Math.floor(p.gold),intro='<p class="mhead">Upgrade at the safehouse · Gold: <b>'+gold+'</b></p>';
     if(kitOf(p)){const lv=upgradeLevel(p,'signature'),cost=upgradeCost(lv),now=Math.round((MELEE_UP[lv]-1)*100),next=cost?Math.round((MELEE_UP[lv+1]-1)*100):now,reason=upgradeReason(lv,safe,cost,p.gold);body=intro+'<p class="mhead">Small, moderate and special signature moves gain damage.</p><div class="mrow weapon-row"><div class="weapon-choice"><div class="weapon-info"><strong>Signature moves</strong>'+weaponTier(lv)+'<span>Now: damage +'+now+'%</span>'+(cost?'<span>Next: damage +'+next+'%</span>':'')+(reason?'<span class="weapon-reason">'+reason+'</span>':'')+'</div></div><button type="button" class="buy" data-upgrade="signature"'+(!safe||!cost||p.gold<cost?' disabled':'')+'>'+(cost?'Upgrade '+cost+' gold':'Max')+'</button></div>'}
     else body=intro+p.weapons.map(id=>{const w=WEAPONS[id],on=id===p.weapon,lv=upgradeLevel(p,id),cost=upgradeCost(lv),effect=weaponEffect(id,w),reason=upgradeReason(lv,safe,cost,p.gold);return '<div class="mrow weapon-row"><div class="weapon-choice"><canvas class="weapon-icon" width="44" height="44" data-icon="'+id+'" aria-hidden="true"></canvas><div class="weapon-info"><strong>'+esc(w.n)+'</strong><span>'+METHODS[w.m].n+' · power '+w.p+'</span>'+weaponTier(lv)+'<span>Now: '+upgradeSummary(w,lv)+'</span>'+(cost?'<span>Next: '+upgradeSummary(w,lv+1)+'</span>':'')+(effect?'<span class="weapon-effect">'+(lv>=2?'Effect: ':'Tier 2: ')+effect+'</span>':'')+(reason?'<span class="weapon-reason">'+reason+'</span>':'')+'</div></div><em>'+(on?'In hand':'')+'</em><button type="button" class="buy" data-weapon="'+id+'"'+(on?' disabled':'')+'>'+(on?'Equipped':'Equip')+'</button><button type="button" class="buy" data-upgrade="'+id+'"'+(!safe||!cost||p.gold<cost?' disabled':'')+'>'+(cost?'Upgrade '+cost+' gold':'Max')+'</button></div>'}).join('')}
@@ -3057,10 +3110,8 @@ function renderMenu(){
 
 /* Input. Online, actions go to the server. Alone, they run here. */
 const LOCAL_ACT={dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),ability:()=>doAbility(),use:()=>doUse(),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
-/* Letting go of the Ability key or button fires a hold ability (spots, lines and charged rings). */
-/* Name shown in menus: the finisher follows for press-again kinds, since that is what the second press does. */
-const abilityTitle=ab=>abilityMode(ab)==='again'?ab.n+' → '+ab.use:ab.n;
-function abilityRelease(){const p=G.p,ab=p&&abilityOf(p);if(ab&&abilityMode(ab)==='hold'&&G.mode==='play')doAct('use')}
+/* Name shown in menus: Ability → what using it does. How to use it is the same for everyone. */
+const abilityTitle=ab=>ab.n+' → '+ab.use,ABILITY_HOW='Press C to ready it, then click to use it (on touch, tap Ability again). C again cancels; for buffs and grabs it fires the finisher.';
 function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(n==='ability')touchAim=null;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
 function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}
@@ -3087,7 +3138,7 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='Digit1')doAct('potion');if(ev.code==='KeyF'&&netOn())netAct('revive',true);if(ev.code==='Digit2')doAct('fast');if(ev.code==='Digit3')doAct('magic');
   if(ev.code==='KeyT'){menuTab='skills';setMode('menu')}
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
-addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='KeyC')abilityRelease();if(ev.code==='ShiftLeft'||ev.code==='ShiftRight')sprintKey=false;if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
+addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='ShiftLeft'||ev.code==='ShiftRight')sprintKey=false;if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
 addEventListener('blur',()=>{keys.clear();sprintKey=false;resetTouch();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
 function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';titleMusic();menuMusic();gameAmbience()}
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
@@ -3189,18 +3240,18 @@ $('menubtn').onclick=ev=>{ev.currentTarget.blur();if(G.mode==='play'){menuTab='s
 /* Indicators describe known local or server-confirmed state; action validation stays in the rules. */
 /* The touch Ability and Use buttons carry the character's own move names. */
 let touchAbilFor=null;
-function touchAbilityLabels(ab){const box=$('touch-ability');box.hidden=!ab;if(!ab)return;const p=G.p,name=p.abil&&abilityMode(ab)==='again'?ab.use:ab.n,b=box.querySelector('[data-a="ability"]');b.classList.toggle('armed',!!p.abil);if(touchAbilFor===name)return;touchAbilFor=name;
+function touchAbilityLabels(ab){const box=$('touch-ability');box.hidden=!ab;if(!ab)return;const p=G.p,name=p.abil?ab.use:ab.n,b=box.querySelector('[data-a="ability"]');b.classList.toggle('armed',!!p.abil);if(touchAbilFor===name)return;touchAbilFor=name;
   const l=b.querySelector('.touch-label');l.textContent=name;l.classList.toggle('long',name.length>8)}
 function updateTouchStatus(){if(!touchMode||G.mode!=='play'||!G.p)return;touchAbilityLabels(abilityOf(G.p));const p=G.p,cd=p.cd||{},kit=!!kitOf(p),wait=t=>t>0?Math.ceil(t)+'s':'',low=p.hp>=p.s.maxHp,states={
-  dash:wait(cd.dash),team:wait(p.teamCd),ability:p.abilCast?'Casting':p.abil?(abilityMode(abilityOf(p)||{})==='hold'?'Release':'Again'):wait(p.abilT),ult:p.rage<100?Math.floor(p.rage)+'%':'',special:kit?wait(p.specT):'—',
+  dash:wait(cd.dash),team:wait(p.teamCd),ability:p.abilCast?'Casting':p.abil?'Tap again':wait(p.abilT),ult:p.rage<100?Math.floor(p.rage)+'%':'',special:kit?wait(p.specT):'—',
   spell:kit?(p.mv?'Busy':''):(wait(cd.bolt)||(p.mana<p.s.spellCost?'Mana':'')),heal:wait(cd.pull)||(p.mana<22?'Mana':low?'Full':''),
   potion:wait(cd.potion)||(!p.potions?'Empty':low?'Full':''),fast:wait(p.fastT)||(!p.fast?'Empty':''),magic:wait(p.magicT)||(!p.magic?'Empty':'')};
   const near=!(p.deadT>0||p.respawnT>0)&&((G.players||[]).some(q=>q!==p&&q.deadT>0&&dist(p,q)<=(archKey(p.char)==='medic'?120:60))||(G.npcs||[]).some(q=>q.wounded&&!q.dead&&dist(p,q)<=Math.max(archKey(p.char)==='medic'?120:60,80)));$('touch').querySelector('[data-a=revive]').classList.toggle('nearby',near);
   for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.querySelector('.touch-label').textContent+(value?', '+value:''))}}
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
   if(a==='more'){const panel=$('touch-extra');panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));return}if(b.closest('#touch-extra'))closeTouchExtra();
-  if(a==='ability'){touchPointers.set(ev.pointerId,a);b.setPointerCapture(ev.pointerId)}if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(['ult','team','special','ability','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
-['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('touch').addEventListener(n,ev=>{const a=touchPointers.get(ev.pointerId);if(!a)return;touchPointers.delete(ev.pointerId);if(a==='ability'){abilityRelease();return}if(![...touchPointers.values()].includes(a)){touchHold[a]=false;const b=$('touch').querySelector('[data-a="'+a+'"]');if(b)b.classList.remove('held');if(a==='revive'&&netOn())netAct('revive',false)}}));
+  if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(a==='ability'){doAct(G.p&&G.p.abil?'use':'ability')}if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('touch').addEventListener(n,ev=>{const a=touchPointers.get(ev.pointerId);if(!a)return;touchPointers.delete(ev.pointerId);if(![...touchPointers.values()].includes(a)){touchHold[a]=false;const b=$('touch').querySelector('[data-a="'+a+'"]');if(b)b.classList.remove('held');if(a==='revive'&&netOn())netAct('revive',false)}}));
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.previousElementSibling,done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected';setTimeout(()=>b.textContent='Copy',1400)};try{navigator.clipboard.writeText(pre.textContent).then(done,sel)}catch(e){sel()}}));
 if('IntersectionObserver'in window)new IntersectionObserver(es=>{es.forEach(e=>{if(e.intersectionRatio<.35&&G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')})},{threshold:[.35]}).observe($('screen'));
 /* Select-screen preview cycles through every animation */

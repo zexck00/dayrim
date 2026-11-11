@@ -107,6 +107,34 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .menub{top:calc(160px*var(--k,1))!important}
 .fsb{top:calc(188px*var(--k,1))!important}
 .ov:not(.pick) .card{zoom:var(--k,1)}
+/* ---------- Game-style notices: downed, stage clear, victory, pause ----------
+   A dark stone plate with a glowing frame in the notice's colour, a kicker between rules, a big title that
+   slams in with a shine, stat plates, and a tinted vignette behind. */
+.ov[data-tone]{background:radial-gradient(ellipse at center,rgba(6,12,20,.55),rgba(3,6,12,.9))}
+.ov[data-tone="dead"]{background:radial-gradient(ellipse at center,rgba(40,6,10,.45),rgba(16,2,4,.92))}
+.ov[data-tone="win"]{background:radial-gradient(ellipse at center,rgba(40,30,6,.4),rgba(10,7,2,.9))}
+.card.notice{--tone:#8fc4ff;--tone2:#2c4a6e;text-align:center;max-width:520px;padding:26px 24px 22px;background:linear-gradient(180deg,#1b1f2b,#0e1118 70%);border:2px solid var(--tone);border-radius:6px;
+  box-shadow:0 0 0 4px #0a0c12,0 0 0 6px var(--tone2),0 0 38px color-mix(in srgb,var(--tone) 45%,transparent),inset 0 0 40px rgba(0,0,0,.6);position:relative;animation:noticeIn .5s cubic-bezier(.2,1.4,.4,1) both}
+.card.notice[data-tone="dead"]{--tone:#e8463f;--tone2:#5a1a1c}.card.notice[data-tone="win"]{--tone:#f0c23c;--tone2:#5a4614}
+.card.notice::before,.card.notice::after{content:"";position:absolute;top:50%;width:14px;height:14px;background:var(--tone);transform:translateY(-50%) rotate(45deg);box-shadow:0 0 10px var(--tone)}
+.card.notice::before{left:-9px}.card.notice::after{right:-9px}
+.notice-k{display:flex;align-items:center;gap:10px;justify-content:center;font:600 12px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--tone);margin-bottom:6px}
+.notice-k::before,.notice-k::after{content:"";flex:1;max-width:90px;height:2px;background:linear-gradient(90deg,transparent,var(--tone))}.notice-k::after{transform:scaleX(-1)}
+.card.notice .notice-t{font:700 clamp(34px,7vw,58px)/1 var(--display);margin:4px 0 10px;text-transform:uppercase;letter-spacing:.04em;color:#fff;
+  background:linear-gradient(180deg,#fff 0%,var(--tone) 75%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 3px 0 #000) drop-shadow(0 0 14px color-mix(in srgb,var(--tone) 55%,transparent));animation:noticeTitle .7s .1s cubic-bezier(.2,1.6,.4,1) both}
+.notice-l{color:var(--bone);font-size:15px;line-height:1.4;margin:0 auto 14px;max-width:420px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 18px}
+.chip{display:grid;min-width:84px;padding:7px 10px;background:#0a0c12;border:1px solid var(--tone2);border-radius:4px;box-shadow:inset 0 0 12px rgba(0,0,0,.6);animation:noticeIn .4s both}
+.chip:nth-child(2){animation-delay:.08s}.chip:nth-child(3){animation-delay:.16s}
+.chip b{font:700 21px/1.15 var(--mono);color:var(--tone)}.chip small{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+.card.notice .btnrow{justify-content:center}
+.card.notice .go{background:linear-gradient(180deg,color-mix(in srgb,var(--tone) 85%,#fff),color-mix(in srgb,var(--tone) 70%,#000));color:#120c06;border:2px solid #0a0c12;box-shadow:0 0 0 2px var(--tone),0 4px 0 #000;text-transform:uppercase;letter-spacing:.06em;font-family:Barlow,sans-serif;font-weight:700;transition:transform .12s,filter .12s}
+.card.notice .go:hover,.card.notice .go:focus-visible{transform:translateY(-2px) scale(1.04);filter:brightness(1.15)}
+@keyframes noticeIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}
+@keyframes noticeTitle{0%{opacity:0;transform:scale(1.9);letter-spacing:.3em}60%{opacity:1}100%{transform:none}}
+@media(prefers-reduced-motion:reduce){.card.notice,.card.notice .notice-t,.chip{animation:none}}
+@media(max-width:480px){.card.notice{padding:20px 14px 16px}.chip{min-width:70px}.card.notice .btnrow{flex-direction:column;align-items:stretch}}
 .screen:fullscreen{width:100vw;height:100vh;aspect-ratio:auto;border:0}
 .screen:-webkit-full-screen{width:100vw;height:100vh;aspect-ratio:auto;border:0}
 .sound{position:absolute;right:10px;top:calc(132px*var(--k,1));z-index:2;background:rgba(12,32,38,.7);border:1px solid var(--line);font:500 calc(11px*var(--k,1)) var(--mono);padding:3px 7px;color:var(--mist)}

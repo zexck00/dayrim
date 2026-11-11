@@ -944,9 +944,9 @@ function updateMove(a,dt){const mv=a.mv;if(!mv)return;mv.t+=dt;const M=KIT[mv.ke
 function doMove(id){const p=G.p;if(p.carry||!kitOf(p)||p.guard||p.mv||p.stunT>0)return;if(id==='special'){if((p.specT||0)>0)return;p.specT=SPECIAL_CD*cdMulOf(p);G.banner=null}startMove(p,id,mouseAimX());if(id==='special')addLog('Special attack used. Ready again in '+Math.round(SPECIAL_CD*p.s.cdMul)+' seconds.')}
 const mouseAimX=()=>{const p=G.p;return touchMode?p.x+Math.cos(p.face):mouse.x};
 /* ---------- Abilities ----------
-   One button (C). How it behaves depends on the kind:
-   tap: lock or pick, then fire at once · hold: aim while held, fire on release (lines and rings charge)
-   again: the first press starts a buff or a grab, the next press fires its finisher.
+   C readies the ability: it locks a target, picks an ally, aims a spot or line, grabs an enemy, or starts a
+   buff. A left click uses it (online, the attack input; on touch, tapping Ability again). C again cancels an
+   aimed ability, and fires the finisher of a buff or a grab.
    Every character has one Ability (C) and its Use (Z). Ability arms the move: it locks a target, picks
    an ally, aims a spot or a line, grabs an enemy, or starts a short buff. Use fires it after the special
    attack's cast delay. It hits for ten of the character's basic attacks.
@@ -956,22 +956,22 @@ const mouseAimX=()=>{const p=G.p;return touchMode?p.x+Math.cos(p.face):mouse.x};
    fx   what Use does; see ABILITY_FIRE. */
 const ABILITY_CAST=KIT.toxic.special.hits[0]*KIT.toxic.special.dur,ABILITY_ARMED=10,EXECUTE_BELOW=.25;
 const ABILITY_FX={
- mark:{aim:'foe',range:560,shot:{kind:'bullet',sp:1100},col:'255,207,112',d:'Tap to lock onto the enemy nearest your aim and shoot it. Enemies other than bosses and villains below a quarter of their life die outright.'},
- pool:{aim:'spot',range:440,r:110,shot:{kind:'lob',t:.6},col:'140,240,70',d:'Hold to aim a spot in range, release to throw. It bursts and leaves a damaging pool.'},
- leap:{aim:'foe',range:420,r:95,col:'255,170,90',d:'Tap to leap onto the enemy nearest your aim and slam the ground around it.'},
- pierce:{aim:'line',len:650,w:34,charge:2,shot:{kind:'spear',sp:950},col:'255,230,140',d:'Hold to aim a line; it charges for 2 seconds. Release to fire through every enemy on it.'},
- stun:{aim:'foe',range:520,stun:2.5,shot:{kind:'bolt',sp:720},col:'120,220,255',d:'Tap to fire at the enemy nearest your aim and stun it (shorter on bosses).'},
- brace:{aim:'self',dur:8,r:160,col:'120,200,255',d:'Tap to raise a dome: you and allies inside take half damage. Tap again to release it as a shockwave that pushes and stuns.'},
- heal:{aim:'ally',range:420,cd:90,col:'130,255,170',d:'Tap to fully heal the most hurt ally in range (or yourself) and clear poison, webs and stuns. 90 second cooldown.'},
- vanish:{aim:'self',dur:5,r:160,col:'180,160,220',d:'Tap to turn invisible for 5 seconds: enemies lose track of you and cannot hurt you. Tap again to ambush the nearest enemy for double damage.'},
- roar:{aim:'self',dur:6,r:320,col:'255,110,90',d:'Tap to roar: nearby enemies turn on you and you take 30% less damage. Tap again to slam the ground.'},
- collapse:{aim:'spot',range:460,r:220,shot:{kind:'lob',t:.7},col:'190,130,255',d:'Hold to aim a dark point, release to pull every enemy nearby into it and crush them.'},
- decoy:{aim:'self',dur:10,r:110,col:'255,140,210',d:'Tap to leave a copy of yourself where you stand. Tap again to swap back to it; the copy bursts.'},
- hook:{aim:'line',len:450,w:30,shot:{kind:'hook',sp:900},col:'200,210,230',d:'Hold to aim the hook, release to fire it. The first enemy hit is dragged to you and dazed. Bosses only take the damage.'},
- hurl:{aim:'grab',range:90,throw:420,r:90,col:'255,190,110',d:'Tap to grab the nearest enemy in reach, tap again to hurl it where you aim. It knocks down enemies where it lands. Not bosses or villains.'},
- blitz:{aim:'self',dur:6,len:320,col:'130,255,220',d:'Tap for Overdrive: twice as fast for 6 seconds. Tap again to dash where you aim, untouchable, hitting everything you pass.'},
- titan:{aim:'self',dur:8,r:220,col:'255,140,80',d:'Tap to grow to twice your size for 8 seconds: 50% more damage and a third less damage taken. Tap again to stomp a stunning shockwave and end it.'},
- push:{aim:'self',dur:10,r:110,grow:110,charge:1.5,col:'170,140,255',d:'Hold to charge a force ring (1.5 s), release to blast every enemy in it away and break their attacks. At full charge it also hurts.'}
+ mark:{aim:'foe',range:560,shot:{kind:'bullet',sp:1100},col:'255,207,112',d:'Locks onto the enemy nearest your aim and shoots it. Enemies other than bosses and villains below a quarter of their life die outright.'},
+ pool:{aim:'spot',range:440,r:110,shot:{kind:'lob',t:.6},col:'140,240,70',d:'Throws to a spot in range. It bursts and leaves a damaging pool.'},
+ leap:{aim:'foe',range:420,r:95,col:'255,170,90',d:'Leaps onto the enemy nearest your aim and slams the ground around it.'},
+ pierce:{aim:'line',len:650,w:34,charge:2,shot:{kind:'spear',sp:950},col:'255,230,140',d:'Fires along your aim through every enemy on the line. It charges for 2 seconds while ready.'},
+ stun:{aim:'foe',range:520,stun:2.5,shot:{kind:'bolt',sp:720},col:'120,220,255',d:'Fires at the enemy nearest your aim and stuns it (shorter on bosses).'},
+ brace:{aim:'self',dur:8,r:160,col:'120,200,255',d:'Raises a dome: you and allies inside take half damage. The finisher releases it as a shockwave that pushes and stuns.'},
+ heal:{aim:'ally',range:420,cd:90,col:'130,255,170',d:'Fully heals the most hurt ally in range (or you) and clears poison, webs and stuns. 90 second cooldown.'},
+ vanish:{aim:'self',dur:5,r:160,col:'180,160,220',d:'You turn invisible for 5 seconds: enemies lose track of you and cannot hurt you. The finisher ambushes the nearest enemy for double damage.'},
+ roar:{aim:'self',dur:6,r:320,col:'255,110,90',d:'You roar: nearby enemies turn on you and you take 30% less damage. The finisher slams the ground.'},
+ collapse:{aim:'spot',range:460,r:220,shot:{kind:'lob',t:.7},col:'190,130,255',d:'Pulls every enemy near the aimed point into it and crushes them.'},
+ decoy:{aim:'self',dur:10,r:110,col:'255,140,210',d:'Leaves a copy of you where you stand. The finisher swaps you back to it and the copy bursts.'},
+ hook:{aim:'line',len:450,w:30,shot:{kind:'hook',sp:900},col:'200,210,230',d:'Fires a hook along your aim. The first enemy hit is dragged to you and dazed. Bosses only take the damage.'},
+ hurl:{aim:'grab',range:90,throw:420,r:90,col:'255,190,110',d:'Grabs the nearest enemy in reach; the finisher hurls it where you aim. It knocks down enemies where it lands. Not bosses or villains.'},
+ blitz:{aim:'self',dur:6,len:320,col:'130,255,220',d:'Overdrive: twice as fast for 6 seconds. The finisher dashes where you aim, untouchable, hitting everything you pass.'},
+ titan:{aim:'self',dur:8,r:220,col:'255,140,80',d:'You grow to twice your size for 8 seconds: 50% more damage and a third less damage taken. The finisher stomps a stunning shockwave and ends it.'},
+ push:{aim:'self',dur:10,r:110,grow:110,charge:1.5,col:'170,140,255',d:'Charges a force ring while ready (1.5 s). Using it blasts every enemy in the ring away and breaks their attacks; at full charge it also hurts.'}
 };
 const defAbility=(fx,n,use,o={})=>Object.assign({fx},ABILITY_FX[fx],{n,use},o);
 const ABILITIES={
@@ -987,7 +987,8 @@ const ABILITIES={
  'Ash Shaman':defAbility('pool','Ash Circle','Eruption',{col:'255,120,60'}),'Soul Forger':defAbility('brace','Forge Ward','Anvil Bash',{col:'232,137,42'}),'Mirror Jester':defAbility('decoy','Mirror Image','Swap',{col:'255,118,193'}),'Cyber Priest':defAbility('heal','Diagnose','Full Restore',{col:'111,224,216'})
 };
 const abilityOf=p=>ABILITIES[p.char]||null;
-const abilityMode=ab=>ab.aim==='foe'||ab.aim==='ally'?'tap':ab.aim==='spot'||ab.aim==='line'||(ab.aim==='self'&&ab.charge)?'hold':'again';
+/* Buffs and grabs are already running once readied, so pressing C again fires their finisher instead of cancelling. */
+const hasFinisher=ab=>ab.aim==='self'||ab.aim==='grab';
 const abilFoe=new WeakMap();
 let touchAim=null;
 /* Sprint: hold Shift (or drag the touch stick far out). Faster with a longer stride; costs mana; stops while attacking, shielding or dodging. */
@@ -1018,15 +1019,14 @@ const abilCharge=(a,ab)=>ab.charge?clamp((a.armed||0)/ab.charge,0,1):1;
 const abilityBlocked=p=>p.carry||p.stunT>0||p.guard||p.mv||p.ult||G.mode!=='play';
 function abilityEnd(p){const e=abilFoe.get(p);if(e&&p.abil&&p.abil.aim==='grab')e.stunT=Math.max(e.stunT||0,.4);p.abil=null;abilFoe.delete(p)}
 function doAbility(){const p=G.p,ab=abilityOf(p);if(!ab||abilityBlocked(p)||p.abilCast)return;
-  if(p.abil){if(abilityMode(ab)==='again')doUse();return}
+  if(p.abil){if(hasFinisher(ab))doUse();else abilityEnd(p);return}
   if((p.abilT||0)>0){addLog(ab.n+' ready in '+Math.ceil(p.abilT)+' seconds.');return}
   const a={fx:ab.fx,aim:ab.aim,t:ab.dur||ABILITY_ARMED,armed:0,x:p.x,y:p.y};
   if(ab.aim==='foe'||ab.aim==='grab'){const e=ab.aim==='foe'?markTarget(p,ab):grabTarget(p,ab);if(!e){text(p.x,p.y-70,ab.aim==='grab'?'Nothing to grab':'No target in range','#ffb080');return}abilFoe.set(p,e);a.x=e.x;a.y=e.y}
   else if(ab.aim==='ally'){const q=hurtAlly(p,ab);a.pid=q.id||0;a.x=q.x;a.y=q.y}
   else if(ab.aim==='spot')Object.assign(a,clampRange(p,abilAim(p),ab.range));
   else if(ab.aim==='line'){const m=abilAim(p);a.a=Math.atan2(m.y-p.y,m.x-p.x);a.x=p.x+Math.cos(a.a)*ab.len;a.y=p.y+Math.sin(a.a)*ab.len}
-  p.abil=a;if(ab.aim==='self'){p.abilT=(ab.cd||SPECIAL_CD)*cdMulOf(p);abilityArm(p,ab)}sfx('lock');
-  if(abilityMode(ab)==='tap')doUse()}
+  p.abil=a;if(ab.aim==='self'){p.abilT=(ab.cd||SPECIAL_CD)*cdMulOf(p);abilityArm(p,ab)}sfx('lock')}
 function abilityArm(p,ab){
   if(ab.fx==='roar'){for(const e of G.enemies)if(foeAlive(e)&&dist(e,p)<ab.r){e.tauntT=Math.max(e.tauntT||0,ab.dur);e.tauntId=p.id||0}text(p.x,p.y-80,ab.n.toUpperCase(),'#ff8a70',true);shake(3)}
   else glowP(p.x,p.y-24,ab.col,12,160,.5,3)}
@@ -1246,7 +1246,9 @@ function updatePlayer(p,dt){
   /* Arena doors: a living boss keeps the party inside. */
   if(G.arena&&G.boss){const ad=Math.hypot(p.x-G.arena.x,p.y-G.arena.y);if(ad>G.arena.r){const aa=Math.atan2(p.y-G.arena.y,p.x-G.arena.x);p.x=G.arena.x+Math.cos(aa)*G.arena.r;p.y=G.arena.y+Math.sin(aa)*G.arena.r}}
   if(touchMode){const n=nearestEnemy();if(n)p.face=Math.atan2(n.y-p.y,n.x-p.x);else if(p.moving)p.face=Math.atan2(v.y,v.x)}else p.face=Math.atan2(mouse.y-(p.y-22),mouse.x-p.x);
-  if(mouse.left||touchHold.slash)doAttack();
+  /* A click uses a readied ability; that click is spent and does not attack until the button is let go. */
+  if(!mouse.left)p.clickLatch=0;else if(p.abil&&!p.clickLatch){p.clickLatch=1;doUse()}
+  if((mouse.left&&!p.clickLatch&&!p.abil)||(touchHold.slash&&!p.abil))doAttack();
   tagOwned(p);
   /* Carry steps: walk over an item to lift it, walk into the drop zone to deliver it. */
   if(G.obj){const st=G.obj.steps[G.obj.i];

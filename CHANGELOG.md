@@ -28,7 +28,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Rusted Ghoul, the Stage 7 boss: dodge its hook and cleaves, then power the generator and lure it onto the coil to stagger it and clear Rust Field. The coil charges itself for a lone standing player.
 
 **Abilities**
-- Every playable character has an Ability on one button (C, or the touch Ability button). Lock-on, stun, leap and heal moves fire with a tap. Spots, lines and charged rings are aimed while you hold and fire when you let go. Buffs and grabs start with one press and fire their finisher with the next. An ability hits for ten of that character's basic attacks, so it grows with level, stats, skills and weapon upgrades. The cast delay and 60 second cooldown match a special attack. The character screen and the skills menu describe each one.
+- Every playable character has an Ability. C readies it (locks a target, picks an ally, aims a spot or line, grabs an enemy, or starts a buff) and a left click uses it; there is no separate Use button. On touch, tap Ability to ready it and tap it again to use it. C again cancels an aimed ability, or fires the finisher of a buff or grab. The click that uses an ability does not also attack. An ability hits for ten of that character's basic attacks, so it grows with level, stats, skills and weapon upgrades. The cast delay and 60 second cooldown match a special attack.
 - Basic attacks have their own feel for each style: a glint as a melee swing starts; a muzzle flash, smoke puff and recoil kick for guns and bows; a turning rune circle at the hand and a release flash for spells. Enemies flash a short spark where they are hit.
 - Thrown things look thrown: flasks, skulls and trick cards hop in a small arc with a shadow under them and spin as they fly. Flasks are drawn as cork-stoppered bottles that drip as they go and splash when they break; skulls scatter bone chips.
 - The Necromancer's small attack throws a skull that breaks on the first enemy or wall, or at its range.
@@ -52,6 +52,10 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
   - Titan form (Cyborg, Mecha Tyrant): twice the size for 8 seconds, 50% more damage, a third less damage taken; Use stomps and stuns.
   - Force rings (Firefighter, Voidwalker, Gravity Weaver): charge a growing ring, then push every enemy in it away and break their attacks.
 - Enemies show their level beside their life bar, and bosses show it in the boss bar. It is the stage's recommended level, plus 1 for strong minions and elites, 3 for villains and 4 for bosses. Their life and damage already rise with each stage.
+
+**Notifications**
+- Being downed, clearing a stage, the final victory and pause (and their online versions) are game-style cards: a framed plate glowing red, gold or blue, a kicker between rules, a big pixel title that slams in, stat plates (gold lost, skill points, level against the recommended level), and a tinted backdrop.
+- In-game banners (stage starts, villains arriving, webs and so on) are ribbon plates with diamond ends that snap open with a shine across the title; warnings use red. Big callouts such as ULTIMATE READY and EXECUTED pop in large in the pixel font.
 
 **Animation**
 - Smoother characters for everyone drawn with the pixel rig (heroes, villains, minions, rivals and citizens): an 8-step walk instead of 4 and a 5-step attack with a wind-up and follow-through. On every frame, motion is added between poses: a bob and lean while walking, breathing at rest, a lunge on attacks and a flinch when hit.
