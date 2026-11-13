@@ -105,7 +105,7 @@ function netUpdate(dt){
   const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
   if(me.webT>0)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
-  else if(v.x||v.y){me.sprint=canSprint(me,v);const sp=envSpeed(me)*me.s.speed*abilSpeed(me)*(me.sprint?SPRINT.mul:1)*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11*(me.sprint?SPRINT.stride:1);me.moveA=Math.atan2(v.y,v.x)}
+  else if(v.x||v.y){me.sprint=canSprint(me,v);const sp=envSpeed(me)*me.s.speed*abilSpeed(me)*(me.sprint?SPRINT.mul:1)*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*(me.beam?0:me.chg>0?CHARGE.slow:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11*(me.sprint?SPRINT.stride:1);me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
   if(me.x!==bx||me.y!==by)net.pending.push({s:net.seq+1,dx:me.x-bx,dy:me.y-by});if(net.pending.length>240)net.pending.shift();
   net.reviveT-=dt;if(net.reviveT<=0&&G.mode==='play'&&(keys.has('KeyF')||touchHold.revive)){net.reviveT=.2;netSend({t:'a',n:'revive',v:true})}net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}

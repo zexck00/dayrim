@@ -174,7 +174,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 /* Title poster: the first screen. The owner's poster, the DAYRIM letters cut from the title art, and the Play Game button. */
 /* ---------- Game modes screen ---------- */
 .modes{position:absolute;inset:0;z-index:6;display:grid;grid-template-columns:clamp(250px,26vw,350px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);background:#07060c;overflow:hidden}
-.md-art{position:absolute;inset:0;background:#0a0a12 center/cover no-repeat;filter:saturate(1.05) brightness(.82)}
+.md-art{position:absolute;inset:0;background:#0a0a12 center/cover no-repeat;filter:saturate(1.05) brightness(.82);transition:opacity .6s ease}
+.md-art2{opacity:0}.md-art2.on{opacity:1}
+.md-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;background:#000}
+.modes.wz::after{background:linear-gradient(90deg,rgba(5,6,12,.85) 0,rgba(5,6,12,.2) 30%,rgba(5,6,12,0) 60%)}
+.md-panel.wz{align-self:end;width:min(440px,calc(100% - 2*clamp(8px,2.4vh,22px)));background:rgba(10,13,24,.82)}
+.md-nav button.soon{border-left-color:#7a6a5a}.md-nav button.soon b{opacity:.75}
 .modes::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(5,6,12,.9) 0,rgba(5,6,12,.55) 30%,rgba(5,6,12,.05) 60%,rgba(5,6,12,.4) 100%)}
 .md-side{position:relative;z-index:2;display:flex;flex-direction:column;gap:18px;min-height:0;overflow:auto;padding:clamp(14px,3vh,30px) clamp(14px,1.6vw,22px);padding-left:max(clamp(14px,1.6vw,22px),env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(16,17,28,.93),rgba(8,9,16,.97));border-right:1px solid #4a3a26;box-shadow:8px 0 30px #000a}
 .md-logo{width:100%;max-width:290px;align-self:center;filter:drop-shadow(0 4px 10px #000);user-select:none;pointer-events:none}
@@ -237,13 +242,15 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .md-side{background:none;border-right:0;box-shadow:none;padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(14px,env(safe-area-inset-bottom,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
   .md-logo{max-width:230px}.md-nav{margin:auto 0 0}
     .modes.open .md-side{display:none}
+  .md-vid{object-fit:contain;object-position:center 30%}
+  .md-panel.wz{align-self:end;width:100%;background:rgba(10,13,24,.9)}
   .md-panel{margin:0;width:100%;border:0;padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px))}
   .mp-chars{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.mp-char b{font-size:11px}.mp-char small{display:none}
   .mp-ch{gap:8px;padding:9px 10px}.mp-num{font-size:24px;min-width:20px}.mp-cht b{font-size:15px}.mp-cht em{font-size:13px}
   .dlg{gap:10px;padding:10px 12px 8px}.dlg-p{width:64px;height:64px}.dlg-t{font-size:15px;min-height:4.4em}.dlg-n{font-size:16px}.dlg-opt{flex:1 1 100%}
 }
 @media(max-height:500px) and (orientation:landscape){
-  .modes{grid-template-columns:clamp(190px,30vw,250px) minmax(0,1fr)}
+  .modes{grid-template-columns:minmax(0,1fr) clamp(190px,30vw,250px)}
   .md-side{gap:8px;padding:8px 12px;padding-left:max(12px,env(safe-area-inset-left,0px))}
   .md-logo{max-width:140px}.md-nav{gap:6px}.md-nav button{padding:7px 12px}.md-nav b{font-size:17px}.md-nav small{font-size:11px}
   .md-foot{font-size:10px;gap:3px;padding-top:6px}.md-foot button{padding:2px 8px}
@@ -253,6 +260,16 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .screen.touch-playing .story-act{bottom:max(10px,env(safe-area-inset-bottom,0px));padding:9px 18px}
 }
 @media(prefers-reduced-motion:reduce){.md-nav button{transition:none}}
+/* The mode menu sits on the right on wide screens; the open mode's panel sits beside it on the left */
+@media(min-width:701px){
+  .modes{grid-template-columns:minmax(0,1fr) clamp(250px,26vw,350px)}
+  .md-side{grid-column:2;grid-row:1;border-right:0;border-left:1px solid #4a3a26;box-shadow:-8px 0 30px #000a;padding-right:max(clamp(14px,1.6vw,22px),env(safe-area-inset-right,0px))}
+  .md-panel{grid-column:1;grid-row:1;justify-self:end}
+  .md-nav button{border-left-width:1px;border-right:4px solid #c9973f;text-align:right;align-items:flex-end}
+  .md-nav button:hover:not(:disabled),.md-nav button:focus-visible{transform:translateX(-6px)}
+  .modes::after{background:linear-gradient(270deg,rgba(5,6,12,.9) 0,rgba(5,6,12,.55) 30%,rgba(5,6,12,.05) 60%,rgba(5,6,12,.4) 100%)}
+  .modes.wz::after{background:linear-gradient(270deg,rgba(5,6,12,.85) 0,rgba(5,6,12,.2) 30%,rgba(5,6,12,0) 60%)}
+}
 .splash{position:absolute;inset:0;z-index:8;container-type:size;overflow:hidden;background:#07060c;transition:opacity .7s ease,visibility 0s linear .7s}
 .splash.gone{opacity:0;visibility:hidden;pointer-events:none}
 /* Nothing on the poster shows until both pictures have loaded, so a half-loaded or broken image never flashes */
@@ -383,13 +400,14 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
       <button class="story-act" id="story-act" type="button" hidden>Talk</button>
       <div class="dlg" id="dlg" role="dialog" aria-live="polite" hidden><canvas class="dlg-p" id="dlgp" width="96" height="96" aria-hidden="true"></canvas><div class="dlg-b"><b class="dlg-n" id="dlgn"></b><p class="dlg-t" id="dlgt"></p><div class="dlg-o" id="dlgo"></div><small class="dlg-h" id="dlgh"></small></div><button class="dlg-skip" id="dlgskip" type="button">Skip</button></div>
       <div class="modes" id="modes" hidden>
-        <div class="md-art" id="mdart"></div>
+        <div class="md-art" id="mdart"></div><div class="md-art md-art2" id="mdart2"></div>
+        <video class="md-vid" id="mdvid" playsinline preload="none" hidden></video>
         <aside class="md-side">
           <img class="md-logo" id="mdlogo" alt="Dayrim">
           <nav class="md-nav" aria-label="Game modes">
             <button type="button" data-m="story"><b>Story</b><small>The Ten Hours · 3 chapters</small></button>
             <button type="button" data-m="quick"><b>Quick Game</b><small>Stages, the Swarm and online play</small></button>
-            <button type="button" data-m="war" disabled><b>Warzone</b><small>Coming soon</small></button>
+            <button type="button" data-m="war"><b>Warzone</b><small>Coming soon · watch the trailer</small></button>
           </nav>
           <footer class="md-foot"><span class="md-dev">Developed by <b>zexck00</b>, <b>c4lyp5o</b> and <b>Dvachini</b></span><span class="md-verrow"><span id="mdver"></span><button type="button" id="mdlog">Changelog</button></span></footer>
         </aside>

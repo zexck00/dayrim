@@ -28,7 +28,7 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 |---|---|
 | WASD or arrows | Move |
 | Mouse | Aim |
-| Left click | Attack |
+| Left click | Attack. Hold to charge, let go to fire: casters fire a beam, marksmen fire a charged shot that suits their gun (shotgun, arrow volley, overcharged plasma, gale burst), melee fighters lunge. |
 | Hold right click | Shield |
 | Q | Spell (moderate attack for asset villains) |
 | X | Special attack, asset villains only, every 60 seconds |

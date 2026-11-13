@@ -823,6 +823,44 @@ for(const [id,lob] of [['small',false],['moderate',true]]){const r=mk(),p=s.crea
 ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains to rank 100');
 {const r=mk(),p=s.createRoom(r,'Detective',null,'Rank');T.enter(r);p.sp=3;p.skills.power=15;p.actions.push({n:'skill',v:'power'});s.step(r,1/30);r.ev.length=0;ok(p.skills.power===16,'a skill trains past the old cap of 15');
  G().stage=3;const w=T.spawnMob(0,{x:p.x+30,y:p.y},false),st=T.spawnMob(0,{x:p.x+30,y:p.y},true);ok(T.enemyLevel(w)===T.recLevel(3)&&T.enemyLevel(st)===T.recLevel(3)+1,'enemy level follows the stage')}
+// Charge, beam, lunge and stagger.
+{const r=mk(),p=s.createRoom(r,'Sage',null,'Beam');T.enter(r);G().enemies=[];G().p=p;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const c=openEast();p.x=(c%78+.5)*40;p.y=((c/78|0)+.5)*40;const e=T.spawnMob(0,{x:p.x+60,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
+ p.input.ax=e.x;p.input.ay=e.y-22;p.mana=p.s.maxMana;p.input.l=true;run(1);ok(p.cd.slash>0&&!(p.chg>0),'a tap still attacks at once');
+ run(Math.ceil((T.CHARGE.delay+.1)*30));ok(p.chg>0&&p.chg<1,'holding the attack builds charge');
+ const x0=p.x;p.input.x=1;run(10);ok(p.x-x0<p.s.speed*10/30*.6,'charging slows movement');p.input.x=0;
+ run(Math.ceil(T.CHARGE.time*30));ok(p.chg===1,'charge tops out');
+ const hp=e.hp;p.input.l=false;run(1);ok(p.beam&&!(p.chg>0)&&!p.holdT,'letting go at full charge fires a beam');
+ const bx=p.x;p.input.x=1;run(5);ok(Math.abs(p.x-bx)<.01,'the beam holds the caster in place');p.input.x=0;
+ ok(e.redT>0,'a beam hit flashes the enemy red');run(20);ok(!p.beam&&hp-e.hp>T.basicHit(p)*T.BEAM.mul*3,'the beam burns several ticks along its line');
+ const far=T.spawnMob(0,{x:p.x,y:p.y+200},false);far.hp=far.maxHp=1e7;far.sp=0;far.stunT=30;const fh=far.hp;p.input.l=true;run(Math.ceil((T.CHARGE.delay+T.CHARGE.time+.1)*30));p.input.l=false;run(20);ok(far.hp===fh,'a beam only hits along its line');
+ p.input.l=true;run(Math.ceil((T.CHARGE.delay+.1)*30));p.input.l=false;run(1);ok(!p.beam,'letting go early does not fire a beam')}
+{const r=mk(),p=s.createRoom(r,'Firefighter',null,'Lunge');T.enter(r);G().enemies=[];G().p=p;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const c=openEast();p.x=(c%78+.5)*40;p.y=((c/78|0)+.5)*40;const e=T.spawnMob(0,{x:p.x+70,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
+ p.input.ax=e.x;p.input.ay=e.y-22;p.input.l=true;run(Math.ceil((T.CHARGE.delay+T.CHARGE.time+.1)*30));const hp=e.hp,x0=p.x;p.input.l=false;run(8);
+ ok(!p.beam&&p.x>x0+40,'a melee fighter lunges forward instead of firing a beam');ok(hp-e.hp>T.basicHit(p)*2&&(e.redT>0||e.kx),'the lunge hits and staggers the enemy in its path')}
+// Falcon EX (the former Patriot): name, wind attack, Tailwind and the triple Falcon Dive.
+{ok(T.label('Patriot')==='Falcon EX'&&T.theName('Patriot')==='Falcon EX'&&T.theName('Detective')==='The Detective','the Patriot is shown as Falcon EX');
+ ok(T.weaponOf('Patriot')==='wind'&&T.WEAPONS.wind.m==='shoot'&&T.archKey('Patriot')==='shooter','Falcon EX fights with wind shots as a Marksman');
+ ok(T.PASSIVES.Patriot[0]==='Tailwind','Falcon EX has the Tailwind passive');
+ const r=mk(),p=s.createRoom(r,'Patriot',null,'Falcon');T.enter(r);G().enemies=[];G().p=p;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ /* a spot with eight open tiles to the east, so the wind shot cannot hit a wall */
+ const W=G().w,c=W.open.find(c=>c%78<68&&[1,2,3,4,5,6,7,8].every(k=>!W.map[c+k]));p.x=(c%78+.5)*40;p.y=((c/78|0)+.5)*40;const es=[0,1,2].map(i=>{const e=T.spawnMob(0,{x:p.x+120+i*20,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;return e});
+ p.input.ax=es[0].x;p.input.ay=es[0].y-22;p.input.l=true;run(1);p.input.l=false;run(1);ok(G().shots.some(x=>x.fx==='wind'&&x.from==='p'),'the basic attack fires a wind shot');
+ G().shots=[];const hp0=es.reduce((n,e)=>n+e.hp,0);p.actions.push({n:'ability'});run(1);p.input.l=true;run(1);p.input.l=false;
+ let dives=0,was=null;for(let i=0;i<110;i++){run(1);if(p.dive&&p.dive.n!==was){was=p.dive.n;dives++}}
+ ok(!p.dive&&dives>=2&&hp0-es.reduce((n,e)=>n+e.hp,0)>T.abilityDamage(p)*.7*5,'Falcon Dive lands three full-power dives')}
+// Marksmen fire a charged shot that suits their gun instead of a beam, and it stays below an ability.
+{const fire=(char,wait=true)=>{const r=mk(),p=s.createRoom(r,char,null,'M');T.enter(r);G().enemies=[];G().p=p;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+   /* open a patch of ground so a fan of shots cannot clip a wall on its first frame */
+   const W=G().w,c=W.open.find(c=>c%78>6&&c%78<66&&(c/78|0)>6&&(c/78|0)<48);for(let dy=-5;dy<=5;dy++)for(let dx=-4;dx<=9;dx++)W.map[c+dy*78+dx]=0;p.x=(c%78+.5)*40;p.y=((c/78|0)+.5)*40;p.input.ax=p.x+200;p.input.ay=p.y-22;
+   p.input.l=true;run(Math.ceil((T.CHARGE.delay+T.CHARGE.time+.1)*30));G().shots=[];p.input.l=false;run(1);return{p,shots:G().shots.filter(x=>x.from==='p'),run}};
+ const det=fire('Detective');ok(!det.p.beam&&det.shots.length===T.CHARGED_SHOT.pistol.n&&det.shots.every(x=>x.fx==='pellet'),'the Detective fires a shotgun spread instead of a beam');
+ const rng=fire('Ranger');ok(!rng.p.beam&&rng.shots.length===T.CHARGED_SHOT.bow.n&&rng.shots.every(x=>x.fx==='arrow'&&x.piercing),'the Ranger looses a volley of piercing arrows');
+ const inv=fire('Inventor');ok(!inv.p.beam&&inv.shots.length===1&&inv.shots[0].blast>0,'the Inventor fires one overcharged plasma bolt that explodes');
+ const fal=fire('Patriot');ok(!fal.p.beam&&fal.shots.length===3&&fal.shots.every(x=>x.fx==='wind'),'Falcon EX fires a gale burst of three wind crescents');
+ for(const [char,id] of [['Detective','pistol'],['Ranger','bow'],['Inventor','blaster'],['Patriot','wind']]){const r=fire(char),C=T.CHARGED_SHOT[id],total=r.shots.reduce((n,x)=>n+x.dmg,0);G().p=r.p;ok(total>T.basicHit(r.p)*2&&total<T.abilityDamage(r.p)*.5,char+': a charged shot hits hard but stays well below the ability')}
+ const sage=fire('Sage');ok(!!sage.p.beam,'casters still fire a beam')}
 console.log('\n'+n+' checks passed');
 
 
