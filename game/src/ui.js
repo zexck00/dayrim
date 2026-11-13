@@ -63,7 +63,7 @@ function swarmPanel(sv){const top=sv&&sv.char===chosen?Math.max(sv.stage||1,sv.m
   return '<div class="cont"><span>The Swarm: endless waves on a stage map. Nothing carries over to your saved game.'+(best?' Best: wave '+best+'.':'')+'</span>'+Array.from({length:Math.min(10,top)},(_,i)=>'<button class="buy" type="button" data-swarm="'+(i+1)+'">Stage '+(i+1)+'</button>').join('')+'</div>'}
 function renderSelect(){
   const c=$('card'),names=Object.keys(ROSTER[selTab]),a=archOf(chosen),sv=readSave(),foe=factionOf(chosen)==='hero'?'villains':'heroes';
-  const abil=ABILITIES[chosen]?' · C '+ABILITIES[chosen].n.toLowerCase()+', click to use':'',controls=touchMode?'Drag on the game to move. Aim is automatic. Hold Attack to charge.':KIT_OF[chosen]?'WASD move · Left click small attack (hold to charge a beam) · Q moderate attack · X special (60s)'+abil+' · V ultimate · Hold right click shield · E heal · Space dodge · Hold Shift sprint · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen':'WASD move · Mouse aim · Left click attack (hold to charge)'+abil+' · Hold right click shield · Q spell · E heal · Space dodge · Hold Shift sprint · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
+  const abil=ABILITIES[chosen]?' · C '+ABILITIES[chosen].n.toLowerCase()+', click to use':'',controls=touchMode?'Drag on the game to move. Aim is automatic. Hold Attack to charge.':'WASD move · Mouse aim · Left click attack (hold to charge)'+abil+' · Hold right click shield · Q spell · E heal · Space dodge · Hold Shift sprint · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
   const w0=weaponOf(chosen);
   c.innerHTML='<div class="sel-top"><h2><button class="ghost tomodes" id="tomodes" type="button" aria-label="Back to game modes">‹ Modes</button>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
   (sv?'<div class="cont"><span>Saved: '+esc(theName(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
@@ -236,7 +236,8 @@ function soundWatch(){if(!ac||!G||!G.p||G.mode==='title'){if(bossMus&&ac)setBoss
     else if(!isDown(me)&&others.filter(o=>o!==me).every(isDown))announce(others.length>1?'friends_all_down':'friend_down',4);
     else if(all)announce('all_down',5);else announce('friend_down',3)}}
 /* Browsers only allow sound after the player interacts, so the first click or key turns it on */
-['pointerdown','keydown'].forEach(n=>addEventListener(n,()=>{audioOn();titleMusic();menuMusic();gameAmbience()},{capture:true}));
+/* Sound starts on its own where the browser allows it. Browsers that wait for the player let any first touch, click or key start it (they never allow it on a mouse move alone). */
+['pointerdown','keydown','touchstart','mousedown','click'].forEach(n=>addEventListener(n,()=>{audioOn();titleMusic();menuMusic();gameAmbience()},{capture:true,passive:true}));
 $('sound').onclick=ev=>{audioOn();toggleSound();ev.currentTarget.blur()};
 /* Fullscreen. Browsers keep Esc for themselves, so the game reacts to the change, not the key. */
 const SCREEN=$('screen'),canFullscreen=!!(SCREEN.requestFullscreen||SCREEN.webkitRequestFullscreen);
@@ -295,7 +296,9 @@ function initSplash(){if(!SPLASH)return;const ims=[$('spposter'),$('spwords')];i
   Promise.all(ims.map(im=>im.decode?im.decode().catch(()=>{}):Promise.resolve())).then(()=>SPLASH.classList.add('ready'));
   /* The button letters are filled with stone cut from the DAYRIM letters, so they match the title */
   SPLASH.querySelector('.pg-t').style.backgroundImage='url('+TITLE_URLS.stone+'),linear-gradient(#d9cbb4,#8a7660)';
-  audioOn();if(ac)ac.addEventListener('statechange',titleMusic);const b=$('spplay');b.addEventListener('click',leaveSplash);try{b.focus({preventScroll:true})}catch(e){}requestAnimationFrame(splashTick)}
+  audioOn();if(ac){ac.addEventListener('statechange',titleMusic);ac.resume().catch(()=>{})}
+  /* the title song is the first sound to load; start it the moment it arrives if audio is already allowed */
+  const waitSong=setInterval(()=>{if(!splashOn()){clearInterval(waitSong);return}if(ac&&ac.state==='running'&&SOUND_BUF.titleSong){titleMusic();clearInterval(waitSong)}},250);const b=$('spplay');b.addEventListener('click',leaveSplash);/* it holds focus so Enter starts the game; it only lights up from focus once the player tabs to it */addEventListener('keydown',ev=>{if(ev.code==='Tab')b.classList.add('kbd')});try{b.focus({preventScroll:true})}catch(e){}requestAnimationFrame(splashTick)}
 /* Embers drift slowly up across the poster */
 const spEmbers=[];let spLast=0;
 function newEmber(){const a=Math.random();return{x:Math.random(),y:1.02,vx:(Math.random()-.5)*.02,vy:-.03-Math.random()*.06,life:0,max:6+Math.random()*8,r:.8+Math.random()*1.8,h:a<.8?24+Math.random()*24:275+Math.random()*20,w:Math.random()*6.28}}

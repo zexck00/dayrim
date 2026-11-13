@@ -179,21 +179,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .md-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;background:#000}
 .modes.wz::after{background:linear-gradient(90deg,rgba(5,6,12,.85) 0,rgba(5,6,12,.2) 30%,rgba(5,6,12,0) 60%)}
 .md-panel.wz{align-self:end;width:min(440px,calc(100% - 2*clamp(8px,2.4vh,22px)));background:rgba(10,13,24,.82)}
-.md-nav button.soon{border-left-color:#7a6a5a}.md-nav button.soon b{opacity:.75}
 .modes::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(5,6,12,.9) 0,rgba(5,6,12,.55) 30%,rgba(5,6,12,.05) 60%,rgba(5,6,12,.4) 100%)}
 .md-side{position:relative;z-index:2;display:flex;flex-direction:column;gap:18px;min-height:0;overflow:auto;padding:clamp(14px,3vh,30px) clamp(14px,1.6vw,22px);padding-left:max(clamp(14px,1.6vw,22px),env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(16,17,28,.93),rgba(8,9,16,.97));border-right:1px solid #4a3a26;box-shadow:8px 0 30px #000a}
 .md-logo{width:100%;max-width:290px;align-self:center;filter:drop-shadow(0 4px 10px #000);user-select:none;pointer-events:none}
 .md-nav{display:flex;flex-direction:column;gap:10px;margin:auto 0}
-.md-nav button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:13px 16px;background:linear-gradient(180deg,#2a2218,#17120c);border:1px solid #6a5334;border-left:4px solid #c9973f;color:var(--bone);cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease}
-.md-nav b{font:700 clamp(19px,2.1vw,26px)/1.1 var(--display);letter-spacing:.02em}
-.md-nav small{font:500 12px/1.3 var(--body);color:var(--mist)}
-.md-nav button:hover:not(:disabled),.md-nav button:focus-visible{transform:translateX(6px);border-color:#f0c23c;background:linear-gradient(180deg,#3a2e1c,#20180e);outline:none}
-.md-nav button:disabled{opacity:.5;cursor:not-allowed;border-left-color:#555;filter:grayscale(.7)}
-.md-foot{display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid #3a2f24;font:500 11px/1.4 var(--mono);color:var(--mist)}
-.md-foot b{color:var(--bone);font-weight:600}
-.md-verrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.md-foot button{background:transparent;border:1px solid var(--line);color:var(--bone);font:600 12px var(--body);padding:4px 10px;cursor:pointer}
-.md-foot button:hover{border-color:var(--lichen)}
 .md-panel{position:relative;z-index:2;justify-self:start;align-self:stretch;margin:clamp(8px,2.4vh,22px);width:min(760px,calc(100% - 2*clamp(8px,2.4vh,22px)));padding:clamp(12px,2vw,22px);overflow:auto;min-height:0;background:rgba(10,13,24,.95);border:1px solid var(--line);box-shadow:0 10px 40px #000c}
 .mp-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .mp-head h2{margin:0;font:700 clamp(24px,3vw,36px)/1 var(--display)}
@@ -260,13 +249,43 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   .screen.touch-playing .story-act{bottom:max(10px,env(safe-area-inset-bottom,0px));padding:9px 18px}
 }
 @media(prefers-reduced-motion:reduce){.md-nav button{transition:none}}
+/* ---------- Medieval sidebar: carved stone plaques with bronze inlay, lettered like the DAYRIM logo ---------- */
+.md-side{background:radial-gradient(ellipse 120% 60% at 50% 0,rgba(120,80,40,.22),rgba(0,0,0,0) 60%),radial-gradient(ellipse 90% 50% at 50% 100%,rgba(90,50,20,.25),rgba(0,0,0,0) 70%),linear-gradient(180deg,#1a130d,#0e0a07 55%,#140e09);border:0}
+.md-side::before{content:"";position:absolute;inset:0;background:var(--stone,none) center/320px;opacity:.07;mix-blend-mode:screen;pointer-events:none}
+.md-side::after{content:"";position:absolute;top:0;bottom:0;left:0;width:6px;pointer-events:none;background:linear-gradient(90deg,#0a0705,#5e4326 30%,#c9a26a 50%,#5e4326 70%,#0a0705);box-shadow:0 0 12px rgba(201,162,106,.18)}
+.md-logo{filter:drop-shadow(0 4px 10px #000) drop-shadow(0 0 18px rgba(255,150,60,.18))}
+.md-nav{gap:14px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.75))}
+.md-nav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:15px 30px 13px;cursor:pointer;color:var(--bone);border:0;
+  clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px),0 12px);
+  background:var(--stone,none) center/260px,linear-gradient(180deg,#3e2f20 0,#251a11 45%,#150e08 100%);background-blend-mode:soft-light,normal;
+  box-shadow:inset 0 0 0 2px #0d0906,inset 0 0 0 3px #8a6a3c,inset 0 0 0 5px #24180e,inset 0 0 0 6px #5c4426,inset 0 10px 18px rgba(255,210,150,.10),inset 0 -12px 18px rgba(0,0,0,.45);
+  transition:transform .2s ease,filter .2s ease}
+.md-nav button::before,.md-nav button::after{content:"";position:absolute;top:50%;width:8px;height:8px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#f1d3a4,#8a5e30);box-shadow:0 0 0 1px #1a0f06,0 0 6px rgba(255,170,80,.25);transition:box-shadow .2s ease}
+.md-nav button::before{left:12px}.md-nav button::after{right:12px}
+.md-nav b{display:block;font:900 clamp(18px,1.9vw,25px)/1.05 "Cinzel","Trajan Pro","Times New Roman",serif;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--stone,none),linear-gradient(#fff6e2,#d8bf96);background-size:180px,100% 100%;background-blend-mode:multiply,normal;-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 0 #0a0603) drop-shadow(0 0 2px #000) drop-shadow(0 0 4px rgba(0,0,0,.8));transition:filter .2s ease}
+.md-nav small{font:700 11px/1.3 "Cinzel","Times New Roman",serif;letter-spacing:.07em;color:#b9a382;text-shadow:0 1px 0 #000}
+.md-nav button:hover,.md-nav button:focus-visible{transform:scale(1.03);filter:brightness(1.12);outline:none}
+.md-nav button:hover b,.md-nav button:focus-visible b{filter:drop-shadow(0 2px 0 #120a04) drop-shadow(0 0 8px rgba(255,170,70,.75)) brightness(1.3)}
+.md-nav button:hover::before,.md-nav button:hover::after,.md-nav button:focus-visible::before,.md-nav button:focus-visible::after{box-shadow:0 0 0 1px #1a0f06,0 0 12px rgba(255,180,90,.9)}
+.md-nav button:hover small,.md-nav button:focus-visible small{color:#e8d2a8}
+.md-foot{display:flex;justify-content:center;padding-top:12px;border-top:0;position:relative}
+.md-foot::before{content:"";position:absolute;top:0;left:15%;right:15%;height:1px;background:linear-gradient(90deg,rgba(201,162,106,0),#8a6a3c,rgba(201,162,106,0))}
+.md-ver{display:flex;align-items:baseline;gap:8px;padding:7px 18px;cursor:pointer;border:0;color:#e8dcc4;
+  clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px);
+  background:linear-gradient(180deg,#3a2c1e,#1a120b);box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #7a5c34,inset 0 0 0 3px #24180e;transition:filter .2s ease}
+.md-ver span{font:900 14px/1 "Cinzel",serif;letter-spacing:.06em}
+.md-ver small{font:700 10px/1 "Cinzel",serif;letter-spacing:.12em;text-transform:uppercase;color:#b9a382}
+.md-ver:hover,.md-ver:focus-visible{filter:brightness(1.25) drop-shadow(0 0 6px rgba(255,170,70,.5));outline:none}
+@media(max-height:500px) and (orientation:landscape){.md-nav button{padding:8px 24px 7px}.md-nav b{font-size:16px}.md-nav small{font-size:10px}.md-ver{padding:5px 14px}}
+@media(max-width:700px){.md-side{background:none}.md-side::after,.md-side::before{display:none}}
+@media(prefers-reduced-motion:reduce){.md-nav button{transition:none}}
 /* The mode menu sits on the right on wide screens; the open mode's panel sits beside it on the left */
 @media(min-width:701px){
   .modes{grid-template-columns:minmax(0,1fr) clamp(250px,26vw,350px)}
-  .md-side{grid-column:2;grid-row:1;border-right:0;border-left:1px solid #4a3a26;box-shadow:-8px 0 30px #000a;padding-right:max(clamp(14px,1.6vw,22px),env(safe-area-inset-right,0px))}
+  .md-side{grid-column:2;grid-row:1;border-right:0;box-shadow:-10px 0 34px #000c;padding-right:max(clamp(14px,1.6vw,22px),env(safe-area-inset-right,0px))}
   .md-panel{grid-column:1;grid-row:1;justify-self:end}
-  .md-nav button{border-left-width:1px;border-right:4px solid #c9973f;text-align:right;align-items:flex-end}
-  .md-nav button:hover:not(:disabled),.md-nav button:focus-visible{transform:translateX(-6px)}
   .modes::after{background:linear-gradient(270deg,rgba(5,6,12,.9) 0,rgba(5,6,12,.55) 30%,rgba(5,6,12,.05) 60%,rgba(5,6,12,.4) 100%)}
   .modes.wz::after{background:linear-gradient(270deg,rgba(5,6,12,.85) 0,rgba(5,6,12,.2) 30%,rgba(5,6,12,0) 60%)}
 }
@@ -275,7 +294,11 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 /* Nothing on the poster shows until both pictures have loaded, so a half-loaded or broken image never flashes */
 .splash .sp-poster,.splash .sp-words,.splash .sp-play,.splash::before{opacity:0;transition:opacity .5s ease}
 .splash.ready .sp-poster,.splash.ready .sp-words,.splash.ready .sp-play,.splash.ready::before{opacity:1}
-.sp-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;filter:saturate(1.05) brightness(.86)}
+/* the button keeps its own hover animation as well as the fade-in */
+.splash .sp-play{transition:opacity .5s ease,transform .3s cubic-bezier(.2,.9,.3,1.3)}
+/* phones held upright show the whole poster over its blurred copy instead of cropping it */
+@media(orientation:portrait){.sp-poster{object-fit:contain}}
+.sp-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;filter:saturate(1.05) brightness(.86)}
 .splash::before{content:"";position:absolute;inset:-40px;background:var(--poster,none) center/cover;filter:blur(26px) brightness(.4) saturate(1.1);z-index:0}
 .splash::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse 52% 20% at 50% 44%,rgba(6,3,10,.62) 0,rgba(6,3,10,.38) 55%,rgba(6,3,10,0) 100%),radial-gradient(ellipse 20% 13% at 50% 76%,rgba(6,3,10,.5) 0,rgba(6,3,10,0) 100%),radial-gradient(ellipse 70% 60% at 50% 46%,rgba(0,0,0,0) 30%,rgba(4,2,8,.55) 100%)}
 .sp-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
@@ -288,12 +311,15 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .sp-play .pg-l.r{transform:scaleX(-1)}
 .sp-play .pg-l::after{content:"";position:absolute;right:-4px;top:50%;width:6px;height:6px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#f1d3a4,#9a6a3c);box-shadow:0 0 4px rgba(255,150,60,.6)}
 /* Hover: the words light up 20% and grow 20% */
-.sp-play:hover,.sp-play:focus-visible{transform:translate(-50%,-50%) scale(1.2)}
-.sp-play:hover .pg-t,.sp-play:focus-visible .pg-t{filter:drop-shadow(0 0 .5px rgba(255,190,110,.9)) drop-shadow(0 1px 0 #1a0f08) drop-shadow(0 3px 4px rgba(0,0,0,.95)) drop-shadow(0 0 8px rgba(255,140,50,.28)) brightness(1.2)}
-.sp-play:hover .pg-l,.sp-play:focus-visible .pg-l{filter:brightness(1.2)}
-.sp-play:active{transform:translate(-50%,-50%) scale(1.14)}
+/* Hover: grow a little, a steady warm glow behind the words, the words light up gold, and the side lines reach out */
+.sp-play::before{content:"";position:absolute;left:50%;top:50%;width:140%;height:260%;transform:translate(-50%,-50%) scale(.7);border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,170,70,.45) 0,rgba(255,120,40,.18) 40%,rgba(255,120,40,0) 70%);opacity:0;transition:opacity .3s ease,transform .3s ease;pointer-events:none;z-index:-1}
+.sp-play:hover,.sp-play.kbd:focus-visible{transform:translate(-50%,-50%) scale(1.12)}
+.sp-play:hover::before,.sp-play.kbd:focus-visible::before{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.sp-play:hover .pg-t,.sp-play.kbd:focus-visible .pg-t{filter:drop-shadow(0 0 1px rgba(255,220,150,1)) drop-shadow(0 1px 0 #1a0f08) drop-shadow(0 0 10px rgba(255,170,60,.85)) drop-shadow(0 0 22px rgba(255,120,40,.55)) brightness(1.45) saturate(1.3)}
+.sp-play:hover .pg-l,.sp-play.kbd:focus-visible .pg-l{width:3.4em;filter:brightness(1.6);box-shadow:0 0 8px rgba(255,170,70,.9)}
+.sp-play:active{transform:translate(-50%,-50%) scale(1.06)}
 .sp-play:focus-visible{outline:none}
-.sp-play.go{transform:translate(-50%,-50%) scale(1.2);opacity:.4;transition:transform .4s ease,opacity .4s ease}
+.sp-play.go{transform:translate(-50%,-50%) scale(1.12);opacity:.4;transition:transform .4s ease,opacity .4s ease}
 @keyframes spWords{0%,100%{filter:drop-shadow(0 0 2px #000) drop-shadow(0 8px 14px rgba(0,0,0,.95)) drop-shadow(0 0 16px rgba(255,140,50,.3)) brightness(1.08)}50%{filter:drop-shadow(0 0 2px #000) drop-shadow(0 8px 14px rgba(0,0,0,.95)) drop-shadow(0 0 34px rgba(255,140,50,.55)) brightness(1.16)}}
 @media(prefers-reduced-motion:reduce){.sp-words{animation:none!important}}
 @media(max-width:640px){
@@ -361,6 +387,57 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 /* Landscape phones: Ability and Use stand in a column beside the main buttons instead of a row on top, so the controls stay low. */
 @media(orientation:landscape) and (max-height:500px){.touch-ability{flex-direction:column;bottom:max(8px,env(safe-area-inset-bottom));right:calc(max(8px,env(safe-area-inset-right)) + 4*48px + 3*4px + 6px)}}
 
+/* ---------- Medieval adventure theme for the menu pages ----------
+   Story, Changelog and Warzone panels (.md-panel) and the character select and in-game menus (.ov.pick .card.sel):
+   leather-and-stone panels with a bronze inlay, Cinzel lettering like the DAYRIM logo, and plaque buttons. */
+.md-panel,.ov.pick .card.sel,.ov.pick .detail{border:0;color:#e8dcc4;
+  background:radial-gradient(ellipse 120% 50% at 50% 0,rgba(120,80,40,.2),rgba(0,0,0,0) 60%),var(--stone,none) center/320px,linear-gradient(180deg,#1d150e,#0f0a06);background-blend-mode:normal,soft-light,normal;
+  box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #8a6a3c,inset 0 0 0 4px #24180e,inset 0 0 0 5px #5c4426,0 12px 40px #000c}
+.md-panel.wz{background:radial-gradient(ellipse 120% 50% at 50% 0,rgba(120,80,40,.2),rgba(0,0,0,0) 60%),linear-gradient(180deg,rgba(29,21,14,.9),rgba(15,10,6,.92))}
+.ov.pick{background:radial-gradient(ellipse at 50% 30%,rgba(40,26,14,.94),rgba(8,5,3,.98))}
+.ov.pick .card.sel{padding:18px 20px}
+.md-panel h2,.ov.pick .card.sel h2,.ov.pick .detail h3{font-family:"Cinzel","Trajan Pro","Times New Roman",serif;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+  background:var(--stone,none),linear-gradient(#fff6e2,#d8bf96);background-size:180px,100% 100%;background-blend-mode:multiply,normal;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #0a0603) drop-shadow(0 0 3px rgba(0,0,0,.8))}
+.ov.pick .detail h3{font-size:18px;line-height:1.2;padding-top:2px}
+.md-panel h2,.ov.pick .card.sel h2{line-height:1.25;padding-top:3px}
+.ov.pick .card.sel .sel-top h2{display:flex;align-items:center;gap:10px}
+.mp-kick,.ov.pick .detail .role{font-family:"Cinzel",serif;font-weight:700;letter-spacing:.14em;color:#c9a26a}
+.mp-h,.mp-cht b{font-family:"Cinzel",serif;font-weight:900;letter-spacing:.04em;color:#f0e2c4}
+.mp-lede,.md-panel p,.ov.pick .card.sel p{color:#e2d4b8}
+.mp-note,.ov.pick .detail .ctl,.mp-cht small{color:#a8977a}
+/* plaque buttons */
+.md-panel .go,.md-panel .ghost,.md-panel .tab,.ov.pick .card.sel .go,.ov.pick .card.sel .ghost,.ov.pick .card.sel .tab,.ov.pick .card.sel .buy{
+  font-family:"Cinzel",serif;font-weight:900;letter-spacing:.06em;border:0;cursor:pointer;color:#efe2c8;text-shadow:0 1px 0 #000;
+  clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px);
+  background:linear-gradient(180deg,#3e2f20,#1a120b);box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #7a5c34,inset 0 0 0 3px #24180e,inset 0 8px 12px rgba(255,210,150,.08);transition:filter .15s ease}
+.md-panel .go,.ov.pick .card.sel .go{color:#fff1d6;background:linear-gradient(180deg,#9a3424,#5a160e 60%,#3e0e08);box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #c9a26a,inset 0 0 0 3px #3a0c06,inset 0 8px 12px rgba(255,200,150,.18)}
+.md-panel .tab[aria-pressed="true"],.ov.pick .card.sel .tab[aria-pressed="true"]{color:#1a1006;text-shadow:none;background:linear-gradient(180deg,#e8c88e,#a8814a);box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #fff0c8,inset 0 0 0 3px #6a4a22}
+.md-panel .go:hover,.md-panel .ghost:hover,.md-panel .tab:hover,.ov.pick .card.sel .go:hover,.ov.pick .card.sel .ghost:hover,.ov.pick .card.sel .tab:hover,.ov.pick .card.sel .buy:hover{filter:brightness(1.22) drop-shadow(0 0 6px rgba(255,170,70,.45))}
+/* framed rows: chapters, the saved game, characters to pick */
+.mp-ch,.mp-save,.ov.pick .cont,.mp-char{border:0;color:#e8dcc4;background:linear-gradient(180deg,rgba(62,47,32,.85),rgba(26,18,11,.9));box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #5c4426,inset 0 6px 10px rgba(255,210,150,.05)}
+.mp-ch:hover:not(:disabled),.mp-ch:focus-visible,.mp-char:hover{box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #c9a26a,0 0 10px rgba(255,170,70,.25)}
+.mp-save,.ov.pick .cont{box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #c9a26a,inset 0 0 0 3px #24180e}
+.mp-char[aria-pressed="true"]{background:linear-gradient(180deg,rgba(110,80,40,.6),rgba(40,26,14,.9));box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #e8c88e,0 0 12px rgba(255,180,90,.35)}
+.mp-num{font-family:"Cinzel",serif;font-weight:900;color:#e0b878}
+.mp-state{font-family:"Cinzel",serif;font-weight:700;color:#c9a26a}
+.mp-cht em{color:#dccaa6}
+.mp-log h3{font-family:"Cinzel",serif;color:#e0b878}.mp-log h5{color:#c9a26a}.mp-log code{color:#e8c88e}
+/* character select */
+.ov.pick .rc.h{border:2px solid transparent;border-radius:0}
+.ov.pick .rc.h:hover{border-color:#8a6a3c}
+.ov.pick .rc.h[aria-pressed="true"]{border-color:#e8c88e;box-shadow:0 0 0 1px #3a2610,0 0 14px rgba(255,180,90,.55)}
+.ov.pick .rc.h b{font-family:"Cinzel",serif;font-weight:900;color:#e0c48e}
+.ov.pick .detail{padding:12px}
+.ov.pick .pv{background:radial-gradient(ellipse at 50% 70%,#5a4a36,#2a2016);box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #7a5c34}
+.ov.pick .pv .ctl{color:#e8d2a8!important}
+.ov.pick .passive{border-left:0;color:#e8dcc4;background:linear-gradient(90deg,rgba(201,162,106,.16),rgba(201,162,106,.04));box-shadow:inset 3px 0 0 #c9a26a}.ov.pick .passive b{color:#e8c88e;font-family:"Cinzel",serif}
+.ov.pick .sb{color:#c8b48e;font-family:"Cinzel",serif;font-weight:700}
+.ov.pick .sb b{background:linear-gradient(180deg,#f0d090,#b8883e);box-shadow:inset 0 -1px 0 #6a4a1e}.ov.pick .sb u{background:#2a1f15;box-shadow:inset 0 0 0 1px #3e2f20}
+.tomodes{font-family:"Cinzel",serif}
+.ov.pick .card.sel .ghost,.ov.pick .card.sel .go,.tomodes{white-space:nowrap}
+.ov.pick .sb{grid-template-columns:74px 1fr;font-size:11px}
+.ov.pick .sbs{width:100%}.ov.pick .sb i{width:100%}
+@media(max-width:700px){.md-panel{box-shadow:none}.ov.pick .card.sel{padding:12px}.ov.pick .card.sel .ghost{font-size:12px;letter-spacing:.02em;padding:8px 8px;overflow:visible}.ov.pick #swarm{margin-left:0!important}.ov.pick .card.sel .sel-top h2{font-size:20px}.tomodes{font-size:12px;padding:4px 8px}}
 </style>
 
 <div class="wrap">
@@ -409,7 +486,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
             <button type="button" data-m="quick"><b>Quick Game</b><small>Stages, the Swarm and online play</small></button>
             <button type="button" data-m="war"><b>Warzone</b><small>Coming soon · watch the trailer</small></button>
           </nav>
-          <footer class="md-foot"><span class="md-dev">Developed by <b>zexck00</b>, <b>c4lyp5o</b> and <b>Dvachini</b></span><span class="md-verrow"><span id="mdver"></span><button type="button" id="mdlog">Changelog</button></span></footer>
+          <footer class="md-foot"><button type="button" id="mdlog" class="md-ver" aria-label="Version and changelog"><span id="mdver"></span><small>Changelog</small></button></footer>
         </aside>
         <section class="md-panel" id="mdpanel" hidden></section>
       </div>
