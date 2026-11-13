@@ -13,7 +13,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parent.parent
 INLINE='--inline' in sys.argv
 out_dir=root/'assets'
-MIME={'.webp':'image/webp','.m4a':'audio/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.js':'text/javascript'}
+MIME={'.webp':'image/webp','.jpg':'image/jpeg','.mp4':'video/mp4','.m4a':'audio/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.js':'text/javascript'}
 used=set()
 
 def asset(path,name=None):
@@ -40,7 +40,9 @@ sx=root/'sprites'/'sfx'
 clips=[('menu','menu.m4a'),('titleSong','title-song.m4a'),('heroBrowse','hero-browse.m4a'),('villainBrowse','villain-browse.mp3'),('ambA','ambience-a.m4a'),('ambB','ambience-b.m4a')]+[(f.stem.replace('-','_'),f.name) for p in ('step-','an-','sfx-','mus-') for f in sorted(sx.glob(p+'*.m4a'))]
 data+='const SOUND_CLIPS='+J({k:asset(sx/f) for k,f in clips})+';\n'
 ti=root/'sprites'/'title'
-data+='const TITLE_URLS='+J({k:asset(ti/f,'title-'+k) for k,f in [('poster','poster.webp'),('words','words.webp'),('stone','stone.webp')]})+';\n'
+# poster: the title screen and the modes screen · story, quick: the modes screen behind each mode · warzone: the clip played on Warzone
+data+='const TITLE_URLS='+J({k:asset(ti/f,'title-'+k) for k,f in [('poster','poster.jpg'),('words','words.webp'),('stone','stone.webp'),('story','story.jpg'),('quick','quick.jpg'),('warzone','warzone.mp4')]})+';\n'
+data+='const CARD_ART='+J({'Patriot':asset(root/'sprites'/'hero-cards'/'falcon-ex.jpg','card-falcon-ex')})+';\n'
 data+='const THREE_LAYER_URL='+J(asset(root/'vendor'/'three-layer.js','three-layer'))+';\n'
 # The modes screen shows the version and the changelog, both read from the repository root
 repo=root.parent

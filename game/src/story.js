@@ -40,9 +40,9 @@ function storyFoes(x,y,n,o={}){
 }
 function storyElite(at,name,adds){
   const e=spawnRival(0,true,{x:at.x,y:at.y},name);
-  if(e){e.hp*=3.2;e.maxHp=e.hp;e.dmg*=1.15;e.xp*=2.5;e.gold*=5;e.lvl=recLevel(G.stage)+3;e.sq='elite';e.lt=true;e.aware=true;e.title='The '+label(name)}
+  if(e){e.hp*=3.2;e.maxHp=e.hp;e.dmg*=1.15;e.xp*=2.5;e.gold*=5;e.lvl=recLevel(G.stage)+3;e.sq='elite';e.lt=true;e.aware=true;e.title=theName(name)}
   storyFoes(at.x,at.y,adds,{tag:'adds',spread:170,aware:true,strong:1});
-  G.banner={t:3,a:'The '+label(name),b:'Lieutenant of the '+(G.story.fac==='hero'?'Night Court':'Dawn Watch')};sfx('boom');shake(6);return e;
+  G.banner={t:3,a:theName(name),b:'Lieutenant of the '+(G.story.fac==='hero'?'Night Court':'Dawn Watch')};sfx('boom');shake(6);return e;
 }
 /* Leftover wave enemies give up when a defence is won */
 function storyRout(tag){for(const e of G.enemies)if(e.sq===tag&&!e.dead){e.dead=true;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:40,t:.3,m:.3,c:'#c8d8ff'});burst(e.x,e.y-20,'#c8d8ff',8,120)}}
@@ -123,7 +123,7 @@ function storyTalk(lines,done){
 function dlgLine(){
   const raw=DLG.q[DLG.i],ask=typeof raw==='object'?raw:null,s=ask?ask.ask:raw,k=s.indexOf(': '),who=k<0?'':s.slice(0,k),p=G.players[0];
   DLG.text=s.slice(k<0?0:k+2).replace('{voice}',(STORY_VOICE[p.char]||[''])[G.story?G.story.ci:0]||'').replace(/\{me\}/g,label(p.char));
-  const c=who==='me'?{n:'The '+label(p.char),art:p.char}:STORY_CAST[who]||null;DLG.who=who;DLG.art=c&&c.art&&SPECS[c.art]?c.art:null;DLG.ask=ask;DLG.n=reduced?DLG.text.length:0;
+  const c=who==='me'?{n:theName(p.char),art:p.char}:STORY_CAST[who]||null;DLG.who=who;DLG.art=c&&c.art&&SPECS[c.art]?c.art:null;DLG.ask=ask;DLG.n=reduced?DLG.text.length:0;
   const d=$('dlg');d.classList.toggle('narr',!c);d.classList.toggle('mine',who==='me');d.classList.toggle('noart',!DLG.art);$('dlgn').textContent=c?c.n:'';$('dlgo').innerHTML='';$('dlgt').textContent=DLG.text.slice(0,DLG.n);dlgOpts();
 }
 function dlgOpts(){
@@ -194,17 +194,30 @@ function drawStoryEliteTag(e){const y=e.y-78;ctx.textAlign='center';ctx.font='70
 /* ---------- Game modes screen ---------- */
 let storyTab='hero',storyPickChar={hero:STORY_PICK.hero[0],villain:STORY_PICK.villain[0]},storyWipe=false;
 const modesOn=()=>!$('modes').hidden;
-function showModes(){const m=$('modes');m.hidden=false;m.classList.remove('open');$('mdpanel').hidden=true;$('mdpanel').innerHTML='';$('mdart').style.backgroundImage='url('+TITLE_URLS.poster+')';$('mdlogo').src=TITLE_URLS.words;$('mdver').textContent='v'+GAME_VERSION;const b=m.querySelector('[data-m=story]');if(b&&!touchMode)try{b.focus({preventScroll:true})}catch(e){}}
-function hideModes(){$('modes').hidden=true}
-function modePanel(html){const m=$('modes'),p=$('mdpanel');m.classList.add('open');p.hidden=false;p.innerHTML=html;p.scrollTop=0;const bk=p.querySelector('.mp-back');if(bk)bk.onclick=()=>{m.classList.remove('open');p.hidden=true;p.innerHTML=''}}
+/* The modes screen art: the title poster, or the poster of the mode under the pointer or open. Two layers crossfade. */
+let modeArt='poster',modeOpen=null;
+function setModeArt(k){k=k||'poster';if(k===modeArt)return;modeArt=k;const a=$('mdart'),b=$('mdart2'),url='url('+TITLE_URLS[k]+')';if(b.classList.contains('on')){a.style.backgroundImage=url;b.classList.remove('on')}else{b.style.backgroundImage=url;b.classList.add('on')}}
+/* The trailer plays once, holds its last frame, and plays again after WZ_REPLAY. Opening Warzone again restarts it and the wait. */
+const WZ_REPLAY=10*60*1000;let wzTimer=0;
+function stopWarzone(){clearTimeout(wzTimer);wzTimer=0;const v=$('mdvid');if(!v)return;v.pause();v.hidden=true;$('modes').classList.remove('wz');$('mdpanel').classList.remove('wz')}
+function playWarzone(v){v.currentTime=0;const pl=v.play();if(pl&&pl.catch)pl.catch(()=>{v.muted=true;v.play().catch(()=>{})})}
+/* The trailer loads and plays when the pointer is over Warzone (or it has focus); clicking only opens the coming-soon note. */
+function startWarzone(){clearTimeout(wzTimer);const v=$('mdvid');if(!v.src)v.src=TITLE_URLS.warzone;v.hidden=false;v.muted=muted;$('modes').classList.add('wz');
+  v.onended=()=>{clearTimeout(wzTimer);wzTimer=setTimeout(()=>{if(!v.hidden)playWarzone(v)},WZ_REPLAY)};playWarzone(v)}
+function renderWarzone(){const v=$('mdvid');if(v.hidden)startWarzone();modeOpen='war';
+  modePanel('<div class="mp-head"><button class="ghost mp-back" type="button">‹ Back</button><h2>Warzone</h2></div><p class="mp-kick">Coming soon</p><p class="mp-lede">Heroes and villains clash in open battle. Warzone is not playable yet.</p><button class="ghost" id="wzsound" type="button">'+(v.muted?'Sound on':'Sound off')+'</button>');
+  $('modes').classList.add('wz');$('mdpanel').classList.add('wz');$('wzsound').onclick=()=>{v.muted=!v.muted;$('wzsound').textContent=v.muted?'Sound on':'Sound off'}}
+function showModes(){const m=$('modes');m.hidden=false;m.classList.remove('open');stopWarzone();modeOpen=null;$('mdpanel').hidden=true;$('mdpanel').innerHTML='';$('mdart').style.backgroundImage='url('+TITLE_URLS[modeArt]+')';setModeArt('poster');$('mdlogo').src=TITLE_URLS.words;$('mdver').textContent='v'+GAME_VERSION;const b=m.querySelector('[data-m=story]');if(b&&!touchMode)try{b.focus({preventScroll:true})}catch(e){}}
+function hideModes(){stopWarzone();$('modes').hidden=true}
+function modePanel(html){const m=$('modes'),p=$('mdpanel');m.classList.add('open');p.hidden=false;p.innerHTML=html;p.scrollTop=0;const bk=p.querySelector('.mp-back');if(bk)bk.onclick=()=>{m.classList.remove('open');p.hidden=true;p.innerHTML='';stopWarzone();modeOpen=null;setModeArt('poster')}}
 function renderStoryPanel(){
   const all=storyRead(),sv=all[storyTab]&&STORY_PICK[storyTab].includes(all[storyTab].char)?all[storyTab]:null,pickC=storyPickChar[storyTab],hero=storyTab==='hero',fin=sv&&sv.ci>=STORY.length-1&&sv.q>=STORY[STORY.length-1].beats.length;
   modePanel('<div class="mp-head"><button class="ghost mp-back" type="button">‹ Back</button><h2>Story</h2></div>'+
    '<p class="mp-kick">'+esc(STORY_NAME)+'</p><p class="mp-lede">The Daywheel of Dayrim is broken and its ten Hours of daylight have been swallowed by beasts. '+(hero?'As a hero you win them back for the sky.':'As a villain you take them for your own crown.')+' Explore each land, talk to its people, grow your character, and bring down the beast that holds its Hour.</p>'+
    '<div class="tabs"><button class="tab" type="button" data-st="hero" aria-pressed="'+hero+'">Heroes</button><button class="tab" type="button" data-st="villain" aria-pressed="'+!hero+'">Villains</button></div>'+
-   (sv?'<div class="mp-save"><i style="'+cardStyle(sv.char)+'"></i><div><b>The '+esc(label(sv.char))+' · level '+sv.p.lvl+'</b><span>'+(fin?'All three chapters complete':'Chapter '+(sv.ci+1)+' · '+esc(STORY[sv.ci].n))+' · '+storyClock(sv.time||0)+' played</span></div><button class="go" id="stcont" type="button">'+(fin?'Explore':'Continue')+'</button></div>':'')+
+   (sv?'<div class="mp-save"><i style="'+cardStyle(sv.char)+'"></i><div><b>'+esc(theName(sv.char))+' · level '+sv.p.lvl+'</b><span>'+(fin?'All three chapters complete':'Chapter '+(sv.ci+1)+' · '+esc(STORY[sv.ci].n))+' · '+storyClock(sv.time||0)+' played</span></div><button class="go" id="stcont" type="button">'+(fin?'Explore':'Continue')+'</button></div>':'')+
    '<h3 class="mp-h">'+(sv?'Chapters':'Choose your '+(hero?'hero':'villain'))+'</h3>'+
-   (sv?'':'<div class="mp-chars">'+STORY_PICK[storyTab].map(n=>'<button class="mp-char" type="button" data-c="'+esc(n)+'" aria-pressed="'+(n===pickC)+'"><i style="'+cardStyle(n)+'"></i><b>'+esc(label(n))+'</b><small>'+esc(archOf(n).n)+'</small></button>').join('')+'</div><p class="mp-note"><b>The '+esc(label(pickC))+'.</b> '+esc(archOf(pickC).d)+(ABILITIES[pickC]?' Ability: '+esc(ABILITIES[pickC].n)+'.':'')+'</p>')+
+   (sv?'':'<div class="mp-chars">'+STORY_PICK[storyTab].map(n=>'<button class="mp-char" type="button" data-c="'+esc(n)+'" aria-pressed="'+(n===pickC)+'"><i style="'+cardStyle(n)+'"></i><b>'+esc(label(n))+'</b><small>'+esc(archOf(n).n)+'</small></button>').join('')+'</div><p class="mp-note"><b>'+esc(theName(pickC))+'.</b> '+esc(archOf(pickC).d)+(ABILITIES[pickC]?' Ability: '+esc(ABILITIES[pickC].n)+'.':'')+'</p>')+
    '<div class="mp-chs">'+STORY.map((ch,i)=>{const open=sv?i<=(sv.top||0):i===0;return '<button class="mp-ch" type="button" data-ch="'+i+'"'+(open?'':' disabled')+'><span class="mp-num">'+(i+1)+'</span><span class="mp-cht"><b>'+esc(ch.n)+'</b><em>'+esc(ch.title[storyTab])+'</em><small>Boss: '+esc(ch.boss)+' · recommended level '+recLevel(i+1)+'</small></span><span class="mp-state">'+(!open?'Locked':sv&&i<sv.ci||fin?'Replay':sv&&i===sv.ci?'Current':'Start')+'</span></button>'}).join('')+'</div>'+
    (sv?'<button class="ghost mp-new" id="stnew" type="button">'+(storyWipe?'Confirm: erase this story and start again':'Start a new '+(hero?'hero':'villain')+' story')+'</button>':'<button class="go mp-begin" id="stgo" type="button">Begin the story</button>')+
    '<p class="mp-note">A chapter takes about 10 to 30 minutes. Progress saves after every objective. Story mode is single player.</p>');
@@ -227,11 +240,15 @@ function changelogHtml(md){
     else{close();out+='<p>'+inl(l)+'</p>'}}
   close();return out;
 }
-function renderChangelog(){modePanel('<div class="mp-head"><button class="ghost mp-back" type="button">‹ Back</button><h2>Changelog</h2></div><p class="mp-kick">Dayrim v'+esc(GAME_VERSION)+'</p><div class="mp-log">'+changelogHtml(CHANGELOG_MD)+'</div>')}
+function renderChangelog(){stopWarzone();modeOpen=null;modePanel('<div class="mp-head"><button class="ghost mp-back" type="button">‹ Back</button><h2>Changelog</h2></div><p class="mp-kick">Dayrim v'+esc(GAME_VERSION)+'</p><div class="mp-log">'+changelogHtml(CHANGELOG_MD)+'</div>')}
 function initModes(){
   const m=$('modes');
-  m.querySelector('[data-m=story]').onclick=()=>{audioOn();renderStoryPanel()};
+  m.querySelector('[data-m=story]').onclick=()=>{audioOn();stopWarzone();modeOpen='story';setModeArt('story');renderStoryPanel()};
   m.querySelector('[data-m=quick]').onclick=()=>{audioOn();hideModes();if(G.mode!=='title')setMode('title')};
+  m.querySelector('[data-m=war]').onclick=()=>{audioOn();renderWarzone()};
+  {const w=m.querySelector('[data-m=war]'),on=()=>{if(modeOpen!=='war'){audioOn();startWarzone()}},off=()=>{if(modeOpen!=='war')stopWarzone()};w.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')on()});w.addEventListener('focus',on);w.addEventListener('pointerleave',off);w.addEventListener('blur',off)}
+  /* Pointing at a mode shows its poster; leaving shows the open mode's poster, or the title poster */
+  const art={story:'story',quick:'quick'};m.querySelectorAll('.md-nav button').forEach(b=>{const k=art[b.dataset.m];if(!k)return;const on=()=>{if(modeOpen!=='war')setModeArt(k)},off=()=>{if(modeOpen!=='war')setModeArt(modeOpen==='story'?'story':'poster')};b.addEventListener('pointerenter',on);b.addEventListener('focus',on);b.addEventListener('pointerleave',off);b.addEventListener('blur',off)});
   $('mdlog').onclick=renderChangelog;
   $('dlg').addEventListener('click',()=>dlgNext());$('dlgskip').addEventListener('click',ev=>{ev.stopPropagation();dlgSkip()});
   $('story-act').addEventListener('click',ev=>{ev.preventDefault();storyAct()});

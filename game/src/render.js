@@ -121,12 +121,20 @@ function motionOf(a,st){let m=ANIM.get(a);if(!m){m={t:G.t};ANIM.set(a,m)}const d
   else if(st.anim==='hit'){o.dx=-c*2.5;o.rot=-.07*(c<0?-1:1)}
   else if(st.anim==='dodge'){const k=clamp(1-a.dashT/DASH_T,0,1);if(k<.18){o.sx=1.12;o.sy=.84}}
   if(m.land>0){const k=m.land/LAND_T;o.sx*=1+.15*k;o.sy*=1-.15*k}
+  /* Falcon Dive: fly up between dives and drop onto the next target */
+  if(a.dive){const k=1-clamp(a.dive.t/.38,0,1);o.dy-=Math.sin(k*Math.PI)*36;if(!reduced&&Math.random()<.5)G.fx.push({k:'p',x:a.x+rnd(-10,10),y:a.y-20+o.dy,vx:rnd(-30,30),vy:40,t:.3,m:.3,c:'#9fe8ff',s:rnd(2,3.5)})}
   return o}
 /* ---------- Charge and beam ----------
    Charging: a ball of the character's colour grows and pulses at the hands while sparks gather into it; a ring
    turns once it is strong enough to fire. Beam: a start ball, a glowing body that reaches out, and an end cap. */
 function drawChargeFx(p){
   const col=spellCol(p.char,'orb'),c=Math.cos(p.face),sn=Math.sin(p.face);
+  /* Marksmen aim instead: the fan of the coming charged shot grows and brightens; a ring turns once it is ready. */
+  if(p.chg>0&&shotUser(p)){const C=CHARGED_SHOT[p.weapon]||CHARGED_SHOT.pistol,k=p.chg,ok=k>=CHARGE.min,hx=p.x+c*20,hy=p.y-24+sn*20,L=(C.flash?C.flash.range:Math.min(260,C.sp*(C.life||.5)))*(.35+.65*k),n=C.flash?5:Math.max(1,Math.min(C.n,7)),sp=C.flash?C.flash.arc*2:C.spread;
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.strokeStyle='rgba(255,233,160,'+(ok?.55:.22)+')';ctx.lineWidth=ok?2:1.2;ctx.setLineDash([6,6]);ctx.lineDashOffset=reduced?0:-G.t*30;
+    for(let i=0;i<n;i++){const a=p.face+(n>1?-sp/2+sp*i/(n-1):0);ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx+Math.cos(a)*L,hy+Math.sin(a)*L);ctx.stroke()}ctx.setLineDash([]);
+    if(ok){ctx.strokeStyle='rgba(255,233,160,.9)';ctx.lineWidth=2;const r0=reduced?0:G.t*8;ctx.beginPath();ctx.arc(hx,hy,9,r0,r0+4.2);ctx.stroke()}
+    const g=ctx.createRadialGradient(hx,hy,1,hx,hy,8+6*k);g.addColorStop(0,'rgba(255,250,220,'+(.5+.4*k)+')');g.addColorStop(1,'rgba(255,200,90,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(hx,hy,8+6*k,0,TAU);ctx.fill();ctx.restore();return}
   if(p.chg>0&&!p.beam){const k=p.chg,hx=p.x+c*16,hy=p.y-20+sn*6,pulse=reduced?0:Math.sin(G.t*18)*1.5,R=3+10*k+pulse;
     ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(hx,hy,1,hx,hy,R*2.2);g.addColorStop(0,'rgba(255,255,255,.95)');g.addColorStop(.3,'rgba('+col+',.85)');g.addColorStop(1,'rgba('+col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(hx,hy,R*2.2,0,TAU);ctx.fill();
     if(k>=CHARGE.min){ctx.strokeStyle='rgba('+col+',.9)';ctx.lineWidth=2;const sp=reduced?0:G.t*8;ctx.beginPath();ctx.arc(hx,hy,R+6,sp,sp+4.2);ctx.stroke()}ctx.restore();
@@ -229,7 +237,7 @@ function drawPlayer(p){
   const blink=p.inv>0&&p.dashT<=0&&Math.floor(G.t*22)%2===0;let anim='idle',f=Math.floor(G.t*2.4)%2,face=p.face,rot=0,atkQ=0;
   if(p.dashT>0){anim='dodge';f=0;face=Math.atan2(p.dashY,p.dashX);rot=dashRoll(p);for(let i=0;i<2;i++)G.fx.push({k:'p',x:p.x+rnd(-8,8),y:p.y+rnd(-2,4),vx:-p.dashX*50,vy:rnd(-20,5),t:.25,m:.25,c:'#c8c8c0',s:rnd(2,4)})}
   else if(p.beam){anim='beam';f=Math.floor(G.t*20)%2;face=p.beam.a}
-  else if(p.chg>0){anim='charge';f=Math.floor(G.t*10)%2}
+  else if(p.chg>0){if(shotUser(p)){anim='attack';f=0}else{anim='charge';f=Math.floor(G.t*10)%2}}
   else if(p.hitT>0){anim='hit';f=0}
   else if(p.guard){anim='guard';f=0}
   else if(p.castT>0){anim='cast';f=p.castT>.2?0:1}
@@ -445,7 +453,9 @@ function drawShot(s){
   if(s.piercing){ctx.save();ctx.translate(X,Y);ctx.rotate(a);ctx.strokeStyle='rgba(135,235,255,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(reduced?-14:-30,0);ctx.lineTo(-5,0);ctx.stroke();ctx.restore()}
   const sp=s.spin||0;
   if(f==='bullet'||f==='tracer'){const L=f==='tracer'?46:26;if(!reduced)glow(11,.55);ctx.translate(X,Y);ctx.rotate(a);const g=ctx.createLinearGradient(-L,0,4,0);g.addColorStop(0,'rgba('+c+',0)');g.addColorStop(1,'rgba('+c+',1)');ctx.fillStyle=g;ctx.fillRect(-L,-1.5,L+4,3);ctx.fillStyle='#fff';ctx.fillRect(-4,-1,8,2)}
-  else if(f==='plasma'){glow(20,.7);ctx.translate(X,Y);ctx.rotate(a);ctx.fillStyle='rgba('+c+',.8)';ctx.fillRect(-22,-3,26,6);ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,0,8,4,0,0,TAU);ctx.fill()}
+  else if(f==='pellet'){if(!reduced)glow(8,.6);ctx.translate(X,Y);ctx.rotate(a);const g=ctx.createLinearGradient(-14,0,3,0);g.addColorStop(0,'rgba('+c+',0)');g.addColorStop(1,'rgba('+c+',1)');ctx.fillStyle=g;ctx.fillRect(-14,-1.5,17,3);ctx.fillStyle='#fff';ctx.fillRect(-2,-1.5,4,3)}
+  else if(f==='wind'){if(s.big){ctx.translate(X,Y);ctx.scale(1.6,1.6);ctx.translate(-X,-Y)}/* a cyan wind crescent with trailing gust lines */if(!reduced)glow(18,.55);ctx.translate(X,Y);ctx.rotate(a);ctx.strokeStyle='rgba('+c+',.95)';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.arc(-4,0,9,-1.25,1.25);ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(-3,0,6,-1.1,1.1);ctx.stroke();ctx.strokeStyle='rgba('+c+',.5)';ctx.lineWidth=1.5;for(const o of[-5,0,5]){ctx.beginPath();ctx.moveTo(-10,o);ctx.lineTo(reduced?-18:-28+Math.abs(o),o);ctx.stroke()}}
+  else if(f==='plasma'){if(s.big){glow(42,.8);ctx.translate(X,Y);ctx.scale(2,2);ctx.translate(-X,-Y)}glow(20,.7);ctx.translate(X,Y);ctx.rotate(a);ctx.fillStyle='rgba('+c+',.8)';ctx.fillRect(-22,-3,26,6);ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,0,8,4,0,0,TAU);ctx.fill()}
   else if(f==='arrow'){ctx.globalCompositeOperation='source-over';ctx.translate(X,Y);ctx.rotate(a);ctx.fillStyle='rgba(255,240,180,.35)';ctx.fillRect(-34,-1,22,2);ctx.fillStyle='#8a5a30';ctx.fillRect(-14,-1,20,2);ctx.fillStyle='#d8e0e8';ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(3,-4);ctx.lineTo(3,4);ctx.closePath();ctx.fill();ctx.fillStyle='#e8e4d8';ctx.fillRect(-16,-4,5,2);ctx.fillRect(-16,2,5,2)}
   else if(f==='flash'){glow(26,.9,'255,255,240');ctx.translate(X,Y);ctx.rotate(sp);ctx.fillStyle='#fff';for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);ctx.fillRect(0,-1,16,2)}}
   else if(f==='comet'){glow(30,.75);ctx.translate(X,Y);ctx.rotate(a);const g=ctx.createLinearGradient(-44,0,6,0);g.addColorStop(0,'rgba('+c+',0)');g.addColorStop(1,'rgba('+c+',.9)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-44,0);ctx.lineTo(4,-8);ctx.lineTo(4,8);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(2,0,6,0,TAU);ctx.fill();ctx.rotate(sp);ctx.strokeStyle='rgba('+c+',.9)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,14,5,0,0,TAU);ctx.stroke()}

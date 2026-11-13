@@ -5,7 +5,7 @@ const ENEMY_SKIP=new Set(['spoke','attacking','xp','gold','dmg','sp','cd','wande
 const NPC_SKIP=new Set(['kx','ky','t','sp','scare','dead','id']);
 const LOOT_SKIP=new Set(['t','amt','id']);
 const OWN_SKIP=new Set(['input','actions','ack','id','clickLatch','holdT','combo_','x','y','vx','vy','lx','ly','toxinTick','fallT']);
-const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats','grabT','possT','stunT','webT','toxicLoad','loadMark','rust','fieldRust','abil','abilCast','sprint','chg','beam','lungeT','lungeA'];
+const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats','grabT','possT','stunT','webT','toxicLoad','loadMark','rust','fieldRust','abil','abilCast','sprint','chg','beam','lungeT','lungeA','dive'];
 let nextEnt=1;
 const entId=o=>o.id||(o.id=nextEnt++);
 const rnum=(k,v)=>k==='x'||k==='y'||k==='walk'?Math.round(v*10)/10:Math.round(v*100)/100;
@@ -39,7 +39,7 @@ function snapshot(room,me,known,tick){
   if(players)out.p=players;
   const e=diff(G.enemies.filter(o=>o.kind==='boss'||near(me,o,AOI)),known.e,o=>flatten(o,ENEMY_SKIP));if(e)out.e=e;
   const n=diff(G.npcs.filter(o=>near(me,o,AOI)),known.n,o=>flatten(o,NPC_SKIP));if(n)out.n=n;
-  const shot=s=>{const o={x:rnum('x',s.x),y:rnum('y',s.y),vx:Math.round(s.vx),vy:Math.round(s.vy),r:s.r,from:s.from,fx:s.fx,col:s.col,a:rnum('a',s.a||0),small:s.small?1:0,spell:s.spell?1:0};if(s.piercing)o.piercing=1;if(s.tier>0)o.tier=s.tier;if(s.lob)o.lob=rnum('lob',s.lob);if(s.hopT)o.hopT=rnum('hopT',s.hopT);return o};
+  const shot=s=>{const o={x:rnum('x',s.x),y:rnum('y',s.y),vx:Math.round(s.vx),vy:Math.round(s.vy),r:s.r,from:s.from,fx:s.fx,col:s.col,a:rnum('a',s.a||0),small:s.small?1:0,spell:s.spell?1:0};if(s.piercing)o.piercing=1;if(s.tier>0)o.tier=s.tier;if(s.lob)o.lob=rnum('lob',s.lob);if(s.hopT)o.hopT=rnum('hopT',s.hopT);if(s.big)o.big=1;return o};
   const h=diff(G.shots.filter(o=>near(me,o,AOI)),known.h,shot,true);if(h)out.h=h;
   const hazard=z=>({x:rnum('x',z.x),y:rnum('y',z.y),r:z.r,t:rnum('t',z.t),from:z.from,col:z.col});
   const z=diff((G.hazards||[]).filter(o=>near(me,o,AOI)),known.z,hazard,true);if(z)out.z=z;

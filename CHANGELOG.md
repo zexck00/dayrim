@@ -4,6 +4,14 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### 13 November 2026
+
+- Full chibi characters: all 40 heroes and villains, minions and townspeople redrawn with big heads, eyes, brows and oversized weapons, matching their character cards.
+- Hold to charge: casters fire a beam, melee fighters lunge, and marksmen fire a charged shot that suits their gun (shotgun, arrow volley, overcharged plasma, gale burst). Heavy hits stagger enemies.
+- Falcon EX replaces the Patriot: new card art, chibi sprite, wind shots, the Tailwind passive and the triple Falcon Dive ability.
+- New title poster, Story and Quick Game posters on the modes screen, and a Warzone trailer that plays when you point at Warzone.
+- The modes menu now sits on the right side of the screen.
+
 ### Added
 
 **Characters**
@@ -14,9 +22,26 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 **Charge, beam and stagger**
 - Hold the attack button to charge: a ball of your character's colour grows at your hands while you move slowly, and a ring turns once it is strong enough. A tap still attacks at once.
-- Let go at 60% charge or more. Casters, shooters and the three kit villains fire a beam that burns along a line for half a second and holds you in place. Melee fighters lunge forward through every enemy in the way instead.
+- Let go at 60% charge or more. Casters and the three kit villains fire a beam that burns along a line for half a second and holds you in place. Melee fighters lunge forward through every enemy in the way instead.
+- Marksmen fire a charged shot that suits their gun instead of a beam. While charging, a dotted fan shows where it will go.
+  - Pistol (the Detective, Chrono Thief): a shotgun spread of seven pellets that shoves enemies back, with recoil.
+  - Bow (the Ranger): a volley of five piercing arrows.
+  - Blaster (the Inventor, Mad Scientist): one big overcharged plasma bolt that explodes.
+  - Gale Gauntlets (Falcon EX): three large wind crescents that pierce and knock back.
+  - A charged shot is worth about three to four basic hits on a crowd, always well below an ability.
 - Heavy hits stagger enemies: a red flash, a shove and a puff of dust. A beam's first hit freezes the moment briefly, and a fully charged beam darkens the screen for one frame (not with reduced motion).
 - Beams and lunges are a share of your own basic hit, so they grow with your weapon, level and skills. They work online too.
+
+**Falcon EX**
+- The Patriot is now Falcon EX, with new card art: a full chibi winged helm with a glowing V visor and red brow plates, a red falcon chest emblem, red cape and scarf, and glowing wind gauntlets.
+- He fights as a Marksman: his basic attack fires wind crescents from his Gale Gauntlets, and holding it charges a beam.
+- New passive, Tailwind: 10% faster movement and 5% more critical chance.
+- New ability, Falcon Dive: lock onto the enemy nearest your aim, then fly up and dive three times at full power, each dive slamming the ground and staggering everything around it.
+
+- New title poster on the title screen and as the modes screen background.
+- The modes menu sits on the right on wide screens and phones held sideways, with the open mode's panel beside it on the left. On phones held upright it stays stacked at the bottom.
+- The modes screen shows the Story poster (the heroes at rest in their hall) or the Quick Game poster (the villains in their lair) when you point at or open that mode.
+- Pointing at Warzone loads and plays its trailer behind the menu; moving away stops it. The trailer plays once, holds the last frame, and plays again after 10 minutes; pointing at Warzone again restarts it and the wait. Clicking Warzone opens a "coming soon" note with a sound toggle, and on touch screens it also starts the trailer. Warzone is not playable yet.
 
 **Story mode**
 - A game modes screen opens after Play Game: Story, Quick Game and Warzone (not open yet) in a sidebar on the left, with the developers, the version and a Changelog button below. Quick Game is the stage game as before.

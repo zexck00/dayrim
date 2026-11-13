@@ -12,7 +12,7 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas=$('c'),ctx=canvas.getContext('2d');
 const ATLAS=new Image();ATLAS.src=ATLAS_URL;
 document.documentElement.style.setProperty('--atlas','url("'+ATLAS_URL+'")');
-const artStyle=(n,bw,bh)=>{const a=CAST[n],k=Math.min(bw/a.w,bh/a.h);return 'width:'+Math.round(a.w*k)+'px;height:'+Math.round(a.h*k)+'px;background-size:'+AW*k+'px '+AH*k+'px;background-position:'+(-a.x*k)+'px '+(-a.y*k)+'px'};
+const artStyle=(n,bw,bh)=>{if(CARD_ART[n]){const w=Math.min(bw,bh*.75);return 'width:'+Math.round(w)+'px;height:'+Math.round(w/.75)+'px;background:url('+CARD_ART[n]+') center/100% 100% no-repeat'}const a=CAST[n],k=Math.min(bw/a.w,bh/a.h);return 'width:'+Math.round(a.w*k)+'px;height:'+Math.round(a.h*k)+'px;background-size:'+AW*k+'px '+AH*k+'px;background-position:'+(-a.x*k)+'px '+(-a.y*k)+'px'};
 
 /* ---------- Data ---------- */
 const ARCH={
@@ -22,7 +22,7 @@ const ARCH={
   medic:{n:'Medic',d:'Heals 2 life per hit and starts with 3 extra potions.',f:s=>{s.leech+=2},potions:3,e:{hp:.9,sp:66,dmg:.7,r:13,range:20,atk:1.8}},
   scout:{n:'Scout',d:'15% faster, and the dodge recharges 30% quicker.',f:s=>{s.speed*=1.15;s.dashCd*=.7},e:{hp:.8,sp:112,dmg:.85,r:13,range:18,atk:.85}}
 };
-const ROSTER={hero:{Detective:'shooter',Vigilante:'scout',Guardian:'bruiser',Ranger:'scout',Inventor:'shooter',Firefighter:'bruiser','Hero Shadow':'striker',Prodigy:'striker',Sage:'shooter',Patriot:'striker',Phantom:'scout',Pyromancer:'shooter',Chronomancer:'shooter',Beastmaster:'striker',Voidwalker:'shooter',Exorcist:'medic','Gravity Mage':'shooter',Druid:'medic',Cyborg:'bruiser',Illusionist:'scout'},
+const ROSTER={hero:{Detective:'shooter',Vigilante:'scout',Guardian:'bruiser',Ranger:'scout',Inventor:'shooter',Firefighter:'bruiser','Hero Shadow':'striker',Prodigy:'striker',Sage:'shooter',Patriot:'shooter',Phantom:'scout',Pyromancer:'shooter',Chronomancer:'shooter',Beastmaster:'striker',Voidwalker:'shooter',Exorcist:'medic','Gravity Mage':'shooter',Druid:'medic',Cyborg:'bruiser',Illusionist:'scout'},
 villain:{Necromancer:'shooter','Blood Reaper':'bruiser','Toxin Alchemist':'medic','Soul Stealer':'scout','Shadow Monarch':'striker',Puppeteer:'shooter','Void Empress':'shooter','Plague Doctor':'medic','Mad Scientist':'shooter','Demon Knight':'bruiser','Gravity Weaver':'shooter','Mecha Tyrant':'bruiser','Chrono Thief':'scout','Swarm Queen':'scout','Ice Archmage':'shooter','Deep Siren':'striker','Ash Shaman':'medic','Soul Forger':'bruiser','Mirror Jester':'scout','Cyber Priest':'medic'}};
 /* Signature passives (Z-30): each character has one small bonus of its own, on top of its archetype.
    [name, description, effect on the stat block]. Kept small so the archetypes and balance still lead. */
@@ -36,7 +36,7 @@ const PASSIVES={
  'Hero Shadow':['Backstab','8% more critical chance.',s=>{s.crit+=.08}],
  Prodigy:['Natural Talent','8% more damage.',s=>{s.dmg*=1.08}],
  Sage:['Deep Wisdom','25% more mana.',s=>{s.maxMana*=1.25}],
- Patriot:['Rally','Regenerates 2 extra life per second.',s=>{s.regen+=2}],
+ Patriot:['Tailwind','10% faster movement and 5% more critical chance.',s=>{s.speed*=1.1;s.crit+=.05}],
  Phantom:['Ethereal','Dodge recharges 20% faster.',s=>{s.dashCd*=.8}],
  Pyromancer:['Kindling','Spell blasts are 20% wider.',s=>{s.blast*=1.2}],
  Chronomancer:['Borrowed Time','Cooldowns are 8% shorter.',s=>{s.cdMul*=.92}],
@@ -74,14 +74,16 @@ const METHODS={unarmed:{n:'Unarmed',st:'pow'},melee:{n:'Weapon melee',st:'pow'},
 const STAT_NAMES={pow:'Melee',aim:'Shooting',mag:'Magic',grd:'Shield',hea:'Healing'};
 const STAT_MUL=[.6,.8,1,1.2,1.4];
 const mkS=(pow,aim,mag,grd,hea)=>({pow,aim,mag,grd,hea});
-const label=n=>n==='Hero Shadow'?'Shadow':n;
+/* Display names. The Patriot is now Falcon EX; the key stays 'Patriot' so saves and online play keep working. */
+const label=n=>n==='Hero Shadow'?'Shadow':n==='Patriot'?'Falcon EX':n;
+const theName=n=>n==='Patriot'?'Falcon EX':'The '+label(n);
 const STATS={Necromancer:mkS(1,1,5,2,4),'Blood Reaper':mkS(5,1,2,3,2),'Toxin Alchemist':mkS(2,3,4,1,4),'Soul Stealer':mkS(2,1,5,1,3),'Shadow Monarch':mkS(5,2,3,2,2),Puppeteer:mkS(1,2,5,2,2),'Void Empress':mkS(1,1,5,3,2),'Plague Doctor':mkS(2,1,3,2,5),'Mad Scientist':mkS(1,5,3,1,2),'Demon Knight':mkS(5,1,2,5,1),'Gravity Weaver':mkS(1,1,5,3,2),'Mecha Tyrant':mkS(5,4,1,5,1),'Chrono Thief':mkS(3,5,2,1,2),'Swarm Queen':mkS(3,2,5,1,3),'Ice Archmage':mkS(1,1,5,3,3),'Deep Siren':mkS(4,1,4,2,3),'Ash Shaman':mkS(2,1,4,2,5),'Soul Forger':mkS(5,1,2,4,2),'Mirror Jester':mkS(4,3,3,1,2),'Cyber Priest':mkS(1,3,4,2,5),
-Guardian:mkS(3,1,1,5,2),Ranger:mkS(3,5,1,1,3),'Hero Shadow':mkS(5,2,2,1,1),Sage:mkS(1,1,5,2,4),Phantom:mkS(2,1,5,1,3),Pyromancer:mkS(1,1,5,1,2),Chronomancer:mkS(2,2,5,2,3),Beastmaster:mkS(5,2,1,2,3),Voidwalker:mkS(1,1,5,2,2),Exorcist:mkS(2,1,4,2,5),'Gravity Mage':mkS(1,1,5,3,2),Druid:mkS(2,1,4,2,5),Cyborg:mkS(5,4,1,4,1),Illusionist:mkS(2,3,5,1,2),Detective:mkS(3,5,1,2,2),Nurse:mkS(1,1,2,2,5),'Beat Cop':mkS(4,3,1,4,1),Vigilante:mkS(4,2,1,2,2),Reporter:mkS(2,3,2,2,2),Firefighter:mkS(5,1,1,4,2),Doctor:mkS(1,2,3,1,5),Boxer:mkS(5,1,1,3,1),Priest:mkS(1,1,5,2,4),Mechanic:mkS(4,2,2,3,1),SWAT:mkS(3,3,1,5,1),Prodigy:mkS(4,2,2,2,2),Ranger:mkS(3,3,1,2,3),Judge:mkS(4,1,3,3,1),Inventor:mkS(2,5,3,2,1),Paramedic:mkS(2,1,2,2,5),Patriot:mkS(5,2,1,4,2),Athlete:mkS(5,1,1,2,3),Baker:mkS(4,1,1,3,3),
+Guardian:mkS(3,1,1,5,2),Ranger:mkS(3,5,1,1,3),'Hero Shadow':mkS(5,2,2,1,1),Sage:mkS(1,1,5,2,4),Phantom:mkS(2,1,5,1,3),Pyromancer:mkS(1,1,5,1,2),Chronomancer:mkS(2,2,5,2,3),Beastmaster:mkS(5,2,1,2,3),Voidwalker:mkS(1,1,5,2,2),Exorcist:mkS(2,1,4,2,5),'Gravity Mage':mkS(1,1,5,3,2),Druid:mkS(2,1,4,2,5),Cyborg:mkS(5,4,1,4,1),Illusionist:mkS(2,3,5,1,2),Detective:mkS(3,5,1,2,2),Nurse:mkS(1,1,2,2,5),'Beat Cop':mkS(4,3,1,4,1),Vigilante:mkS(4,2,1,2,2),Reporter:mkS(2,3,2,2,2),Firefighter:mkS(5,1,1,4,2),Doctor:mkS(1,2,3,1,5),Boxer:mkS(5,1,1,3,1),Priest:mkS(1,1,5,2,4),Mechanic:mkS(4,2,2,3,1),SWAT:mkS(3,3,1,5,1),Prodigy:mkS(4,2,2,2,2),Ranger:mkS(3,3,1,2,3),Judge:mkS(4,1,3,3,1),Inventor:mkS(2,5,3,2,1),Paramedic:mkS(2,1,2,2,5),Patriot:mkS(3,5,2,3,2),Athlete:mkS(5,1,1,2,3),Baker:mkS(4,1,1,3,3),
 Boss:mkS(2,4,4,2,1),Brute:mkS(4,5,1,3,1),Sister:mkS(1,1,4,2,5),Shadow:mkS(2,5,3,1,1),Scribe:mkS(1,1,5,1,3),Chemist:mkS(1,2,4,1,5),Driver:mkS(4,3,1,2,1),Soldier:mkS(3,5,1,3,1),Spy:mkS(3,3,3,2,1),Prelate:mkS(5,1,3,2,1),Grandmaster:mkS(1,1,5,2,3),Executioner:mkS(5,1,1,4,1),Undertaker:mkS(4,1,3,3,2),Whisperer:mkS(1,2,5,2,2),Smuggler:mkS(3,5,1,2,1),Apothecary:mkS(1,2,3,1,5),Silencer:mkS(5,1,2,1,1),Medium:mkS(1,1,5,1,4),Usurer:mkS(3,2,2,2,4),Initiate:mkS(4,1,2,2,2)};
 /* Weapons. Power never changes, whichever enemy or stage it came from. 25 power means +100% damage. */
 const WEAPONS={
  fists:{n:'Fists',m:'unarmed',p:0,cd:.26,reach:50},knife:{n:'Knife',m:'melee',p:6,cd:.28,reach:54},cane:{n:'Cane',m:'melee',p:7,cd:.34,reach:64},baton:{n:'Baton',m:'melee',p:8,cd:.34,reach:64},pin:{n:'Rolling Pin',m:'melee',p:9,cd:.38,reach:62},wrench:{n:'Wrench',m:'melee',p:10,cd:.38,reach:62},hook:{n:'Crowbar',m:'melee',p:10,cd:.38,reach:64},torch:{n:'Flashlight',m:'melee',p:6,cd:.32,reach:60},money:{n:'Money Bag',m:'melee',p:11,cd:.44,reach:58},gavel:{n:'Gavel',m:'melee',p:12,cd:.44,reach:62},bat:{n:'Baseball Bat',m:'melee',p:13,cd:.44,reach:72},shovel:{n:'Shovel',m:'melee',p:15,cd:.5,reach:76},cleaver:{n:'Cleaver',m:'melee',p:17,cd:.5,reach:62},axe:{n:'Fire Axe',m:'melee',p:20,cd:.58,reach:76},
- pistol:{n:'Pistol',m:'shoot',p:6,cd:.34},camera:{n:'Flash Camera',m:'shoot',p:4,cd:.3},tommy:{n:'Tommy Gun',m:'shoot',p:3,cd:.22},blaster:{n:'Blaster',m:'shoot',p:16,cd:.6},
+ pistol:{n:'Pistol',m:'shoot',p:6,cd:.34},wind:{n:'Gale Gauntlets',m:'shoot',p:9,cd:.34},camera:{n:'Flash Camera',m:'shoot',p:4,cd:.3},tommy:{n:'Tommy Gun',m:'shoot',p:3,cd:.22},blaster:{n:'Blaster',m:'shoot',p:16,cd:.6},
  candle:{n:'Cursed Candle',m:'spell',p:6,cd:.42,cost:4},book:{n:'Spell Book',m:'spell',p:10,cd:.5,cost:6},flask:{n:'Potion Flask',m:'spell',p:12,cd:.55,cost:7},orb:{n:'Magic Orb',m:'spell',p:15,cd:.6,cost:9},
  sword:{n:'Dark Blade',m:'melee',p:16,cd:.46,reach:72},scythe:{n:'Reaper Scythe',m:'melee',p:19,cd:.54,reach:84},hammer:{n:'Forge Hammer',m:'melee',p:22,cd:.62,reach:70},trident:{n:'Trident',m:'melee',p:15,cd:.48,reach:86},staff:{n:'Magic Staff',m:'spell',p:13,cd:.56,cost:8},
  bow:{n:'Longbow',m:'shoot',p:9,cd:.42},spear:{n:'Spear',m:'melee',p:14,cd:.46,reach:84},cards:{n:'Trick Cards',m:'spell',p:8,cd:.46,cost:5},
@@ -457,7 +459,7 @@ function objStep(dt){const o=G.obj;if(!o||o.done||G.story)return;const st=o.step
   if(!(st.met!==undefined?st.met:st.have>=st.need))return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
 function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the scout and hold F or Revive nearby'};return c}
-function enterStage(n,keepKills){for(const q of G.players){q.abil=null;q.abilCast=null;q.beam=null;q.lungeT=0;q.chg=0;q.holdT=0}
+function enterStage(n,keepKills){for(const q of G.players){q.abil=null;q.abilCast=null;q.beam=null;q.burst=null;q.lungeT=0;q.chg=0;q.holdT=0}
   const kept=keepKills?G.killsStage:0;
   G.stage=n;G.seed=Math.random()*2147483647|0;G.w=G.story?storyMap(G.story.ci):genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
   const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
@@ -484,7 +486,7 @@ function rusherTarget(e){if(e.role!=='rusher'||!e.aware)return null;const a=G.pl
 function nearestPlayer(o){let b=null,bd=Infinity;for(const q of alivePlayers()){const d=dist(q,o);if(d<bd){bd=d;b=q}}return b}
 const ownerOf=s=>G.players.find(q=>q.id===s.pid)||G.players[0];
 function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=me}
-function playerDown(p,wind=false){sfx('downed');p.beam=null;p.lungeT=0;p.chg=0;p.holdT=0;if(p.carry&&p.carry.kind==='canister'){p.carry.by=0;p.carry=null}p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
+function playerDown(p,wind=false){sfx('downed');p.beam=null;p.burst=null;p.lungeT=0;p.chg=0;p.holdT=0;if(p.carry&&p.carry.kind==='canister'){p.carry.by=0;p.carry=null}p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
 function revive(p){sfx('revive_done');p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
 function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;if(G.boss&&G.arena){const a=Math.atan2(G.safe.y-G.arena.y,G.safe.x-G.arena.x);p.x=G.arena.x+Math.cos(a)*(G.arena.r-45);p.y=G.arena.y+Math.sin(a)*(G.arena.r-45)}p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
 function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;G.flesh=null;clearLanterns();clearBossEggs();clearSporeBoss();clearGhoul();clearVale();clearScrap();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
@@ -823,7 +825,33 @@ const CHARGE={delay:.28,time:.9,min:.6,slow:.45};
 const BEAM={dur:.5,tick:.1,len:560,w:20,mul:.9,knock:150,stop:.1,grow:.1};
 const LUNGE={t:.2,speed:640,reach:46,mul:3.2,knock:420};
 const STAGGER={red:.12,big:.18,dust:6};
-const beamUser=p=>!!kitOf(p)||['spell','shoot'].includes((WEAPONS[p.weapon]||{}).m);
+const beamUser=p=>!!kitOf(p)||(WEAPONS[p.weapon]||{}).m==='spell';
+const shotUser=p=>!kitOf(p)&&(WEAPONS[p.weapon]||{}).m==='shoot';
+/* Charged shots for marksmen: each gun changes how it fires instead of firing a beam.
+   n: shots · spread: fan width (radians) · mul: share of one basic hit per shot, at full charge.
+   A full charge is worth about 3 to 4 basic hits on a crowd, well below an ability (10 basic hits). */
+const CHARGED_SHOT={
+ pistol:{name:'SHOTGUN',n:7,spread:.7,mul:.55,sp:720,life:.34,fx:'pellet',r:4,kb:220,recoil:14},
+ bow:{name:'VOLLEY',n:5,spread:.5,mul:.7,sp:560,life:.9,fx:'arrow',r:5,kb:140,pierce:1},
+ blaster:{name:'OVERCHARGE',n:1,spread:0,mul:3.2,sp:330,life:1.2,fx:'plasma',r:14,blast:95,big:1},
+ wind:{name:'GALE BURST',n:3,spread:.36,mul:1.1,sp:600,life:.85,fx:'wind',r:12,kb:260,pierce:3,big:1},
+ tommy:{name:'BULLET STORM',n:10,spread:.22,mul:.35,sp:700,life:.7,fx:'tracer',r:4,kb:90,burst:.05},
+ camera:{name:'FLASH',n:1,spread:0,mul:2,sp:0,flash:{range:230,arc:.7,stun:1.6}}
+};
+/* Fires one charged shot pattern. A burst (tommy gun) is spread over time by burstStep. */
+function chargedShot(p,k){const id=p.weapon,C=CHARGED_SHOT[id]||CHARGED_SHOT.pistol,a=p.face,dmg=weaponDamage(id)*dmgMul()*C.mul*k;
+  text(p.x,p.y-92,C.name,'#ffe9a0',true);shake(C.big?4:3);sfx(C.big?'boom':'shot');
+  if(C.flash){const F=C.flash;for(const e of G.enemies.slice()){if(!foeAlive(e)||dist(e,p)>F.range+e.r)continue;if(angGap(Math.atan2(e.y-p.y,e.x-p.x),a)>F.arc)continue;hitEnemy(e,dmg,Math.atan2(e.y-p.y,e.x-p.x),120,true);if(!e.dead)stunFor(e,F.stun)}G.fx.push({k:'ring',x:p.x+Math.cos(a)*30,y:p.y-24+Math.sin(a)*30,r:10,to:F.range*.6,t:.25,m:.25,c:'#ffffff'});return}
+  if(C.burst){p.burst={n:C.n,t:0,a,k,id};return}
+  for(let i=0;i<C.n;i++){const off=C.n>1?-C.spread/2+C.spread*i/(C.n-1):0,ang=a+off+(C.fx==='pellet'?rnd(-.04,.04):0);chargedBullet(p,C,ang,dmg)}
+  muzzle(p.x+Math.cos(a)*30,p.y-24+Math.sin(a)*30,a,C.fx==='pellet'?'bullet':C.fx);
+  if(C.recoil)move(p,-Math.cos(a)*C.recoil,-Math.sin(a)*C.recoil)}
+function chargedBullet(p,C,ang,dmg){const fx=Math.cos(ang),fy=Math.sin(ang),sp=C.sp*(C.fx==='pellet'?rnd(.9,1.1):1);
+  const s={x:p.x+fx*24,y:p.y-24+fy*24,vx:fx*sp,vy:fy*sp,r:C.r,from:'p',life:C.life,dmg,fx:C.fx,col:C.fx==='wind'?'150,225,255':C.fx==='plasma'?'111,220,255':'255,220,140',a:ang,kb:C.kb,stag:1};
+  if(C.blast){s.blast=C.blast;s.heavy=true}else s.small=true;
+  if(C.pierce){s.pierce=C.pierce;s.piercing=true}if(C.big)s.big=1;G.shots.push(s)}
+function burstStep(p,dt){const b=p.burst;b.t-=dt;if(b.t>0)return;const C=CHARGED_SHOT[b.id]||CHARGED_SHOT.tommy;b.t=C.burst;b.n--;
+  const ang=b.a+rnd(-C.spread/2,C.spread/2);chargedBullet(p,C,ang,weaponDamage(b.id)*dmgMul()*C.mul*b.k);muzzle(p.x+Math.cos(b.a)*30,p.y-24+Math.sin(b.a)*30,b.a,'tracer');sfx('shot');if(b.n<=0)p.burst=null}
 const chargePower=c=>.7+.3*clamp((c-CHARGE.min)/(1-CHARGE.min),0,1);
 const LUNGE_HIT=new WeakMap();
 /* How far a beam reaches from here before a wall stops it */
@@ -831,11 +859,12 @@ function beamReach(p,a){for(let d=24;d<=BEAM.len;d+=8)if(wall((p.x+Math.cos(a)*d
 /* A heavy hit: a red flash, a shove, and a puff of dust. The first hit of a beam also freezes the moment. */
 function stagger(e,a,power,first){if(!e||e.dead)return;e.redT=first?STAGGER.big:STAGGER.red;e.kx=(e.kx||0)+Math.cos(a)*power*(e.kind==='boss'?.15:1);e.ky=(e.ky||0)+Math.sin(a)*power*(e.kind==='boss'?.15:1);burst(e.x,e.y-4,'#d8c8a0',STAGGER.dust,90)}
 function chargeStep(p,held,dt){
-  if(p.beam||p.lungeT>0){if(!held){p.holdT=0;p.chg=0}return}
+  if(p.beam||p.lungeT>0||p.burst){if(!held){p.holdT=0;p.chg=0}return}
   if(p.carry||p.stunT>0||p.guard||p.dashT>0||p.ult){p.holdT=held?.001:0;p.chg=0;return}
   if(held){if(!p.holdT)doAttack();p.holdT=(p.holdT||0)+dt;p.chg=p.holdT>CHARGE.delay?Math.min(1,(p.holdT-CHARGE.delay)/CHARGE.time):0;return}
   const c=p.chg||0;p.holdT=0;p.chg=0;if(c>=CHARGE.min)releaseCharge(p,c)}
 function releaseCharge(p,c){const k=+chargePower(c).toFixed(2),a=p.face;p.mv=null;
+  if(shotUser(p)){p.cd.slash=Math.max(p.cd.slash,.35);chargedShot(p,k);return}
   if(beamUser(p)){p.beam={t:BEAM.dur,a:+a.toFixed(3),len:beamReach(p,a),k,tick:0,ext:0,hit:0,full:c>=.98?1:0,col:spellCol(p.char,'orb')};sfx('boom');shake(3)}
   else{p.lungeT=LUNGE.t;p.lungeA=a;p.lungeK=k;LUNGE_HIT.set(p,new Set());p.atkT=.25;p.atkDur=.25;p.swing=.17;p.swingA=a;p.swingR=70;p.swingArc=1.2;sfx('dash');sfx('slash')}}
 function beamStep(p,dt){const b=p.beam;b.t-=dt;b.tick-=dt;b.ext=Math.min(1,b.ext+dt/BEAM.grow);
@@ -852,7 +881,7 @@ function doAttack(){
   if(W.m==='spell'&&p.mana<W.cost)return;
   p.cd.slash=W.cd*cdMulOf(p);p.atkT=Math.min(.3,p.cd.slash);p.atkDur=p.atkT;const dmg=weaponDamage(id)*dmgMul(),up=upgradeLevel(p,id),fx=Math.cos(p.face),fy=Math.sin(p.face);
   if(up)G.fx.push({k:'ring',x:p.x+fx*12,y:p.y-24+fy*12,r:6,to:22+up*10,t:.24,m:.24,shape:up>=2?'diamond':'circle',c:up===1?'#ffd166':'#80eaff'});
-  if(W.m==='shoot'){sfx('shot');const sty={bow:'arrow',blaster:'plasma',tommy:'tracer',camera:'flash'}[id]||'bullet',sp=sty==='arrow'?470:sty==='plasma'?430:640;for(const off of GUN_UP[up].angles){const a=p.face+off;G.shots.push({x:p.x+fx*24,y:p.y-24+fy*24,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:sty==='plasma'?7:4,from:'p',life:.8,dmg:dmg*GUN_UP[up].damage,small:true,tier:up,pierce:up>=2&&PIERCING_WEAPONS.has(id)?1:0,piercing:up>=2&&PIERCING_WEAPONS.has(id),fx:sty,col:sty==='plasma'?'111,220,255':'255,220,120',a})}muzzle(p.x+fx*30,p.y-24+fy*30,p.face,sty);return}
+  if(W.m==='shoot'){sfx('shot');const sty={bow:'arrow',blaster:'plasma',tommy:'tracer',camera:'flash',wind:'wind'}[id]||'bullet',sp=sty==='arrow'?470:sty==='plasma'?430:sty==='wind'?560:640;for(const off of GUN_UP[up].angles){const a=p.face+off;G.shots.push({x:p.x+fx*24,y:p.y-24+fy*24,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:sty==='plasma'?7:sty==='wind'?8:4,from:'p',life:.8,dmg:dmg*GUN_UP[up].damage,small:true,tier:up,pierce:up>=2&&PIERCING_WEAPONS.has(id)?1:0,piercing:up>=2&&PIERCING_WEAPONS.has(id),fx:sty,col:sty==='plasma'?'111,220,255':sty==='wind'?'150,225,255':'255,220,120',a})}muzzle(p.x+fx*30,p.y-24+fy*30,p.face,sty);return}
   if(W.m==='spell'){p.mana-=W.cost;sfx('bolt');const sty={book:'arcane',flask:'flask',candle:'ember',staff:'skull',cards:'card'}[id]||'orb';for(const off of SPELL_UP[up].angles){const a=p.face+off;G.shots.push({x:p.x+fx*20,y:p.y-24+fy*20,vx:Math.cos(a)*390,vy:Math.sin(a)*390,r:6,from:'p',life:.9,dmg:dmg*SPELL_UP[up].damage,blast:SPELL_UP[up].blast,tier:up,fx:sty,col:spellCol(p.char,sty),a,hopT:THROWN_HOP[sty]?.9:0})}return}
   const mdmg=dmg*MELEE_UP[up],reach=meleeReach(W,up),arc=meleeArc(up);p.swingArc=arc;p.swing=.17;p.swingA=p.face;p.swingR=reach;sfx(W.m==='unarmed'?'hit':'slash');let n=0,landed=false;
   for(const e of G.enemies.slice()){if(e.dead||e.fleshDown||e.scrapDown)continue;const d=dist(e,p);if(d>reach+e.r)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);let da=Math.abs(a-p.face)%TAU;if(da>Math.PI)da=TAU-da;if(da<arc||d<e.r+p.r+4){if(!e.buried)landed=true;hitEnemy(e,mdmg,a,W.m==='shield'?300:W.m==='unarmed'?90:170);if(W.m==='shield'&&up>=2)shieldInterrupt(e);n++}}
@@ -991,6 +1020,8 @@ const ABILITY_FX={
  mark:{aim:'foe',range:560,shot:{kind:'bullet',sp:1100},col:'255,207,112',d:'Locks onto the enemy nearest your aim and shoots it. Enemies other than bosses and villains below a quarter of their life die outright.'},
  pool:{aim:'spot',range:440,r:110,shot:{kind:'lob',t:.6},col:'140,240,70',d:'Throws to a spot in range. It bursts and leaves a damaging pool.'},
  leap:{aim:'foe',range:420,r:95,col:'255,170,90',d:'Leaps onto the enemy nearest your aim and slams the ground around it.'},
+ /* Falcon EX: three full-power diving strikes, each on the enemy nearest where you aim (or nearest you) */
+ dive:{aim:'foe',range:520,r:105,hits:3,gap:.38,col:'111,214,255',d:'Locks onto the enemy nearest your aim. Using it flies up and dives three times, each dive slamming the enemy nearest your aim.'},
  pierce:{aim:'line',len:650,w:34,charge:2,shot:{kind:'spear',sp:950},col:'255,230,140',d:'Fires along your aim through every enemy on the line. It charges for 2 seconds while ready.'},
  stun:{aim:'foe',range:520,stun:2.5,shot:{kind:'bolt',sp:720},col:'120,220,255',d:'Fires at the enemy nearest your aim and stuns it (shorter on bosses).'},
  brace:{aim:'self',dur:8,r:160,col:'120,200,255',d:'Raises a dome: you and allies inside take half damage. The finisher releases it as a shockwave that pushes and stuns.'},
@@ -1009,7 +1040,7 @@ const defAbility=(fx,n,use,o={})=>Object.assign({fx},ABILITY_FX[fx],{n,use},o);
 const ABILITIES={
  Detective:defAbility('mark','Lock On','Execute'),Vigilante:defAbility('hook','Grapple','Reel In'),Guardian:defAbility('brace','Brace','Shield Bash'),Ranger:defAbility('pierce','Steady Aim','Piercing Shot'),
  Inventor:defAbility('stun','Stun Gun','Taser Shot',{chain:2}),Firefighter:defAbility('push','Pressure Hose','Water Blast',{col:'110,200,255'}),'Hero Shadow':defAbility('vanish','Vanish','Ambush'),Prodigy:defAbility('hurl','Grab','Home Run'),
- Sage:defAbility('stun','Arcane Bind','Seal',{col:'211,168,255'}),Patriot:defAbility('roar','Rally Cry','Star Slam',{col:'255,108,105'}),Phantom:defAbility('blitz','Phase Run','Phase Dash'),Pyromancer:defAbility('pool','Fire Rune','Ignite',{col:'255,130,60'}),
+ Sage:defAbility('stun','Arcane Bind','Seal',{col:'211,168,255'}),Patriot:defAbility('dive','Falcon Dive','Triple Dive'),Phantom:defAbility('blitz','Phase Run','Phase Dash'),Pyromancer:defAbility('pool','Fire Rune','Ignite',{col:'255,130,60'}),
  Chronomancer:defAbility('stun','Time Lock','Time Stop',{freeze:1,col:'112,221,255'}),Beastmaster:defAbility('leap','Stalk','Pounce'),Voidwalker:defAbility('push','Repulse','Force Push'),Exorcist:defAbility('heal','Triage','Sacred Mend',{col:'255,229,159'}),
  'Gravity Mage':defAbility('collapse','Singularity','Collapse'),Druid:defAbility('pool','Thorn Field','Bloom',{col:'139,238,139'}),Cyborg:defAbility('titan','Titan Form','Titan Stomp',{col:'105,224,255'}),Illusionist:defAbility('decoy','Decoy','Swap'),
  Necromancer:defAbility('pierce','Bone Lance','Impale',{col:'110,255,170'}),'Blood Reaper':defAbility('roar','Blood Roar','Ground Pound'),'Toxin Alchemist':defAbility('pool','Flask','Throw',{thrown:'flask'}),'Soul Stealer':defAbility('hook','Soul Chain','Drag Soul',{col:'204,146,255'}),
@@ -1103,6 +1134,7 @@ function flyShot(p,ab,c,dt,d){const S=ab.shot;
 const ABILITY_FIRE={
  mark(p,ab,c,d){const e=abilFoe.get(p);if(!foeAlive(e))return;const kill=e.kind!=='boss'&&!e.vill&&e.hp<e.maxHp*EXECUTE_BELOW;hitEnemy(e,kill?e.hp+1:d,Math.atan2(e.y-p.y,e.x-p.x),220,true);if(kill&&!e.dead){e.hp=0;killEnemy(e)}text(e.x,e.y-90,kill?'EXECUTED':'CASE CLOSED','#ffcf70',true);fxAt(e.x,e.y,ab.col,14);shake(5)},
  pool(p,ab,c,d){G.hazards.push({x:c.x,y:c.y,r:ab.r,t:4.2,dps:d*.5/9,from:'p',pid:p.id,col:ab.col});blast(c.x,c.y,ab.r,d*.5,140,0);fxAt(c.x,c.y,ab.col,26);shake(4)},
+ dive(p,ab,c,d){const e=abilFoe.get(p);DIVE_FOE.set(p,foeAlive(e)?e:null);p.dive={n:ab.hits,t:0,d:+d.toFixed(1)};diveStep(p,0)},
  leap(p,ab,c,d){stepMove(p,Math.atan2(c.y-p.y,c.x-p.x),Math.max(0,Math.hypot(c.x-p.x,c.y-p.y)-24));p.inv=Math.max(p.inv,.3);blast(p.x,p.y,ab.r,d,240,.6);fxAt(p.x,p.y,ab.col,22);shake(6)},
  pierce(p,ab,c,d){fxAt(c.px,c.py,ab.col,14);shake(3)},
  stun(p,ab,c,d){const e=abilFoe.get(p);if(!foeAlive(e))return;hitEnemy(e,d*.5,Math.atan2(e.y-p.y,e.x-p.x),60,true);if(!e.dead){if(ab.freeze&&e.kind!=='boss')e.frozenT=Math.max(e.frozenT||0,ab.stun);else stunFor(e,ab.stun)}fxAt(e.x,e.y,ab.col,16);
@@ -1119,7 +1151,17 @@ const ABILITY_FIRE={
  titan(p,ab,c,d){blast(p.x,p.y,ab.r,d,260,1.5);abilityEnd(p);fxAt(p.x,p.y,ab.col,30);shake(9)},
  push(p,ab,c,d){const r=ab.r+ab.grow*c.k;abilityEnd(p);for(const e of G.enemies.slice()){if(!foeAlive(e)||dist(e,p)>r+e.r)continue;const ang=Math.atan2(e.y-p.y,e.x-p.x);e.wind=0;e.castT=0;shove(e,ang,220);if(c.k>=1)hitEnemy(e,d*.6,ang,0,true);else e.flash=.15}fxAt(p.x,p.y,ab.col,26);shake(4)}
 };
-function tickAbility(p,dt){p.abilT=Math.max(0,(p.abilT||0)-dt);const ab=abilityOf(p);if(!ab)return;
+/* Falcon Dive: each dive lands on its target, slams the ground, then the next follows ab.gap seconds later. */
+const DIVE_FOE=new WeakMap();
+function diveStep(p,dt){const dv=p.dive,ab=ABILITY_FX.dive;dv.t-=dt;if(dv.t>0)return;
+  const m=abilAim(p);let e=DIVE_FOE.get(p);DIVE_FOE.set(p,null);
+  if(!foeAlive(e)){e=null;let bd=ab.range;for(const o of G.enemies){if(!foeAlive(o))continue;const r=Math.min(Math.hypot(o.x-m.x,o.y-m.y),dist(o,p));if(r<bd&&dist(o,p)<ab.range){bd=r;e=o}}}
+  if(!e){p.dive=null;return}
+  const a=Math.atan2(e.y-p.y,e.x-p.x);stepMove(p,a,Math.max(0,dist(e,p)-22));p.inv=Math.max(p.inv,ab.gap+.1);
+  for(const o of G.enemies.slice())if(foeAlive(o)&&dist(o,p)<ab.r+o.r)stagger(o,Math.atan2(o.y-p.y,o.x-p.x),260,o===e);
+  blast(p.x,p.y,ab.r,dv.d*.7,260,.4);G.hitStop=Math.max(G.hitStop||0,.08);fxAt(p.x,p.y,ab.col,24);shake(7);sfx('boom');
+  dv.n--;text(p.x,p.y-96,'DIVE '+(ab.hits-dv.n)+'/'+ab.hits,'#9fe8ff',true);if(dv.n<=0)p.dive=null;else dv.t=ab.gap}
+function tickAbility(p,dt){p.abilT=Math.max(0,(p.abilT||0)-dt);if(p.dive)diveStep(p,dt);const ab=abilityOf(p);if(!ab)return;
   const c=p.abilCast;if(c){const e=abilFoe.get(p);if(c.aim==='foe'&&foeAlive(e)&&!c.fly){c.x=e.x;c.y=e.y}
     let land=false;if(c.fly)land=flyShot(p,ab,c,dt,abilityDamage(p));else{c.t-=dt;if(c.t<=0){if(ab.shot)launchShot(p,ab,c);else land=true}}
     if(land){p.abilCast=null;ABILITY_FIRE[c.fx](p,ab,c,abilityDamage(p));if(c.aim==='foe')abilFoe.delete(p);shotHits.delete(p)}}
@@ -1184,7 +1226,7 @@ const ULT_BY_KIT={necro:['Army of the Dead','110,255,170'],void:['Event Horizon'
 /* Name, color, animation family and emblem are authored for each playable character. */
 const ULT_STYLE={
  Detective:['Case closed','255,207,112','rays','crosshair'],Vigilante:['Midnight justice','187,201,224','slash','hook'],Guardian:['Last bastion','255,205,94','shield','shield'],Ranger:['Rain of arrows','148,214,117','rays','arrow'],Inventor:['Overclock','100,242,209','tech','gear'],Firefighter:['Flashover','255,156,71','wave','axe'],
- 'Hero Shadow':['Silent strike','181,130,153','slash','dagger'],Prodigy:['Power play','215,153,255','slash','bat'],Sage:['Arcane wisdom','211,168,255','rune','book'],Patriot:['Star spangled','255,108,105','shield','star'],Phantom:['Spectral passage','125,255,198','spiral','ghost'],Pyromancer:['Inferno','255,130,60','flame','flame'],Chronomancer:['Time fracture','112,221,255','orbit','clock'],Beastmaster:['Wild hunt','239,190,112','slash','claw'],Voidwalker:['Beyond the veil','170,137,255','spiral','portal'],Exorcist:['Sacred rite','255,229,159','rune','cross'],'Gravity Mage':['Gravity well','184,145,255','orbit','orbit'],Druid:['Wild bloom','139,238,139','bloom','leaf'],Cyborg:['System overload','105,224,255','tech','circuit'],Illusionist:['Grand illusion','255,118,193','shard','card'],
+ 'Hero Shadow':['Silent strike','181,130,153','slash','dagger'],Prodigy:['Power play','215,153,255','slash','bat'],Sage:['Arcane wisdom','211,168,255','rune','book'],Patriot:['Falcon storm','111,214,255','spiral','star'],Phantom:['Spectral passage','125,255,198','spiral','ghost'],Pyromancer:['Inferno','255,130,60','flame','flame'],Chronomancer:['Time fracture','112,221,255','orbit','clock'],Beastmaster:['Wild hunt','239,190,112','slash','claw'],Voidwalker:['Beyond the veil','170,137,255','spiral','portal'],Exorcist:['Sacred rite','255,229,159','rune','cross'],'Gravity Mage':['Gravity well','184,145,255','orbit','orbit'],Druid:['Wild bloom','139,238,139','bloom','leaf'],Cyborg:['System overload','105,224,255','tech','circuit'],Illusionist:['Grand illusion','255,118,193','shard','card'],
  Necromancer:['Army of the Dead','110,255,170','rune','skull'],'Blood Reaper':['Crimson harvest','255,91,109','slash','scythe'],'Toxin Alchemist':['Plague Bloom','140,240,70','bloom','flask'],'Soul Stealer':['Soul siphon','204,146,255','spiral','soul'],'Shadow Monarch':['Shadow dominion','192,108,255','slash','crown'],Puppeteer:['Cut the strings','237,147,255','rune','strings'],'Void Empress':['Event Horizon','190,110,255','orbit','crown'],'Plague Doctor':['Black remedy','169,227,117','bloom','mask'],'Mad Scientist':['Voltaic experiment','101,245,236','tech','bolt'],'Demon Knight':['Hellfire oath','255,126,66','flame','sword'],'Gravity Weaver':['Crushing orbit','199,132,255','spiral','orbit'],'Mecha Tyrant':['Iron supremacy','255,103,83','tech','target'],'Chrono Thief':['Stolen seconds','255,214,111','tech','clock'],'Swarm Queen':['Royal swarm','229,221,98','bloom','stinger'],'Ice Archmage':['Winter crown','153,225,255','shard','snow'],'Deep Siren':['Abyssal call','115,239,225','wave','trident'],'Ash Shaman':['Ashen spirits','247,143,101','flame','skull'],'Soul Forger':['Soulforge','255,163,74','rays','hammer'],'Mirror Jester':['Shattered reflection','255,125,196','shard','mirror'],'Cyber Priest':['Digital absolution','111,242,226','tech','cross']
 };
 function ultOf(p){const u=ULT_STYLE[p.char];if(u)return u;const k=kitOf(p);if(k)return ULT_BY_KIT[k];let b='pow';for(const s in p.stats)if(p.stats[s]>p.stats[b])b=s;return ULT_BY_STAT[b]}
@@ -1282,7 +1324,7 @@ function updatePlayer(p,dt){
   /* A click uses a readied ability; that click is spent and does not attack until the button is let go. */
   if(!mouse.left)p.clickLatch=0;else if(p.abil&&!p.clickLatch){p.clickLatch=1;doUse()}
   /* Tap to attack; hold to charge, let go to fire. A beam keeps facing where it was fired. */
-  chargeStep(p,(mouse.left&&!p.clickLatch&&!p.abil)||(touchHold.slash&&!p.abil),dt);
+  chargeStep(p,(mouse.left&&!p.clickLatch&&!p.abil)||(touchHold.slash&&!p.abil),dt);if(p.burst)burstStep(p,dt);
   if(p.beam){p.face=p.beam.a;beamStep(p,dt)}
   tagOwned(p);
   /* Carry steps: walk over an item to lift it, walk into the drop zone to deliver it. */
@@ -1322,7 +1364,7 @@ function update(dt){
     if(wall(nx/T|0,(ny+22)/T|0)){s.life=0;if(s.from==='p'&&!s.small)explode(s);else impact(s);continue}
     s.x=nx;s.y=ny;trail(s,dt);
     if(s.from==='e'||s.from==='p'){for(const c of G.npcs){if(!c.dead&&!c.wounded&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+3){s.life=0;if(s.from==='p'&&!s.small)explode(s);else{impact(s);hitNpc(c,s.dmg,Math.atan2(s.vy,s.vx),s.from==='p')}break}}if(s.life<=0)continue}
-    if(s.from==='p'){let propHit=false;for(const c of G.props||[])if((c.kind==='egg'||c.kind==='scrapPart')&&!c.done&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+4){if(c.kind==='egg')eggHit(c);else scrapPartHit(c,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const q of G.players)if(q!==G.p&&q.webT>0&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+4){clearWeb(q,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const e of G.enemies){if(!e.dead&&!e.fleshDown&&!e.scrapDown&&!(s.hitTargets&&s.hitTargets.includes(e))&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){if(s.small){impact(s);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),90);if(s.pierce>0){G.fx.push({k:'pierceFx',x:s.x,y:s.y,a:Math.atan2(s.vy,s.vx),t:.22,m:.22});(s.hitTargets||(s.hitTargets=[])).push(e);s.pierce--}else s.life=0}else{s.life=0;explode(s)}break}}}
+    if(s.from==='p'){let propHit=false;for(const c of G.props||[])if((c.kind==='egg'||c.kind==='scrapPart')&&!c.done&&Math.hypot(c.x-s.x,c.y-22-s.y)<c.r+s.r+4){if(c.kind==='egg')eggHit(c);else scrapPartHit(c,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const q of G.players)if(q!==G.p&&q.webT>0&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+4){clearWeb(q,G.p);s.life=0;propHit=true;break}if(propHit)continue;for(const e of G.enemies){if(!e.dead&&!e.fleshDown&&!e.scrapDown&&!(s.hitTargets&&s.hitTargets.includes(e))&&Math.hypot(e.x-s.x,e.y-22-s.y)<e.r+s.r+4){if(s.small){impact(s);if(s.stag)stagger(e,Math.atan2(s.vy,s.vx),s.kb||90,false);hitEnemy(e,s.dmg,Math.atan2(s.vy,s.vx),s.kb||90);if(s.pierce>0){G.fx.push({k:'pierceFx',x:s.x,y:s.y,a:Math.atan2(s.vy,s.vx),t:.22,m:.22});(s.hitTargets||(s.hitTargets=[])).push(e);s.pierce--}else s.life=0}else{s.life=0;explode(s)}break}}}
     else for(const q of G.players){if(!(q.respawnT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;if(s.web&&!(q.inv>0||q.deadT>0)){q.webT=WEBBED.webTime;q.dashT=0;G.banner={t:2.5,a:'Webbed',b:G.players.length>1?'An ally can attack the web to free you':'The web breaks after 5 seconds'};text(q.x,q.y-70,'WEBBED','#e6e6c8',true)}hurtPlayer(s.dmg);impact(s);break}}}
   for(const s of G.shots)if(s.life<=0&&s.breaks&&!s.pooled){s.pooled=s.pooled||!s.pool;if(s.from==='p'){G.p=ownerOf(s);explode(s)}else{impact(s,s.blast);for(const q of G.players){G.p=q;if(Math.hypot(q.x-s.x,q.y-22-s.y)<s.blast+q.r)hurtPlayer(s.dmg)}}}
   G.shots=G.shots.filter(s=>s.life>0);G.enemies=G.enemies.filter(e=>!e.dead);

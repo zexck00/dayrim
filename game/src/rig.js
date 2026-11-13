@@ -44,7 +44,8 @@ Firefighter:C({hat:'fire',hc:'#2a2a30',o:'hivis',t:'#3a3428',t2:'#e8d84a',b:'#3a
 'Hero Shadow':C({s:'#7a5a40',hat:'hood',hc:'#2a2420',m:'bandana',mc:'#1a1614',o:'belt',t:'#2a2420',t2:'#4a2a28',b:'#241e1a',cp:'#3a2422',w:'knife'}),
 Prodigy:C({h:'#6a4228',hat:'band',hc:'#4a2a7a',o:'open',t:'#3a2448',t2:'#5a3090',b:'#2a2c3a',f:'#d8d4c8',w:'bat'}),
 Sage:C({h:'#a8a8a8',m:'glasses',o:'coat',t:'#3a3a30',t2:'#7a4a20',b:'#2a2a24',w:'book',wc:'#a050d8'}),
-Patriot:C({hat:'hood',hc:'#2f55c8',m:'domino',mc:'#c82a2a',o:'stripes',t:'#2f55c8',t2:WHT,b:'#2f55c8',f:'#c82a2a',w:'fist',wc:'#c8282a'}),
+/* Falcon EX (key Patriot): winged helm, glowing V visor, red falcon chest, red cape and scarf, wind gauntlets */
+Patriot:C({hat:'falcon',hc:'#2f6ad8',m:'falcon',mc:'#6fe8ff',o:'falcon',t:'#2f55c8',t2:'#d82a2a',b:'#2f55c8',f:'#d82a2a',cp:'#b81e2a',w:'wind',wc:'#6fe8ff'}),
 Phantom:C({s:'#2a6a50',hat:'hood',hc:'#2a5a48',m:'void',o:'robe',t:'#2f6a54',t2:'#6fe0a0',w:'orb',wc:'#6fe0a0'}),
 Pyromancer:C({s:'#15161e',hat:'hood',hc:'#7a2a1a',m:'void',o:'robe',t:'#3a2a24',t2:'#d9702a',w:'orb',wc:'#ff8a2a'}),
 Chronomancer:C({h:'#6a4228',m:'goggles',mc:'#3ac85a',o:'coat',t:'#20222c',t2:'#6a4a2a',b:'#20222c',w:'orb',wc:'#6fd6ff'}),
@@ -127,6 +128,7 @@ function drawWeaponSprite(g,id,hx,hy,a,wc,skin,atk){
   case'cane':{const e=H(hx,hy,a,18,2,'#7a5230');C(e[0],e[1],2,'#e8b82a')}break;
   case'shovel':{const e=H(hx,hy,a,17,3,'#7a5230','#9a7248');H(e[0],e[1],a,6,7,'#8a8f98','#c8ccd4')}break;
   case'cleaver':{L(hx,hy,a,4,3,'#5a4020');const e=at([hx,hy],4,a);H(e[0],e[1],a,10,8,'#c8d0d8','#ffffff')}break;
+  case'wind':P(hx-4,hy-4,9,9,'#2f55c8');P(hx-3,hy-3,7,7,'#d82a2a');P(hx-2,hy-2,5,5,wc||'#6fe8ff');P(hx-1,hy-1,2,2,'#ffffff');if(atk){P(hx+5,hy-1,4,1,'#c8f4ff');P(hx+4,hy-4,3,1,'#c8f4ff');P(hx+4,hy+3,3,1,'#c8f4ff')}break;
   case'fist':P(hx-3,hy-3,7,7,wc||skin);P(hx-3,hy-3,7,1,'rgba(255,255,255,.35)');break;
   case'medkit':P(hx-5,hy,12,9,WHT);P(hx-5,hy+7,12,2,'#c8c4b8');P(hx,hy+1,2,7,'#c8282a');P(hx-2,hy+3,6,3,'#c8282a');P(hx-1,hy-2,4,2,'#30323c');break;
   case'torch':{H(hx,hy,a,9,4,'#20222c','#4a4e58');const e=at([hx,hy],10,a);C(e[0],e[1],2,'#fff0a0')}break;
@@ -172,7 +174,7 @@ const FACES={
  'Hero Shadow':{ec:'#c8a888',br:.45,mo:'none'},
  Prodigy:{hair:'spiky',h:'#6a4228',ec:'#6a4a2a',br:.3,mo:'smirk'},
  Sage:{hair:'slick',h:'#a8a8a8',ec:'#4a5a6a',br:.25,bc:'#7a7a7a',mo:'flat',fx:['mustache']},
- Patriot:{ec:'#ffffff',br:.5,mo:'grit',fx:['star']},
+ Patriot:{br:.4,bc:'#d82a2a'},
  Phantom:{},
  Pyromancer:{},
  Chronomancer:{hair:'slick',h:'#6a4228',ec:'#3ac85a',br:.15,mo:'flat'},
@@ -207,7 +209,7 @@ const FACES={
 /* Visual changes so each sprite matches its card. The rules still use each character's own weapon. */
 const CARD_LOOK={
  Guardian:{off:'glowsword',wc:'#d9a22a'},Ranger:{m:null},Phantom:{mc:'#6ff0b0'},Pyromancer:{mc:'#ffc040'},Voidwalker:{mc:'#b070ff'},'Gravity Weaver':{mc:'#b070ff'},'Blood Reaper':{mc:'#ff3030'},Inventor:{m:'goggles'},Chronomancer:{wv:'watch'},'Gravity Mage':{wv:'blackhole'},Voidwalker:{wv:'blackhole'},
- Pyromancer:{wv:'fire'},Patriot:{hat:null,m:'hero',mc:'#2f55c8'},Druid:{hat:'antler',hc:'#3a5a28'},Cyborg:{m:'visor',mc:'#6fd6ff'},
+ Pyromancer:{wv:'fire'},Druid:{hat:'antler',hc:'#3a5a28'},Cyborg:{m:'visor',mc:'#6fd6ff'},
  Vigilante:{m:'domino',mc:'#15161e',fx2:'bandana'},'Hero Shadow':{m:'bandana',mc:'#1a1614'},Firefighter:{hat:'fire',hc:'#22222a'},
  Illusionist:{hb:'#a01818'},Necromancer:{wv:'skullstaff'},'Toxin Alchemist':{m:'gasmask'},'Plague Doctor':{wv:'flask',wc:'#3ac85a'},
  Puppeteer:{wv:'strings'},'Soul Stealer':{wv:'lantern',mc:'#d080ff'},'Chrono Thief':{m:'goggles',mc:'#3ac85a',fx2:'bandana',wv:'hourglass'},
@@ -241,7 +243,7 @@ function drawHead(g,P,E,sp,dir,cx,hy,blink){
   if(style==='wild'){E(cx,hy-1,16,6,hc);E(hx-4,hy+8,5,7,hc);if(!sd)E(hx+hw+3,hy+8,5,7,hc);P(cx-8,hy-5,4,3,hc);P(cx+4,hy-6,4,4,hc);P(cx-1,hy-7,3,3,hc)}
   if(style==='fins'){sides(10);P(hx-5,hy+6,5,3,hc);P(hx-7,hy+3,4,3,hc);if(!sd){P(hx+hw,hy+6,5,3,hc);P(hx+hw+3,hy+3,4,3,hc)}P(cx-1,hy-6,3,6,hc);P(cx-4,hy-4,2,4,hc);P(cx+3,hy-4,2,4,hc)}}
  /* face */
- const covered=sp.m==='void'||sp.m==='hero'||sp.m==='robot'||sp.m==='bug'||sp.m==='cyber'||helm||sp.m==='beak'||sp.m==='skull';
+ const covered=sp.m==='falcon'||sp.m==='void'||sp.m==='hero'||sp.m==='robot'||sp.m==='bug'||sp.m==='cyber'||helm||sp.m==='beak'||sp.m==='skull';
  const br=sp.br||0,bc=sp.bc||tint(hc,.7),ec=sp.ec||'#3a3a48';
  const eyesX=sd?[cx+5]:[cx-7,cx+4];
  if(!back&&!covered){
@@ -304,6 +306,15 @@ function drawHead(g,P,E,sp,dir,cx,hy,blink){
   case'spikecrown':P(hx+2,hy-2,hw-4,4,c);[-10,-5,0,5,10].forEach((a,i)=>P(cx+a-1,hy-(i===2?8:i%2?6:4),3,(i===2?8:i%2?6:4),c));if(!back){P(cx-1,hy-1,3,3,'#a050d8');P(cx,hy,1,1,'#f0d8ff')}break;
   case'jester':roundBox(P,hx-1,hy-3,hw+2,10,4,c);if(!back){P(hx+1,hy+5,hw-2,2,'#20222c')}P(hx-7,hy-7,8,5,c);P(hx-9,hy-3,4,4,c);P(hx+hw-1,hy-7,8,5,'#20222c');P(hx+hw+5,hy-3,4,4,'#20222c');E(hx-8,hy+2,2,2,'#e8c02a');E(hx+hw+7,hy+2,2,2,'#e8c02a');E(cx,hy-5,2,2,'#e8c02a');break;
   case'helm':{const tr=sp.t2||'#d9a22a';roundBox(P,hx-1,hy-2,hw+2,25,7,c);P(hx+3,hy,8,3,tint(c,1.35));if(back)break;P(cx-1+(sd?3:0),hy-4,3,16,tr);P(hx+3+(sd?4:0),ey-1,sd?14:hw-6,3,'#0a0a10');P(cx-1+(sd?5:0),ey-1,3,8,'#0a0a10');if(!sd){for(let i=0;i<9;i++){P(hx+2+i,hy+8+Math.round(i*.3),1,2,tr);P(hx+hw-3-i,hy+8+Math.round(i*.3),1,2,tr)}P(cx-7,ey,3,1,'#ffe08a');P(cx+4,ey,3,1,'#ffe08a')}else P(cx+6,ey,3,1,'#ffe08a');P(hx,hy+16,2,6,tr);if(!sd)P(hx+hw-2,hy+16,2,6,tr)}break;
+  case'falcon':{const tr=sp.t2||'#d82a2a',mc2=sp.mc||'#6fe8ff',wing=(s2)=>{for(let k=0;k<4;k++){const wx=s2<0?hx-3-k*2:hx+hw+k*2,top=hy+5-k*4;P(wx,top,3,13-k*2,k%2?'#e8f0ff':'#3f7ad8');P(wx,top,3,2,'#9fe0ff')}};
+   if(!sd||true)wing(1);if(!sd)wing(-1);
+   roundBox(P,hx-1,hy-2,hw+2,25,7,c);P(hx+3,hy,8,3,tint(c,1.35));P(cx-2+(sd?3:0),hy-3,4,11,tr);P(cx-1+(sd?3:0),hy-3,2,4,'#ffffff');
+   if(back)break;
+   P(hx+2+(sd?6:0),ey-4,sd?16:hw-4,9,'#0e1626');
+   for(let i=0;i<9;i++){if(!sd)P(hx+3+i,ey-2+Math.round(i*.45),2,2,mc2);P(hx+hw-5-i,ey-2+Math.round(i*.45),2,2,mc2)}
+   for(let i=0;i<8;i++){if(!sd)P(hx+2+i,ey-6+Math.round(i*.4),1,2,tr);P(hx+hw-3-i,ey-6+Math.round(i*.4),1,2,tr)}
+   P(hx+4+(sd?6:0),hy+18,sd?12:hw-8,4,'#d8e0ec');P(cx-1+(sd?4:0),hy+18,2,4,'#a8b4c8');
+   if(!sd)P(hx-1,ey-1,3,3,mc2);P(hx+hw-2,ey-1,3,3,mc2)}break;
   case'hood':case'antler':{if(sp.hat==='antler')for(const s2 of[-1,1]){if(sd&&s2<0)continue;const ax=s2<0?hx+3:hx+hw-4;P(ax,hy-8,2,8,'#6a4a2a');P(ax+s2*2,hy-8,2,4,'#6a4a2a');P(ax-s2*3,hy-7,3,2,'#6a4a2a');P(ax+s2*4,hy-5,3,2,'#6a4a2a')}
    if(back){roundBox(P,hx-2,hy-4,hw+4,hh+5,8,c);P(cx-3,hy-7,6,4,c);break}
    roundBox(P,hx-2,hy-4,hw+4,12,7,c);P(cx-3+o,hy-7,6,4,c);P(hx-2,hy+4,5,20,c);if(!sd)P(hx+hw-3,hy+4,5,20,c);else P(hx-2,hy+4,9,20,c);if(sp.m!=='void'&&sp.m!=='cyber')P(hx+3,hy+7,hw-6,3,tint(c,.55));P(hx,hy-3,10,2,tint(c,1.3));if(sp.m==='cyber'){P(hx-2,hy+4,1,20,sp.mc);P(hx+hw+1,hy+4,1,20,sp.mc);P(hx+2,hy-4,hw-4,1,sp.mc)}}break;
@@ -360,6 +371,7 @@ function buildFrame(sp,dir,anim,f){
    case'apron':if(front){P(x+3,y+2,w-6,11,sp.t2);P(bx-4,hip,9,7,sp.t2)}break;
    case'suit':if(front){P(mid-1,y,4,8,'#e8e4d8');P(mid,y+1,2,7,sp.t2==='#a01818'||sp.t2==='#7a3a8a'?sp.t2:'#a01818');P(mid-3,y+8,8,4,tint(sp.t,1.25))}break;
    case'sash':if(front)for(let i=0;i<12;i++)P(x+2+i,y+1+i,2,2,sp.t2);break;
+   case'falcon':P(x,y,w,h,sp.t);if(front){P(x+2,y+1,w-4,9,sp.t2);for(let i=0;i<5;i++){P(mid-4+i,y+2+i,2,1,'#f0f4ff');P(mid+3-i,y+2+i,2,1,'#f0f4ff')}P(mid-4,y-1,10,3,sp.t2)}P(x,y+11,w,2,'#e8ecf4');P(x-3,y-1,6,5,'#e8ecf4');P(x+w-3,y-1,6,5,'#e8ecf4');P(x-2,y,4,1,'#ffffff');break;
    case'robe':if(front){P(mid,y,3,4,sp.t2);if(sp.t2!==WHT)P(mid,y,3,h,sp.t2);P(x,y+h-2,w,2,tint(sp.t,.8))}break;
    case'dress':if(front)for(let i=0;i<5;i++)P(mid-2+(i%2?4:0),y+i*2,2,1,sp.t2);P(x+3,y,w-6,3,sp.t2);break;
    default:if(front)P(mid,y,3,2,skin);

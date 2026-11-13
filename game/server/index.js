@@ -15,7 +15,7 @@ const TICK=1/30,SNAP_EVERY=2,SAVE_EVERY=20000,ROOM_GRACE=30000;
 const profiles=new Profiles(path.join(DATA,'profiles'));
 /* Pictures and sounds the page links to. Names carry a content hash, so each file can be cached for good. */
 const ASSETS=process.env.ASSETS_DIR||path.join(path.dirname(PAGE),'assets');
-const ASSET_TYPES={'.webp':'image/webp','.m4a':'audio/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.js':'text/javascript; charset=utf-8'};
+const ASSET_TYPES={'.webp':'image/webp','.jpg':'image/jpeg','.mp4':'video/mp4','.m4a':'audio/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.js':'text/javascript; charset=utf-8'};
 const page=fs.readFileSync(PAGE),pageGz=zlib.gzipSync(page,{level:9}),pageTag='"'+crypto.createHash('sha1').update(page).digest('hex').slice(0,16)+'"';
 const rooms=new Map(),conns=new Set(),byToken=new Map(),perIp=new Map();
 
@@ -39,9 +39,12 @@ const server=http.createServer((req,res)=>{
     if(type&&/^[A-Za-z0-9_-]+\.[0-9a-f]{10}\.[a-z0-9]+$/.test(name)){
       return fs.stat(path.join(ASSETS,name),(err,st)=>{
         if(err||!st.isFile()){res.writeHead(404,{'Content-Type':'text/plain'});return res.end('Not found')}
-        const head={'Content-Type':type,'Content-Length':st.size,'Cache-Control':'public, max-age=31536000, immutable'};
-        res.writeHead(200,head);if(req.method==='HEAD')return res.end();
-        fs.createReadStream(path.join(ASSETS,name)).on('error',()=>res.destroy()).pipe(res);
+        const head={'Content-Type':type,'Content-Length':st.size,'Cache-Control':'public, max-age=31536000, immutable','Accept-Ranges':'bytes'};
+        /* Byte ranges, which browsers use to stream video (Safari will not play a video without them) */
+        const m=/^bytes=(\d*)-(\d*)$/.exec(req.headers.range||'');let start=0,end=st.size-1,code=200;
+        if(m&&(m[1]||m[2])){start=m[1]?+m[1]:Math.max(0,st.size-(+m[2]));end=m[1]&&m[2]?Math.min(+m[2],st.size-1):st.size-1;if(start>end||start>=st.size){res.writeHead(416,{'Content-Range':'bytes */'+st.size});return res.end()}code=206;head['Content-Range']='bytes '+start+'-'+end+'/'+st.size;head['Content-Length']=end-start+1}
+        res.writeHead(code,head);if(req.method==='HEAD')return res.end();
+        fs.createReadStream(path.join(ASSETS,name),{start,end}).on('error',()=>res.destroy()).pipe(res);
       });
     }
   }
