@@ -823,6 +823,22 @@ for(const [id,lob] of [['small',false],['moderate',true]]){const r=mk(),p=s.crea
 ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains to rank 100');
 {const r=mk(),p=s.createRoom(r,'Detective',null,'Rank');T.enter(r);p.sp=3;p.skills.power=15;p.actions.push({n:'skill',v:'power'});s.step(r,1/30);r.ev.length=0;ok(p.skills.power===16,'a skill trains past the old cap of 15');
  G().stage=3;const w=T.spawnMob(0,{x:p.x+30,y:p.y},false),st=T.spawnMob(0,{x:p.x+30,y:p.y},true);ok(T.enemyLevel(w)===T.recLevel(3)&&T.enemyLevel(st)===T.recLevel(3)+1,'enemy level follows the stage')}
+// Charge, beam, lunge and stagger.
+{const r=mk(),p=s.createRoom(r,'Sage',null,'Beam');T.enter(r);G().enemies=[];G().p=p;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const c=openEast();p.x=(c%78+.5)*40;p.y=((c/78|0)+.5)*40;const e=T.spawnMob(0,{x:p.x+60,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
+ p.input.ax=e.x;p.input.ay=e.y-22;p.mana=p.s.maxMana;p.input.l=true;run(1);ok(p.cd.slash>0&&!(p.chg>0),'a tap still attacks at once');
+ run(Math.ceil((T.CHARGE.delay+.1)*30));ok(p.chg>0&&p.chg<1,'holding the attack builds charge');
+ const x0=p.x;p.input.x=1;run(10);ok(p.x-x0<p.s.speed*10/30*.6,'charging slows movement');p.input.x=0;
+ run(Math.ceil(T.CHARGE.time*30));ok(p.chg===1,'charge tops out');
+ const hp=e.hp;p.input.l=false;run(1);ok(p.beam&&!(p.chg>0)&&!p.holdT,'letting go at full charge fires a beam');
+ const bx=p.x;p.input.x=1;run(5);ok(Math.abs(p.x-bx)<.01,'the beam holds the caster in place');p.input.x=0;
+ ok(e.redT>0,'a beam hit flashes the enemy red');run(20);ok(!p.beam&&hp-e.hp>T.basicHit(p)*T.BEAM.mul*3,'the beam burns several ticks along its line');
+ const far=T.spawnMob(0,{x:p.x,y:p.y+200},false);far.hp=far.maxHp=1e7;far.sp=0;far.stunT=30;const fh=far.hp;p.input.l=true;run(Math.ceil((T.CHARGE.delay+T.CHARGE.time+.1)*30));p.input.l=false;run(20);ok(far.hp===fh,'a beam only hits along its line');
+ p.input.l=true;run(Math.ceil((T.CHARGE.delay+.1)*30));p.input.l=false;run(1);ok(!p.beam,'letting go early does not fire a beam')}
+{const r=mk(),p=s.createRoom(r,'Firefighter',null,'Lunge');T.enter(r);G().enemies=[];G().p=p;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const c=openEast();p.x=(c%78+.5)*40;p.y=((c/78|0)+.5)*40;const e=T.spawnMob(0,{x:p.x+70,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
+ p.input.ax=e.x;p.input.ay=e.y-22;p.input.l=true;run(Math.ceil((T.CHARGE.delay+T.CHARGE.time+.1)*30));const hp=e.hp,x0=p.x;p.input.l=false;run(8);
+ ok(!p.beam&&p.x>x0+40,'a melee fighter lunges forward instead of firing a beam');ok(hp-e.hp>T.basicHit(p)*2&&(e.redT>0||e.kx),'the lunge hits and staggers the enemy in its path')}
 console.log('\n'+n+' checks passed');
 
 

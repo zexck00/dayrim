@@ -457,7 +457,7 @@ function objStep(dt){const o=G.obj;if(!o||o.done||G.story)return;const st=o.step
   if(!(st.met!==undefined?st.met:st.have>=st.need))return;o.i++;const next=o.steps[o.i];if(!next){o.done=true;openGate()}else onStepStart(next)}
 /* The wounded scout the Stage 1 objective asks for. Revived only by a player holding F beside them. */
 function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the scout and hold F or Revive nearby'};return c}
-function enterStage(n,keepKills){for(const q of G.players){q.abil=null;q.abilCast=null}
+function enterStage(n,keepKills){for(const q of G.players){q.abil=null;q.abilCast=null;q.beam=null;q.lungeT=0;q.chg=0;q.holdT=0}
   const kept=keepKills?G.killsStage:0;
   G.stage=n;G.seed=Math.random()*2147483647|0;G.w=G.story?storyMap(G.story.ci):genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
   const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
@@ -484,7 +484,7 @@ function rusherTarget(e){if(e.role!=='rusher'||!e.aware)return null;const a=G.pl
 function nearestPlayer(o){let b=null,bd=Infinity;for(const q of alivePlayers()){const d=dist(q,o);if(d<bd){bd=d;b=q}}return b}
 const ownerOf=s=>G.players.find(q=>q.id===s.pid)||G.players[0];
 function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=me}
-function playerDown(p,wind=false){sfx('downed');if(p.carry&&p.carry.kind==='canister'){p.carry.by=0;p.carry=null}p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
+function playerDown(p,wind=false){sfx('downed');p.beam=null;p.lungeT=0;p.chg=0;p.holdT=0;if(p.carry&&p.carry.kind==='canister'){p.carry.by=0;p.carry=null}p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
 function revive(p){sfx('revive_done');p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
 function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;if(G.boss&&G.arena){const a=Math.atan2(G.safe.y-G.arena.y,G.safe.x-G.arena.x);p.x=G.arena.x+Math.cos(a)*(G.arena.r-45);p.y=G.arena.y+Math.sin(a)*(G.arena.r-45)}p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
 function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;G.flesh=null;clearLanterns();clearBossEggs();clearSporeBoss();clearGhoul();clearVale();clearScrap();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
@@ -815,6 +815,36 @@ function shieldInterrupt(e){if(!e||e.dead||e.kind==='boss'||!((e.wind||0)>0||(e.
 const WEAPON_HEAL_RANGE=200,WEAPON_HEAL_SHARE=.02,WEAPON_HEAL_CD=1;
 /* From tier two, a healing weapon restores one nearby ally once per second. */
 function weaponHealAlly(p){if((p.weaponHealCd||0)>0)return false;const q=G.players.filter(q=>q!==p&&!(q.deadT>0||q.respawnT>0)&&q.hp<q.s.maxHp&&dist(q,p)<=WEAPON_HEAL_RANGE).sort((a,b)=>a.hp/a.s.maxHp-b.hp/b.s.maxHp)[0];if(!q)return false;const h=Math.min(q.s.maxHp-q.hp,q.s.maxHp*WEAPON_HEAL_SHARE);q.hp+=h;achievementUnlock(p,'healAlly');p.weaponHealCd=WEAPON_HEAL_CD;threatHeal(p,h);G.fx.push({k:'healLink',x:p.x,y:p.y-24,x2:q.x,y2:q.y-24,t:.32,m:.32});text(q.x,q.y-72,'+'+Math.round(h),'#6fdca0',true);burst(q.x,q.y-24,'#6fdca0',8,90);return true}
+/* ---------- Charge, beam and lunge (hold the attack button) ----------
+   A tap attacks at once, as before. Holding past CHARGE.delay gathers power (you move at CHARGE.slow speed).
+   Let go at CHARGE.min or more: casters and shooters fire a beam that locks them in place while it burns along
+   a line; melee fighters lunge through enemies. Damage is a share of the character's own basic hit, like abilities. */
+const CHARGE={delay:.28,time:.9,min:.6,slow:.45};
+const BEAM={dur:.5,tick:.1,len:560,w:20,mul:.9,knock:150,stop:.1,grow:.1};
+const LUNGE={t:.2,speed:640,reach:46,mul:3.2,knock:420};
+const STAGGER={red:.12,big:.18,dust:6};
+const beamUser=p=>!!kitOf(p)||['spell','shoot'].includes((WEAPONS[p.weapon]||{}).m);
+const chargePower=c=>.7+.3*clamp((c-CHARGE.min)/(1-CHARGE.min),0,1);
+const LUNGE_HIT=new WeakMap();
+/* How far a beam reaches from here before a wall stops it */
+function beamReach(p,a){for(let d=24;d<=BEAM.len;d+=8)if(wall((p.x+Math.cos(a)*d)/T|0,(p.y+Math.sin(a)*d)/T|0))return d-8;return BEAM.len}
+/* A heavy hit: a red flash, a shove, and a puff of dust. The first hit of a beam also freezes the moment. */
+function stagger(e,a,power,first){if(!e||e.dead)return;e.redT=first?STAGGER.big:STAGGER.red;e.kx=(e.kx||0)+Math.cos(a)*power*(e.kind==='boss'?.15:1);e.ky=(e.ky||0)+Math.sin(a)*power*(e.kind==='boss'?.15:1);burst(e.x,e.y-4,'#d8c8a0',STAGGER.dust,90)}
+function chargeStep(p,held,dt){
+  if(p.beam||p.lungeT>0){if(!held){p.holdT=0;p.chg=0}return}
+  if(p.carry||p.stunT>0||p.guard||p.dashT>0||p.ult){p.holdT=held?.001:0;p.chg=0;return}
+  if(held){if(!p.holdT)doAttack();p.holdT=(p.holdT||0)+dt;p.chg=p.holdT>CHARGE.delay?Math.min(1,(p.holdT-CHARGE.delay)/CHARGE.time):0;return}
+  const c=p.chg||0;p.holdT=0;p.chg=0;if(c>=CHARGE.min)releaseCharge(p,c)}
+function releaseCharge(p,c){const k=+chargePower(c).toFixed(2),a=p.face;p.mv=null;
+  if(beamUser(p)){p.beam={t:BEAM.dur,a:+a.toFixed(3),len:beamReach(p,a),k,tick:0,ext:0,hit:0,full:c>=.98?1:0,col:spellCol(p.char,'orb')};sfx('boom');shake(3)}
+  else{p.lungeT=LUNGE.t;p.lungeA=a;p.lungeK=k;LUNGE_HIT.set(p,new Set());p.atkT=.25;p.atkDur=.25;p.swing=.17;p.swingA=a;p.swingR=70;p.swingArc=1.2;sfx('dash');sfx('slash')}}
+function beamStep(p,dt){const b=p.beam;b.t-=dt;b.tick-=dt;b.ext=Math.min(1,b.ext+dt/BEAM.grow);
+  if(b.tick<=0){b.tick=BEAM.tick;const hx=p.x+Math.cos(b.a)*18,hy=p.y+Math.sin(b.a)*18,dmg=basicHit(p)*BEAM.mul*b.k;
+    for(const e of onLine(hx,hy,b.a,b.len*b.ext,BEAM.w)){const first=!b.hit;stagger(e,b.a,BEAM.knock,first);hitEnemy(e,dmg,b.a,BEAM.knock,true);if(first){b.hit=1;G.hitStop=Math.max(G.hitStop||0,BEAM.stop);if(b.full)G.flashT=.07}}}
+  if(b.t<=0)p.beam=null}
+function lungeStep(p,dt){p.lungeT-=dt;p.inv=Math.max(p.inv,.05);const a=p.lungeA,seen=LUNGE_HIT.get(p)||new Set();move(p,Math.cos(a)*LUNGE.speed*dt,Math.sin(a)*LUNGE.speed*dt);
+  for(const e of G.enemies.slice()){if(!foeAlive(e)||seen.has(e)||dist(e,p)>LUNGE.reach+e.r)continue;seen.add(e);stagger(e,a,LUNGE.knock,seen.size===1);hitEnemy(e,basicHit(p)*LUNGE.mul*(p.lungeK||1),a,LUNGE.knock,true)}
+  if(p.lungeT<=0){p.lungeT=0;LUNGE_HIT.delete(p)}}
 function doAttack(){
   if(G.p.carry||G.p.stunT>0)return;
   if(kitOf(G.p)){doMove('small');return}
@@ -1241,8 +1271,9 @@ function updatePlayer(p,dt){
   p.inv=Math.max(0,p.inv-dt);p.swing=Math.max(0,p.swing-dt);p.atkT=Math.max(0,p.atkT-dt);p.pickT=Math.max(0,p.pickT-dt);p.hitT=Math.max(0,p.hitT-dt);p.castT=Math.max(0,p.castT-dt);p.guard=(mouse.right||touchHold.guard)&&p.dashT<=0;
   if(p.fastT>0)p.fastT-=dt;if(p.magicT>0)p.magicT-=dt;
   p.mana=Math.min(p.s.maxMana,p.mana+p.s.regen*dt*chainBonus().mana);if(auraHas(p,'medic'))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.006*dt);
-  p.specT=Math.max(0,(p.specT||0)-dt);tickAbility(p,dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec();p.sprint=canSprint(p,v);if(p.sprint)p.mana=Math.max(0,p.mana-SPRINT.mana*dt);const drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*abilSpeed(p)*(p.sprint?SPRINT.mul:1)*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*chainBonus().spd;p.moving=!!(v.x||v.y);
-  if(p.dashT>0&&!(p.webT>0)){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
+  p.specT=Math.max(0,(p.specT||0)-dt);tickAbility(p,dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec();p.sprint=canSprint(p,v);if(p.sprint)p.mana=Math.max(0,p.mana-SPRINT.mana*dt);const drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*abilSpeed(p)*(p.sprint?SPRINT.mul:1)*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*(p.beam?0:p.chg>0?CHARGE.slow:1)*chainBonus().spd;p.moving=!!(v.x||v.y)&&!p.beam;
+  if(p.lungeT>0)lungeStep(p,dt);
+  else if(p.dashT>0&&!(p.webT>0)){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
   else{move(p,v.x*sp*dt,v.y*sp*dt);if(p.moving){p.walk+=dt*11*(p.sprint?SPRINT.stride:1);p.moveA=Math.atan2(v.y,v.x)}}
   if(drag)move(drag,p.x-ox,p.y-oy);
   /* Arena doors: a living boss keeps the party inside. */
@@ -1250,7 +1281,9 @@ function updatePlayer(p,dt){
   if(touchMode){const n=nearestEnemy();if(n)p.face=Math.atan2(n.y-p.y,n.x-p.x);else if(p.moving)p.face=Math.atan2(v.y,v.x)}else p.face=Math.atan2(mouse.y-(p.y-22),mouse.x-p.x);
   /* A click uses a readied ability; that click is spent and does not attack until the button is let go. */
   if(!mouse.left)p.clickLatch=0;else if(p.abil&&!p.clickLatch){p.clickLatch=1;doUse()}
-  if((mouse.left&&!p.clickLatch&&!p.abil)||(touchHold.slash&&!p.abil))doAttack();
+  /* Tap to attack; hold to charge, let go to fire. A beam keeps facing where it was fired. */
+  chargeStep(p,(mouse.left&&!p.clickLatch&&!p.abil)||(touchHold.slash&&!p.abil),dt);
+  if(p.beam){p.face=p.beam.a;beamStep(p,dt)}
   tagOwned(p);
   /* Carry steps: walk over an item to lift it, walk into the drop zone to deliver it. */
   if(G.obj){const st=G.obj.steps[G.obj.i];
@@ -1282,6 +1315,7 @@ function update(dt){
   for(const q of G.players){if(q.lx!==undefined&&dt>0){q.vx=(q.x-q.lx)/dt;q.vy=(q.y-q.ly)/dt}q.lx=q.x;q.ly=q.y}
   for(const e of G.enemies){G.p=threatTarget(e);e.targetId=G.p?(G.p.id||0):0;const a0=e.ang;updateEnemy(e,dt);enemyVoiceWatch(e);if(e.method==='shield'&&!e.dead)e.ang=turnTo(a0||0,e.ang||0,AI.guardTurn*dt);goreTrail(e,dt)}
   for(let i=0;i<G.enemies.length;i++){const a=G.enemies[i];if(a.dead||a.fleshDown||a.scrapDown||!a.aware)continue;for(let j=i+1;j<G.enemies.length;j++){const b=G.enemies[j];if(b.dead||b.fleshDown||b.scrapDown)continue;const dx=b.x-a.x,dy=b.y-a.y,m=a.r+b.r,d2=dx*dx+dy*dy;if(d2<m*m&&d2>.01){const d=Math.sqrt(d2),o=(m-d)*.5,ox=dx/d*o,oy=dy/d*o;if(a.kind!=='boss')move(a,-ox,-oy);if(b.kind!=='boss')move(b,ox,oy)}}}
+  for(const e of G.enemies)if(e.redT>0)e.redT=Math.max(0,e.redT-dt);if(G.flashT>0)G.flashT=Math.max(0,G.flashT-dt);
   G.enemies=G.enemies.filter(e=>!e.dead);
   for(const s of G.shots){s.life-=dt;const nx=s.x+s.vx*dt,ny=s.y+s.vy*dt;if(s.from==='p')G.p=ownerOf(s);
     if(s.lob){s.x=nx;s.y=ny;trail(s,dt);continue}

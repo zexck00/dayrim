@@ -6,6 +6,18 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### Added
 
+**Characters**
+- Every hero, villain, minion and townsperson is redrawn in a full chibi style: big heads (about 44% of the body), large eyes with a coloured iris and shine, eyebrows that show each character's mood, short legs, and a three-tone shading pass. Sprites are drawn on a 64 px grid at the same size on screen.
+- Each of the 40 heroes and villains now matches the head design on its character card: the Detective's fedora and stubble, the Guardian's gold T-visor helm, the Necromancer's glowing eyes in a void hood, the Toxin Alchemist's quiff and gas mask, the Shadow Monarch's widow's peak and high collar, and so on.
+- Weapons are oversized and chunky, and long weapons are held upright between attacks. Several characters hold what their card shows: a pocket watch, black-hole orbs, a skull staff, puppet strings, a soul lantern, a holo screen, an hourglass.
+- Walking squashes a little as each foot lands, and idle characters breathe more slowly.
+
+**Charge, beam and stagger**
+- Hold the attack button to charge: a ball of your character's colour grows at your hands while you move slowly, and a ring turns once it is strong enough. A tap still attacks at once.
+- Let go at 60% charge or more. Casters, shooters and the three kit villains fire a beam that burns along a line for half a second and holds you in place. Melee fighters lunge forward through every enemy in the way instead.
+- Heavy hits stagger enemies: a red flash, a shove and a puff of dust. A beam's first hit freezes the moment briefly, and a fully charged beam darkens the screen for one frame (not with reduced motion).
+- Beams and lunges are a share of your own basic hit, so they grow with your weapon, level and skills. They work online too.
+
 **Story mode**
 - A game modes screen opens after Play Game: Story, Quick Game and Warzone (not open yet) in a sidebar on the left, with the developers, the version and a Changelog button below. Quick Game is the stage game as before.
 - Story mode, "The Ten Hours": three chapters, one for each of the first three bosses. Pick one of the first five heroes or the first five villains. The story is told differently for each side: heroes win the stolen Hours back, villains keep them.
