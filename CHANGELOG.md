@@ -19,6 +19,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Each of the 40 heroes and villains now matches the head design on its character card: the Detective's fedora and stubble, the Guardian's gold T-visor helm, the Necromancer's glowing eyes in a void hood, the Toxin Alchemist's quiff and gas mask, the Shadow Monarch's widow's peak and high collar, and so on.
 - Weapons are oversized and chunky, and long weapons are held upright between attacks. Several characters hold what their card shows: a pocket watch, black-hole orbs, a skull staff, puppet strings, a soul lantern, a holo screen, an hourglass.
 - Walking squashes a little as each foot lands, and idle characters breathe more slowly.
+- Male and female characters now look and move differently. Men are broad-shouldered with thick arms, wide-set legs and big boots, a squarer head with a strong jaw, heavy straight brows and narrower eyes; they walk with a heavier bounce and a wider stride and lean hard into their attacks. Women are slimmer, with narrower shoulders, a waist and hips, slim arms and legs, a rounder face, bigger lashed eyes, thin arched brows, coloured lips and a light blush, and long hair (spilling out of the hood for the Ranger and Druid); they walk with a lighter step and a hip sway, and attack quicker and lighter on their feet. Female: the Ranger, Druid, Void Empress, Swarm Queen and Deep Siren, and townspeople such as the Nurse, Elder and Singer.
 
 **Charge, beam and stagger**
 - Hold the attack button to charge: a ball of your character's colour grows at your hands while you move slowly, and a ring turns once it is strong enough. A tap still attacks at once.
@@ -32,13 +33,23 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 - Heavy hits stagger enemies: a red flash, a shove and a puff of dust. A beam's first hit freezes the moment briefly, and a fully charged beam darkens the screen for one frame (not with reduced motion).
 - Beams and lunges are a share of your own basic hit, so they grow with your weapon, level and skills. They work online too.
 
+**Necromancer, Toxin Alchemist and Void Empress**
+- The three villains now play like every other character: a basic attack with their own spell weapon, hold to charge, an ability on C and a passive. Their old small, moderate and special moves are gone for players (the enemy versions still use them). They count as casters, so their mana comes back twice as fast.
+- Necromancer. Charged: a green soul beam. Ability, Soul Swarm: five homing skulls that hunt the nearest enemies. Passive, Grave Harvest: every kill restores 3% of your life and 6 mana.
+- Toxin Alchemist. Charged: Flask Barrage, three lobbed flasks that burst into poison pools. Ability, Plague Rain: six flasks rain around the aimed spot, each leaving a poison pool. Passive, Toxic Aura: enemies near you take poison damage every second (shown as a faint green ring).
+- Void Empress. Charged: one slow, heavy void orb that bursts wide. Ability, Singularity: a black hole that drags enemies in and hurts them, then collapses in a blast. Passive, Gravity Well: her spell hits slow enemies by 40% for 1.5 seconds.
+
 **Falcon EX**
 - The Patriot is now Falcon EX, with new card art: a full chibi winged helm with a glowing V visor and red brow plates, a red falcon chest emblem, red cape and scarf, and glowing wind gauntlets.
 - He fights as a Marksman: his basic attack fires wind crescents from his Gale Gauntlets, and holding it charges a beam.
 - New passive, Tailwind: 10% faster movement and 5% more critical chance.
 - New ability, Falcon Dive: lock onto the enemy nearest your aim, then fly up and dive three times at full power, each dive slamming the ground and staggering everything around it.
 
-- New title poster on the title screen and as the modes screen background.
+- New title poster on the title screen and as the modes screen background. It fills the whole window on wide screens; phones held upright show all of it over a blurred copy.
+- The title music starts by itself when the browser allows it; otherwise the first touch, click or key starts it.
+- Hovering Play Game makes it grow a little and light up gold with a steady glow, its side lines reaching out.
+- The modes menu is restyled for a medieval adventure: carved stone plaques with a bronze inlay, chamfered corners and diamond studs, lettered in the same stone-textured serif as the DAYRIM logo, on a leather-and-stone sidebar with a bronze edge. The credits line is gone; a small version plaque opens the changelog.
+- The menu pages share that medieval look: the Story, Changelog and Warzone panels, the character select (cards, the character box, stat bars) and the in-game menu use leather-and-stone panels with a bronze inlay, stone-lettered Cinzel headings, crimson plaques for the main action and dark stone plaques for the rest.
 - The modes menu sits on the right on wide screens and phones held sideways, with the open mode's panel beside it on the left. On phones held upright it stays stacked at the bottom.
 - The modes screen shows the Story poster (the heroes at rest in their hall) or the Quick Game poster (the villains in their lair) when you point at or open that mode.
 - Pointing at Warzone loads and plays its trailer behind the menu; moving away stops it. The trailer plays once, holds the last frame, and plays again after 10 minutes; pointing at Warzone again restarts it and the wait. Clicking Warzone opens a "coming soon" note with a sound toggle, and on touch screens it also starts the trailer. Warzone is not playable yet.

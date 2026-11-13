@@ -220,16 +220,21 @@ const CARD_LOOK={
 /* Apply the card looks and faces to the specs above */
 for(const n in FACES)Object.assign(SPECS[n],FACES[n]);
 for(const n in CARD_LOOK)Object.assign(SPECS[n],CARD_LOOK[n]);
+/* Body type. Female characters (from their cards) get a slimmer build, a rounder face with bigger lashed eyes, a hip-swaying walk
+   and lighter attacks; everyone else gets the broad male build, square jaw, heavy brows, wider stride and harder swings. */
+const FEMALE=['Ranger','Druid','Void Empress','Swarm Queen','Deep Siren','Nurse','Reporter','Shopper','Barista','Elder','Singer','Patron','Medium','Sister','Baker','Mechanic','Paramedic','Apothecary'];
+for(const n of FEMALE)if(SPECS[n])SPECS[n].sx='f';
 function roundBox(P,x,y,w,h,r,c){for(let i=0;i<h;i++){const d=i<r?r-i:i>=h-r?i-(h-r)+1:0,cut=d?Math.round(r-Math.sqrt(Math.max(0,r*r-(r-d)*(r-d)))):0;P(x+cut,y+i,w-cut*2,1,c)}}
 function tint(hex,f){if(!hex||hex[0]!=='#'||hex.length!==7)return hex;const n=parseInt(hex.slice(1),16),k=v=>Math.max(0,Math.min(255,f>1?v+(255-v)*(f-1):v*f))|0;return'#'+((1<<24)+(k(n>>16)<<16)+(k((n>>8)&255)<<8)+k(n&255)).toString(16).slice(1)}
 /* The head: skin, hair, face, mask, then hat or hood. cx: head centre, hy: top of the head. */
 function drawHead(g,P,E,sp,dir,cx,hy,blink){
- const sd=dir===2,back=dir===1,s=sp.s,hc=sp.h,hx=cx-13+(sd?1:0),hw=26,hh=23,fc=sd?cx+4:cx,ey=hy+14;
- const style=sp.hair||(sp.hs==='bald'?'bald':sp.hs==='long'?'long':sp.hs==='bun'?'bun':sp.hs==='pony'?'pony':sp.hs==='bob'?'bob':sp.hs==='wild'?'wild':'fringe');
+ const F=sp.sx==='f',sd=dir===2,back=dir===1,s=sp.s,hc=sp.h,hw=F?24:26,hx=cx-hw/2+(sd?1:0),hh=23,fc=sd?cx+4:cx,ey=hy+14;
+ const style=sp.hair||(F&&!sp.hs?'long':sp.hs==='bald'?'bald':sp.hs==='long'?'long':sp.hs==='bun'?'bun':sp.hs==='pony'?'pony':sp.hs==='bob'?'bob':sp.hs==='wild'?'wild':'fringe');
  const hood=sp.hat==='hood'||sp.hat==='antler',helm=sp.hat==='helm'||sp.hat==='hornhelm'||sp.hat==='riot',fx=sp.fx||[];
  if(fx.includes('collar')&&!back){const r='#15161e';if(sd){P(hx-3,hy+8,5,17,r);P(hx-1,hy+10,2,15,'#a01828')}else{P(hx-6,hy+7,6,19,r);P(hx+hw,hy+7,6,19,r);P(hx-4,hy+9,3,17,'#a01828');P(hx+hw+1,hy+9,3,17,'#a01828');P(hx-7,hy+5,3,3,r);P(hx+hw+4,hy+5,3,3,r)}}
  if(style==='long'&&!hood&&!helm){if(back)P(hx-1,hy+4,hw+2,26,hc);else if(sd)P(hx-1,hy+5,9,24,hc);else{P(hx-3,hy+6,6,24,hc);P(hx+hw-3,hy+6,6,24,hc)}}
- roundBox(P,hx,hy,hw,hh,6,s);
+ /* female: round face and soft chin; male: squarer head with a broad jaw */
+ roundBox(P,hx,hy,hw,hh,F?8:5,s);if(!F&&!back){P(hx+3,hy+hh-3,hw-6,2,s);P(hx+6,hy+hh-1,hw-12,1,tint(s,.78))}
  if(!sd&&!back)P(fc,hy+17,1,1,tint(s,.82));
  /* hair */
  const bangs=()=>{for(let i=0;i<4;i++)P(hx+3+i*5,hy+5,4,2+(i%2),hc)};
@@ -249,10 +254,15 @@ function drawHead(g,P,E,sp,dir,cx,hy,blink){
  if(!back&&!covered){
   if(fx.includes('hatshade'))P(hx+1,hy+8,hw-2,3,tint(s,.85));
   if(fx.includes('eyeshade'))eyesX.forEach(x=>P(x-2,ey+4,7,1,tint(s,.82)));
-  if(sp.m!=='goggles'&&sp.m!=='gasmask'&&sp.m!=='visor'&&sp.m!=='shade')eyesX.forEach(x=>{if(blink){P(x-1,ey,5,1,'#14141c');return}P(x-1,ey-3,5,7,'#14141c');P(x,ey-2,3,5,ec);P(x+1,ey,2,2,tint(ec,1.4));P(x,ey-2,1,2,'#ffffff');if(!sd)P(x+2,ey+1,1,1,'#ffffff');if(fx.includes('lashes')){P(x-2,ey-3,1,1,'#14141c');P(x+4,ey-3,1,1,'#14141c')}});
-  const brow=(x,inR)=>{for(let i=0;i<6;i++){const k=inR?i:5-i;P(x+i,ey-6+Math.round(br*k),1,2,bc)}};
+  if(sp.m!=='goggles'&&sp.m!=='gasmask'&&sp.m!=='visor'&&sp.m!=='shade')eyesX.forEach(x=>{if(blink){P(x-1,ey,5,1,'#14141c');return}
+   if(F){P(x-1,ey-4,5,8,'#14141c');P(x,ey-3,3,6,ec);P(x+1,ey,2,2,tint(ec,1.4));P(x,ey-3,1,2,'#ffffff');if(!sd)P(x+2,ey+1,1,1,'#ffffff');P(x-2,ey-4,1,1,'#14141c');P(x+4,ey-4,1,1,'#14141c');P(x-2,ey-5,1,1,'#14141c');P(x+4,ey-5,1,1,'#14141c')}
+   else{P(x-1,ey-2,5,6,'#14141c');P(x,ey-1,3,4,ec);P(x+1,ey+1,2,1,tint(ec,1.4));P(x,ey-1,1,1,'#ffffff')}
+   if(fx.includes('lashes')){P(x-2,ey-3,1,1,'#14141c');P(x+4,ey-3,1,1,'#14141c')}});
+  if(F&&!sd&&!fx.includes('blush')&&sp.s!=='#15201c'){P(cx-10,ey+5,3,1,'#f0a0a8');P(cx+7,ey+5,3,1,'#f0a0a8')}
+  /* male: thick, straight-set brows; female: thin, arched */
+  const brow=F?(x,inR)=>{for(let i=0;i<6;i++){const k=inR?i:5-i;P(x+i,ey-7+Math.round(br*k)-(i===2||i===3?1:0),1,1,bc)}}:(x,inR)=>{for(let i=0;i<7;i++){const k=inR?i:6-i;P(x+i-1,ey-6+Math.round(br*k),1,2,bc)}};
   if(sp.m!=='visor')if(sd)brow(cx+3,false);else{brow(cx-9,true);brow(cx+3,false)}
-  const my=hy+20,mx=sd?cx+6:cx,mo=sp.mo||'flat',lip=tint(s,.55);
+  const my=hy+20,mx=sd?cx+6:cx,mo=sp.mo||'flat',lip=F?'#c25a66':tint(s,.55);
   if(sp.m!=='gasmask'&&sp.m!=='bandana'&&fx2(sp)!=='bandana'){
    if(mo==='smile'){P(mx-2,my,4,1,sp.ec==='#a050d8'?'#8a2a6a':lip);P(mx-3,my-1,1,1,lip);P(mx+2,my-1,1,1,lip)}
    else if(mo==='smirk'){P(mx-2,my,4,1,lip);P(mx+2,my-1,1,1,lip)}
@@ -317,7 +327,9 @@ function drawHead(g,P,E,sp,dir,cx,hy,blink){
    if(!sd)P(hx-1,ey-1,3,3,mc2);P(hx+hw-2,ey-1,3,3,mc2)}break;
   case'hood':case'antler':{if(sp.hat==='antler')for(const s2 of[-1,1]){if(sd&&s2<0)continue;const ax=s2<0?hx+3:hx+hw-4;P(ax,hy-8,2,8,'#6a4a2a');P(ax+s2*2,hy-8,2,4,'#6a4a2a');P(ax-s2*3,hy-7,3,2,'#6a4a2a');P(ax+s2*4,hy-5,3,2,'#6a4a2a')}
    if(back){roundBox(P,hx-2,hy-4,hw+4,hh+5,8,c);P(cx-3,hy-7,6,4,c);break}
-   roundBox(P,hx-2,hy-4,hw+4,12,7,c);P(cx-3+o,hy-7,6,4,c);P(hx-2,hy+4,5,20,c);if(!sd)P(hx+hw-3,hy+4,5,20,c);else P(hx-2,hy+4,9,20,c);if(sp.m!=='void'&&sp.m!=='cyber')P(hx+3,hy+7,hw-6,3,tint(c,.55));P(hx,hy-3,10,2,tint(c,1.3));if(sp.m==='cyber'){P(hx-2,hy+4,1,20,sp.mc);P(hx+hw+1,hy+4,1,20,sp.mc);P(hx+2,hy-4,hw-4,1,sp.mc)}}break;
+   roundBox(P,hx-2,hy-4,hw+4,12,7,c);P(cx-3+o,hy-7,6,4,c);P(hx-2,hy+4,5,20,c);if(!sd)P(hx+hw-3,hy+4,5,20,c);else P(hx-2,hy+4,9,20,c);if(sp.m!=='void'&&sp.m!=='cyber')P(hx+3,hy+7,hw-6,3,tint(c,.55));P(hx,hy-3,10,2,tint(c,1.3));if(sp.m==='cyber'){P(hx-2,hy+4,1,20,sp.mc);P(hx+hw+1,hy+4,1,20,sp.mc);P(hx+2,hy-4,hw-4,1,sp.mc)}
+   /* long hair spilling out of the hood for female characters */
+   if(F&&sp.m!=='void'&&sp.m!=='cyber'){const h2=sp.h||'#3a2a20';P(hx+2,hy+8,3,17,h2);if(!sd)P(hx+hw-5,hy+8,3,17,h2);P(hx+2,hy+24,2,2,tint(h2,1.3));if(!sd)P(hx+hw-4,hy+24,2,2,tint(h2,1.3))}}break;
  }
 }
 const fx2=sp=>sp.fx2||null;
@@ -326,16 +338,18 @@ function buildFrame(sp,dir,anim,f){
  const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h)};
  const L=(x,y,a,len,w,c)=>{g.fillStyle=c;for(let i=0;i<=len;i++)g.fillRect(Math.round(x+Math.cos(a)*i-w/2),Math.round(y+Math.sin(a)*i-w/2),w,w);return[x+Math.cos(a)*len,y+Math.sin(a)*len]};
  const E=(cx,cy,rx,ry,c)=>{g.fillStyle=c;for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++)if((x*x)/(rx*rx)+(y*y)/(ry*ry)<=1)g.fillRect(Math.round(cx+x),Math.round(cy+y),1,1)};
- const ranged=RANGED_W.has(sp.w),fx=sp.fx||[];
+ const ranged=RANGED_W.has(sp.w),fx=sp.fx||[],F=sp.sx==='f',lw=F?4:6;
  let by=0,lean=0,lDx=0,rDx=0,lUp=0,rUp=0,aF=Math.PI/2+.08,aB=Math.PI/2-.08,tuck=false,glint=false,atk=false,blink=false;
  /* Walk and run are sampled from one smooth stride cycle; run has a longer stride, higher knees, a deeper bounce and a forward lean. */
- if(anim==='walk'||anim==='run'){const run=anim==='run',ph=f/WALK_N*TAU,sw=Math.cos(ph),up=Math.sin(ph),stride=run?7:5,lift=run?4:2,arm=run?.95:.55;
-  by=Math.abs(up)>.5?(run?-2:-1):0;if(run&&dir===2)lean=3;
+ if(anim==='walk'||anim==='run'){const run=anim==='run',ph=f/WALK_N*TAU,sw=Math.cos(ph),up=Math.sin(ph),stride=(run?7:5)+(F?-1:1),lift=run?4:2,arm=(run?.95:.55)*(F?.75:1.15);
+  /* male: heavier bounce; female: lighter step and a side-to-side hip sway */
+  by=Math.abs(up)>.5?(run?-2:F?-1:-2):0;if(run&&dir===2)lean=3;if(F&&dir!==2)lean=Math.round(Math.sin(ph)*1.5);
   if(dir===2){lDx=stride*sw;rDx=-stride*sw;lUp=Math.round(Math.max(0,-up)*lift);rUp=Math.round(Math.max(0,up)*lift)}else{lUp=Math.round(Math.max(0,up)*(lift+1));rUp=Math.round(Math.max(0,-up)*(lift+1))}
   aF=Math.PI/2+arm*sw;aB=Math.PI/2-arm*sw}
  else if(anim==='idle'){by=f?1:0}
  /* Attack: wind-up, swing, impact, follow-through, recover */
- else if(anim==='attack'){lean=[-2,-1,3,3,1][f];lDx=[2,4,5,4,2][f];rDx=-lDx;atk=f>=1&&f<=3;
+ /* male swings lean in harder and plant wider; female attacks are quicker and lighter on the feet */
+ else if(anim==='attack'){lean=F?[-1,0,2,2,1][f]:[-3,-2,4,4,1][f];lDx=F?[1,2,3,2,1][f]:[3,5,6,5,3][f];rDx=-lDx;atk=f>=1&&f<=3;
   if(sp.w==='fist')aF=[2.8,2.6,-.05,.25,.9][f];else if(ranged||sp.w==='shield')aF=[.7,.5,-.05,.08,.4][f];else aF=[-2.6,-2.3,-.5,.75,1.1][f];aB=Math.PI/2+.5}
  else if(anim==='pickup'){if(f<2){by=8;aF=1.2;aB=1.9;lDx=2;rDx=-2}else{aF=-1.45;aB=Math.PI/2;glint=true}}
  else if(anim==='hit'){lean=-3;aF=-.6;aB=-2.5;lDx=2;rDx=-2;blink=true}
@@ -348,14 +362,16 @@ function buildFrame(sp,dir,anim,f){
  else if(anim==='beam'){lean=2;by=f?0:-1;lDx=4;rDx=-4;if(dir===2){aF=-.05;aB=.08}else if(dir===0){aF=1.85;aB=1.3}else{aF=-1.85;aB=-1.3}}
  /* Head 8..31, torso 31..44, short legs 44..56, boots 56..60: about 44% head, with room above for hats and horns */
  const bx=32+lean,ty=31+by,hip=44+by,hy=8+by,skin=sp.s;
- const leg=(hx,dx,up,col)=>{const fx2=hx+dx,fy=56-up;for(let y=hip;y<=fy;y++){const k=(y-hip)/Math.max(1,fy-hip);P(hx+(fx2-hx)*k-2.5,y,5,1,col)}P(dir===2?fx2-2:fx2-3,fy,dir===2?8:6,4,sp.f)};
+ const leg=(hx,dx,up,col)=>{const fx2=hx+dx,fy=56-up;for(let y=hip;y<=fy;y++){const k=(y-hip)/Math.max(1,fy-hip);P(hx+(fx2-hx)*k-lw/2,y,lw,1,col)}const bw=(dir===2?8:6)+(F?-1:1);P(dir===2?fx2-2:fx2-bw/2,fy,bw,4,sp.f)};
  const longBody=sp.o==='robe'||sp.o==='dress';
  const legs=()=>{if(tuck){P(bx-7,hip,14,8,sp.b||sp.t);P(bx-8,hip+7,6,3,sp.f);P(bx+2,hip+7,6,3,sp.f);return}
-  const c=sp.b||sp.t,ll=dir===2?bx:bx-4,rl=dir===2?bx:bx+4;
+  const c=sp.b||sp.t,gap=F?3:5,ll=dir===2?bx:bx-gap,rl=dir===2?bx:bx+gap;
   if(sp.o==='robe'){for(let y=hip;y<59;y++){const w=16+Math.round((y-hip)*.35);P(bx-w/2,y,w,1,sp.t)}if(sp.t2&&dir!==1)P(bx-1,hip,3,20,sp.t2===WHT?sp.t:sp.t2);P(bx-7+lDx*.3,58,6,3,sp.f);P(bx+1+rDx*.3,58,6,3,sp.f);return}
   if(dir===2){leg(rl,rDx,rUp,tint(c,.72));leg(ll,lDx,lUp,c)}else{leg(ll,lDx,lUp,c);leg(rl,rDx,rUp,c)}
+  if(F&&sp.o!=='dress'&&dir!==2)P(bx-8,hip-1,16,4,c);
   if(sp.o==='dress'){for(let y=hip;y<hip+13;y++){const w=16+Math.round((y-hip)*.7);P(bx-w/2,y,w,1,sp.t)}}};
- const torso=()=>{const w=dir===2?14:18,x=bx-(dir===2?7:9),y=ty,h=13;P(x,y,w,h,sp.t);
+ /* male: broad shoulders and chest; female: narrower shoulders and a waist */
+ const torso=()=>{const w=dir===2?(F?12:15):(F?15:20),x=bx-Math.floor(w/2),y=ty,h=13;if(F){P(x,y,w,8,sp.t);P(x+1,y+8,w-2,h-8,sp.t)}else P(x,y,w,h,sp.t);
   const front=dir!==1,mid=bx-1;
   switch(sp.o){
    case'coat':P(x-(dir===2?0:1),y+5,w+(dir===2?0:2),h+4,sp.t);if(front&&dir!==2){P(mid-1,y,4,h+4,sp.t2);P(mid,y,2,4,'#e8e4d8');P(mid,y+2,2,6,'#7a2a24');P(x+2,y,3,8,tint(sp.t,.82));P(x+w-5,y,3,8,tint(sp.t,.82))}break;
@@ -378,10 +394,10 @@ function buildFrame(sp,dir,anim,f){
   }
   if(fx.includes('fur')){P(x-3,y-1,w+6,4,'#b8b4a8');P(x-2,y+2,4,2,'#d8d4c8');P(x+w-2,y+2,4,2,'#d8d4c8')}
   if(sp.pack&&dir!==0)P(dir===2?x-4:x+1,y+1,dir===2?5:12,10,sp.pack)};
- const sh=dir===2?[bx+1,ty+2]:[bx+10,ty+2],sh2=dir===2?[bx-2,ty+2]:[bx-10,ty+2];
+ const sw2=F?8:11,sh=dir===2?[bx+1,ty+2]:[bx+sw2,ty+2],sh2=dir===2?[bx-2,ty+2]:[bx-sw2,ty+2],aw=F?4:6;
  const sleeve=sp.t,hand=skin==='#15161e'||skin==='#10101c'||skin==='#14142a'||skin==='#10121a'||skin==='#15201c'?'#c8d0c8':skin;
- const armFar=()=>{const e=L(sh2[0],sh2[1],aB,10,5,tint(sleeve,dir===2?.8:1));P(e[0]-2,e[1]-1,4,4,hand);if(sp.w==='fist')P(e[0]-3,e[1]-2,7,7,sp.wc||hand);if(sp.off)drawWeaponSprite(g,sp.off,e[0],e[1],aB,sp.wc,hand,atk);else if(sp.w==='bow'&&!atk&&dir!==2)drawWeaponSprite(g,'bow',e[0],e[1],dir===1?0:Math.PI,sp.wc,hand,false)};
- const armNear=()=>{const e=L(sh[0],sh[1],aF,11,5,sleeve);P(e[0]-2,e[1]-1,4,4,hand);const wv=sp.wv||sp.w;if(wv&&!(wv==='bow'&&!atk&&dir!==2))drawWeaponSprite(g,wv,e[0],e[1],aF,sp.wc,hand,atk);if(glint){P(e[0]-4,e[1]-9,8,8,'#fff6c0');P(e[0]-1,e[1]-13,2,16,'#ffffff');P(e[0]-7,e[1]-6,14,2,'#ffffff')}};
+ const armFar=()=>{const e=L(sh2[0],sh2[1],aB,10,aw,tint(sleeve,dir===2?.8:1));P(e[0]-2,e[1]-1,4,4,hand);if(sp.w==='fist')P(e[0]-3,e[1]-2,7,7,sp.wc||hand);if(sp.off)drawWeaponSprite(g,sp.off,e[0],e[1],aB,sp.wc,hand,atk);else if(sp.w==='bow'&&!atk&&dir!==2)drawWeaponSprite(g,'bow',e[0],e[1],dir===1?0:Math.PI,sp.wc,hand,false)};
+ const armNear=()=>{const e=L(sh[0],sh[1],aF,11,aw,sleeve);P(e[0]-2,e[1]-1,4,4,hand);const wv=sp.wv||sp.w;if(wv&&!(wv==='bow'&&!atk&&dir!==2))drawWeaponSprite(g,wv,e[0],e[1],aF,sp.wc,hand,atk);if(glint){P(e[0]-4,e[1]-9,8,8,'#fff6c0');P(e[0]-1,e[1]-13,2,16,'#ffffff');P(e[0]-7,e[1]-6,14,2,'#ffffff')}};
  const cape=()=>{if(!sp.cp)return;if(dir===0){P(bx-11,ty+1,22,24,sp.cp);P(bx-11,ty+23,4,3,sp.cp);P(bx+7,ty+23,4,3,sp.cp)}else if(dir===2)P(bx-11,ty+1,7,25,sp.cp)};
  const wings=()=>{if(!fx.includes('wings'))return;const wc='rgba(220,230,240,.75)';for(const s of dir===2?[-1]:[-1,1]){for(let i=0;i<14;i++){const w=Math.round(9*Math.sin(i/14*Math.PI));P(s<0?bx-8-i:bx+8+i-1,ty-6+i*.4,1,w+4,wc)}}};
  const quiver=()=>{if(sp.w!=='bow')return;if(dir===0||dir===1){P(bx+5,ty-9,6,17,'#6a4a2a');P(bx+5,ty-9,6,2,'#4a3018');[0,2,4].forEach(i=>{P(bx+5+i,ty-13,1,4,'#8a6a40');P(bx+4+i,ty-15,3,3,'#e8e4d8')})}else{P(bx-9,ty-6,5,15,'#6a4a2a');[0,2].forEach(i=>P(bx-9+i,ty-10,3,3,'#e8e4d8'))}};
