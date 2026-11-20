@@ -185,11 +185,11 @@ function drawStoryWorld(inView){
 }
 /* Name plate and a marker over the people you can talk to */
 function drawStoryNpcTag(c){
-  const S=G.story,want=S&&S.rt&&S.rt.k==='talk'&&S.rt.npc===c,y=c.y-70;ctx.textAlign='center';ctx.font='700 11px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.strokeText(c.name,c.x,y);ctx.fillStyle=want?'#ffe9a0':'#d8e4f4';ctx.fillText(c.name,c.x,y);
-  if(want){const b=reduced?0:Math.sin(G.t*4)*3;ctx.font='700 22px "Pixelify Sans",monospace';ctx.lineWidth=4;ctx.strokeText('!',c.x,y-16+b);ctx.fillStyle='#ffd23c';ctx.fillText('!',c.x,y-16+b)}
+  const S=G.story,want=S&&S.rt&&S.rt.k==='talk'&&S.rt.npc===c,y=c.y-70;ctx.textAlign='center';ctx.font='700 11px "Alegreya",serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(20,13,7,.9)';ctx.strokeText(c.name,c.x,y);ctx.fillStyle=want?'#ffe9a0':'#d8e4f4';ctx.fillText(c.name,c.x,y);
+  if(want){const b=reduced?0:Math.sin(G.t*4)*3;ctx.font='700 22px "Cinzel",serif';ctx.lineWidth=4;ctx.strokeText('!',c.x,y-16+b);ctx.fillStyle='#ffd23c';ctx.fillText('!',c.x,y-16+b)}
 }
 
-function drawStoryEliteTag(e){const y=e.y-78;ctx.textAlign='center';ctx.font='700 13px "Pixelify Sans",monospace';ctx.lineWidth=4;ctx.strokeStyle='rgba(5,10,20,.92)';ctx.strokeText(e.title,e.x,y);ctx.fillStyle='#ff9a8a';ctx.fillText(e.title,e.x,y)}
+function drawStoryEliteTag(e){const y=e.y-78;ctx.textAlign='center';ctx.font='700 13px "Cinzel",serif';ctx.lineWidth=4;ctx.strokeStyle='rgba(20,13,7,.92)';ctx.strokeText(e.title,e.x,y);ctx.fillStyle='#ff9a8a';ctx.fillText(e.title,e.x,y)}
 
 /* ---------- Game modes screen ---------- */
 let storyTab='hero',storyPickChar={hero:STORY_PICK.hero[0],villain:STORY_PICK.villain[0]},storyWipe=false;

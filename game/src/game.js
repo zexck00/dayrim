@@ -1,5 +1,7 @@
 /* Dayrim: city action RPG. Rules, world and rendering. Atlas data is injected by tools/build.py */
-const TAU=Math.PI*2,T=40,PXB=15,PYB=13,MW=78,MH=55;
+const TAU=Math.PI*2,T=40,PXB=15,PYB=13;
+/* Map size in tiles. Stages are 156×110; story chapters keep their hand-made 78×55 (setMapSize switches). */
+const STAGE_MW=156,STAGE_MH=110,STORY_MW=78,STORY_MH=55;let MW=STAGE_MW,MH=STAGE_MH;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rnd=(a=1,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a);
@@ -9,7 +11,8 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const idx=(x,y)=>y*MW+x;
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const canvas=$('c'),ctx=canvas.getContext('2d');
+/* ctx is swapped while Pixel 3D draws its layers; ctx0 is always the screen */
+const canvas=$('c'),ctx0=canvas.getContext('2d');let ctx=ctx0;
 const ATLAS=new Image();ATLAS.src=ATLAS_URL;
 document.documentElement.style.setProperty('--atlas','url("'+ATLAS_URL+'")');
 const artStyle=(n,bw,bh)=>{if(CARD_ART[n]){const w=Math.min(bw,bh*.75);return 'width:'+Math.round(w)+'px;height:'+Math.round(w/.75)+'px;background:url('+CARD_ART[n]+') center/100% 100% no-repeat'}const a=CAST[n],k=Math.min(bw/a.w,bh/a.h);return 'width:'+Math.round(a.w*k)+'px;height:'+Math.round(a.h*k)+'px;background-size:'+AW*k+'px '+AH*k+'px;background-position:'+(-a.x*k)+'px '+(-a.y*k)+'px'};
@@ -242,6 +245,7 @@ const BOSS_RATE=e=>BOSS_STYLE[STYLE_OF[e.art]].rate*.75;
 let G,W=800,H=500,dpr=1,zoom=1,touchMode=false,chosen='Detective',selTab='hero',menuTab='skills',confirmNew=false,swarmPick=false;
 const keys=new Set(),mouse={x:0,y:0,left:false,right:false},joy={on:false,id:null,ox:0,oy:0,dx:0,dy:0},touchHold={slash:false};
 const mini=document.createElement('canvas');mini.width=MW;mini.height=MH;const mctx=mini.getContext('2d');
+function setMapSize(w,h){MW=w;MH=h;if(mini.width!==w||mini.height!==h){mini.width=w;mini.height=h}}
 try{const c=localStorage.getItem('dayrim-char');if(c&&archKey(c)){chosen=c;selTab=factionOf(c)}}catch(e){}
 function readSave(){try{const r=JSON.parse(localStorage.getItem('dayrim-save')||'null');return r&&archKey(r.char)?r:null}catch(e){return null}}
 /* Starting a Swarm run builds a character and enters a stage, which would normally save. Hold saves until the run is marked. */
@@ -273,47 +277,74 @@ const salvage=it=>Math.max(2,Math.round(it.score*.25*(it.rar+1)));
 /* ---------- City generation ---------- */
 /* Procedural wilderness: cellular-automata cliffs, carved clearings joined by winding trails, then scattered vegetation. */
 function genCity(){
-  const N=MW*MH,map=new Uint8Array(N),ground=new Uint8Array(N),deco=new Uint8Array(N),bld=new Uint8Array(N),props=[],lamps=[];
+  /* K scales routes, branches and counts with the map (1 at 78 tiles wide, 2 at 156) */
+  const N=MW*MH,K=MW/78,map=new Uint8Array(N),ground=new Uint8Array(N),deco=new Uint8Array(N),bld=new Uint8Array(N),props=[],lamps=[];
   for(let i=0;i<N;i++){map[i]=Math.random()<.43?1:0;deco[i]=Math.random()*255}
   const border=(x,y)=>x<2||y<2||x>=MW-2||y>=MH-2;
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(border(x,y))map[idx(x,y)]=1;
   for(let it=0;it<4;it++){const n=map.slice();for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++){let c=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)c+=map[idx(x+a,y+b)];n[idx(x,y)]=(c>=5||border(x,y))?1:0}map.set(n)}
-  const open=(x,y,g)=>{if(x>1&&y>1&&x<MW-2&&y<MH-2){map[idx(x,y)]=0;if(g!==undefined)ground[idx(x,y)]=g}};
+  const open=(x,y,g)=>{if(x>1&&y>1&&x<MW-2&&y<MH-2){map[idx(x,y)]=0;if(g!==undefined&&ground[idx(x,y)]!==9)ground[idx(x,y)]=g}};
   const blob=(cx,cy,rx,ry,g)=>{for(let y=cy-ry-2;y<=cy+ry+2;y++)for(let x=cx-rx-2;x<=cx+rx+2;x++){const d=((x-cx)/rx)**2+((y-cy)/ry)**2+rnd(-.12,.12);if(d<1)open(x,y,g)}};
-  const trail=(ax,ay,bx,by)=>{let x=ax,y=ay,s=0;while((Math.abs(x-bx)>1||Math.abs(y-by)>1)&&s++<500){if(Math.random()<.7){if(Math.abs(x-bx)>Math.abs(y-by))x+=Math.sign(bx-x);else y+=Math.sign(by-y)}else{x+=irnd(-1,1);y+=irnd(-1,1)}x=clamp(x,3,MW-4);y=clamp(y,3,MH-4);for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(Math.abs(a)+Math.abs(b)<2||Math.random()<.5)open(x+a,y+b,1)}};
-  const s={x:irnd(8,11),y:irnd(9,MH-10)},e={x:irnd(MW-12,MW-9),y:irnd(9,MH-10)},nodes=[s];const mids=irnd(4,6);
-  for(let i=0;i<mids;i++)nodes.push({x:Math.round(s.x+(e.x-s.x)*(i+1)/(mids+1)+rnd(-4,4)),y:irnd(7,MH-8)});nodes.push(e);
-  nodes.forEach((n,i)=>{const start=i===0,last=i===nodes.length-1;blob(n.x,n.y,start||last?8:irnd(4,7),start||last?6:irnd(3,5),start||last?2:undefined);if(i)trail(nodes[i-1].x,nodes[i-1].y,n.x,n.y)});
-  for(let i=0;i<4;i++){const a=pick(nodes),bx=clamp(a.x+irnd(-14,14),6,MW-7),by=clamp(a.y+irnd(-12,12),6,MH-7);blob(bx,by,irnd(3,5),irnd(2,4));trail(a.x,a.y,bx,by)}
+  const trail=(ax,ay,bx,by)=>{let x=ax,y=ay,s=0;while((Math.abs(x-bx)>1||Math.abs(y-by)>1)&&s++<500*K*K){if(Math.random()<.7){if(Math.abs(x-bx)>Math.abs(y-by))x+=Math.sign(bx-x);else y+=Math.sign(by-y)}else{x+=irnd(-1,1);y+=irnd(-1,1)}x=clamp(x,3,MW-4);y=clamp(y,3,MH-4);for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(Math.abs(a)+Math.abs(b)<2||Math.random()<.5)open(x+a,y+b,1)}};
+  const s={x:irnd(8,11),y:irnd(9,MH-10)},e={x:irnd(MW-12,MW-9),y:irnd(9,MH-10)},nodes=[s];const mids=Math.round(irnd(4,6)*K);
+  for(let i=0;i<mids;i++)nodes.push({x:Math.round(s.x+(e.x-s.x)*(i+1)/(mids+1)+rnd(-4,4)*K),y:irnd(7,MH-8)});nodes.push(e);
+  /* A three-tile cart road along the main route; clearings and the race track keep their own ground */
+  const road=(ax,ay,bx,by)=>{let x=ax,y=ay,n=0;while((x!==bx||y!==by)&&n++<4000){const dx=bx-x,dy=by-y;if(Math.random()<Math.abs(dx)/(Math.abs(dx)+Math.abs(dy)))x+=Math.sign(dx);else y+=Math.sign(dy);
+    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const tx=x+a,ty=y+b;if(tx>1&&ty>1&&tx<MW-2&&ty<MH-2){const i=idx(tx,ty);map[i]=0;if(ground[i]!==2&&ground[i]!==9)ground[i]=1}}}};
+  /* The race track: an oval ring of track tiles (ground 9) in open country, carved before the routes so trails and
+     roads cross it without breaking the ring; joined to the nearest node by road */
+  let track=null;
+  if(K>1){const rx=14,ry=8;for(let t=0;t<200&&!track;t++){const cx=irnd(rx+4,MW-rx-5),cy=irnd(ry+4,MH-ry-5);if(Math.hypot(cx-s.x,cy-s.y)<rx+16||Math.hypot(cx-e.x,cy-e.y)<rx+16)continue;
+    for(let y=cy-ry-2;y<=cy+ry+2;y++)for(let x=cx-rx-2;x<=cx+rx+2;x++){const i=idx(x,y),d=((x-cx)/rx)**2+((y-cy)/ry)**2,di=((x-cx)/(rx-3))**2+((y-cy)/(ry-3))**2;if(d<=1.25){map[i]=0;ground[i]=d<=1&&di>1?9:0}}
+    const near=nodes.reduce((b,n)=>Math.hypot(n.x-cx,n.y-cy)<Math.hypot(b.x-cx,b.y-cy)?n:b,nodes[1]||s);road(near.x,near.y,cx+(near.x<cx?-rx-2:rx+2),cy);
+    const pts=[];for(let k=0;k<6;k++){const a=k/6*TAU;pts.push({x:(cx+Math.cos(a)*(rx-1.5)+.5)*T,y:(cy+Math.sin(a)*(ry-1.5)+.5)*T})}
+    track={cx:(cx+.5)*T,cy:(cy+.5)*T,rx:(rx-1.5)*T,ry:(ry-1.5)*T,pts,start:pts[0],tx:cx,ty:cy,trx:rx,try:ry}}}
+  nodes.forEach((n,i)=>{const start=i===0,last=i===nodes.length-1;blob(n.x,n.y,start||last?8:irnd(4,7+Math.round(K)),start||last?6:irnd(3,5+Math.round(K)),start||last?2:undefined);if(i)trail(nodes[i-1].x,nodes[i-1].y,n.x,n.y)});
+  for(let i=0;i<Math.round(4*K*K*.75);i++){const a=pick(nodes),bx=clamp(a.x+irnd(-14,14)*K,6,MW-7),by=clamp(a.y+irnd(-12,12)*K,6,MH-7);blob(bx,by,irnd(3,6),irnd(2,5));trail(a.x,a.y,bx,by)}
+  if(K>1)for(let i=1;i<nodes.length;i++)road(nodes[i-1].x,nodes[i-1].y,nodes[i].x,nodes[i].y);
+  /* A winding river across the middle of the map; roads cross it on bridges */
+  if(K>1){let x=irnd(Math.round(MW*.38),Math.round(MW*.62));const w=irnd(2,3),ph=rnd(0,TAU);
+    for(let y=2;y<MH-2;y++){x=clamp(Math.round(x+Math.sin(y*.18+ph)*.9+rnd(-.5,.5)),6,MW-7);
+      for(let a=-w;a<=w;a++){const tx=x+a,i=idx(tx,y);if(track&&Math.abs(tx-track.tx)<=track.trx+3&&Math.abs(y-track.ty)<=track.try+3)continue;if(ground[i]===2)continue;map[i]=0;ground[i]=ground[i]===1?4:3}}}
   // keep only ground that can be walked to from the start
   const seen=new Uint8Array(N),q=[idx(s.x,s.y)];seen[q[0]]=1;for(let h=0;h<q.length;h++){const c=q[h];for(const n of[c-1,c+1,c-MW,c+MW])if(n>=0&&n<N&&!map[n]&&!seen[n]){seen[n]=1;q.push(n)}}
   for(let i=0;i<N;i++)if(!seen[i])map[i]=1;
   // shallow ponds you can wade through; where the path crosses one, it becomes a wooden bridge
-  const pond=(cx,cy,rx,ry)=>{for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const i=idx(x,y),d=((x-cx)/rx)**2+((y-cy)/ry)**2+rnd(-.15,.15);if(d<1&&!map[i]&&ground[i]!==2)ground[i]=ground[i]===1?4:3}};
-  {const mids=nodes.slice(1,-1);if(mids.length){const n=pick(mids);pond(n.x,n.y,irnd(2,4),irnd(2,3))}
-   for(let k=irnd(1,3);k>0;k--){for(let t=0;t<30;t++){const x=irnd(4,MW-5),y=irnd(4,MH-5);if(!map[idx(x,y)]&&Math.hypot(x-s.x,y-s.y)>10&&Math.hypot(x-e.x,y-e.y)>10){pond(x,y,irnd(2,4),irnd(1,3));break}}}}
+  const pond=(cx,cy,rx,ry)=>{for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const i=idx(x,y),d=((x-cx)/rx)**2+((y-cy)/ry)**2+rnd(-.15,.15);if(d<1&&!map[i]&&ground[i]!==2&&ground[i]!==9)ground[i]=ground[i]===1||ground[i]===4?4:3}};
+  {const mids=nodes.slice(1,-1);for(let k=Math.min(mids.length,Math.round(K));k>0;k--){const n=pick(mids);pond(n.x,n.y,irnd(2,3+Math.round(K)),irnd(2,2+Math.round(K)))}
+   for(let k=Math.round(irnd(1,3)*K*1.5);k>0;k--){for(let t=0;t<30;t++){const x=irnd(4,MW-5),y=irnd(4,MH-5);if(!map[idx(x,y)]&&Math.hypot(x-s.x,y-s.y)>10&&Math.hypot(x-e.x,y-e.y)>10){pond(x,y,irnd(2,3+Math.round(K*1.5)),irnd(1,2+Math.round(K)));break}}}}
   const biome=BIOMES[STAGES[((G&&G.stage)||1)-1].biome];
   const put=(t,x,y,v)=>props.push({t,x:(x+rnd(.1,.9))*T,y:(y+rnd(.1,.9))*T,v});
   for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++){const i=idx(x,y),d=deco[i],nearWall=map[idx(x-1,y)]||map[idx(x+1,y)]||map[idx(x,y-1)]||map[idx(x,y+1)];
-    if(map[i]){if(map[idx(x,y+1)]===1&&d<34)put('tree',x,y,d%3);continue}
+    if(map[i]){if(map[idx(x,y+1)]===1&&d<(K>1?62:34))put('tree',x,y,d%3);continue}
     if(ground[i])continue;
-    if(nearWall&&d<54)put(d%3?'shrub':'tree',x,y,d%3);
+    if(nearWall&&d<(K>1?72:54))put(d%3?'shrub':'tree',x,y,d%3);
     else if(d<26)put('shrub',x,y,d%3);else if(d<58)put('grass',x,y,d%3);else if(d<70)put('fern',x,y,d%3);else if(d<78)put('flower',x,y,d%3);else if(d<82)put('mush',x,y,d%3);else if(d<86)put('rock',x,y,d%3)}
   // ruins and braziers in the two main clearings, torches along the way
   [s,e].forEach(n=>{for(let a=0;a<6;a++){const an=a/6*TAU,px=n.x+Math.cos(an)*6.5,py=n.y+Math.sin(an)*4.5;if(!map[idx(Math.round(px),Math.round(py))]){const l={t:a%2?'ruin':'lamp',x:(px+.5)*T,y:(py+.5)*T,v:a%3};props.push(l);if(!(a%2))lamps.push(l)}}});
   nodes.slice(1,-1).forEach(n=>{if(!map[idx(n.x,n.y)]){const l={t:'lamp',x:(n.x+.5)*T,y:(n.y+.5)*T};props.push(l);lamps.push(l)}});
+  /* Groves: stands of trees on open ground, so the bigger stages have real woods to cross */
+  for(let k=K>1?Math.round(6*K):0;k>0;k--){for(let t=0;t<30;t++){const cx=irnd(5,MW-6),cy=irnd(4,MH-5);if(map[idx(cx,cy)]||ground[idx(cx,cy)]||Math.hypot(cx-s.x,cy-s.y)<12||Math.hypot(cx-e.x,cy-e.y)<10)continue;
+    const r=irnd(3,5);for(let y=cy-r;y<=cy+r;y++)for(let x=cx-r;x<=cx+r;x++){if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const i=idx(x,y);if(map[i]||ground[i]||Math.hypot(x-cx,y-cy)>r+rnd(-.6,.6)||deco[i]%5>2)continue;put('tree',x,y,deco[i]%3)}break}}
   /* Stage rule: patches of tall thicket on plain ground. Seeded like the rest of the map, so client and server agree. */
   const thicket=new Uint8Array(N),cover=[];
-  for(let k=STAGES[((G&&G.stage)||1)-1].thicket||0;k>0;k--){let c=null;for(let t=0;t<30&&!c;t++){const x=irnd(5,MW-6),y=irnd(4,MH-5);if(!map[idx(x,y)]&&!ground[idx(x,y)]&&Math.hypot(x-s.x,y-s.y)>10&&Math.hypot(x-e.x,y-e.y)>8)c={x,y}}if(!c)continue;
+  for(let k=Math.round((STAGES[((G&&G.stage)||1)-1].thicket||0)*K);k>0;k--){let c=null;for(let t=0;t<30&&!c;t++){const x=irnd(5,MW-6),y=irnd(4,MH-5);if(!map[idx(x,y)]&&!ground[idx(x,y)]&&Math.hypot(x-s.x,y-s.y)>10&&Math.hypot(x-e.x,y-e.y)>8)c={x,y}}if(!c)continue;
     const rx=irnd(3,5),ry=irnd(2,4);for(let y=Math.max(2,c.y-ry-1);y<=Math.min(MH-3,c.y+ry+1);y++)for(let x=Math.max(2,c.x-rx-1);x<=Math.min(MW-3,c.x+rx+1);x++){const i=idx(x,y);if(map[i]||ground[i]||thicket[i]||((x-c.x)/rx)**2+((y-c.y)/ry)**2+rnd(-.2,.2)>=1)continue;thicket[i]=1;cover.push(i);for(let b=0;b<3;b++)put('thicket',x,y,b)}}
   /* Stage rule (C-24): dry islands that stay above the rising water. */
   const isle=new Uint8Array(N);
-  for(let k=STAGES[((G&&G.stage)||1)-1].islands||0;k>0;k--){let c=null;for(let t=0;t<30&&!c;t++){const x=irnd(5,MW-6),y=irnd(4,MH-5);if(!map[idx(x,y)]&&!ground[idx(x,y)])c={x,y}}if(!c)continue;
+  for(let k=Math.round((STAGES[((G&&G.stage)||1)-1].islands||0)*K);k>0;k--){let c=null;for(let t=0;t<30&&!c;t++){const x=irnd(5,MW-6),y=irnd(4,MH-5);if(!map[idx(x,y)]&&!ground[idx(x,y)])c={x,y}}if(!c)continue;
     const rx=irnd(2,3),ry=irnd(1,2);for(let y=Math.max(2,c.y-ry);y<=Math.min(MH-3,c.y+ry);y++)for(let x=Math.max(2,c.x-rx);x<=Math.min(MW-3,c.x+rx);x++){const i=idx(x,y);if(!map[i]&&!ground[i]&&((x-c.x)/rx)**2+((y-c.y)/ry)**2<=1.1)isle[i]=1}}
   const openList=[];for(let i=0;i<N;i++)if(!map[i])openList.push(i);
   mctx.fillStyle='#14181c';mctx.fillRect(0,0,MW,MH);
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=idx(x,y);if(map[i])continue;mctx.fillStyle=thicket[i]?biome.leaf[0]:ground[i]===1?biome.d:ground[i]===2?'#a89a7c':ground[i]===3?biome.wa[1]:ground[i]===4?'#7a5a38':biome.g[0];mctx.fillRect(x,y,1,1)}
-  return{map,ground,deco,bld,props,lamps,thicket,cover,isle:STAGES[((G&&G.stage)||1)-1].islands?isle:null,cars:[],open:openList,biome,start:{x:s.x-6,y:s.y-5},boss:{x:e.x-6,y:e.y-5},flow:new Int16Array(N),queue:new Int32Array(N)};
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=idx(x,y);if(map[i])continue;mctx.fillStyle=thicket[i]?biome.leaf[0]:ground[i]===1?biome.d:ground[i]===2?'#a89a7c':ground[i]===3?biome.wa[1]:ground[i]===4?'#7a5a38':ground[i]===9?'#c8b088':biome.g[0];mctx.fillRect(x,y,1,1)}
+  /* Vehicle spots, seeded with the map: carts on the road by the nodes, boats on open water, a racer on the track */
+  const vspots=[];if(K>1){const stg=(G&&G.stage)||1,cart=stg===8?'mine':'cart';
+    nodes.slice(1,-1).forEach((n,k)=>{if(k%2)return;for(let r=0;r<5;r++)for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){if(vspots.some(v=>v.n===k))break;const i=idx(n.x+a,n.y+b);if(!map[i]&&ground[i]===1){const nx=nodes[k+2]||e;vspots.push({kind:k%4?cart:'wagon',x:(n.x+a+.5)*T,y:(n.y+b+.5)*T,a:Math.atan2(nx.y-n.y,nx.x-n.x),n:k})}}});
+    const wet=[];for(let i=0;i<N;i++)if(!map[i]&&ground[i]===3&&[i-1,i+1,i-MW,i+MW].every(j=>!map[j]&&ground[j]===3))wet.push(i);
+    for(let k=0;k<4&&wet.length;k++){const i=wet[Math.floor(Math.random()*wet.length)],x=(i%MW+.5)*T,y=((i/MW|0)+.5)*T;if(vspots.every(v=>Math.hypot(v.x-x,v.y-y)>300))vspots.push({kind:'boat',x,y,a:Math.random()*TAU})}
+    if(track)vspots.push({kind:'racer',x:track.start.x,y:track.start.y,a:Math.PI/2})}
+  vspots.forEach(v=>delete v.n);
+  return{track,vspots,map,ground,deco,bld,props,lamps,thicket,cover,isle:STAGES[((G&&G.stage)||1)-1].islands?isle:null,cars:[],open:openList,biome,start:{x:s.x-6,y:s.y-5},boss:{x:e.x-6,y:e.y-5},flow:new Int16Array(N),queue:new Int32Array(N)};
 }
 const wall=(tx,ty)=>tx<0||ty<0||tx>=MW||ty>=MH||G.w.map[idx(tx,ty)]===1;
 function blocked(x,y,r){const a=r*.8;return wall((x-a)/T|0,(y-a)/T|0)||wall((x+a)/T|0,(y-a)/T|0)||wall((x-a)/T|0,(y+a)/T|0)||wall((x+a)/T|0,(y+a)/T|0)}
@@ -349,7 +380,7 @@ function recalc(){
 function baseState(demo){return{mode:'title',demo,mp:false,players:[],t:0,hour:6,p:null,enemies:[],npcs:[],shots:[],loot:[],fx:[],texts:[],log:[],shake:0,flowT:0,banner:null,boss:null,spawnT:0,killsStage:0,stage:1,w:null,quipT:3,props:[],chain:{n:0,t:0,tier:null},link:null}}
 /* Same seed gives the same map, so the server only has to send a number to draw the whole stage */
 function genCitySeeded(seed){const real=Math.random;let a=seed|0;Math.random=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};try{return genCity()}finally{Math.random=real}}
-function placeInStage(n){const w=G.w;G.safe={x:(w.start.x+6)*T,y:(w.start.y+5)*T};G.gate={x:(w.boss.x+6)*T,y:(w.boss.y+5)*T,open:G.killsStage>=quota(n)}}
+function placeInStage(n){const w=G.w;G.safe={x:(w.start.x+6)*T,y:(w.start.y+5)*T};G.gate={x:(w.boss.x+6)*T,y:(w.boss.y+5)*T,open:G.killsStage>=quota(n)};spawnVehicles()}
 /* ---------- Stage objectives (C-18) ----------
    A stage is a short list of steps, run in order. Each step counts up to its `need`; when the last
    step is done the boss gate opens and that becomes the checkpoint. Stages that have no steps yet
@@ -461,7 +492,7 @@ function objStep(dt){const o=G.obj;if(!o||o.done||G.story)return;const st=o.step
 function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the scout and hold F or Revive nearby'};return c}
 function enterStage(n,keepKills){for(const q of G.players){q.abil=null;q.abilCast=null;q.beam=null;q.burst=null;q.lungeT=0;q.chg=0;q.holdT=0}
   const kept=keepKills?G.killsStage:0;
-  G.stage=n;G.seed=Math.random()*2147483647|0;G.w=G.story?storyMap(G.story.ci):genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
+  G.stage=n;G.seed=Math.random()*2147483647|0;if(G.story)setMapSize(STORY_MW,STORY_MH);else setMapSize(STAGE_MW,STAGE_MH);G.w=G.story?storyMap(G.story.ci):genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
   const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
   G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0;q.boonPending=false;q.weaponHealCd=0;q.teamCd=0;q.breakReady=0;q.tauntGuard=0;q.mendT=0;q.deadT=0;q.respawnT=0;q.reviveHold=0;q.reviveTarget=0;q.reviveProgress=0;q.carry=null;clearEncounterStatus(q);if(!keepKills){q.secondWind=false;q.downCount=0;q.lastDown=-100}});
   G.cam={x:G.p.x,y:G.p.y};
@@ -810,7 +841,7 @@ function gainXp(x){const p=G.p;p.xp+=x;let up=false;
   while(p.xp>=xpNeed(p.lvl)){p.xp-=xpNeed(p.lvl);p.lvl++;p.sp++;up=true}
   if(up){if(!G.swarm)achievementCheck(p);recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana;sfx('level');burst(p.x,p.y-20,'#e8c95c',28,220);text(p.x,p.y-74,'Level '+p.lvl,'#e8c95c',true);addLog('Level '+p.lvl+'. Skill point earned (press T).');writeSave()}}
 function hurtPlayer(d){
-  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor*(1-Math.min(90,(p.rust||0)+(p.fieldRust||0))/100)+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*abilGuard(p)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;beaconHit(p);p.hitT=.18;shake(5);sfx('hurt');
+  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor*(1-Math.min(90,(p.rust||0)+(p.fieldRust||0))/100)+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*(p.veh?.7:1)*abilGuard(p)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;beaconHit(p);p.hitT=.18;shake(5);sfx('hurt');
   text(p.x,p.y-72,'-'+Math.round(v),'#ff6a5f');burst(p.x,p.y-20,'#f0805c',8);if(!p.guard)bleed(p.x,p.y-24,rnd(-1,1),rnd(-1,1),clamp(Math.round(v/Math.max(1,p.s.maxHp)*60),3,22));
   if(p.hp<=0){p.hp=0;if(G.players.length===1&&!p.secondWind){p.secondWind=true;playerDown(p,true);writeSave()}else if(G.mp)playerDown(p);else if(G.swarm){p.hp=0;endSwarm()}else{p.gold=Math.floor(p.gold*.8);writeSave();setMode('dead')}}
 }
@@ -1333,8 +1364,37 @@ function stageCleared(){const n=G.stage;for(const p of G.players){if(n>=p.maxSta
 
 /* ---------- Update ---------- */
 function nearestEnemy(){let b=null,bd=380;for(const e of G.enemies){if(e.dead||e.fleshDown||e.scrapDown||concealed(e,G.p))continue;const d=dist(e,G.p);if(d<bd&&los(e,G.p)){bd=d;b=e}}for(const c of G.props||[]){if((c.kind||c.k)!=='scrapPart'||c.done||c.d)continue;const d=dist(c,G.p);if(d<bd&&los(c,G.p)){bd=d;b=c}}return b}
+/* ---------- Drivable vehicles ----------
+   Carts, wagons and mine carts on land, rowing boats on water, a racer at the track. F gets in or out
+   (when nothing else nearby wants F). No attacks while driving; fast drives knock enemies aside. */
+const VEH={cart:{max:360,acc:440,turn:3.2,r:18},wagon:{max:300,acc:360,turn:2.6,r:20},mine:{max:380,acc:470,turn:3.3,r:18},racer:{max:430,acc:540,turn:3.7,r:17},boat:{max:280,acc:320,turn:2.5,r:18,water:true}};
+const VEH_REACH=48,RAM={speed:200,cd:.5},DRIVE_BLOCK=new Set(['dash','ult','special','ability','use','spell','heal','team']);
+function spawnVehicles(){G.vehicles=(G.w.vspots||[]).map((v,i)=>({id:i+1,kind:v.kind,x:v.x,y:v.y,a:v.a,sp:0,by:0}));for(const q of G.players||[])q.veh=0}
+const vehOf=p=>p&&p.veh?(G.vehicles||[]).find(v=>v.id===p.veh):null;
+/* Where a vehicle may be: boats on water (and under bridges), the rest anywhere a person can walk except open water */
+function vehTileOk(v,x,y){const r=VEH[v.kind].r*.7;for(const [ox,oy] of [[-r,-r],[r,-r],[-r,r],[r,r]]){const tx=Math.floor((x+ox)/T),ty=Math.floor((y+oy)/T);if(wall(tx,ty))return false;const g=G.w.ground[idx(tx,ty)];if(VEH[v.kind].water?(g!==3&&g!==4):g===3)return false}return true}
+function nearVehicle(p){let best=null,bd=VEH_REACH;for(const v of G.vehicles||[]){if(v.by)continue;const d=Math.hypot(v.x-p.x,v.y-p.y);if(d<bd){bd=d;best=v}}return best}
+/* F belongs to driving only when you are driving, or a free vehicle is close and you carry nothing */
+const canDrive=p=>!!p&&!(p.deadT>0)&&!(p.respawnT>0)&&(!!p.veh||(!p.carry&&!!nearVehicle(p)));
+function enterVehicle(p,v){p.veh=v.id;v.by=p.id||1;v.sp=0;p.x=v.x;p.y=v.y;p.dashT=0;p.chg=0;p.beam=null}
+function leaveVehicle(p){const v=vehOf(p);p.veh=0;if(!v)return;v.by=0;v.sp=0;
+  // step off to a side that is open ground
+  for(const a of [v.a+Math.PI/2,v.a-Math.PI/2,v.a+Math.PI,v.a]){const x=v.x+Math.cos(a)*34,y=v.y+Math.sin(a)*34;if(!blocked(x,y,p.r||12)){p.x=x;p.y=y;return}}}
+function toggleDrive(p){if(!p)return false;if(p.veh){leaveVehicle(p);return true}const v=!p.carry&&nearVehicle(p);if(!v)return false;enterVehicle(p,v);return true}
+/* Arcade handling: turn toward the stick, speed up when facing it, coast and bounce off walls */
+function driveStep(p,mv,dt,predict){const v=vehOf(p);if(!v){p.veh=0;return false}const d=VEH[v.kind],env=envSpeed(p),inp=Math.hypot(mv.x,mv.y);
+  if(inp>.2&&env>0){const want=Math.atan2(mv.y,mv.x);let diff=((want-v.a+Math.PI*3)%TAU)-Math.PI;v.a+=clamp(diff,-d.turn*dt,d.turn*dt);v.sp+=d.acc*dt*(Math.cos(diff)>-.1?1:-.7)}
+  else v.sp-=Math.sign(v.sp)*Math.min(Math.abs(v.sp),280*dt);
+  v.sp=clamp(v.sp,-d.max*.4,d.max*(env>0?Math.min(1,env):0)*(p.fastT>0?1.15:1));
+  const nx=v.x+Math.cos(v.a)*v.sp*dt,ny=v.y+Math.sin(v.a)*v.sp*dt;
+  if(vehTileOk(v,nx,v.y))v.x=nx;else v.sp*=-.3;if(vehTileOk(v,v.x,ny))v.y=ny;else v.sp*=-.3;
+  p.x=v.x;p.y=v.y;p.face=v.a;p.moveA=v.a;p.moving=Math.abs(v.sp)>12;if(p.moving)p.walk+=dt*Math.abs(v.sp)/30;
+  // ramming: enemies in the way are struck and thrown aside; bosses are only pushed
+  if(!predict&&Math.abs(v.sp)>RAM.speed)for(const e of G.enemies){if(e.dead||(e.ramT||0)>G.t||Math.hypot(e.x-v.x,e.y-v.y)>d.r+(e.r||14)+6)continue;e.ramT=G.t+RAM.cd;const k=Math.abs(v.sp)/d.max,ax=Math.cos(v.a),ay=Math.sin(v.a);
+    if(e.kind==='boss'){e.x+=ax*14;e.y+=ay*14;v.sp*=.3}else{hitEnemy(e,(10+G.stage*4)*k,v.a,320*k);v.sp*=.8}}
+  return true}
 function updatePlayer(p,dt){
-  G.p=p;applyInput(p);if(p.respawnT>0){p.respawnT-=dt;p.moving=false;if(p.respawnT<=0)respawn(p);return}if(p.deadT>0){p.inv=Math.max(0,p.inv-dt);p.deadT-=dt;if(p.deadT<=0){if(p.windDown){p.windDown=false;revive(p)}else bleedOut(p);return}const v=moveVec();move(p,v.x*p.s.speed*.25*dt,v.y*p.s.speed*.25*dt);p.moving=!!(v.x||v.y);if(p.moving){p.walk+=dt*5;p.moveA=Math.atan2(v.y,v.x)}return}
+  G.p=p;applyInput(p);if(p.veh){mouse.left=mouse.right=false;touchHold.slash=touchHold.guard=false;if(p.deadT>0||p.respawnT>0)leaveVehicle(p)}if(p.respawnT>0){p.respawnT-=dt;p.moving=false;if(p.respawnT<=0)respawn(p);return}if(p.deadT>0){p.inv=Math.max(0,p.inv-dt);p.deadT-=dt;if(p.deadT<=0){if(p.windDown){p.windDown=false;revive(p)}else bleedOut(p);return}const v=moveVec();move(p,v.x*p.s.speed*.25*dt,v.y*p.s.speed*.25*dt);p.moving=!!(v.x||v.y);if(p.moving){p.walk+=dt*5;p.moveA=Math.atan2(v.y,v.x)}return}
   updateRevive(p,dt);
   p.weaponHealCd=Math.max(0,(p.weaponHealCd||0)-dt);p.teamCd=Math.max(0,(p.teamCd||0)-dt);p.breakReady=Math.max(0,(p.breakReady||0)-dt);p.tauntGuard=Math.max(0,(p.tauntGuard||0)-dt);if(p.mendT>0){const t=Math.min(dt,p.mendT);p.mendT-=t;const h=Math.min(p.s.maxHp-p.hp,p.mendRate*t),healer=G.players.find(q=>q.id===p.mendBy);p.hp+=h;if(healer)threatHeal(healer,h)}
   for(const k in p.cd)p.cd[k]=Math.max(0,p.cd[k]-dt);
@@ -1342,7 +1402,8 @@ function updatePlayer(p,dt){
   if(p.fastT>0)p.fastT-=dt;if(p.magicT>0)p.magicT-=dt;
   p.mana=Math.min(p.s.maxMana,p.mana+p.s.regen*dt*chainBonus().mana);if(auraHas(p,'medic'))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.006*dt);
   p.specT=Math.max(0,(p.specT||0)-dt);tickAbility(p,dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec();p.sprint=canSprint(p,v);if(p.sprint)p.mana=Math.max(0,p.mana-SPRINT.mana*dt);const drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*abilSpeed(p)*(p.sprint?SPRINT.mul:1)*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*(p.beam?0:p.chg>0?CHARGE.slow:1)*chainBonus().spd;p.moving=!!(v.x||v.y)&&!p.beam;
-  if(p.lungeT>0)lungeStep(p,dt);
+  if(p.veh&&driveStep(p,v,dt)){}
+  else if(p.lungeT>0)lungeStep(p,dt);
   else if(p.dashT>0&&!(p.webT>0)){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
   else{move(p,v.x*sp*dt,v.y*sp*dt);if(p.moving){p.walk+=dt*11*(p.sprint?SPRINT.stride:1);p.moveA=Math.atan2(v.y,v.x)}}
   if(drag)move(drag,p.x-ox,p.y-oy);
@@ -1378,7 +1439,7 @@ function update(dt){
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
   // keep the streets populated: more rivals at night, more citizens by day
   const n=nightness(G.hour);G.spawnT-=dt;
-  if(G.swarm)swarmTick(dt);else if(G.story)storyTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue()&&!bloaterDue()&&!shieldbearerDue()&&!scrapGolemDue())useMobs()?spawnMob(520):spawnRival(520);
+  if(G.swarm)swarmTick(dt);else if(G.story)storyTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()*(MW>100?1.4:1)),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue()&&!bloaterDue()&&!shieldbearerDue()&&!scrapGolemDue())useMobs()?spawnMob(520):spawnRival(520);
     const wantN=Math.round(14*(1-n)+3);if(G.npcs.length<wantN)spawnNpc();else if(G.npcs.length>wantN)G.npcs.splice(G.npcs.findIndex(c=>!c.wounded&&dist(c,nearestPlayer(c))>500)>>>0,1)}
   if(useMobs()&&!G.clearPending&&!G.swarm&&!G.story){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
   updateNpcs(dt);tickHazards(dt);G.p=G.players[0];

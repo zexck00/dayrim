@@ -33,6 +33,11 @@ function closeTouchExtra(){$('touch-extra').hidden=true;const b=$('touch').query
 function resetTouch(){closeTouchExtra();stopScoutRevive();if(touchHold.revive&&netOn())netAct('revive',false);touchPointers.clear();touchHold.slash=touchHold.guard=touchHold.revive=false;joy.on=false;joy.id=null;joy.dx=joy.dy=0;$('joystick').hidden=true;$('scout-revive').hidden=true;$('touch').querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}
 /* Game-style notice card, used for being downed, stage clear, the final victory and pause.
    tone sets the colour: dead (red), win (gold), pause (blue). chips: [label, value] pairs shown as stat plates. */
+/* Words on pop-ups, in a light medieval voice. Controls and numbers stay plain so they remain clear. */
+const TXT={pauseK:'The realm rests',pause:'Rest a While',pauseLine:'Thy deeds are written down as thou goest.',resume:'Onward',toMenu:'Leave the Realm',
+  deadK:'Fallen in battle',dead:'Thou Hast Fallen',deadLine:story=>'awakens at the haven. Level, gear and '+(story?'tale':'stage')+' progress are kept. Train, hone thy skills and stock potions ere the boss.',wake:'Rise at the Haven',
+  winK:'Victory',win:'The Land Is Freed',winLine:'lies vanquished. Onward to stage',next:'March to Stage',stay:'Linger and Train',
+  legendK:'Legend of Dayrim',legendHero:'Dayrim Is Saved',legendVillain:'Dayrim Kneels',legendLine:'The crowned horror is fallen and all ten lands stand free.',keepPlaying:'Ride On'};
 function gameCard(c,tone,o){c.classList.add('notice');c.dataset.tone=tone;$('ov').dataset.tone=tone;
   c.innerHTML='<div class="notice-k"><span>'+o.kicker+'</span></div><h2 class="notice-t">'+o.title+'</h2>'+(o.line?'<p class="notice-l">'+o.line+'</p>':'')+
     (o.chips&&o.chips.length?'<div class="chips">'+o.chips.map(([k,v])=>'<span class="chip"><b>'+v+'</b><small>'+k+'</small></span>').join('')+'</div>':'')+'<div class="btnrow">'+o.buttons+'</div>'}
@@ -47,13 +52,13 @@ function setMode(m){
   if(m==='title')renderSelect();
   else if(m==='menu')renderMenu();
   else if(netOn()&&netOverlay(m,c))return;
-  else if(m==='pause'){gameCard(c,'pause',{kicker:'Game paused',title:'Paused',line:(G.story?esc(storyTitle()):'Stage '+G.stage+' · '+esc(STAGES[G.stage-1].n))+'. Your progress saves automatically.',chips:[['Level',G.p.lvl],['Gold',Math.floor(G.p.gold)],['Kills',G.p.kills||0]],buttons:'<button class="go" id="go" type="button">Resume</button><button class="ghost" id="tomenu" type="button">Return to menu</button>'});$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
-  else if(m==='dead'){gameCard(c,'dead',{kicker:'Defeated',title:'You fell',line:esc(theName(G.p.char))+' wakes at the safehouse. Level, gear and '+(G.story?'story':'stage')+' progress are kept. Train, upgrade skills and stock potions before the boss.',chips:[['Gold lost','20%'],['Stage',G.stage],['Level',G.p.lvl]],buttons:'<button class="go" id="go" type="button">Wake at safehouse</button><button class="ghost" id="tomenu" type="button">Return to main menu</button>'});$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
+  else if(m==='pause'){gameCard(c,'pause',{kicker:TXT.pauseK,title:TXT.pause,line:(G.story?esc(storyTitle()):'Stage '+G.stage+' · '+esc(STAGES[G.stage-1].n))+'. '+TXT.pauseLine,chips:[['Level',G.p.lvl],['Gold',Math.floor(G.p.gold)],['Foes slain',G.p.kills||0]],buttons:'<button class="go" id="go" type="button">'+TXT.resume+'</button><button class="ghost" id="tomenu" type="button">'+TXT.toMenu+'</button>'});$('go').onclick=()=>setMode('play');$('tomenu').onclick=returnToMenu}
+  else if(m==='dead'){gameCard(c,'dead',{kicker:TXT.deadK,title:TXT.dead,line:esc(theName(G.p.char))+' '+TXT.deadLine(G.story),chips:[['Gold lost','20%'],['Stage',G.stage],['Level',G.p.lvl]],buttons:'<button class="go" id="go" type="button">'+TXT.wake+'</button><button class="ghost" id="tomenu" type="button">'+TXT.toMenu+'</button>'});$('tomenu').onclick=returnToMenu;$('go').onclick=()=>{const p=G.p;enterStage(G.stage,true);p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.fastT=p.magicT=0;setMode('play')}}
   else if(m==='clear'&&G.story)storyCard(c);
   else if(m==='clear'){const n=G.stage,last=n>=10,hero=factionOf(G.p.char)==='hero';
-    if(last)gameCard(c,'win',{kicker:'Legend of Dayrim',title:hero?'Dayrim is safe':'Dayrim is yours',line:'The crowned horror has fallen and all 10 stages are clear.',chips:[['Level',G.p.lvl],['Defeated',G.p.kills],['Hero',esc(label(G.p.char))]],buttons:'<button class="go" id="go" type="button">Keep playing</button>'});
-    else gameCard(c,'win',{kicker:'Victory',title:'Stage '+n+' cleared',line:esc(STAGES[n-1].label||STAGES[n-1].boss)+' is defeated. Next: stage '+(n+1)+', '+esc(STAGES[n].n)+'.',chips:[['Skill points','+2'],['Your level',G.p.lvl],['Recommended',recLevel(n+1)]],buttons:'<button class="go" id="go" type="button">Go to stage '+(n+1)+'</button><button class="ghost" id="stay" type="button">Keep training here</button>'});
-    c.querySelector('.btnrow').insertAdjacentHTML('beforeend','<button class="ghost" id="tomenu" type="button">Return to main menu</button>');$('tomenu').onclick=returnToMenu;
+    if(last)gameCard(c,'win',{kicker:TXT.legendK,title:hero?TXT.legendHero:TXT.legendVillain,line:TXT.legendLine,chips:[['Level',G.p.lvl],['Defeated',G.p.kills],['Hero',esc(label(G.p.char))]],buttons:'<button class="go" id="go" type="button">'+TXT.keepPlaying+'</button>'});
+    else gameCard(c,'win',{kicker:TXT.winK,title:TXT.win,line:esc(STAGES[n-1].label||STAGES[n-1].boss)+' '+TXT.winLine+' '+(n+1)+', '+esc(STAGES[n].n)+'.',chips:[['Skill points','+2'],['Your level',G.p.lvl],['Recommended',recLevel(n+1)]],buttons:'<button class="go" id="go" type="button">'+TXT.next+' '+(n+1)+'</button><button class="ghost" id="stay" type="button">'+TXT.stay+'</button>'});
+    c.querySelector('.btnrow').insertAdjacentHTML('beforeend','<button class="ghost" id="tomenu" type="button">'+TXT.toMenu+'</button>');$('tomenu').onclick=returnToMenu;
     $('go').onclick=()=>{if(!last)enterStage(n+1);setMode('play')};const st=$('stay');if(st)st.onclick=()=>{G.gate.open=true;setMode('play')}}
 }
 /* Scales with its column through CSS alone, so it never depends on measuring the page */
@@ -116,10 +121,10 @@ function renderMenu(){
 }
 
 /* Input. Online, actions go to the server. Alone, they run here. */
-const LOCAL_ACT={dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),ability:()=>doAbility(),use:()=>doUse(),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
+const LOCAL_ACT={drive:()=>toggleDrive(G.p),dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),ability:()=>doAbility(),use:()=>doUse(),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
 /* Name shown in menus: Ability → what using it does. How to use it is the same for everyone. */
 const abilityTitle=ab=>ab.n+' → '+ab.use,ABILITY_HOW='Press C to ready it, then click to use it (on touch, tap Ability again). C again cancels; for buffs and grabs it fires the finisher.';
-function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(n==='ability')touchAim=null;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
+function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(G.p&&G.p.veh&&DRIVE_BLOCK.has(n))return;if(n==='ability')touchAim=null;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
 function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}
 function setTouch(on){if(touchMode===on)return;resetTouch();touchMode=on;resize();$('touch').hidden=!(on&&G.mode==='play');$('screen').classList.toggle('touch-playing',on&&G.mode==='play')}
@@ -141,6 +146,7 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(G.mode==='menu'&&(ev.code==='KeyT'||ev.code==='KeyR')){writeSave();setMode('play');return}
   if(G.mode!=='play')return;if(GAME_CODES.has(ev.code))ev.preventDefault();if(ev.repeat)return;keys.add(ev.code);
   if(ev.code==='KeyF'&&G.story&&storyAct())return;
+  if(ev.code==='KeyF'&&!G.story&&canDrive(G.p)){doAct('drive');return}
   if(ev.code==='KeyM')toggleSound();
   if(ev.code==='Space')doAct('dash');
   if(ev.code==='ShiftLeft'||ev.code==='ShiftRight')sprintKey=true;
@@ -261,7 +267,7 @@ function updateTouchStatus(){if(!touchMode||G.mode!=='play'||!G.p)return;touchAb
   for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.querySelector('.touch-label').textContent+(value?', '+value:''))}}
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
   if(a==='more'){const panel=$('touch-extra');panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));return}if(b.closest('#touch-extra'))closeTouchExtra();
-  if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(a==='ability'){doAct(G.p&&G.p.abil?'use':'ability')}if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
+  if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(a==='drive')doAct('drive');if(a==='ability'){doAct(G.p&&G.p.abil?'use':'ability')}if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('touch').addEventListener(n,ev=>{const a=touchPointers.get(ev.pointerId);if(!a)return;touchPointers.delete(ev.pointerId);if(![...touchPointers.values()].includes(a)){touchHold[a]=false;const b=$('touch').querySelector('[data-a="'+a+'"]');if(b)b.classList.remove('held');if(a==='revive'&&netOn())netAct('revive',false)}}));
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.previousElementSibling,done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected';setTimeout(()=>b.textContent='Copy',1400)};try{navigator.clipboard.writeText(pre.textContent).then(done,sel)}catch(e){sel()}}));
 if('IntersectionObserver'in window)new IntersectionObserver(es=>{es.forEach(e=>{if(e.intersectionRatio<.35&&G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')})},{threshold:[.35]}).observe($('screen'));
@@ -282,7 +288,7 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
   footsteps();soundWatch();
   touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus();updateScoutButton();storyButton()}
-  try{render();drawFx3(now)}catch(err){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
+  try{render();drawFx3(now)}catch(err){ctx=ctx0;shadowTo=null;W3.d3=false;ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}
 if(matchMedia('(pointer:coarse)').matches)touchMode=true;

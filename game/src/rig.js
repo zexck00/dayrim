@@ -431,7 +431,14 @@ const dirOf=a=>{const c=Math.cos(a),s=Math.sin(a);return Math.abs(c)>=Math.abs(s
 const PS=1.2;
 /* mo: smooth motion added while drawing, so it moves every frame instead of in pose steps.
    dx, dy: offset · rot: lean about the feet · sx, sy: squash and stretch about the feet. */
+/* Pixel 3D sets these: blitHook turns a sprite into a 3D card, shadowTo sends ground shadows to its decal layer */
+let blitHook=null,shadowTo=null,blitSink=0;
 function blit(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size=1,mo){
+  if(blitHook&&blitHook(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo))return;
+  // wading: hide what is under the waterline
+  if(blitSink>0){c2.save();c2.beginPath();c2.rect(x-120,y-260,240,260-blitSink);c2.clip();try{blit0(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo)}finally{c2.restore()}return}
+  blit0(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo)}
+function blit0(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size=1,mo){
   let im=frame(name,dir,anim,f,wpn);if(mo&&mo.red)im=redFrame(im);c2.save();c2.imageSmoothingEnabled=false;c2.translate(x,y);
   if(mo){c2.translate(mo.dx||0,mo.dy||0);if(mo.rot)c2.rotate(mo.rot);if(mo.sx||mo.sy)c2.scale(mo.sx||1,mo.sy||1)}
   if(size!==1)c2.scale(size,size);if(flip)c2.scale(-1,1);

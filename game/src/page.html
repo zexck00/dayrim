@@ -3,7 +3,7 @@
 <title>Dayrim</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Barlow:ital,wght@0,400;0,500;0,700;1,400&family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Alegreya:wght@500;700;800&family=Barlow:ital,wght@0,400;0,500;0,700;1,400&family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: the game is the hero; the build plan runs beneath it. Night-city navy, badge gold and siren red, taken from the Dayrim character art. Single dark look by choice. */
 :root{
@@ -102,7 +102,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .joystick i{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border-radius:50%;background:rgba(190,225,244,.7);border:2px solid #eef8ff}
 .touch .big{background:rgba(240,128,92,.55);border-color:var(--coral)}
 .scout-revive{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:3;padding:12px 20px;border:1px solid #80e5aa;border-radius:8px;background:#12343a;color:#fff;font:700 14px var(--body);touch-action:none}
-.fx3{z-index:1;pointer-events:none}
+.fx3{pointer-events:none;image-rendering:pixelated}
 .fx3b{top:calc(216px*var(--k,1))!important}
 .menub{top:calc(160px*var(--k,1))!important}
 .fsb{top:calc(188px*var(--k,1))!important}
@@ -330,7 +330,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 @media(max-width:640px){
   .screen{aspect-ratio:auto}
   .mrow.weapon-row{grid-template-columns:minmax(0,1fr) auto}.weapon-row .weapon-choice{grid-column:1/-1}
-  .sound{top:102px}.fx3{z-index:1;pointer-events:none}
+  .sound{top:102px}.fx3{pointer-events:none;image-rendering:pixelated}
 .fx3b{top:calc(216px*var(--k,1))!important}
 .menub{top:130px!important}.fsb{top:158px!important}
   .sel-body{grid-template-columns:minmax(0,1fr)}
@@ -438,17 +438,57 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .ov.pick .sb{grid-template-columns:74px 1fr;font-size:11px}
 .ov.pick .sbs{width:100%}.ov.pick .sb i{width:100%}
 @media(max-width:700px){.md-panel{box-shadow:none}.ov.pick .card.sel{padding:12px}.ov.pick .card.sel .ghost{font-size:12px;letter-spacing:.02em;padding:8px 8px;overflow:visible}.ov.pick #swarm{margin-left:0!important}.ov.pick .card.sel .sel-top h2{font-size:20px}.tomodes{font-size:12px;padding:4px 8px}}
+
+/* ---------- Medieval theme for pop-ups and messages ----------
+   Pause, defeat and victory cards, online and other in-game overlays, the achievement toast, story dialogue,
+   prompts and the corner buttons all share the stone-and-bronze plaques of the menus. */
+.ov:not(.pick){background:radial-gradient(ellipse at 50% 40%,rgba(30,20,10,.55),rgba(6,4,2,.82))}
+.ov:not(.pick) .card,.notice{border:0;border-radius:0;color:#e8dcc4;font-family:"Alegreya",Georgia,serif;
+  background:radial-gradient(ellipse 120% 50% at 50% 0,rgba(120,80,40,.22),rgba(0,0,0,0) 60%),var(--stone,none) center/320px,linear-gradient(180deg,#1d150e,#0f0a06);background-blend-mode:normal,soft-light,normal;
+  box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px var(--tone,#8a6a3c),inset 0 0 0 4px #24180e,inset 0 0 0 5px #5c4426,0 14px 44px #000d;
+  clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px),0 12px)}
+#card.notice{--tone:#c9a26a;--tone2:#5c4426}
+#card.notice::before,#card.notice::after{background:#c9a26a;box-shadow:0 0 0 2px #24180e}
+#card.notice[data-tone="dead"]{--tone:#b8503a;--tone2:#4a1a10}
+#card.notice[data-tone="win"]{--tone:#e8c88e;--tone2:#6a4a22}
+.notice-k{font:700 13px "Cinzel",serif;letter-spacing:.24em;color:var(--tone)}
+.notice-k::before,.notice-k::after{display:none!important}
+.notice .notice-t,.ov:not(.pick) .card h2{font-family:"Cinzel","Times New Roman",serif;font-weight:900;letter-spacing:.06em;text-transform:uppercase;text-shadow:none;
+  background:var(--stone,none),linear-gradient(#fff6e2,#d8bf96);background-size:180px,100% 100%;background-blend-mode:multiply,normal;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #0a0603) drop-shadow(0 0 3px rgba(0,0,0,.8))}
+.notice[data-tone="dead"] .notice-t{background:var(--stone,none),linear-gradient(#ffd8c8,#c25a3a);background-size:180px,100% 100%;background-blend-mode:multiply,normal;-webkit-background-clip:text;background-clip:text}
+.notice-l,.ov:not(.pick) .card p{font-family:"Alegreya",Georgia,serif;font-size:17px;color:#e2d4b8}
+.notice .chip{border:0;border-radius:0;background:linear-gradient(180deg,rgba(62,47,32,.9),rgba(26,18,11,.95));box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #5c4426}
+.notice .chip b{font-family:"Cinzel",serif;font-weight:900;color:#f0e2c4}.notice .chip small{font-family:"Cinzel",serif;font-weight:700;letter-spacing:.12em;color:#c9a26a}
+.notice .go,.notice .ghost,.ov:not(.pick) .card .go,.ov:not(.pick) .card .ghost,.ov:not(.pick) .card .tab{font-family:"Cinzel",serif;font-weight:900;letter-spacing:.06em;border:0;border-radius:0;cursor:pointer;color:#efe2c8;text-shadow:0 1px 0 #000;
+  clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px);
+  background:linear-gradient(180deg,#3e2f20,#1a120b);box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #7a5c34,inset 0 0 0 3px #24180e,inset 0 8px 12px rgba(255,210,150,.08)}
+.notice .go,.ov:not(.pick) .card .go{color:#fff1d6;background:linear-gradient(180deg,#9a3424,#5a160e 60%,#3e0e08);box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #c9a26a,inset 0 0 0 3px #3a0c06,inset 0 8px 12px rgba(255,200,150,.18)}
+.notice .go:hover,.notice .ghost:hover,.ov:not(.pick) .card .go:hover,.ov:not(.pick) .card .ghost:hover,.ov:not(.pick) .card .tab:hover{filter:brightness(1.22) drop-shadow(0 0 6px rgba(255,170,70,.45))}
+.achievement-toast{border:0;border-radius:0;color:#efe2c8;font-family:"Alegreya",Georgia,serif;background:linear-gradient(180deg,#3e2f20,#1a120b);
+  box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #c9a26a,inset 0 0 0 3px #24180e,0 6px 24px #000c;clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px)}
+.achievement-toast b,.achievement-toast strong,#achievement-name{font-family:"Cinzel",serif;font-weight:900;color:#e8c88e}
+/* story dialogue: a parchment scroll with an ink name plate */
+.dlg{border:0;border-radius:0;color:#3a2410;font-family:"Alegreya",Georgia,serif;background:radial-gradient(ellipse at 50% 0,#f8eed4,#e6d2a8 70%,#cdb07c);
+  box-shadow:inset 0 0 0 2px #7a5a30,inset 0 0 18px rgba(120,80,30,.35),0 8px 30px #000b}
+.dlg #dlgn{font-family:"Cinzel",serif;font-weight:900;color:#6a2a14;letter-spacing:.05em}
+.dlg #dlgt{font-family:"Alegreya",Georgia,serif;font-size:17px;color:#2a1a0a}
+.dlg #dlgh,.dlg #dlgskip{font-family:"Cinzel",serif;color:#6a4a22}
+.dlg button{font-family:"Cinzel",serif;font-weight:700;color:#efe2c8;background:linear-gradient(180deg,#5a3a1e,#2a1a0c);border:0;border-radius:0;box-shadow:inset 0 0 0 1px #1a0e04,inset 0 0 0 2px #c9a26a}
+.story-act{border:0;box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #c9a26a,inset 0 0 0 3px #24180e,0 4px 0 #000;background:linear-gradient(180deg,#3e2f20,#1a120b);color:#f0e2c4;font-family:"Cinzel",serif;font-weight:900}
+/* corner buttons in play: small bronze plaques */
+.sound{font-family:"Cinzel",serif!important;font-weight:700;letter-spacing:.04em;color:#efe2c8;border:0;background:linear-gradient(180deg,rgba(62,47,32,.9),rgba(26,18,11,.92));box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #7a5c34}
 </style>
 
 <div class="wrap">
   <section class="stage" aria-label="Playable prototype">
     <div class="screen" id="screen">
-      <canvas id="c" aria-label="Game view"></canvas><canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas>
+      <canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas><canvas id="c" aria-label="Game view"></canvas>
       <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button>
       <div class="joystick" id="joystick" aria-hidden="true" hidden><i></i></div>
       <button class="scout-revive" id="scout-revive" type="button" hidden>Hold to revive scout</button>
       <div class="touch" id="touch" aria-label="Touch controls" hidden>
         <div class="touch-primary">
+          <button type="button" data-a="drive" id="touch-drive" hidden><span class="touch-icon" aria-hidden="true">⛟</span><span class="touch-label">Drive</span></button>
           <button type="button" data-a="fast"><span class="touch-icon" aria-hidden="true">ϟ</span><span class="touch-label">Fast</span></button>
           <button type="button" data-a="heal"><span class="touch-icon" aria-hidden="true">✚</span><span class="touch-label">Heal</span></button>
           <button type="button" data-a="team"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">Team</span></button>

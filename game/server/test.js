@@ -9,10 +9,10 @@ function start(){srv=spawn(process.execPath,['index.js'],{cwd:__dirname,env:{...
 const stop=()=>new Promise(res=>{srv.once('exit',res);srv.kill('SIGTERM')});
 const get=(p,h={})=>new Promise((res,rej)=>http.get({port:PORT,host:'127.0.0.1',path:p,headers:h},r=>{const b=[];r.on('data',d=>b.push(d));r.on('end',()=>res({status:r.statusCode,headers:r.headers,body:Buffer.concat(b)}))}).on('error',rej));
 class Bot{
-  constructor(){this.msgs=[];this.waiters=[];this.bytes=0;this.snaps=0;this.me={};this.world={};this.ents={e:new Map(),p:new Map()};this.events=[]}
+  constructor(){this.msgs=[];this.waiters=[];this.bytes=0;this.snaps=0;this.me={};this.world={};this.ents={e:new Map(),p:new Map(),v:new Map()};this.events=[]}
   open(h){return new Promise((res,rej)=>{this.ws=new WebSocket('ws://127.0.0.1:'+PORT+'/ws',{headers:h});this.ws.on('open',res);this.ws.on('error',rej);this.ws.on('close',c=>{this.closed=c});
     this.ws.on('message',d=>{this.bytes+=d.length;const m=JSON.parse(d);if(m.t==='s'){this.snap(m);return}const w=this.waiters.find(x=>x.t===m.t);if(w){this.waiters.splice(this.waiters.indexOf(w),1);w.r(m)}else this.msgs.push(m)})})}
-  snap(m){this.snaps++;this.ack=m.a;if(m.g)Object.assign(this.world,m.g);if(m.v)this.events.push(...m.v);if(m.p)for(const d of m.p[0]){if(d.id===this.id)Object.assign(this.me,d);else{const o=this.ents.p.get(d.id)||{};Object.assign(o,d);this.ents.p.set(d.id,o)}}if(m.p)for(const i of m.p[1])this.ents.p.delete(i);if(m.e){for(const d of m.e[0])this.ents.e.set(d.id,Object.assign(this.ents.e.get(d.id)||{},d));for(const i of m.e[1])this.ents.e.delete(i)}}
+  snap(m){this.snaps++;this.ack=m.a;if(m.vh){for(const d of m.vh[0])this.ents.v.set(d.id,Object.assign(this.ents.v.get(d.id)||{},d))}if(m.g)Object.assign(this.world,m.g);if(m.v)this.events.push(...m.v);if(m.p)for(const d of m.p[0]){if(d.id===this.id)Object.assign(this.me,d);else{const o=this.ents.p.get(d.id)||{};Object.assign(o,d);this.ents.p.set(d.id,o)}}if(m.p)for(const i of m.p[1])this.ents.p.delete(i);if(m.e){for(const d of m.e[0])this.ents.e.set(d.id,Object.assign(this.ents.e.get(d.id)||{},d));for(const i of m.e[1])this.ents.e.delete(i)}}
   send(o){this.ws.send(JSON.stringify(o))}
   wait(t){const i=this.msgs.findIndex(m=>m.t===t);if(i>=0)return Promise.resolve(this.msgs.splice(i,1)[0]);return new Promise((r,j)=>{const w={t,r};this.waiters.push(w);setTimeout(()=>j(new Error('timed out waiting for '+t)),4000)})}
   async hello(name,token){this.send({t:'hello',name,token});const w=await this.wait('welcome');this.token=w.token;this.name=w.name;return w}
@@ -43,6 +43,8 @@ class Bot{
   ok((await c.join(ja.code,'__proto__')).t==='error','a made-up character is refused');
   const jb=await b.join(ja.code.toLowerCase(),'Firefighter');ok(jb.t==='joined'&&jb.seed===ja.seed,'second player joins with the same map seed');
   await sleep(400);ok(a.ents.p.size===1&&b.ents.p.size===1,'each player sees the other');ok(a.me.char==='Detective'&&a.me.s&&a.me.gold!==undefined,'own snapshot holds full character data');ok(a.world.hope===4&&a.world.maxHope===4&&b.world.hope===4&&b.world.maxHope===4,'both players receive shared Hope');
+  {const va=[...a.ents.v.values()],vb=[...b.ents.v.values()];ok(va.length>0&&va.every(v=>{const w=b.ents.v.get(v.id);return w&&w.k===v.k&&Math.abs(w.x-v.x)<1&&Math.abs(w.y-v.y)<1}),'both players see the same vehicles ('+va.length+')')}
+  a.send({t:'i',s:900,x:0,y:0,ax:6100,ay:4300,l:false,r:false});await sleep(80);ok(srv.exitCode===null,'aiming at the far corner of a big map is accepted');
   const other=[...a.ents.p.values()][0];ok(other.gold===undefined&&other.bag===undefined,'other players do not receive your gold or bag');
 
   console.log('Input is checked by the server');

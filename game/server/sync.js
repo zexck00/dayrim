@@ -5,7 +5,7 @@ const ENEMY_SKIP=new Set(['spoke','attacking','xp','gold','dmg','sp','cd','wande
 const NPC_SKIP=new Set(['kx','ky','t','sp','scare','dead','id']);
 const LOOT_SKIP=new Set(['t','amt','id']);
 const OWN_SKIP=new Set(['input','actions','ack','id','clickLatch','holdT','combo_','x','y','vx','vy','lx','ly','toxinTick','fallT']);
-const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats','grabT','possT','stunT','webT','toxicLoad','loadMark','rust','fieldRust','abil','abilCast','sprint','chg','beam','lungeT','lungeA','dive','sing'];
+const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats','grabT','possT','stunT','webT','toxicLoad','loadMark','rust','fieldRust','abil','abilCast','sprint','chg','beam','lungeT','lungeA','dive','sing','veh'];
 let nextEnt=1;
 const entId=o=>o.id||(o.id=nextEnt++);
 const rnum=(k,v)=>k==='x'||k==='y'||k==='walk'?Math.round(v*10)/10:Math.round(v*100)/100;
@@ -28,7 +28,7 @@ function diff(items,known,toFlat,once){
   const rm=[];for(const id of known.keys())if(!seen.has(id)){rm.push(id);known.delete(id)}
   return upd.length||rm.length?[upd,rm]:undefined;
 }
-function newClient(){return{g:{},p:new Map(),e:new Map(),n:new Map(),h:new Map(),l:new Map(),z:new Map(),pr:new Map()}}
+function newClient(){return{g:{},p:new Map(),e:new Map(),n:new Map(),h:new Map(),l:new Map(),z:new Map(),pr:new Map(),v:new Map()}}
 const near=(a,o,r)=>Math.hypot(a.x-o.x,a.y-o.y)<r;
 
 function snapshot(room,me,known,tick){
@@ -45,6 +45,8 @@ function snapshot(room,me,known,tick){
   const z=diff((G.hazards||[]).filter(o=>near(me,o,AOI)),known.z,hazard,true);if(z)out.z=z;
   const l=diff(G.loot.filter(o=>near(me,o,AOI)),known.l,o=>flatten(o,LOOT_SKIP));if(l)out.l=l;
   const prop=o=>({x:rnum('x',o.x),y:rnum('y',o.y),r:o.r,k:o.kind,t:rnum('t',o.t||0),by:o.by||0,d:o.done?1:0});
+  /* vehicles: position, heading, speed and driver. There are only a handful and only changes are sent, so all of them go out */
+  const v=diff((G.vehicles||[]),known.v,o=>({x:rnum('x',o.x),y:rnum('y',o.y),a:Math.round(o.a*100)/100,sp:Math.round(o.sp),by:o.by||0,k:o.kind}));if(v)out.vh=v;
   const pr=diff((G.props||[]).filter(o=>near(me,o,AOI)||o.kind==='drop'||o.kind==='escort'),known.pr,prop);if(pr)out.pr=pr;
   /* Room-wide values. The banner is only sent when a new one appears, and the client counts it down. */
   const b=G.banner;if(b&&!b.t0){b.t0=b.t;b.bid=entId({})}

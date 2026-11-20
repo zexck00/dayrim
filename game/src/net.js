@@ -1,6 +1,6 @@
 /* ---------- Online play. The server runs the world. This file sends what you press and draws what it reports. ---------- */
 const net={avail:false,ws:null,ready:false,inRoom:false,lobby:false,you:0,host:0,code:'',token:null,name:'',rooms:[],err:'',seq:0,sendT:0,idleT:0,last:'',pending:[],dash:0,dx:0,dy:0,rtt:0,pingT:0,retry:0,down:false,wantRoom:null,ents:null,bossId:0,bytes:0,onReady:null,reviveT:0};
-const mkEnts=()=>({p:new Map(),e:new Map(),n:new Map(),h:new Map(),z:new Map(),l:new Map(),pr:new Map()});
+const mkEnts=()=>({p:new Map(),e:new Map(),n:new Map(),h:new Map(),z:new Map(),l:new Map(),pr:new Map(),v:new Map()});
 function netAvailable(){return net.avail}
 function netOn(){return net.inRoom}
 function netIsHost(){return net.you===net.host}
@@ -51,7 +51,7 @@ function netJoined(m){if(typeof announce==='function')announce('start',2);
   netStage(m);G.cam={x:me.x,y:me.y};setMode('play');addLog('Room '+esc(m.code)+'. Share this code so friends can join.');if(m.cleared)setMode('clear');
 }
 function netStage(m){
-  const me=G.p;G.stage=m.stage;G.w=genCitySeeded(m.seed);const bin=atob(m.map);for(let i=0;i<bin.length;i++)G.w.map[i]=bin.charCodeAt(i);
+  const me=G.p;G.stage=m.stage;setMapSize(STAGE_MW,STAGE_MH);G.w=genCitySeeded(m.seed);const bin=atob(m.map);for(let i=0;i<bin.length;i++)G.w.map[i]=bin.charCodeAt(i);
   G.killsStage=m.kills||0;G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.hazards=[];G.decals=[];G.boss=null;G.banner=null;net.bossId=0;placeInStage(m.stage);
   net.ents=mkEnts();net.ents.p.set(me.id,me);G.players=[me];net.pending=[];net.dash=0;me.tx=undefined;
   G.cam=G.cam||{x:me.x,y:me.y};dirty();if(m.t==='stage'&&G.mode==='clear')setMode('play');
@@ -63,7 +63,7 @@ function patch(o,d,glide,own){for(const k in d){if(k==='id')continue;if(own&&OWN
   if(k==='x'&&glide){o.tx=v;continue}if(k==='y'&&glide){o.ty=v;continue}o[k]=v===null?undefined:v}}
 function applyList(rec,map,kind){if(!rec)return false;const [upd,rm]=rec;let changed=rm.length>0;
   for(const d of upd){let o=map.get(d.id);const fresh=!o;if(fresh){o=kind==='p'?Object.assign(freshPlayer(d.char||G.p.char),{s:{maxHp:1}}):{};o.id=d.id;map.set(d.id,o);changed=true}
-    patch(o,d,kind==='p'||kind==='e'||kind==='n',false);if(fresh&&o.tx!==undefined){o.x=o.tx;o.y=o.ty}if(fresh&&kind==='l')o.t=0}
+    patch(o,d,kind==='p'||kind==='e'||kind==='n'||kind==='v',false);if(fresh&&o.tx!==undefined){o.x=o.tx;o.y=o.ty}if(fresh&&kind==='l')o.t=0}
   for(const id of rm)map.delete(id);return changed}
 function netSnapshot(m){
   if(!net.inRoom||!net.ents)return;const E=net.ents,me=G.p;
@@ -76,6 +76,7 @@ function netSnapshot(m){
   if(applyList(m.z,E.z,'z'))G.hazards=[...E.z.values()];
   if(applyList(m.l,E.l,'l'))G.loot=[...E.l.values()];
   if(applyList(m.pr,E.pr,'pr'))G.props=[...E.pr.values()];
+  if(applyList(m.vh,E.v,'v'))G.vehicles=[...E.v.values()].map(o=>Object.assign(o,{kind:o.k||o.kind}));
   const g=m.g;if(g){if(g.hour!==undefined)G.hour=g.hour;if(g.kills!==undefined)G.killsStage=g.kills;if(g.hope!==undefined)G.hope=g.hope;if(g.hopeSpent!==undefined)G.hopeSpent=g.hopeSpent;if(g.obj!==undefined){try{const o=JSON.parse(g.obj);G.obj={i:o.i,done:!!o.d,steps:[],cur:{have:o.h,need:o.n,label:o.l},tg:o.tg||[],holdNeed:o.hn||0}}catch(e){}}if(g.maxHope!==undefined)G.hopeMax=g.maxHope;if(g.gate!==undefined)G.gate.open=!!g.gate;if(g.td!==undefined)G.tide=g.td;if(g.sw!==undefined){try{const o=g.sw?JSON.parse(g.sw):null;G.swarm=o?{wave:o.w,left:o.l,breakT:o.b,over:!!o.o}:null}catch(e){}}if(g.time!==undefined&&Math.abs(G.t-g.time)>4)G.t=g.time;if(g.ch!==undefined){if(!G.chain)G.chain={n:0,t:0,tier:null};G.chain.n=g.ch}if(g.ct!==undefined){if(!G.chain)G.chain={n:0,t:0,tier:null};G.chain.t=g.ct}if(g.lk!==undefined){try{const L=g.lk?JSON.parse(g.lk):null;G.link=L?{n:L.n,t:L.t,dmg:(linkTier(L.n)||[0,0])[1],name:'',ids:L.in?[G.p.id]:[]}:null}catch(e){}}
     if(g.ban!==undefined){if(g.ban){const b=JSON.parse(g.ban);G.banner={a:b.a,b:b.b,t:b.t}}else G.banner=null}
     if(g.boss!==undefined)net.bossId=g.boss}
@@ -104,7 +105,8 @@ function netUpdate(dt){
   if(touchMode){const n=nearestEnemy();if(n)me.face=Math.atan2(n.y-me.y,n.x-me.x);else if(v.x||v.y)me.face=Math.atan2(v.y,v.x)}else if(playing)me.face=Math.atan2(mouse.y-(me.y-22),mouse.x-me.x);
   const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
   if(me.webT>0)net.dash=0;
-  if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
+  if(me.veh&&vehOf(me))driveStep(me,v,dt,true);/* the server has the last word on the vehicle; this keeps driving smooth */
+   else if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
   else if(v.x||v.y){me.sprint=canSprint(me,v);const sp=envSpeed(me)*me.s.speed*abilSpeed(me)*(me.sprint?SPRINT.mul:1)*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*(me.beam?0:me.chg>0?CHARGE.slow:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11*(me.sprint?SPRINT.stride:1);me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
   if(me.x!==bx||me.y!==by)net.pending.push({s:net.seq+1,dx:me.x-bx,dy:me.y-by});if(net.pending.length>240)net.pending.shift();

@@ -43,7 +43,7 @@ ti=root/'sprites'/'title'
 # poster: the title screen and the modes screen · story, quick: the modes screen behind each mode · warzone: the clip played on Warzone
 data+='const TITLE_URLS='+J({k:asset(ti/f,'title-'+k) for k,f in [('poster','poster.jpg'),('words','words.webp'),('stone','stone.webp'),('story','story.jpg'),('quick','quick.jpg'),('warzone','warzone.mp4')]})+';\n'
 data+='const CARD_ART='+J({'Patriot':asset(root/'sprites'/'hero-cards'/'falcon-ex.jpg','card-falcon-ex')})+';\n'
-data+='const THREE_LAYER_URL='+J(asset(root/'vendor'/'three-layer.js','three-layer'))+';\n'
+data+='const THREE_WORLD_URL='+J(asset(root/'vendor'/'three-world.js','three-world'))+';\n'
 # The modes screen shows the version and the changelog, both read from the repository root
 repo=root.parent
 data+='const GAME_VERSION='+J((repo/'VERSION').read_text().strip())+';\n'
