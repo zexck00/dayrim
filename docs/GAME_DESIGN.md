@@ -437,6 +437,8 @@ Today, 24 game hours take 8 minutes. At night, enemies deal 15% more damage, gol
 
 **Lamps and torches** give safe light. Enemies can break them at night, and players can relight them with F. Being in light removes the night vision penalty.
 
+**Built (C-73, 2026-11-21):** the period effects in the table above come from `DAYNIGHT` in `game.js`, except day's "fewer, more shooters" and dawn's "night enemies slowly retreat", which are still open. Enemies keep the strength of the period they arrived in. Night kills also give 25% more experience, as the game already did before this table.
+
 **Stage timing:** the clock pauses during boss fights, so a boss's difficulty doesn't depend on luck. Each boss arena is set to its stage's starting hour.
 
 ## 17. Power-ups

@@ -926,6 +926,32 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  const hp=p.hp;for(let i=0;i<Math.ceil(T.FINAL.wind*30)+3;i++){p.x=b.x+60;p.y=b.y;p.inv=0;p.hp=Math.max(p.hp,1);s.step(r,1/30);r.ev.length=0}
  ok(p.hp<hp&&b.act!=='final','the final attack lands on anyone inside the ring');
  b.hp=b.maxHp*.1;st(3);ok(b.act!=='final','it happens only once per fight')}
+// C-73: day and night rules read from one table.
+{const DN=T.DAYNIGHT,at=h=>T.period(h).id,VM_MATH=()=>T.G.constructor.constructor('return Math')(); // the rules run in their own vm realm, with their own Math
+ ok([[0,'night'],[4.99,'night'],[5,'dawn'],[7.99,'dawn'],[8,'day'],[16.99,'day'],[17,'dusk'],[19.99,'dusk'],[20,'night'],[23.99,'night'],[24,'night'],[-1,'night']].every(([h,id])=>at(h)===id),'four periods cover the clock: dawn 05-08, day 08-17, dusk 17-20, night 20-05');
+ ok(DN.periods.length===4&&new Set(DN.periods.map(q=>q.id)).size===4,'the table has exactly the four design periods');
+ const r=mk(),p=s.createRoom(r,'Detective',null,'DayNight');T.enter(r);const g=G();g.enemies=[];g.npcs=[];g.spawnT=g.villT=1e9;
+ const potion=T.SHOP.find(x=>x.id==='potions');g.hour=12;const day=T.shopCost(potion);g.hour=22;const night=T.shopCost(potion);g.hour=6;const dawn=T.shopCost(potion);
+ ok(day<night&&night===dawn&&Math.abs(day-night*.9)<=1,'shops are 10% cheaper by day ('+day+' gold by day, '+night+' at night)');
+ g.hour=12;ok(T.elemTime('holy')===1.15&&T.elemTime('void')===1&&T.elemTime('burn')===1&&T.elemTime(undefined)===1,'holy deals 15% more by day, nothing else does');
+ g.hour=18;ok(T.elemTime('burn')===1.15&&T.elemTime('holy')===1,'burn deals 15% more at dusk');
+ g.hour=23;ok(T.elemTime('void')===1.15&&T.elemTime('holy')===1,'void deals 15% more at night');
+ const hitAt=h=>{g.hour=h;g.enemies=[];const e=T.spawnRival(0,false,{x:p.x+60,y:p.y},'Necromancer');e.hp=e.maxHp=1e9;e.statusT=0;e.statusType=null;e.guarding=false;e.ang=0;g.p=p;const M=VM_MATH(),keep=p.char,crit=p.s.crit,rnd=M.random;p.char='Exorcist';p.s.crit=-1;M.random=()=>.5;try{T.hitEnemy(e,100,Math.PI,0,true)}finally{M.random=rnd;p.char=keep;p.s.crit=crit}return 1e9-e.hp};
+ {const hd=hitAt(12),hn=hitAt(22);ok(hd>0&&Math.abs(hd/hn-1.15)<.01,'a holy hit really lands 15% harder by day ('+hd.toFixed(1)+' vs '+hn.toFixed(1)+')')}
+ g.hour=6;ok(T.elemTime('holy')===1&&T.elemTime('void')===1&&T.elemTime('burn')===1,'dawn gives no element bonus');
+ const dmgAt=h=>{g.hour=h;g.enemies=[];const e=T.spawnRival(0,false,{x:p.x+300,y:p.y},'Necromancer');return e.dmg};
+ const dd=dmgAt(12),nd=dmgAt(22),ud=dmgAt(18);ok(Math.abs(nd/dd-1.15)<1e-9&&ud===dd,'enemies that arrive at night hit 15% harder; dusk is still day strength');
+ const mobAt=h=>{g.hour=h;g.enemies=[];return T.spawnMob(0,{x:p.x+300,y:p.y},false).dmg};ok(Math.abs(mobAt(22)/mobAt(12)-1.15)<1e-9,'minions that arrive at night hit 15% harder too');
+ const strong=h=>{g.hour=h;let n=0;for(let i=0;i<3000;i++){g.enemies=[];if(T.spawnMob(0,{x:p.x+300,y:p.y},null).mob==='strong')n++}return n};{const sd=strong(12),sn=strong(22);ok(sn>sd*1.6&&sn<sd*2.4,'strong minions are about twice as likely at night ('+sd+' by day, '+sn+' at night, of 3000)')}
+ const elites=h=>{g.hour=h;let n=0;for(let i=0;i<3000;i++){g.enemies=[];const e=T.spawnRival(0,null,{x:p.x+300,y:p.y},'Necromancer');if(e.elite)n++}return n};
+ const de=elites(12),ne=elites(22);ok(ne>de*1.6&&ne<de*2.5,'elites are about twice as likely at night ('+de+' by day, '+ne+' at night, of 3000)');
+ ok(T.duskCrossed(18.99,19.01)&&!T.duskCrossed(19.01,19.2)&&!T.duskCrossed(23.99,.01)&&T.duskCrossed(18.5,.2)&&!T.duskCrossed(12,13),'the warning hour is crossed once, including across midnight');
+ g.enemies=[];g.banner=null;g.hour=DN.warnAt-.0005;s.step(r,1/30);r.ev.length=0;ok(g.banner&&g.banner.a===DN.warn.a,'a warning shows when the clock reaches 19:00');
+ g.banner=null;g.hour=DN.warnAt+.1;s.step(r,1/30);r.ev.length=0;ok(!g.banner||g.banner.a!==DN.warn.a,'and not again later the same evening');
+ const heal=h=>{g.enemies=[];g.hour=h;p.x=g.safe.x;p.y=g.safe.y;p.s.regen=0;p.hp=p.s.maxHp*.3;const h0=p.hp;s.step(r,1/30);r.ev.length=0;return p.hp-h0};
+ const hd=heal(12),hw=heal(6);ok(hd>0&&Math.abs(hw/hd-1.5)<.05,'the safehouse heals 50% more at dawn');
+ const drop=h=>{g.hour=h;g.enemies=[];g.loot=[];const e=T.spawnRival(0,false,{x:p.x+300,y:p.y},'Necromancer');e.gold=100;const M=VM_MATH(),rnd=M.random;M.random=()=>0;try{T.killEnemy(e)}finally{M.random=rnd}const l=g.loot.find(x=>x.kind==='gold');return l?l.amt:0};
+ ok(drop(12)===100&&drop(22)===125&&drop(18)===100,'a kill at night drops 25% more gold')}
 console.log('\n'+n+' checks passed');
 
 

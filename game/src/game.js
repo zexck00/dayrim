@@ -345,6 +345,22 @@ function flowAngle(e){const tx=e.x/T|0,ty=e.y/T|0;let b=Infinity,ba=null;
 
 /* Day and night: 0 is full daylight, 1 is deep night */
 function nightness(h){h=(h%24+24)%24;if(h>=8&&h<17)return 0;if(h>=17&&h<20)return(h-17)/3;if(h>=20||h<5)return 1;return 1-(h-5)/3}
+/* Day and night rules (C-73, design section 16). nightness() above is the smooth light level for drawing and crowds;
+   the rules read the four periods from this one table. enemyDmg: enemies spawned in the period. gold and xp: kill rewards.
+   elite: multiplies the elite chance of rivals and the strong chance of minions. shop: safehouse prices. safeHeal: safehouse
+   healing. el: player damage bonus by element. warnAt: the dusk warning hour. */
+const DAYNIGHT={
+  periods:[
+    {id:'dawn',n:'Dawn',from:5,to:8,enemyDmg:1,gold:1,xp:1,elite:1,shop:1,safeHeal:1.5,el:{}},
+    {id:'day',n:'Day',from:8,to:17,enemyDmg:1,gold:1,xp:1,elite:1,shop:.9,safeHeal:1,el:{holy:1.15}},
+    {id:'dusk',n:'Dusk',from:17,to:20,enemyDmg:1,gold:1,xp:1,elite:1,shop:1,safeHeal:1,el:{burn:1.15}},
+    {id:'night',n:'Night',from:20,to:5,enemyDmg:1.15,gold:1.25,xp:1.25,elite:2,shop:1,safeHeal:1,el:{void:1.15}}],
+  warnAt:19,warn:{a:'Night is coming',b:'Enemies grow stronger at 20:00. Elites are twice as likely.'}
+};
+function period(h){h=(h%24+24)%24;return DAYNIGHT.periods.find(q=>q.from<q.to?h>=q.from&&h<q.to:h>=q.from||h<q.to)}
+const dn=()=>period(G.hour),elemTime=el=>(el&&dn().el[el])||1;
+/* The clock crossed the warning hour this frame (handles the wrap past midnight). */
+function duskCrossed(h0,h1){const w=DAYNIGHT.warnAt;return h1>=h0?h0<w&&h1>=w:h0<w||h1>=w}
 function tintOf(h,n){h=(h%24+24)%24;const warm=(h>=5&&h<8)||(h>=16&&h<20);return warm&&n<.75?{c:[235,120,60],a:.16+.12*Math.sin(n*Math.PI)}:{c:[14,18,52],a:n*.62}}
 const clock=h=>{h=(h%24+24)%24;const hh=h|0,m=(h-hh)*60|0;return String(hh).padStart(2,'0')+':'+String(m-(m%5)).padStart(2,'0')};
 
@@ -547,7 +563,7 @@ const METHOD_ROLE={heal:'healer',shield:'guard',spell:'caster',shoot:'shooter'};
 /* Weak and strong minions of the three villains */
 function spawnMob(minD=500,at=null,forceStrong=null){
   const o=at||randomOpen(minD,1500);if(!o)return null;
-  const s=G.stage,strong=forceStrong===null?Math.random()<.14+s*.018:forceStrong,own=pick(ENEMY_VILLAINS),m=MINIONS[own][strong?1:0],k=MOB[strong?'strong':'weak'],L=minionLevel(s),night=nightness(G.hour)>.5?1.15:1;
+  const s=G.stage,P=dn(),strong=forceStrong===null?Math.random()<(.14+s*.018)*P.elite:forceStrong,own=pick(ENEMY_VILLAINS),m=MINIONS[own][strong?1:0],k=MOB[strong?'strong':'weak'],L=minionLevel(s),night=P.enemyDmg;
   const a={melee:true,range:strong?30:18,atk:strong?1.5:1.05,r:strong?20:12};
   const e={role:strong?'brute':'rusher',kind:'rival',mob:strong?'strong':'weak',owner:own,name:m.n,art:m.n,ah:m.ah,a,method:'melee',healT:9,castT:0,guarding:false,x:o.x,y:o.y,r:a.r,lvl:L+(strong?1:0),hp:mobUnit(s,L)*k.hp,maxHp:mobUnit(s,L)*k.hp,dmg:mobHit(s,L)*k.dmg*night,sp:k.sp*(1+s*.012)*Math.min(1.6,1+.15*Math.max(0,s-4)),xp:9*Math.pow(1.22,s-1)*(strong?2.4:.65),gold:rnd(2,6)*Math.pow(1.22,s-1)*(strong?2.5:.6),elite:false,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU),fs:1};
   if(!strong&&G.stage===1&&G.enemies.filter(x=>x.role==='healer').length===0&&G.enemies.length>=2){e.role='healer';e.method='heal';e.a.melee=false;e.a.atk=1.8;e.healT=2}
@@ -561,8 +577,8 @@ function spawnRival(minD=500,elite=null,at=null,force=null){
   a.melee=method!=='shoot'&&method!=='spell';
   if(a.melee)a.atk=Math.min(a.atk,1.3);else a.atk=method==='spell'?2.1:1.7;
   if(method==='unarmed'){a.atk*=.75;a.dmg*=.85}
-  const el=elite===null?Math.random()<.06+s*.008:elite,m=el?2.5:1;
-  const night=nightness(G.hour)>.5?1.15:1;
+  const P=dn(),el=elite===null?Math.random()<(.06+s*.008)*P.elite:elite,m=el?2.5:1;
+  const night=P.enemyDmg;
   const e={role:METHOD_ROLE[method]||(a.melee?'rusher':'shooter'),kind:'rival',name,a,w,method,healT:rnd(1,3),castT:0,guarding:false,x:o.x,y:o.y,r:a.r*(el?1.1:1),hp:mobUnit(s)*a.hp*m,maxHp:mobUnit(s)*a.hp*m,dmg:mobHit(s)*a.dmg*(el?1.3:1)*night,sp:a.sp*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(el?3:1),gold:rnd(2,6)*Math.pow(1.22,s-1)*(el?3:1),elite:el,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU)};
   partyToughen(e);G.enemies.push(e);return e;
 }
@@ -901,7 +917,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){if(heavy&&kb>0)G.hitStop=Math.max(G
   const el=ELEMENT[p.char],prev=e.statusType,solo=G.players.length===1,rid=(el&&e.statusT>0&&prev&&G.t>=(e.reactAt||0)&&(solo||(e.statusBy||0)!==(p.id||0)))?(solo?'resonance':reactionOf(prev,el)):'';
   if(rid&&REACT_FX[rid]){sfx('react_'+rid);achievementUnlock(p,'reaction');if(!solo)achievementUnlock(p,'teamReaction');e.reactAt=G.t+REACT_CD;const mult=REACT_FX[rid](e,p,base);base*=solo?1+(mult-1)*.5:mult;text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p,solo?.5:1);bossGuard(e,BOSS_GUARD_GAIN.reaction*(solo?.5:1))}
   else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
-  if(e.shatterT>0)base*=1.25;if((e.staggerT||0)>0)base*=BOSS_STAGGER_DMG;
+  base*=elemTime(el);if(e.shatterT>0)base*=1.25;if((e.staggerT||0)>0)base*=BOSS_STAGGER_DMG;
   base*=shellBlock(e,p);base*=((e.exposedT||0)>0?1.25:1)*((e.markT||0)>0?1.25:1);const crit=Math.random()<p.s.crit+(auraHas(p,'striker')?.04:0),facing=Math.abs(Math.atan2(Math.sin(ang-e.ang-Math.PI),Math.cos(ang-e.ang-Math.PI))),block=(e.guarding&&facing<1.05)?.45:1,d=base*(crit?2:1)*rnd(.9,1.1)*block;
   e.hp-=d;e.flash=.11;e.aware=true;if(p&&p.char==='Void Empress'&&(WEAPONS[p.weapon]||{}).m==='spell')e.slowT=Math.max(e.slowT||0,1.5);if(e.hp>0)enemySfx(e,'hurt');threatAdd(e,p.id||0,100*d/Math.max(1,e.maxHp));bossPhaseCheck(e);if(e.kind==='boss')e.recoil=.16;const res=e.kind==='boss'?.15:1;e.kx+=Math.cos(ang)*kb*res;e.ky+=Math.sin(ang)*kb*res;
   G.fx.push({k:'spark',x:e.x,y:e.y-24,a:ang,t:crit?.26:.18,m:crit?.26:.18,crit:crit?1:0,c:heavy||crit?'255,220,120':'255,250,235'});
@@ -914,11 +930,11 @@ function killEnemy(e){
   if(e.scrapGolem&&!e.scrapFinished){scrapDisable(e);return}
   if(e.grab)lurkRelease(e,false);if(e.role==='bloater')sporeCloud(e);e.dead=true;const p=G.p,boss=e.kind==='boss';if(boss)sfx('boss_death');else enemySfx(e,'die');p.kills++;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:8,to:boss?170:58,t:.3,m:.3,c:'#fff2d0'});onKill(e);if(!G.swarm)achievementCheck(p);if(e.vill||e.elite)sfx('rivalDown');burst(e.x,e.y-20,e.elite?'#e8c95c':'#c8c8d0',boss?70:12,boss?300:150);
   const ga=(e.kx||e.ky)?Math.atan2(e.ky,e.kx):rnd(TAU);goreSpray(e,ga,.6,boss);goreChunks(e,ga,boss?26:(e.mob?6:10));gorePool(e,boss?3:1);if(e.vill)G.fx.push({k:'kitdie',key:KIT_OF[e.name],x:e.x,y:e.y,mir:G.p.x>e.x,t:6,m:6});else if(boss||e.art)G.fx.push({k:'bossdie',art:e.art,ah:e.ah,x:e.x,y:e.y,fs:e.fs||1,t:boss?1.5:.8,m:boss?1.5:.8});else G.fx.push({k:'ko',name:e.name,x:e.x,y:e.y,t:.7,m:.7});
-  const night=nightness(G.hour)>.5?1.25:1;
+  const P=dn();
   if(!boss&&e.kind==='rival'&&!e.minion)G.killsStage++;
   /* Necromancer passive, Grave Harvest */
   if(p&&p.char==='Necromancer'&&p.s){p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.03);p.mana=Math.min(p.s.maxMana,p.mana+6)}
-  dropLoot(e,night);shareXp(e.xp*night);
+  dropLoot(e,P.gold);shareXp(e.xp*P.xp);
   if(boss){G.flesh=null;clearBossEggs();clearSporeBoss();clearGhoul();shake(12);sfx('boom');G.boss=null;G.arena=null;clearLanterns();G.players.forEach(q=>{q.sp+=2;q.possT=0});G.enemies.forEach(o=>{if(o.minion)o.dead=true});if(!G.swarm)stageCleared()}
   dirty();
 }
@@ -1436,7 +1452,7 @@ function openLink(p){
 }
 function tickLink(dt){const L=G.link;if(!L)return;L.t-=dt;if(L.t<=0)G.link=null}
 const gymCost=r=>Math.round(40*Math.pow(1.3,r));
-const shopCost=s=>Math.round(s.base*(1+(G.stage-1)*.35));
+const shopCost=s=>Math.round(s.base*(1+(G.stage-1)*.35)*dn().shop);
 const guardArmor=p=>(8+p.stats.grd*10+p.lvl*1.4)*(p.weapon==='shield'?1.6:1)*p.s.guardMul;
 function moveVec(){let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;if(joy.on){x=joy.dx;y=joy.dy}const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return{x,y}}
 function doDash(){const p=G.p;if(p.cd.dash>0||p.stunT>0||p.grabT>0||p.webT>0)return;const v=moveVec(),a=(v.x||v.y)?Math.atan2(v.y,v.x):p.face;p.cd.dash=p.s.dashCd*cdMulOf(p);p.dashT=.26;p.dashX=Math.cos(a);p.dashY=Math.sin(a);p.inv=Math.max(p.inv,.32+Math.min(3,(p.runBoons||{}).wide||0)*.12);sfx('dash')}
@@ -1488,7 +1504,7 @@ function updatePlayer(p,dt){
       if(p.carry){p.carry.x=p.x;p.carry.y=p.y;const d=G.obj.vents?G.obj.vents.find(v=>!v.done&&dist(p,v)<v.r):G.obj.drop&&dist(p,G.obj.drop)<G.obj.drop.r?G.obj.drop:null;if(d){if(G.obj.vents)d.done=true;p.carry.done=true;p.carry.by=0;p.carry=null;text(p.x,p.y-70,'Delivered','#8fd6ff',true);sfx('loot')}}
       if(p.carry&&p.carry.done)p.carry=null}}
   p.nearSafe=dist(p,G.safe)<70;
-  if(p.nearSafe&&!(G.swarm&&G.swarm.breakT<=0))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.08*dt);
+  if(p.nearSafe&&!(G.swarm&&G.swarm.breakT<=0))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.08*dn().safeHeal*dt);
 }
 /* Shots and hazards remember who made them, so kills and leech go to the right player */
 function tagOwned(p){for(const s of G.shots)if(s.from==='p'&&s.pid===undefined)s.pid=p.id;for(const h of (G.hazards||[]))if(h.from!=='e'&&h.pid===undefined)h.pid=p.id}
@@ -1496,7 +1512,7 @@ function update(dt){
   const real=dt;let slow=1;
   chainTick(real);tickLink(real);
   for(const p of G.players){G.p=p;if(p.ult){tickUlt(real);tagOwned(p);if(!G.mp&&p.ult)slow=p.ult.t<ULT_HITS[0]?.06:.45}else if(p.combo){p.comboT-=real;if(p.comboT<=0){p.combo=0;p.comboTier=null}}p.comboPop=Math.max(0,p.comboPop-real*4)}
-  dt*=slow;bossEggTick(dt);G.t+=dt;G.hour=(G.hour+dt/20)%24;objStep(dt);sideStep(dt);
+  dt*=slow;bossEggTick(dt);G.t+=dt;{const h0=G.hour;G.hour=(G.hour+dt/20)%24;if(duskCrossed(h0,G.hour)&&!G.swarm&&!G.story){G.banner={t:3,a:DAYNIGHT.warn.a,b:DAYNIGHT.warn.b};sfx('boss_warn')}}objStep(dt);sideStep(dt);
   for(const p of G.players)updatePlayer(p,dt);
   valeTick(dt);G.p=G.players[0];
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
@@ -1607,7 +1623,7 @@ function restartSwarm(){for(const q of G.players){if(q.swarmSave)Object.assign(q
 function startSwarmRun(char,stage){const sv=readSave();saveHold=true;try{if(sv&&sv.char===char)loadRun(sv);else newRun(char);enterStage(stage);startSwarm()}finally{saveHold=false}setMode('play')}
 /* Stage 7: rust weakens armor at night; disabled golems rebuild until their parts are destroyed. */
 const RUST={gain:1.5,clean:4,max:50,repair:8,rebuild:10,golemCap:2};
-function rustStep(p,dt){if(G.stage!==7||p.deadT>0||p.respawnT>0)return;const night=G.hour>=20||G.hour<5,safe=dist(p,G.safe)<70&&!(G.swarm&&G.swarm.breakT<=0);p.rust=clamp((p.rust||0)+(night&&!safe?RUST.gain:-RUST.clean)*dt,0,RUST.max)}
+function rustStep(p,dt){if(G.stage!==7||p.deadT>0||p.respawnT>0)return;const night=dn().id==='night',safe=dist(p,G.safe)<70&&!(G.swarm&&G.swarm.breakT<=0);p.rust=clamp((p.rust||0)+(night&&!safe?RUST.gain:-RUST.clean)*dt,0,RUST.max)}
 function spawnScrapGolem(){const e=spawnMob(500,null,true);if(!e)return null;e.scrapGolem=true;e.role='brute';e.hp*=1.4;e.maxHp*=1.4;e.sp*=.8;e.aware=true;return e}
 const scrapGolemDue=()=>G.stage===7&&G.enemies.filter(e=>!e.dead&&e.scrapGolem).length<Math.round(RUST.golemCap*partyCrowd())&&spawnScrapGolem();
 function clearScrap(){G.props=G.props.filter(c=>c.kind!=='scrapPart')}
