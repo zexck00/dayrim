@@ -18,7 +18,7 @@ fx3Canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();fx3Off('con
 fx3Button.onclick=()=>setFx3(!FX3.enabled);
 blitHook=w3Card;
 // for checking the look in the browser console: DAYRIM_GFX.pal / .ink / .dither = false
-window.DAYRIM_GFX=W3.opts;Object.defineProperty(W3.opts,'state',{get:()=>({cards:W3.cards.map(c=>[c.canvas.width,Math.round(c.footY)]),slow:W3.slow,fx:FX3.layer&&FX3.layer.stats(),p:G.p&&[Math.round(G.p.x),Math.round(G.p.y)],water:(()=>{const i=G.w.ground.findIndex((g,j)=>g===3&&!G.w.map[j]);return i<0?null:[(i%MW+.5)*T,((i/MW|0)+.5)*T]})(),tree:(G.w.props.find(o=>o.t==='tree')||{}).x,veh:(G.vehicles||[]).map(v=>[v.kind,Math.round(v.x),Math.round(v.y)])}),enumerable:false});
+window.DAYRIM_GFX=W3.opts;W3.opts.finalPreview=art=>{G.fx.push({k:'bossult',art,name:art,move:FINAL.names[art]||'Final assault',x:0,y:0,t:FINAL.wind+.5,m:FINAL.wind+.5});return 'ok'};W3.opts.bossSheet=()=>{const c=bossSheet();c.style.cssText='position:fixed;left:0;top:0;z-index:99;width:auto;height:100vh;image-rendering:pixelated';c.id='bosssheet';const old=document.getElementById('bosssheet');if(old)old.remove();document.body.appendChild(c);return c.width+'x'+c.height};Object.defineProperty(W3.opts,'state',{get:()=>({cards:W3.cards.map(c=>[c.canvas.width,Math.round(c.footY)]),slow:W3.slow,fx:FX3.layer&&FX3.layer.stats(),p:G.p&&[Math.round(G.p.x),Math.round(G.p.y)],water:(()=>{const i=G.w.ground.findIndex((g,j)=>g===3&&!G.w.map[j]);return i<0?null:[(i%MW+.5)*T,((i/MW|0)+.5)*T]})(),tree:(G.w.props.find(o=>o.t==='tree')||{}).x}),enumerable:false});
 /* The world is drawn in 3D only while playing; menus keep their 2D backdrops */
 const w3On=()=>!!(FX3.enabled&&FX3.layer&&G&&G.mode==='play'&&G.w);
 
@@ -69,7 +69,7 @@ function w3Begin(cam,sx,sy){
 /* blit() hands its sprite here when it would draw on the over layer at full opacity */
 function w3Card(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo){
   if(!W3.d3||W3.baking||c2!==W3.octx||(alpha!==undefined&&alpha<.99)||c2.globalAlpha<.99||c2.globalCompositeOperation!=='source-over')return false;
-  let im=frame(name,dir,anim,f,wpn);if(mo&&mo.red)im=redFrame(im);
+  let im=frame(name,dir,anim,f,wpn);if(blitDark)im=darkFrame(im);if(mo&&mo.red)im=redFrame(im);
   const m=W3.baseInv.multiply(c2.getTransform()),foot=m.transformPoint(new DOMPoint(x,y));
   m.translateSelf(x,y);
   if(mo){m.translateSelf(mo.dx||0,mo.dy||0);if(mo.rot)m.rotateSelf(mo.rot*180/Math.PI);if(mo.sx||mo.sy)m.scaleSelf(mo.sx||1,mo.sy||1)}
@@ -115,7 +115,7 @@ function w3Light(n,tint,inView){
   // Three.js divides diffuse light by pi; these keep a lit face at about its 2D brightness at noon
   return{sun:{dir:[-.45,.55,1],col:warm?'#ffd8a8':n>.6?'#8090d0':'#fff6e4',i:Math.PI*(.35+.15*day)},
     amb:{sky:n>.6?'#7080b0':'#f0f4ff',ground:'#b0a080',i:Math.PI*.55},lights,
-    tint:tint.a>.01?[tint.c[0]/255,tint.c[1]/255,tint.c[2]/255,tint.a*.75]:[0,0,0,0],cardLight:[1,1,1],time:G.t,night:n,dayLight:1-.35*n,shots,beams,hits,reduced,vehicles:(G.vehicles||[]).filter(v=>Math.abs(v.x-W3.f.cx)<W3.f.vw&&Math.abs(v.y-W3.f.cy)<W3.f.vh).map(v=>({id:v.id,kind:v.kind,x:v.x,y:v.y,a:v.a,sp:v.sp}))};
+    tint:tint.a>.01?[tint.c[0]/255,tint.c[1]/255,tint.c[2]/255,tint.a*.75]:[0,0,0,0],cardLight:[1,1,1],time:G.t,night:n,dayLight:1-.35*n,shots,beams,hits,reduced};
 }
 function w3End(lt){
   ctx=ctx0;W3.d3=false;shadowTo=null;

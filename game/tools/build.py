@@ -48,7 +48,7 @@ data+='const THREE_WORLD_URL='+J(asset(root/'vendor'/'three-world.js','three-wor
 repo=root.parent
 data+='const GAME_VERSION='+J((repo/'VERSION').read_text().strip())+';\n'
 data+='const CHANGELOG_MD='+J((repo/'CHANGELOG.md').read_text())+';\n'
-js=data+''.join((root/'src'/f).read_text()+'\n' for f in ['rig.js','game.js','render.js','story-map.js','story-data.js','story.js','net.js','effects3d.js','ui.js'])
+js=data+''.join((root/'src'/f).read_text()+'\n' for f in ['rig.js','game.js','render.js','monsters.js','story-map.js','story-data.js','story.js','net.js','effects3d.js','ui.js'])
 page=(root/'src/page.html').read_text()
 assert '/*GAME*/' in page
 out=page.replace('/*GAME*/','(()=>{\n"use strict";\n'+js+'})();')

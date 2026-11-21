@@ -477,18 +477,41 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .story-act{border:0;box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #c9a26a,inset 0 0 0 3px #24180e,0 4px 0 #000;background:linear-gradient(180deg,#3e2f20,#1a120b);color:#f0e2c4;font-family:"Cinzel",serif;font-weight:900}
 /* corner buttons in play: small bronze plaques */
 .sound{font-family:"Cinzel",serif!important;font-weight:700;letter-spacing:.04em;color:#efe2c8;border:0;background:linear-gradient(180deg,rgba(62,47,32,.9),rgba(26,18,11,.92));box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #7a5c34}
+
+/* ---------- Quests panel: the stage goal and side quests, in the medieval plaque style ---------- */
+.questb{top:calc(244px*var(--k,1))!important}
+.qpanel{position:absolute;z-index:6;right:10px;top:calc(272px*var(--k,1));width:min(380px,calc(100% - 20px));max-height:calc(100% - 290px*var(--k,1));overflow:auto;padding:14px 14px 10px;color:#e8dcc4;font-family:"Alegreya",Georgia,serif;
+  background:radial-gradient(ellipse 120% 50% at 50% 0,rgba(120,80,40,.22),rgba(0,0,0,0) 60%),linear-gradient(180deg,rgba(29,21,14,.96),rgba(15,10,6,.97));
+  box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #8a6a3c,inset 0 0 0 4px #24180e,inset 0 0 0 5px #5c4426,0 12px 34px #000c;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px)}
+.qpanel h2{margin:0;font:900 20px "Cinzel",serif;letter-spacing:.06em;color:#f0e2c4}
+.qpanel h3{margin:0;font:900 15px "Cinzel",serif;letter-spacing:.03em;color:#e0b878}
+.qp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.qp-sec{padding:10px 10px 8px;margin:8px 0;background:linear-gradient(180deg,rgba(62,47,32,.7),rgba(26,18,11,.8));box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #5c4426}
+.qp-sec.on{box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #e8c88e,0 0 10px rgba(255,180,90,.25)}
+.qp-sec.done{opacity:.6}
+.qp-sec p{margin:5px 0;font-size:15px;line-height:1.35;color:#e2d4b8}
+.qp-sec .who{font:700 12px "Cinzel",serif;color:#c9a26a;letter-spacing:.06em}
+.qp-sec .st{font:700 13px "Cinzel",serif;color:#f0e2c4}
+.qp-sec .rw{font-size:13px;color:#e8c95c}
+.qp-sec ul{margin:4px 0 0;padding-left:18px;font-size:14px}.qp-sec li.ok{color:#8fe6b8}
+.qp-row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.qpanel button{font:900 12px "Cinzel",serif;letter-spacing:.05em;border:0;cursor:pointer;color:#efe2c8;padding:6px 10px;background:linear-gradient(180deg,#3e2f20,#1a120b);box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #7a5c34;clip-path:polygon(5px 0,calc(100% - 5px) 0,100% 5px,100% calc(100% - 5px),calc(100% - 5px) 100%,5px 100%,0 calc(100% - 5px),0 5px)}
+.qpanel button.go{color:#fff1d6;background:linear-gradient(180deg,#9a3424,#5a160e)}
+.qpanel button[aria-pressed="true"]{color:#1a1006;background:linear-gradient(180deg,#e8c88e,#a8814a)}
+.qpanel button:hover{filter:brightness(1.2)}
+@media(max-width:700px),(max-height:520px){.qpanel{left:8px;right:8px;width:auto;top:8px;bottom:8px;max-height:none}}
 </style>
 
 <div class="wrap">
   <section class="stage" aria-label="Playable prototype">
     <div class="screen" id="screen">
       <canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas><canvas id="c" aria-label="Game view"></canvas>
-      <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button>
+      <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button><button class="sound questb" id="questbtn" type="button" aria-expanded="false" aria-controls="qpanel">Quests (J)</button>
+      <div class="qpanel" id="qpanel" role="dialog" aria-label="Quests" hidden></div>
       <div class="joystick" id="joystick" aria-hidden="true" hidden><i></i></div>
       <button class="scout-revive" id="scout-revive" type="button" hidden>Hold to revive scout</button>
       <div class="touch" id="touch" aria-label="Touch controls" hidden>
         <div class="touch-primary">
-          <button type="button" data-a="drive" id="touch-drive" hidden><span class="touch-icon" aria-hidden="true">⛟</span><span class="touch-label">Drive</span></button>
           <button type="button" data-a="fast"><span class="touch-icon" aria-hidden="true">ϟ</span><span class="touch-label">Fast</span></button>
           <button type="button" data-a="heal"><span class="touch-icon" aria-hidden="true">✚</span><span class="touch-label">Heal</span></button>
           <button type="button" data-a="team"><span class="touch-icon" aria-hidden="true">✦</span><span class="touch-label">Team</span></button>

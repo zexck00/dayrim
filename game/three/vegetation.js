@@ -129,5 +129,5 @@ export function scatterExtras(th,st,avoid=[]){
   return out;
 }
 
-/* Shape helpers, shared with vehicles.js */
+/* Shape helpers, reusable for other low-poly models */
 export {P,merge,cyl,cone,ico,box,hemi,hash};

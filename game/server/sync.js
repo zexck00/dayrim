@@ -5,7 +5,7 @@ const ENEMY_SKIP=new Set(['spoke','attacking','xp','gold','dmg','sp','cd','wande
 const NPC_SKIP=new Set(['kx','ky','t','sp','scare','dead','id']);
 const LOOT_SKIP=new Set(['t','amt','id']);
 const OWN_SKIP=new Set(['input','actions','ack','id','clickLatch','holdT','combo_','x','y','vx','vy','lx','ly','toxinTick','fallT']);
-const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats','grabT','possT','stunT','webT','toxicLoad','loadMark','rust','fieldRust','abil','abilCast','sprint','chg','beam','lungeT','lungeA','dive','sing','veh'];
+const OTHER_KEEP=['char','pname','r','hp','lvl','face','walk','moving','moveA','mv','inv','dashT','dashX','dashY','hitT','guard','castT','atkT','atkDur','pickT','swing','swingA','swingR','swingArc','fastT','magicT','healFx','pillT','pillC','weapon','deadT','respawnT','reviveTarget','reviveProgress','stats','grabT','possT','stunT','webT','toxicLoad','loadMark','rust','fieldRust','abil','abilCast','sprint','chg','beam','lungeT','lungeA','dive','sing'];
 let nextEnt=1;
 const entId=o=>o.id||(o.id=nextEnt++);
 const rnum=(k,v)=>k==='x'||k==='y'||k==='walk'?Math.round(v*10)/10:Math.round(v*100)/100;
@@ -28,7 +28,7 @@ function diff(items,known,toFlat,once){
   const rm=[];for(const id of known.keys())if(!seen.has(id)){rm.push(id);known.delete(id)}
   return upd.length||rm.length?[upd,rm]:undefined;
 }
-function newClient(){return{g:{},p:new Map(),e:new Map(),n:new Map(),h:new Map(),l:new Map(),z:new Map(),pr:new Map(),v:new Map()}}
+function newClient(){return{g:{},p:new Map(),e:new Map(),n:new Map(),h:new Map(),l:new Map(),z:new Map(),pr:new Map()}}
 const near=(a,o,r)=>Math.hypot(a.x-o.x,a.y-o.y)<r;
 
 function snapshot(room,me,known,tick){
@@ -44,13 +44,11 @@ function snapshot(room,me,known,tick){
   const hazard=z=>({x:rnum('x',z.x),y:rnum('y',z.y),r:z.r,t:rnum('t',z.t),from:z.from,col:z.col});
   const z=diff((G.hazards||[]).filter(o=>near(me,o,AOI)),known.z,hazard,true);if(z)out.z=z;
   const l=diff(G.loot.filter(o=>near(me,o,AOI)),known.l,o=>flatten(o,LOOT_SKIP));if(l)out.l=l;
-  const prop=o=>({x:rnum('x',o.x),y:rnum('y',o.y),r:o.r,k:o.kind,t:rnum('t',o.t||0),by:o.by||0,d:o.done?1:0});
-  /* vehicles: position, heading, speed and driver. There are only a handful and only changes are sent, so all of them go out */
-  const v=diff((G.vehicles||[]),known.v,o=>({x:rnum('x',o.x),y:rnum('y',o.y),a:Math.round(o.a*100)/100,sp:Math.round(o.sp),by:o.by||0,k:o.kind}));if(v)out.vh=v;
-  const pr=diff((G.props||[]).filter(o=>near(me,o,AOI)||o.kind==='drop'||o.kind==='escort'),known.pr,prop);if(pr)out.pr=pr;
+  const prop=o=>({x:rnum('x',o.x),y:rnum('y',o.y),r:o.r,k:o.kind,t:rnum('t',o.t||0),by:o.by||0,d:o.done?1:0,q:o.q||''});
+  const pr=diff((G.props||[]).filter(o=>near(me,o,AOI)||o.kind==='drop'||o.kind==='escort'||(o.kind&&o.kind.startsWith('sq_'))),known.pr,prop);if(pr)out.pr=pr;
   /* Room-wide values. The banner is only sent when a new one appears, and the client counts it down. */
   const b=G.banner;if(b&&!b.t0){b.t0=b.t;b.bid=entId({})}
-  const g={hour:Math.round(G.hour*20)/20,kills:G.killsStage,hope:G.hope,maxHope:G.hopeMax,hopeSpent:G.hopeSpent||0,obj:G.obj?JSON.stringify({i:G.obj.i,d:G.obj.done?1:0,h:(G.obj.steps[G.obj.i]||{}).have||0,n:(G.obj.steps[G.obj.i]||{}).need||0,l:(G.obj.steps[G.obj.i]||{}).label||'',tg:(G.obj.wire||{}).tg||[],hn:(G.obj.wire||{}).hn||0}):'',gate:G.gate.open?1:0,boss:G.boss?entId(G.boss):0,ban:b?JSON.stringify({a:b.a,b:b.b,t:b.t0,i:b.bid}):'',time:Math.floor(G.t/3)*3,td:Math.round((G.tide||0)*20)/20,sw:G.swarm?JSON.stringify({w:G.swarm.wave,l:G.swarm.left,b:Math.ceil(G.swarm.breakT),o:G.swarm.over?1:0}):'',ch:G.chain?G.chain.n:0,ct:G.chain?Math.round(Math.max(0,G.chain.t)*10)/10:0,lk:G.link?JSON.stringify({n:G.link.ids.length,t:Math.round(G.link.t*10)/10,in:G.link.ids.indexOf(me.id)>=0?1:0}):''};
+  const g={hour:Math.round(G.hour*20)/20,kills:G.killsStage,hope:G.hope,maxHope:G.hopeMax,hopeSpent:G.hopeSpent||0,sd:G.sideWire||'',obj:G.obj?JSON.stringify({i:G.obj.i,d:G.obj.done?1:0,h:(G.obj.steps[G.obj.i]||{}).have||0,n:(G.obj.steps[G.obj.i]||{}).need||0,l:(G.obj.steps[G.obj.i]||{}).label||'',tg:(G.obj.wire||{}).tg||[],hn:(G.obj.wire||{}).hn||0}):'',gate:G.gate.open?1:0,boss:G.boss?entId(G.boss):0,ban:b?JSON.stringify({a:b.a,b:b.b,t:b.t0,i:b.bid}):'',time:Math.floor(G.t/3)*3,td:Math.round((G.tide||0)*20)/20,sw:G.swarm?JSON.stringify({w:G.swarm.wave,l:G.swarm.left,b:Math.ceil(G.swarm.breakT),o:G.swarm.over?1:0}):'',ch:G.chain?G.chain.n:0,ct:G.chain?Math.round(Math.max(0,G.chain.t)*10)/10:0,lk:G.link?JSON.stringify({n:G.link.ids.length,t:Math.round(G.link.t*10)/10,in:G.link.ids.indexOf(me.id)>=0?1:0}):''};
   let gd=null;for(const k in g)if(g[k]!==known.g[k]){(gd=gd||{})[k]=g[k];known.g[k]=g[k]}
   if(gd)out.g=gd;
   const evs=[];for(const v of room.ev){if(v.to!==undefined?v.to===me.id:(v.x===undefined||Math.hypot(v.x-me.x,v.y-me.y)<EVENT_AOI))evs.push(v.e)}

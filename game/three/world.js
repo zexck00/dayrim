@@ -11,14 +11,12 @@ import {buildVegetation,scatterExtras,VEG_KINDS} from './vegetation.js';
 import {buildWater} from './water.js';
 import {createVfx} from './vfx.js';
 import {createCombat} from './combat.js';
-import {createVehicleLayer} from './vehicles.js';
 import {themeFor,STAGE_THEMES} from './stages.js';
 import {DAYRIM64,hexToRgb,nearest} from './palette.js';
 export {DAYRIM64,buildLut,nearest,lutLookup} from './palette.js';
 export {STAGE_THEMES,themeFor,THEME_KEYS} from './stages.js';
 export {VEG_KINDS,EXTRA_KINDS,TREE_KINDS,scatterExtras} from './vegetation.js';
 export {WEATHER} from './vfx.js';
-export {VEHICLES,placeVehicles} from './vehicles.js';
 /* Palette weights that favour a theme's own colours, so each stage keeps its character after reduction */
 export function themeWeights(th){const w=new Array(DAYRIM64.length).fill(1),add=h=>{w[nearest(hexToRgb(h))]=1.15};
   [...th.canopy,...th.shrub,...th.grass,...th.flower,th.trunk,th.gnd,th.glow,th.water.deep,th.water.shallow].forEach(add);return w}
@@ -37,7 +35,7 @@ export function createWorld(canvas){
   renderer.outputColorSpace=LinearSRGBColorSpace;renderer.setPixelRatio(1);
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=BasicShadowMap;
   const scene=new Scene(),cam=new Camera();cam.matrixAutoUpdate=false;cam.matrixWorldAutoUpdate=false;
-  const post=createPost(renderer),light=createLighting(scene),cards=createCards(scene),vfx=createVfx(scene),combat=createCombat(scene,vfx),rides=createVehicleLayer(scene);let lastT=null;
+  const post=createPost(renderer),light=createLighting(scene),cards=createCards(scene),vfx=createVfx(scene),combat=createCombat(scene,vfx);let lastT=null;
   // ground decals (the 2D layer drawn under actors): a plane over the view, just above the ground
   const underCanvas=document.createElement('canvas');underCanvas.width=underCanvas.height=4;
   const underTex=new CanvasTexture(underCanvas);underTex.minFilter=underTex.magFilter=NearestFilter;underTex.colorSpace=NoColorSpace;underTex.flipY=false;underTex.generateMipmaps=false;
@@ -45,19 +43,18 @@ export function createWorld(canvas){
   const underMat=new MeshBasicMaterial({map:underTex,transparent:true,depthWrite:false,blending:CustomBlending,blendEquation:AddEquation,
     blendSrc:SrcAlphaFactor,blendDst:OneMinusSrcAlphaFactor,blendSrcAlpha:ZeroFactor,blendDstAlpha:OneFactor});
   const under=new Mesh(underGeo,underMat);under.frustumCulled=false;under.renderOrder=1;scene.add(under);
-  let terrain=null,veg=null,water=null,cars=null,theme=STAGE_THEMES[0];const M=new Matrix4(),clear=new Color(),wind={value:0},tc=new Color(),tc2=new Color();
+  let terrain=null,veg=null,water=null,theme=STAGE_THEMES[0];const M=new Matrix4(),clear=new Color(),wind={value:0},tc=new Color(),tc2=new Color();
   const mixHex=(a,b,k)=>'#'+tc.set(a).lerp(tc2.set(b),k).getHexString();
   return{
     underCanvas,underCtx:underCanvas.getContext('2d'),overCanvas:post.overCanvas,overCtx:post.overCtx,post,vegKinds:VEG_KINDS,
     /* stage: {map,ground,MW,MH,T,groundCanvas,front,wallH,edge,stage,story,ci,props,avoid} */
     setStage(st){
-      for(const o of [terrain,veg,water,cars])if(o){scene.remove(o);o.userData.dispose()}
+      for(const o of [terrain,veg,water])if(o){scene.remove(o);o.userData.dispose()}
       theme=st.story?STAGE_THEMES[[0,2,5][st.ci||0]||0]:themeFor(st.stage);
       terrain=buildTerrain(st);scene.add(terrain);clear.set(st.edge);
       const baseZ=(x,y)=>{const tx=Math.floor(x/st.T),ty=Math.floor(y/st.T);return tx>=0&&ty>=0&&tx<st.MW&&ty<st.MH&&st.map[ty*st.MW+tx]?st.wallH:0};
       veg=buildVegetation({theme,props:st.props.filter(p=>VEG_KINDS.includes(p.t)),extras:scatterExtras(theme,st,st.avoid),baseZ,wind});scene.add(veg);
       water=buildWater(st,theme,1.2);if(water)scene.add(water);else water=null;
-      rides.reset(theme);
       vfx.setWeather(theme.weather);
       const u=post.uniforms;u.grade.value.set(...theme.grade);u.lift.value.set(...theme.lift);u.sat.value=theme.sat;u.ink.value.set(...tc.set(theme.ink).toArray());
       post.setLut(themeWeights(theme));
@@ -74,9 +71,7 @@ export function createWorld(canvas){
       M.set(...obliqueMatrix(f.cx,f.cy,f.vw,f.vh));cam.projectionMatrix.copy(M);cam.projectionMatrixInverse.copy(M).invert();
       // combat glows and weather move first; their flashes join the point lights below
       const dt=lastT===null?0:Math.min(.1,Math.max(0,(f.time||0)-lastT));lastT=f.time||0;
-      const fight=combat.update(dt,f);vfx.update(dt,f);rides.update(f.vehicles,f.time||0);
-      // dust behind fast land vehicles, spray behind boats
-      for(const o of f.vehicles||[])if(Math.abs(o.sp||0)>140&&Math.random()<.5)vfx.burst(o.x-Math.cos(o.a)*20,o.y-Math.sin(o.a)*20,2,o.kind==='boat'?['#a8dce4','#e8e4d0']:['#a89a7c','#8a7650'],{n:2,power:.5,up:30,life:.35,size:2,glow:false,grav:120});
+      const fight=combat.update(dt,f);vfx.update(dt,f);
       // the stage colours the sun and sky; glowing scenery near the view joins the point lights
       const glows=(veg&&veg.userData.glows||[]).filter(g=>Math.abs(g.x-f.cx)<f.vw*.7&&Math.abs(g.y-f.cy)<f.vh*.7).map(g=>({x:g.x,y:g.y,z:g.z,col:g.col,r:120,i:.25+.5*(f.night||0)}));
       light.update({cx:f.cx,cy:f.cy,vw:f.vw,vh:f.vh,sun:{dir:f.sun.dir,col:mixHex(f.sun.col,theme.sun,.35),i:f.sun.i},amb:{sky:mixHex(f.amb.sky,theme.sky,.25),ground:mixHex(f.amb.ground,theme.gnd,.5),i:f.amb.i},lights:f.lights.concat(glows,fight)});
@@ -91,6 +86,6 @@ export function createWorld(canvas){
       post.render();
     },
     stats:()=>vfx.counts(),
-    dispose(){for(const o of [terrain,veg,water,cars])if(o)o.userData.dispose();vfx.dispose();combat.dispose();rides.dispose();post.dispose();light.dispose();cards.dispose();underGeo.dispose();underMat.dispose();underTex.dispose();renderer.dispose()}
+    dispose(){for(const o of [terrain,veg,water])if(o)o.userData.dispose();vfx.dispose();combat.dispose();post.dispose();light.dispose();cards.dispose();underGeo.dispose();underMat.dispose();underTex.dispose();renderer.dispose()}
   };
 }

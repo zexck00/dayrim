@@ -3,7 +3,9 @@
 const s=require('./sim'),assert=require('assert');let n=0;const ok=(c,m)=>{assert.ok(c,m);n++;console.log('  ok  '+m)};
 const T=s.test,mk=()=>({clients:new Map(),ev:null});
 /* Map size comes from the rules (stages are 156×110) */
-const MW_=s.test.MW,MH_=s.test.MH,VEHv=k=>s.test.VEH[k];
+const MW_=s.test.MW,MH_=s.test.MH;
+/* Older boss tests script exact fights, so the once-per-fight final attack stays off until its own tests */
+s.test.FINAL.on=false;
 const room=mk(),a=s.createRoom(room,'Detective',null,'A'),b=s.addPlayer(room,'Firefighter',null,'B');const G=()=>T.G;
 /* Several tests park an enemy 40 units east of a player. Require an open neighbour so a wall cannot make the case impossible. */
 const openEast=()=>{const W=G().w;return W.open.find(c=>c%MW_<MW_-1&&!W.map[c+1]&&Math.hypot((c%MW_+.5)*40-G().safe.x,((c/MW_|0)+.5)*40-G().safe.y)>500)};
@@ -662,7 +664,7 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
   const ms=p.maxStage;T.G.p=p;T.killEnemy(T.G.boss);step(2);ok(!rr.cleared&&!T.G.clearPending&&p.maxStage===ms,'killing a Swarm boss does not clear the stage')}
  {const {p,rr,step}=sw(['Detective'],1,{maxStage:3,gold:40,lvl:5});const g0=p.gold,l0=p.lvl;p.gold+=900;p.lvl=12;p.swarmBest=7;const sv=s.saveOf(p);ok(sv.gold===g0&&sv.lvl===l0&&sv.swarmBest===7,'nothing earned in the Swarm reaches the saved character, except the best wave')}
  {const {p,rr,step}=sw();S().breakT=0;T.nextWave();p.gold+=500;T.restartCheckpoint();ok(S().over&&!T.G.enemies.length,'a wipe ends the run');step(Math.ceil(T.SWARM.overT*30)+2);ok(!S().over&&S().wave===0&&p.gold<500,'and a fresh run starts with the character as it was')}
- {const {p,rr,step}=sw(),rrOf=()=>rr;S().breakT=0;T.nextWave();step(1);const e=T.G.enemies.find(x=>!x.dead);e.method='melee';e.a.melee=true;e.role='rusher';e.cd=0;p.x=T.G.safe.x;p.y=T.G.safe.y;e.x=p.x+20;e.y=p.y;const hp=p.hp;for(let i=0;i<60;i++){p.inv=0;p.x=T.G.safe.x;p.y=T.G.safe.y;e.x=p.x+20;e.y=p.y;s.step(T.G===undefined?null:rrOf(),1/30)}ok(p.hp<hp,'during a wave the safehouse is no shelter')}
+ {const {p,rr,step}=sw(),rrOf=()=>rr;S().breakT=0;T.nextWave();step(1);const e=T.G.enemies.find(x=>!x.dead)||T.spawnMob(0,{x:T.G.safe.x+40,y:T.G.safe.y});e.method='melee';e.a.melee=true;e.role='rusher';e.cd=0;p.x=T.G.safe.x;p.y=T.G.safe.y;e.x=p.x+20;e.y=p.y;const hp=p.hp;for(let i=0;i<60;i++){p.inv=0;p.x=T.G.safe.x;p.y=T.G.safe.y;e.x=p.x+20;e.y=p.y;s.step(T.G===undefined?null:rrOf(),1/30)}ok(p.hp<hp,'during a wave the safehouse is no shelter')}
  {const {p,rr}=sw(['Detective'],1);p.nearSafe=true;s.hostAction(rr,p,'travel','2');T.enter(rr);ok(T.G.stage===1&&T.G.swarm,'travel is ignored during the Swarm')}
  {const {snapshot,newClient}=require('./sync'),{p,rr}=sw();const g=snapshot(rr,p,newClient(),1).g;const o=JSON.parse(g.sw);ok(o.w===0&&o.b>0&&o.o===0,'snapshots carry the wave state')}}
 // Encounter cleanup must also work for damage over time, wipes and endless-mode retries.
@@ -863,34 +865,67 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  {const {r,p,es}=setup('Necromancer');p.hp=p.s.maxHp*.5;const hp=p.hp;const e=es[0];e.hp=1;G().p=p;T.hitEnemy(e,10,0,0);ok(e.dead&&p.hp>hp,'Grave Harvest heals the Necromancer on a kill')}
  {const {r,p,es}=setup('Void Empress');G().p=p;T.hitEnemy(es[0],5,0,0);ok(es[0].slowT>=1.4,'Gravity Well slows enemies hit by her spells')}}
 
-/* ---------- Bigger stages, roads, the race track and vehicles ---------- */
-{const r=mk(),p=s.createRoom(r,'Detective',null,'V');T.enter(r);const st=(k=1)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};const g=G(),w=g.w,MWv=T.MW,MHv=T.MH,N=MWv*MHv,tile=(x,y)=>Math.floor(y/40)*MWv+Math.floor(x/40);
+/* ---------- Bigger stages ---------- */
+{const r=mk(),p=s.createRoom(r,'Detective',null,'V');T.enter(r);const g=G(),w=g.w,MWv=T.MW,MHv=T.MH,N=MWv*MHv,tile=(x,y)=>Math.floor(y/40)*MWv+Math.floor(x/40);
  ok(MWv===156&&MHv===110&&w.map.length===N&&T.STORY_MW===78&&T.STORY_MH===55,'stages are 156×110 tiles; story chapters keep 78×55');
  const reach=(from,okTile)=>{const seen=new Uint8Array(N),q=[from];seen[from]=1;for(let h=0;h<q.length;h++){const c=q[h];for(const n of[c-1,c+1,c-MWv,c+MWv])if(n>=0&&n<N&&!seen[n]&&okTile(n)){seen[n]=1;q.push(n)}}return seen};
- const walk=reach(tile(g.safe.x,g.safe.y),n=>!w.map[n]);ok(walk[tile(g.gate.x,g.gate.y)]===1,'the gate can be walked to from the haven');
- const road=reach(tile(g.safe.x,g.safe.y),n=>!w.map[n]&&[1,2,4,9].includes(w.ground[n]));ok(road[tile(g.gate.x,g.gate.y)]===1,'a road (with bridges) runs all the way from the haven to the gate');
- const tr=w.track;ok(!!tr&&tr.pts.length===6&&tr.pts.every(q=>w.ground[tile(q.x,q.y)]===9),'the race track has six checkpoints, all on track tiles');
- {const ring=[];for(let i=0;i<N;i++)if(w.ground[i]===9)ring.push(i);const one=reach(ring[0],n=>w.ground[n]===9);ok(ring.length>60&&ring.every(i=>one[i])&&w.ground[tile(tr.cx,tr.cy)]!==9,'the track is one closed ring around a grass infield')}
- {const a=T.genCitySeeded(777),b=T.genCitySeeded(777);ok(JSON.stringify(a.track)===JSON.stringify(b.track)&&JSON.stringify(a.vspots)===JSON.stringify(b.vspots),'the track and vehicle spots come from the seed, so every client builds the same')}
+ ok(reach(tile(g.safe.x,g.safe.y),n=>!w.map[n])[tile(g.gate.x,g.gate.y)]===1,'the gate can be walked to from the haven');
  ok(w.ground.filter(x=>x===3).length>150&&w.props.filter(o=>o.t==='tree').length>500,'big stages have plenty of water and woods');
- ok(g.vehicles.length>=4&&g.vehicles.every(v=>T.vehTileOk(v,v.x,v.y)),'vehicles wait on ground they can use');
- ok(g.vehicles.some(v=>v.kind==='boat')&&g.vehicles.some(v=>v.kind==='racer'),'every stage has a boat and a racer at the track');
- g.enemies=[];g.spawnT=1e9;
- const cart=g.vehicles.find(v=>v.kind==='cart'||v.kind==='wagon');p.x=cart.x+20;p.y=cart.y;p.actions.push({n:'drive'});st();ok(p.veh===cart.id&&cart.by===p.id,'F beside a cart takes the reins');
- p.actions.push({n:'dash'});st();ok(!(p.dashT>0),'no dashing while driving');
- const shots=g.shots.length;p.input.l=true;p.input.ax=p.x+100;p.input.ay=p.y;st(10);p.input.l=false;ok(g.shots.length===shots&&!(p.atkT>0),'no attacks while driving');
- {const k0=cart.kind;cart.kind='cart';{let run=null;for(let y=4;y<MHv-4&&!run;y++){let len=0;for(let x=2;x<MWv-2;x++){const i=y*MWv+x,okT=[i,i-MWv,i+MWv].every(j=>!w.map[j]&&w.ground[j]!==3);len=okT?len+1:0;if(len>=18){run={x:(x-17+.5)*40,y:(y+.5)*40};break}}}cart.x=run.x;cart.y=run.y}cart.a=0;cart.sp=0;const x0=cart.x;p.input.x=1;p.input.y=0;st(36);p.input.x=0;const d=cart.x-x0;cart.kind=k0;
-  ok(d>1.2*p.s.speed*1.3,'a cart outpaces walking ('+Math.round(d)+' px in 1.2 s)');ok(Math.hypot(p.x-cart.x,p.y-cart.y)<1,'the driver rides along')}
- {cart.x=g.safe.x-90;cart.y=g.safe.y;p.x=cart.x;p.y=cart.y;cart.sp=0;st(5);const e=T.spawnMob(0);e.x=cart.x+60;e.y=cart.y;e.hp=e.maxHp=500;g.enemies=[e];cart.a=0;cart.sp=VEHv('cart').max;p.input.x=1;const hp=e.hp;for(let i=0;i<12&&e.hp===hp;i++){e.x=cart.x+30;e.y=cart.y;cart.sp=Math.max(cart.sp,260);st()}p.input.x=0;ok(e.hp<hp,'ramming an enemy at speed hurts it')}
- {T.summonBoss();const b=g.boss;g.enemies=[b];b.x=cart.x+30;b.y=cart.y;b.cd=99;b.wind=0;const hp=b.hp;cart.a=0;cart.sp=300;p.input.x=1;const bx=b.x;st();p.input.x=0;ok(b.hp===hp&&b.x>bx,'a boss is only pushed aside');g.boss=null;g.enemies=[]}
- g.enemies=[];p.actions.push({n:'drive'});st();ok(!p.veh&&!cart.by&&Math.hypot(p.x-cart.x,p.y-cart.y)>20,'F again steps out beside the cart');
- const boat=g.vehicles.find(v=>v.kind==='boat');p.x=boat.x;p.y=boat.y+10;p.actions.push({n:'drive'});st();ok(p.veh===boat.id,'a boat can be boarded');
- {let dry=0;for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){p.input.x=dx;p.input.y=dy;for(let i=0;i<45;i++){st();const t=tile(boat.x,boat.y);if(w.ground[t]!==3&&w.ground[t]!==4)dry++}}p.input.x=p.input.y=0;ok(dry===0,'a boat never leaves the water')}
- p.actions.push({n:'drive'});st();
- {let wi=-1;for(let i=MWv;i<N-MWv&&wi<0;i++)if(!w.map[i]&&w.ground[i]===3&&!w.map[i-1]&&w.ground[i-1]===0&&!w.map[i-2]&&w.ground[i-2]===0)wi=i;
-  if(wi>0){cart.x=(wi%MWv-2+.5)*40;cart.y=((wi/MWv|0)+.5)*40;cart.a=0;cart.sp=0;cart.by=0;p.x=cart.x;p.y=cart.y+10;p.actions.push({n:'drive'});st();p.input.x=1;let wet=0;for(let i=0;i<60;i++){st();if(w.ground[tile(cart.x,cart.y)]===3)wet++}p.input.x=0;ok(wet===0,'carts stay out of open water');p.actions.push({n:'drive'});st()}else ok(true,'carts stay out of open water (no shore found on this map)')}
- p.x=cart.x+20;p.y=cart.y;cart.by=0;p.actions.push({n:'drive'});st();p.deadT=5;p.hp=0;st();ok(!p.veh&&!cart.by,'being downed throws you out of the vehicle');
- p.deadT=0;p.hp=p.s.maxHp}
+ ok(g.vehicles===undefined&&!w.track&&!w.vspots&&!w.ground.includes(9)&&!('drive' in (s.test.ACTIONS||{})),'no vehicles, race track or driving remain')}
+
+/* ---------- Late stages: boss scaling, dodging, escaping and the Shade ---------- */
+{const r=mk(),p=s.createRoom(r,'Detective',null,'L');T.enter(r);const g=G(),st=(k=1)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const go=n=>{p.maxStage=10;p.x=g.safe.x;p.y=g.safe.y;p.nearSafe=true;s.hostAction(r,p,'travel',String(n));T.enter(r);G().enemies=[];G().spawnT=1e9;return G()};
+ const bossAt=n=>{const G2=go(n);G2.boss=null;T.summonBoss();const b=G2.boss;b.act='walk';b.actT=99;b.cd=99;return{G2,b}};
+ {const {b}=bossAt(4);ok(Math.abs(b.maxHp-T.bossHp(4))<1&&!b.mult,'stage 4 bosses are unchanged')}
+ for(const [n,m] of [[5,2],[7,3],[9,4],[10,10]]){const {b}=bossAt(n);ok(Math.abs(b.maxHp/T.bossHp(n)-m)<1e-6,'stage '+n+' boss has '+m+'× life')}
+ {const {G2,b}=bossAt(8),keep=T.DODGE.boss;T.DODGE.boss=()=>1;b.dodgeCd=0;b.dodgeUntil=0;const hp=b.hp;G2.p=p;T.hitEnemy(b,50,0,90);ok(b.hp===hp&&b.dodgeUntil>G2.t,'a late boss can dodge a plain hit');
+  b.dodgeUntil=0;b.dodgeCd=0;const hp2=b.hp;T.hitEnemy(b,50,0,90,true);ok(b.hp<hp2,'charged hits, beams and abilities are never dodged');T.DODGE.boss=keep}
+ {go(4);ok(T.dodgeChance({mob:'weak'})===0&&T.dodgeChance({kind:'boss'})===0,'nothing dodges on stages 1 to 4');go(6);ok(T.dodgeChance({mob:'weak'})>0&&T.dodgeChance({kind:'boss'})>T.dodgeChance({mob:'weak'}),'from stage 5 minions dodge, bosses more often')}
+ {const {G2,b}=bossAt(6);b.escT0=G2.t;b.escHp=b.maxHp;b.hp=b.maxHp*.8;b.escCd=0;b.act='walk';const x=b.x,y=b.y;T.escapeCheck(b);ok(Math.hypot(b.x-x,b.y-y)>=100&&b.escCd>G2.t,'a late boss escapes after a burst of damage')}
+ {const G2=go(4);G2.boss=null;G2.gate.open=true;p.x=G2.gate.x;p.y=G2.gate.y;st(2);ok(!!G2.boss&&!G2.enemies.some(e=>e.shade),'stage 4 goes straight to the boss')}
+ {const G2=go(5);G2.boss=null;G2.gate.open=true;p.x=G2.gate.x;p.y=G2.gate.y;st(2);const sh=G2.enemies.filter(e=>e.shade);
+  ok(sh.length===1&&!G2.boss&&sh[0].name===p.char&&sh[0].title==='Shade of '+T.label(p.char),'on stage 5 your shade appears at the gate first');
+  ok(Math.abs(sh[0].sp-2*p.s.speed)<1e-6&&sh[0].lvl===p.lvl+2,'the shade is twice as fast and matches your level');
+  p.x=G2.gate.x;p.y=G2.gate.y;st(10);ok(!G2.boss,'no boss while the shade lives');
+  T.restartCheckpoint();ok(!G2.shadeUp&&!G2.enemies.some(e=>e.shade),'a wipe clears the shade');p.x=G2.gate.x;p.y=G2.gate.y;G2.gate.open=true;st(2);const sh2=G2.enemies.find(e=>e.shade);ok(!!sh2,'it waits at the gate again');
+  sh2.dead=true;st(1);p.x=G2.gate.x;p.y=G2.gate.y;st(2);ok(G2.shadeDone&&!!G2.boss,'beating the shade lets the boss come')}
+ {const G2=go(10);G2.boss=null;G2.gate.open=true;p.x=G2.gate.x;p.y=G2.gate.y;st(2);const sh=G2.enemies.find(e=>e.shade);const five=2,ten=4;
+  ok(!!sh&&Math.abs(sh.sp-Math.min(T.SHADE.maxSpeed,ten)*p.s.speed)<1e-6,'on stage 10 the shade is faster still (capped)');
+  ok(Math.abs(sh.dmg/(T.mobHit(10,p.lvl)*sh.a.dmg*1.3)-ten)<1e-6,'on stage 10 the shade hits four times as hard as its base')}
+ }
+
+/* ---------- Side quests ---------- */
+{const r=mk(),p=s.createRoom(r,'Detective',null,'Q');T.enter(r);const st=(k=1)=>{for(let i=0;i<k;i++){p.inv=9;p.hp=p.s.maxHp;s.step(r,1/30);r.ev.length=0}};
+ const go=n=>{p.maxStage=10;const g=G();p.x=g.safe.x;p.y=g.safe.y;p.nearSafe=true;if(g.stage!==n)s.hostAction(r,p,'travel',String(n));T.enter(r);G().enemies=[];G().spawnT=1e9;return G()};
+ const SQ=T.SIDE_QUESTS,all=Object.values(SQ).flat();
+ ok(Object.keys(SQ).length===10&&Object.values(SQ).every(l=>l.length===3)&&new Set(all.map(q=>q.id)).size===30,'every stage has three side quests of its own (30 in all)');
+ ok(all.every(q=>q.giver&&q.title&&q.story.length>=2&&q.gold>0)&&Object.keys(T.STAGE_GOAL).length===10,'each quest has a giver, a story and a reward; each stage has a goal');
+ {let good=true;for(let n=1;n<=10;n++){const g=go(n);const ids=SQ[n].map(q=>q.id);if(!(g.side.length>=2&&g.side.length<=3&&g.side.every(q=>ids.includes(q.id)&&q.st===0)&&g.props.filter(o=>o.kind==='sq_giver').length===g.side.length))good=false}ok(good,'each stage offers two or three of its own quests, with a giver by the haven')}
+ const finish={
+  gather:(g,q)=>{for(const o of g.props.filter(o=>o.q===q.id&&o.kind==='sq_item')){p.x=o.x;p.y=o.y;st()}},
+  cleanse:(g,q)=>{for(const o of g.props.filter(o=>o.q===q.id&&o.kind==='sq_totem')){p.x=o.x;p.y=o.y;st(90)}},
+  rescue:(g,q)=>{const o=g.props.find(o=>o.q===q.id&&o.kind==='sq_lost');p.x=o.x+20;p.y=o.y;st(2);ok(!!o.by,'the lost one follows you once found');o.x=g.safe.x;o.y=g.safe.y;p.x=g.safe.x+30;p.y=g.safe.y;st(2)},
+  deliver:(g,q)=>{const o=g.props.find(o=>o.q===q.id&&o.kind==='sq_parcel'),to=g.props.find(o=>o.q===q.id&&o.kind==='sq_drop');p.x=o.x;p.y=o.y;st(2);p.x=to.x;p.y=to.y;st(2)},
+  hold:(g,q)=>{q.need=2;const o=g.props.find(o=>o.q===q.id&&o.kind==='sq_shrine');p.x=o.x;p.y=o.y;for(let i=0;i<80;i++){g.enemies=[];p.x=o.x;p.y=o.y;st()}},
+  bounty:(g,q)=>{const e=g.enemies.find(e=>e.sq===q.id);ok(!!e&&e.title===T.sideDef(q.id).item,'a bounty target carries its name');e.dead=true;st(2)}};
+ for(const kind of ['gather','cleanse','rescue','deliver','hold','bounty']){const d=all.find(q=>q.kind===kind),n=+Object.keys(SQ).find(k=>SQ[k].includes(d));const g=go(n);
+  g.side=[{id:d.id,kind,st:0,have:0,need:d.n||1,t:0}];g.props=g.props.filter(o=>o.kind!=='sq_giver');const gold=p.gold,xp=p.xp+p.lvl*1e6;
+  p.actions.push({n:'quest',v:d.id});st();const q=g.side[0];ok(q.st===1,kind+': accepting starts the quest');finish[kind](g,q);
+  ok(q.st===2&&p.gold>gold&&(p.xp+p.lvl*1e6)>xp,kind+': finishing pays gold and experience')}
+ {const g=go(2);const q=g.side[0],before=JSON.stringify(g.side);p.actions.push({n:'quest',v:'nope'});p.actions.push({n:'quest',v:{x:1}});p.actions.push({n:'quest',v:'x'.repeat(5000)});st();ok(JSON.stringify(g.side)===before,'the quest action ignores unknown or malformed ids')}
+ {const g=go(3);g.side.forEach(q=>{q.st=1});g.killsStage=1e6;st(3);g.gate.open=false;T.openGate();ok(g.gate.open,'unfinished side quests never keep the gate shut')}
+}
+
+/* ---------- Boss final attack ---------- */
+{T.FINAL.on=true;const r=mk(),p=s.createRoom(r,'Detective',null,'F');T.enter(r);const g=G();g.enemies=[];g.spawnT=1e9;g.boss=null;T.summonBoss();const b=g.boss;b.act='walk';b.actT=99;b.cd=99;
+ const st=(k=1)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.x=b.x+60;p.y=b.y;p.inv=0;
+ b.hp=b.maxHp*.5;st();ok(b.act!=='final'&&!b.finalDone,'no final attack above a quarter of life');
+ let saw=false;const evs=[];r.ev=evs;b.hp=b.maxHp*.2;s.step(r,1/30);saw=evs.some(v=>v.e&&v.e[0]==='f'&&v.e[1].k==='bossult');r.ev=[];
+ ok(b.act==='final'&&b.finalDone&&saw,'at a quarter of its life the boss begins its final attack, with the full-screen scene');
+ const hp=p.hp;for(let i=0;i<Math.ceil(T.FINAL.wind*30)+3;i++){p.x=b.x+60;p.y=b.y;p.inv=0;p.hp=Math.max(p.hp,1);s.step(r,1/30);r.ev.length=0}
+ ok(p.hp<hp&&b.act!=='final','the final attack lands on anyone inside the ring');
+ b.hp=b.maxHp*.1;st(3);ok(b.act!=='final','it happens only once per fight')}
 console.log('\n'+n+' checks passed');
 
 

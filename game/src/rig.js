@@ -424,6 +424,9 @@ const ENEMY_STRIKE=.2,enemyAttackFrame=e=>e.wind>0?0:Math.min(ATTACK_N-1,1+Math.
 const FRAMES=new Map();
 /* A solid red copy of a frame, for the stagger flash */
 const RED=new WeakMap();
+/* The Shade's look: the same frame sunk into violet-black, with a faint cold rim (cached per frame) */
+const SHADE_FR=new WeakMap();
+function darkFrame(im){let r=SHADE_FR.get(im);if(!r){r=document.createElement('canvas');r.width=im.width;r.height=im.height;const g=r.getContext('2d');g.drawImage(im,0,0);g.globalCompositeOperation='source-atop';g.fillStyle='rgba(14,6,22,.8)';g.fillRect(0,0,r.width,r.height);g.globalCompositeOperation='lighter';g.globalAlpha=.18;g.drawImage(im,0,-1);g.globalAlpha=1;SHADE_FR.set(im,r)}return r}
 function redFrame(im){let r=RED.get(im);if(!r){r=document.createElement('canvas');r.width=im.width;r.height=im.height;const g=r.getContext('2d');g.drawImage(im,0,0);g.globalCompositeOperation='source-atop';g.fillStyle='rgba(255,46,46,.85)';g.fillRect(0,0,r.width,r.height);RED.set(im,r)}return r}
 function frame(name,dir,anim,f,wpn){const k=name+'|'+dir+'|'+anim+'|'+f+'|'+(wpn||'');let c=FRAMES.get(k);if(!c){let sp=SPECS[name]||SPECS.Tourist;if(wpn){const rw=wpn==='fists'?'fist':wpn;sp=Object.assign({},sp,{w:rw,wc:sp.w===rw?sp.wc:undefined})}c=buildFrame(sp,dir,anim,f);FRAMES.set(k,c)}return c}
 const dirOf=a=>{const c=Math.cos(a),s=Math.sin(a);return Math.abs(c)>=Math.abs(s)*.9?2:(s<0?1:0)};
@@ -432,14 +435,14 @@ const PS=1.2;
 /* mo: smooth motion added while drawing, so it moves every frame instead of in pose steps.
    dx, dy: offset · rot: lean about the feet · sx, sy: squash and stretch about the feet. */
 /* Pixel 3D sets these: blitHook turns a sprite into a 3D card, shadowTo sends ground shadows to its decal layer */
-let blitHook=null,shadowTo=null,blitSink=0;
+let blitHook=null,shadowTo=null,blitSink=0,blitDark=false;
 function blit(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size=1,mo){
   if(blitHook&&blitHook(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo))return;
   // wading: hide what is under the waterline
   if(blitSink>0){c2.save();c2.beginPath();c2.rect(x-120,y-260,240,260-blitSink);c2.clip();try{blit0(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo)}finally{c2.restore()}return}
   blit0(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo)}
 function blit0(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size=1,mo){
-  let im=frame(name,dir,anim,f,wpn);if(mo&&mo.red)im=redFrame(im);c2.save();c2.imageSmoothingEnabled=false;c2.translate(x,y);
+  let im=frame(name,dir,anim,f,wpn);if(blitDark)im=darkFrame(im);if(mo&&mo.red)im=redFrame(im);c2.save();c2.imageSmoothingEnabled=false;c2.translate(x,y);
   if(mo){c2.translate(mo.dx||0,mo.dy||0);if(mo.rot)c2.rotate(mo.rot);if(mo.sx||mo.sy)c2.scale(mo.sx||1,mo.sy||1)}
   if(size!==1)c2.scale(size,size);if(flip)c2.scale(-1,1);
   if(rot){c2.translate(0,-19*PS);c2.rotate(rot);c2.translate(0,19*PS)}

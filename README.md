@@ -40,6 +40,8 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 | 1, 2, 3 | Potion, Fast Pill, Magic Pill |
 | T | Skills and menu |
 | R | Shop, gym and travel, at the safehouse |
+| J | Quests: the stage goal and side quests. Track picks what the HUD line and arrow follow. |
+| F | Talk to a quest giver (marked with !) |
 | M | Sound on or off |
 | L | Fullscreen. Esc leaves it. |
 | Esc or P | Pause alone, room menu online. Both have Return to menu. |

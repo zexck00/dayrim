@@ -283,34 +283,22 @@ function genCity(){
   const border=(x,y)=>x<2||y<2||x>=MW-2||y>=MH-2;
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(border(x,y))map[idx(x,y)]=1;
   for(let it=0;it<4;it++){const n=map.slice();for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++){let c=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)c+=map[idx(x+a,y+b)];n[idx(x,y)]=(c>=5||border(x,y))?1:0}map.set(n)}
-  const open=(x,y,g)=>{if(x>1&&y>1&&x<MW-2&&y<MH-2){map[idx(x,y)]=0;if(g!==undefined&&ground[idx(x,y)]!==9)ground[idx(x,y)]=g}};
+  const open=(x,y,g)=>{if(x>1&&y>1&&x<MW-2&&y<MH-2){map[idx(x,y)]=0;if(g!==undefined)ground[idx(x,y)]=g}};
   const blob=(cx,cy,rx,ry,g)=>{for(let y=cy-ry-2;y<=cy+ry+2;y++)for(let x=cx-rx-2;x<=cx+rx+2;x++){const d=((x-cx)/rx)**2+((y-cy)/ry)**2+rnd(-.12,.12);if(d<1)open(x,y,g)}};
   const trail=(ax,ay,bx,by)=>{let x=ax,y=ay,s=0;while((Math.abs(x-bx)>1||Math.abs(y-by)>1)&&s++<500*K*K){if(Math.random()<.7){if(Math.abs(x-bx)>Math.abs(y-by))x+=Math.sign(bx-x);else y+=Math.sign(by-y)}else{x+=irnd(-1,1);y+=irnd(-1,1)}x=clamp(x,3,MW-4);y=clamp(y,3,MH-4);for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(Math.abs(a)+Math.abs(b)<2||Math.random()<.5)open(x+a,y+b,1)}};
   const s={x:irnd(8,11),y:irnd(9,MH-10)},e={x:irnd(MW-12,MW-9),y:irnd(9,MH-10)},nodes=[s];const mids=Math.round(irnd(4,6)*K);
   for(let i=0;i<mids;i++)nodes.push({x:Math.round(s.x+(e.x-s.x)*(i+1)/(mids+1)+rnd(-4,4)*K),y:irnd(7,MH-8)});nodes.push(e);
-  /* A three-tile cart road along the main route; clearings and the race track keep their own ground */
-  const road=(ax,ay,bx,by)=>{let x=ax,y=ay,n=0;while((x!==bx||y!==by)&&n++<4000){const dx=bx-x,dy=by-y;if(Math.random()<Math.abs(dx)/(Math.abs(dx)+Math.abs(dy)))x+=Math.sign(dx);else y+=Math.sign(dy);
-    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const tx=x+a,ty=y+b;if(tx>1&&ty>1&&tx<MW-2&&ty<MH-2){const i=idx(tx,ty);map[i]=0;if(ground[i]!==2&&ground[i]!==9)ground[i]=1}}}};
-  /* The race track: an oval ring of track tiles (ground 9) in open country, carved before the routes so trails and
-     roads cross it without breaking the ring; joined to the nearest node by road */
-  let track=null;
-  if(K>1){const rx=14,ry=8;for(let t=0;t<200&&!track;t++){const cx=irnd(rx+4,MW-rx-5),cy=irnd(ry+4,MH-ry-5);if(Math.hypot(cx-s.x,cy-s.y)<rx+16||Math.hypot(cx-e.x,cy-e.y)<rx+16)continue;
-    for(let y=cy-ry-2;y<=cy+ry+2;y++)for(let x=cx-rx-2;x<=cx+rx+2;x++){const i=idx(x,y),d=((x-cx)/rx)**2+((y-cy)/ry)**2,di=((x-cx)/(rx-3))**2+((y-cy)/(ry-3))**2;if(d<=1.25){map[i]=0;ground[i]=d<=1&&di>1?9:0}}
-    const near=nodes.reduce((b,n)=>Math.hypot(n.x-cx,n.y-cy)<Math.hypot(b.x-cx,b.y-cy)?n:b,nodes[1]||s);road(near.x,near.y,cx+(near.x<cx?-rx-2:rx+2),cy);
-    const pts=[];for(let k=0;k<6;k++){const a=k/6*TAU;pts.push({x:(cx+Math.cos(a)*(rx-1.5)+.5)*T,y:(cy+Math.sin(a)*(ry-1.5)+.5)*T})}
-    track={cx:(cx+.5)*T,cy:(cy+.5)*T,rx:(rx-1.5)*T,ry:(ry-1.5)*T,pts,start:pts[0],tx:cx,ty:cy,trx:rx,try:ry}}}
   nodes.forEach((n,i)=>{const start=i===0,last=i===nodes.length-1;blob(n.x,n.y,start||last?8:irnd(4,7+Math.round(K)),start||last?6:irnd(3,5+Math.round(K)),start||last?2:undefined);if(i)trail(nodes[i-1].x,nodes[i-1].y,n.x,n.y)});
   for(let i=0;i<Math.round(4*K*K*.75);i++){const a=pick(nodes),bx=clamp(a.x+irnd(-14,14)*K,6,MW-7),by=clamp(a.y+irnd(-12,12)*K,6,MH-7);blob(bx,by,irnd(3,6),irnd(2,5));trail(a.x,a.y,bx,by)}
-  if(K>1)for(let i=1;i<nodes.length;i++)road(nodes[i-1].x,nodes[i-1].y,nodes[i].x,nodes[i].y);
-  /* A winding river across the middle of the map; roads cross it on bridges */
+  /* A winding river across the middle of the map; trails cross it on bridges */
   if(K>1){let x=irnd(Math.round(MW*.38),Math.round(MW*.62));const w=irnd(2,3),ph=rnd(0,TAU);
     for(let y=2;y<MH-2;y++){x=clamp(Math.round(x+Math.sin(y*.18+ph)*.9+rnd(-.5,.5)),6,MW-7);
-      for(let a=-w;a<=w;a++){const tx=x+a,i=idx(tx,y);if(track&&Math.abs(tx-track.tx)<=track.trx+3&&Math.abs(y-track.ty)<=track.try+3)continue;if(ground[i]===2)continue;map[i]=0;ground[i]=ground[i]===1?4:3}}}
+      for(let a=-w;a<=w;a++){const tx=x+a,i=idx(tx,y);if(ground[i]===2)continue;map[i]=0;ground[i]=ground[i]===1?4:3}}}
   // keep only ground that can be walked to from the start
   const seen=new Uint8Array(N),q=[idx(s.x,s.y)];seen[q[0]]=1;for(let h=0;h<q.length;h++){const c=q[h];for(const n of[c-1,c+1,c-MW,c+MW])if(n>=0&&n<N&&!map[n]&&!seen[n]){seen[n]=1;q.push(n)}}
   for(let i=0;i<N;i++)if(!seen[i])map[i]=1;
   // shallow ponds you can wade through; where the path crosses one, it becomes a wooden bridge
-  const pond=(cx,cy,rx,ry)=>{for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const i=idx(x,y),d=((x-cx)/rx)**2+((y-cy)/ry)**2+rnd(-.15,.15);if(d<1&&!map[i]&&ground[i]!==2&&ground[i]!==9)ground[i]=ground[i]===1||ground[i]===4?4:3}};
+  const pond=(cx,cy,rx,ry)=>{for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const i=idx(x,y),d=((x-cx)/rx)**2+((y-cy)/ry)**2+rnd(-.15,.15);if(d<1&&!map[i]&&ground[i]!==2)ground[i]=ground[i]===1||ground[i]===4?4:3}};
   {const mids=nodes.slice(1,-1);for(let k=Math.min(mids.length,Math.round(K));k>0;k--){const n=pick(mids);pond(n.x,n.y,irnd(2,3+Math.round(K)),irnd(2,2+Math.round(K)))}
    for(let k=Math.round(irnd(1,3)*K*1.5);k>0;k--){for(let t=0;t<30;t++){const x=irnd(4,MW-5),y=irnd(4,MH-5);if(!map[idx(x,y)]&&Math.hypot(x-s.x,y-s.y)>10&&Math.hypot(x-e.x,y-e.y)>10){pond(x,y,irnd(2,3+Math.round(K*1.5)),irnd(1,2+Math.round(K)));break}}}}
   const biome=BIOMES[STAGES[((G&&G.stage)||1)-1].biome];
@@ -336,15 +324,9 @@ function genCity(){
     const rx=irnd(2,3),ry=irnd(1,2);for(let y=Math.max(2,c.y-ry);y<=Math.min(MH-3,c.y+ry);y++)for(let x=Math.max(2,c.x-rx);x<=Math.min(MW-3,c.x+rx);x++){const i=idx(x,y);if(!map[i]&&!ground[i]&&((x-c.x)/rx)**2+((y-c.y)/ry)**2<=1.1)isle[i]=1}}
   const openList=[];for(let i=0;i<N;i++)if(!map[i])openList.push(i);
   mctx.fillStyle='#14181c';mctx.fillRect(0,0,MW,MH);
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=idx(x,y);if(map[i])continue;mctx.fillStyle=thicket[i]?biome.leaf[0]:ground[i]===1?biome.d:ground[i]===2?'#a89a7c':ground[i]===3?biome.wa[1]:ground[i]===4?'#7a5a38':ground[i]===9?'#c8b088':biome.g[0];mctx.fillRect(x,y,1,1)}
-  /* Vehicle spots, seeded with the map: carts on the road by the nodes, boats on open water, a racer on the track */
-  const vspots=[];if(K>1){const stg=(G&&G.stage)||1,cart=stg===8?'mine':'cart';
-    nodes.slice(1,-1).forEach((n,k)=>{if(k%2)return;for(let r=0;r<5;r++)for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){if(vspots.some(v=>v.n===k))break;const i=idx(n.x+a,n.y+b);if(!map[i]&&ground[i]===1){const nx=nodes[k+2]||e;vspots.push({kind:k%4?cart:'wagon',x:(n.x+a+.5)*T,y:(n.y+b+.5)*T,a:Math.atan2(nx.y-n.y,nx.x-n.x),n:k})}}});
-    const wet=[];for(let i=0;i<N;i++)if(!map[i]&&ground[i]===3&&[i-1,i+1,i-MW,i+MW].every(j=>!map[j]&&ground[j]===3))wet.push(i);
-    for(let k=0;k<4&&wet.length;k++){const i=wet[Math.floor(Math.random()*wet.length)],x=(i%MW+.5)*T,y=((i/MW|0)+.5)*T;if(vspots.every(v=>Math.hypot(v.x-x,v.y-y)>300))vspots.push({kind:'boat',x,y,a:Math.random()*TAU})}
-    if(track)vspots.push({kind:'racer',x:track.start.x,y:track.start.y,a:Math.PI/2})}
-  vspots.forEach(v=>delete v.n);
-  return{track,vspots,map,ground,deco,bld,props,lamps,thicket,cover,isle:STAGES[((G&&G.stage)||1)-1].islands?isle:null,cars:[],open:openList,biome,start:{x:s.x-6,y:s.y-5},boss:{x:e.x-6,y:e.y-5},flow:new Int16Array(N),queue:new Int32Array(N)};
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=idx(x,y);if(map[i])continue;mctx.fillStyle=thicket[i]?biome.leaf[0]:ground[i]===1?biome.d:ground[i]===2?'#a89a7c':ground[i]===3?biome.wa[1]:ground[i]===4?'#7a5a38':biome.g[0];mctx.fillRect(x,y,1,1)}
+
+  return{map,ground,deco,bld,props,lamps,thicket,cover,isle:STAGES[((G&&G.stage)||1)-1].islands?isle:null,cars:[],open:openList,biome,start:{x:s.x-6,y:s.y-5},boss:{x:e.x-6,y:e.y-5},flow:new Int16Array(N),queue:new Int32Array(N)};
 }
 const wall=(tx,ty)=>tx<0||ty<0||tx>=MW||ty>=MH||G.w.map[idx(tx,ty)]===1;
 function blocked(x,y,r){const a=r*.8;return wall((x-a)/T|0,(y-a)/T|0)||wall((x+a)/T|0,(y-a)/T|0)||wall((x-a)/T|0,(y+a)/T|0)||wall((x+a)/T|0,(y+a)/T|0)}
@@ -380,7 +362,7 @@ function recalc(){
 function baseState(demo){return{mode:'title',demo,mp:false,players:[],t:0,hour:6,p:null,enemies:[],npcs:[],shots:[],loot:[],fx:[],texts:[],log:[],shake:0,flowT:0,banner:null,boss:null,spawnT:0,killsStage:0,stage:1,w:null,quipT:3,props:[],chain:{n:0,t:0,tier:null},link:null}}
 /* Same seed gives the same map, so the server only has to send a number to draw the whole stage */
 function genCitySeeded(seed){const real=Math.random;let a=seed|0;Math.random=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};try{return genCity()}finally{Math.random=real}}
-function placeInStage(n){const w=G.w;G.safe={x:(w.start.x+6)*T,y:(w.start.y+5)*T};G.gate={x:(w.boss.x+6)*T,y:(w.boss.y+5)*T,open:G.killsStage>=quota(n)};spawnVehicles()}
+function placeInStage(n){const w=G.w;G.safe={x:(w.start.x+6)*T,y:(w.start.y+5)*T};G.gate={x:(w.boss.x+6)*T,y:(w.boss.y+5)*T,open:G.killsStage>=quota(n)}}
 /* ---------- Stage objectives (C-18) ----------
    A stage is a short list of steps, run in order. Each step counts up to its `need`; when the last
    step is done the boss gate opens and that becomes the checkpoint. Stages that have no steps yet
@@ -416,7 +398,7 @@ function openGate(){if(!G.gate||G.gate.open)return;G.gate.open=true;G.banner={t:
 /* Hold, carry and escort steps all spawn props: one synced list, one renderer, one set of rules. */
 let propSeq=1;
 function addProp(kind,x,y,r,extra){const p=Object.assign({id:propSeq++,kind,x,y,r,t:0,by:0,done:false},extra||{});G.props.push(p);return p}
-function propSpot(minD,maxD){return randomOpen(minD,maxD)||{x:G.safe.x+rnd(-160,160),y:G.safe.y+rnd(-60,150)}}
+function propSpot(minD,maxD){return randomOpen(minD,maxD)||randomOpen(minD*.5,maxD*2)||randomOpen(minD*.25,maxD*4)||{x:G.safe.x+rnd(-160,160),y:G.safe.y+rnd(-60,150)}}
 const playersNear=(o,r)=>G.players.some(q=>!(q.deadT>0)&&!(q.respawnT>0)&&dist(q,o)<=r);
 /* Zones must be far enough apart that holding one never holds two. */
 function spawnZones(n,plate){const zs=[],SEP=320;for(let i=0;i<n;i++){let o=null;for(let t=0;t<60;t++){const c=propSpot(360,1100);if(zs.every(z=>Math.hypot(z.x-c.x,z.y-c.y)>=SEP)){o=c;break}}if(!o)o=propSpot(360,1100);zs.push(addProp(plate?'plate':'zone',o.x,o.y,40))}G.obj.zones=zs}
@@ -438,7 +420,7 @@ function spawnEscort(){const e=addProp('escort',G.safe.x+90,G.safe.y+70,16);e.tx
    A party too small to split falls back to the timed version from the design: one
    zone at a time, held longer, and it stays down once it is lit. */
 /* Where the current objective actually is. One list for every step kind, so the HUD can point at it. */
-function objTargets(){const o=G.obj,out=[];if(!o||o.done)return out;if(o.tg)return o.tg.map(t=>({x:t[0],y:t[1],label:t[2]}));const st=o.steps&&o.steps[o.i];if(!st)return out;
+function objTargets(){{const id=typeof store!=='undefined'?store.get('dayrim-track'):null,tq=id&&id!=='main'?(G.side||[]).find(q=>q.id===id&&q.st!==2):null;if(tq)return tq.tg?tq.tg.map(t=>({x:t[0],y:t[1],label:t[2]})):sideTargets(tq.id)}const o=G.obj,out=[];if(!o||o.done)return out;if(o.tg)return o.tg.map(t=>({x:t[0],y:t[1],label:t[2]}));const st=o.steps&&o.steps[o.i];if(!st)return out;
   if(st.kind==='revive'){for(const c of G.npcs)if(c.wounded&&!c.dead)out.push({x:c.x,y:c.y,label:'Scout'})}
   else if(st.kind==='hold'){for(const z of (o.zones||[]))if(!z.done)out.push({x:z.x,y:z.y,label:st.mark||'Zone'})}
   else if(st.kind==='generator'){const c=(o.items||[])[0];if(c&&!c.done&&!c.by)out.push({x:c.x,y:c.y,label:'Fuel'});else if(o.drop)out.push({x:o.drop.x,y:o.drop.y,label:'Generator'})}
@@ -492,8 +474,8 @@ function objStep(dt){const o=G.obj;if(!o||o.done||G.story)return;const st=o.step
 function spawnScout(){const o=randomOpen(320,900)||randomOpen(0,2200)||{x:G.safe.x+140,y:G.safe.y+40};const hp=40*stageScale(G.stage),c={name:'Scout',x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:0,quip:null,qt:0,sp:0,hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0,wounded:true,reviveT:0,art:'Tourist'};G.npcs.push(c);G.banner={t:3.2,a:'A scout is down',b:'Find the scout and hold F or Revive nearby'};return c}
 function enterStage(n,keepKills){for(const q of G.players){q.abil=null;q.abilCast=null;q.beam=null;q.burst=null;q.lungeT=0;q.chg=0;q.holdT=0}
   const kept=keepKills?G.killsStage:0;
-  G.stage=n;G.seed=Math.random()*2147483647|0;if(G.story)setMapSize(STORY_MW,STORY_MH);else setMapSize(STAGE_MW,STAGE_MH);G.w=G.story?storyMap(G.story.ci):genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
-  const st=STAGES[n-1];G.hour=st.h;placeInStage(n);
+  G.stage=n;G.seed=Math.random()*2147483647|0;if(G.story)setMapSize(STORY_MW,STORY_MH);else setMapSize(STAGE_MW,STAGE_MH);G.w=G.story?storyMap(G.story.ci):genCitySeeded(G.seed);G.enemies=[];G.shots=[];G.loot=[];G.fx=[];G.texts=[];G.npcs=[];G.props=[];G.shadeUp=false;G.shadeDone=false;G.boss=null;G.arena=null;G.flesh=null;G.tide=0;G.tideT=0;G.valeT=VALE.first;G.chain={n:0,t:0,tier:null};G.link=null;G.killsStage=kept;G.spawnT=0;G.clearPending=0;G.hopeMax=G.mp?Math.max(3,partyScale().hope):0;G.hopeSpent=0;G.hope=G.hopeMax;
+  const st=STAGES[n-1];G.hour=st.h;placeInStage(n);sideInit();
   G.players.forEach((q,i)=>{q.x=G.safe.x+60-i*30;q.y=G.safe.y+30;q.combo=0;q.comboT=0;q.comboTier=null;q.ult=null;q.mv=null;q.killerT=0;q.boonPending=false;q.weaponHealCd=0;q.teamCd=0;q.breakReady=0;q.tauntGuard=0;q.mendT=0;q.deadT=0;q.respawnT=0;q.reviveHold=0;q.reviveTarget=0;q.reviveProgress=0;q.carry=null;clearEncounterStatus(q);if(!keepKills){q.secondWind=false;q.downCount=0;q.lastDown=-100}});
   G.cam={x:G.p.x,y:G.p.y};
   /* Story chapters bring their own people, enemies and objectives. */
@@ -520,7 +502,7 @@ function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=m
 function playerDown(p,wind=false){sfx('downed');p.beam=null;p.burst=null;p.lungeT=0;p.chg=0;p.holdT=0;if(p.carry&&p.carry.kind==='canister'){p.carry.by=0;p.carry=null}p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
 function revive(p){sfx('revive_done');p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
 function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;if(G.boss&&G.arena){const a=Math.atan2(G.safe.y-G.arena.y,G.safe.x-G.arena.x);p.x=G.arena.x+Math.cos(a)*(G.arena.r-45);p.y=G.arena.y+Math.sin(a)*(G.arena.r-45)}p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
-function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;G.flesh=null;clearLanterns();clearBossEggs();clearSporeBoss();clearGhoul();clearVale();clearScrap();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
+function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.shadeUp=false;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;G.flesh=null;clearLanterns();clearBossEggs();clearSporeBoss();clearGhoul();clearVale();clearScrap();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
 function bleedOut(p){p.deadT=0;p.respawnT=8;p.gold=Math.floor(p.gold*.8);p.moving=false;const wipe=G.mp&&!G.clearPending&&G.hope<=0&&!G.players.some(q=>q!==p&&q.deadT<=0&&q.respawnT<=0);if(G.mp&&G.hope>0){G.hopeSpent++;G.hope--;}addLog('You bled out and lost 20% of your gold.');if(wipe)restartCheckpoint();writeSave()}
 /* Hold to revive. A downed ally comes first; with none in reach, the same key picks a wounded NPC back up. */
 function updateRevive(p,dt){
@@ -550,7 +532,8 @@ function demoScene(){
 function addLog(html){G.log.unshift(html);G.log.length=Math.min(G.log.length,6);dirty()}
 let isDirty=true;function dirty(){isDirty=true}
 
-function randomOpen(minD,maxD){for(let i=0;i<40;i++){const c=pick(G.w.open),x=(c%MW+.5)*T,y=((c/MW|0)+.5)*T;let d=Infinity;for(const q of G.players)d=Math.min(d,Math.hypot(x-q.x,y-q.y));if(d>=minD&&d<=maxD&&dist({x,y},G.safe)>240)return{x,y}}return null}
+/* Tries scale with map area, so the bigger stages find spots as reliably as the small ones */
+function randomOpen(minD,maxD){for(let i=0,n=Math.ceil(40*MW*MH/4290);i<n;i++){const c=pick(G.w.open),x=(c%MW+.5)*T,y=((c/MW|0)+.5)*T;let d=Infinity;for(const q of G.players)d=Math.min(d,Math.hypot(x-q.x,y-q.y));if(d>=minD&&d<=maxD&&dist({x,y},G.safe)>240)return{x,y}}return null}
 const ENEMY_VILLAINS=['Necromancer','Void Empress','Toxin Alchemist'];
 const MINIONS={Necromancer:[{n:'Skeleton',ah:70},{n:'Bone Goliath',ah:100}],'Void Empress':[{n:'Voidling',ah:70},{n:'Void Goliath',ah:100}],'Toxin Alchemist':[{n:'Toxin Grunt',ah:70},{n:'Toxin Enforcer',ah:100}]};
 /* Strong minions have twice the old life, damage and speed of a brute. Life and damage are shares of mobUnit and mobHit. */
@@ -566,7 +549,7 @@ function spawnMob(minD=500,at=null,forceStrong=null){
   const o=at||randomOpen(minD,1500);if(!o)return null;
   const s=G.stage,strong=forceStrong===null?Math.random()<.14+s*.018:forceStrong,own=pick(ENEMY_VILLAINS),m=MINIONS[own][strong?1:0],k=MOB[strong?'strong':'weak'],L=minionLevel(s),night=nightness(G.hour)>.5?1.15:1;
   const a={melee:true,range:strong?30:18,atk:strong?1.5:1.05,r:strong?20:12};
-  const e={role:strong?'brute':'rusher',kind:'rival',mob:strong?'strong':'weak',owner:own,name:m.n,art:m.n,ah:m.ah,a,method:'melee',healT:9,castT:0,guarding:false,x:o.x,y:o.y,r:a.r,lvl:L+(strong?1:0),hp:mobUnit(s,L)*k.hp,maxHp:mobUnit(s,L)*k.hp,dmg:mobHit(s,L)*k.dmg*night,sp:k.sp*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(strong?2.4:.65),gold:rnd(2,6)*Math.pow(1.22,s-1)*(strong?2.5:.6),elite:false,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU),fs:1};
+  const e={role:strong?'brute':'rusher',kind:'rival',mob:strong?'strong':'weak',owner:own,name:m.n,art:m.n,ah:m.ah,a,method:'melee',healT:9,castT:0,guarding:false,x:o.x,y:o.y,r:a.r,lvl:L+(strong?1:0),hp:mobUnit(s,L)*k.hp,maxHp:mobUnit(s,L)*k.hp,dmg:mobHit(s,L)*k.dmg*night,sp:k.sp*(1+s*.012)*Math.min(1.6,1+.15*Math.max(0,s-4)),xp:9*Math.pow(1.22,s-1)*(strong?2.4:.65),gold:rnd(2,6)*Math.pow(1.22,s-1)*(strong?2.5:.6),elite:false,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU),fs:1};
   if(!strong&&G.stage===1&&G.enemies.filter(x=>x.role==='healer').length===0&&G.enemies.length>=2){e.role='healer';e.method='heal';e.a.melee=false;e.a.atk=1.8;e.healT=2}
   partyToughen(e);G.enemies.push(e);return e;
 }
@@ -735,9 +718,119 @@ function bossPick(e,n,low){const r=Math.random();
     if(r<.6){e.act='aim';bossTelegraph(e,'line',e.r+230,.62)}else startSpray(e);return}
   if(r<.42){e.act='aim';bossTelegraph(e,'line',e.r+230,Math.max(.45,.8-n*.03))}else if(r<.8){e.act='nova';bossTelegraph(e,'circle',150,.6)}else{e.act='call';e.actT=.5}}
 const BOSS_PHASE_FX={1:()=>spawnPillars(2),5:e=>{if(e.phase===1)spawnMushrooms(e)},7:e=>{if(e.phase===1)e.rustField=true},6:e=>{if(e.phase===1)splitFlesh(e)},4:e=>{if(e.phase===1)spawnBossEggs(e);else {text(e.x,e.y-e.ah,'MOLTED','#ffd860',true)}}};
+/* ---------- Late stages: bosses scale up from stage 5, and bosses, shades and minions dodge ----------
+   Only plain hits can be dodged (no charged hits, beams, abilities or ultimates), so skill still pays. */
+const BOSS_MULT={5:2,6:2.5,7:3,8:3.5,9:4,10:10},bossMult=n=>BOSS_MULT[n]||1;
+const DODGE={boss:n=>n<5?0:n>=10?.45:.15+(n-5)*.05,mob:n=>n<5?0:.08+(n-5)*.028,bossCd:1.6,mobCd:2,safe:.35};
+const ESCAPE={share:.12,window:3,cd:8,min:110,max:240};
+function dodgeChance(e){const n=G.stage||1;if(e.kind==='boss')return DODGE.boss(n);if(e.shade)return Math.max(DODGE.boss(n),DODGE.boss(5));if(e.mob)return DODGE.mob(n);return 0}
+function tryDodge(e,ang){const ch=dodgeChance(e);if(!(ch>0)||(e.dodgeCd||0)>G.t||Math.random()>=ch)return false;
+  const big=e.kind==='boss'||e.shade;e.dodgeCd=G.t+(big?DODGE.bossCd:DODGE.mobCd);e.dodgeUntil=G.t+DODGE.safe;
+  const side=Math.random()<.5?1:-1,d=big?70:46;for(const s of [side,-side]){const a=ang+s*Math.PI/2,nx=e.x+Math.cos(a)*d,ny=e.y+Math.sin(a)*d;if(!blocked(nx,ny,(e.r||14)*.6)){e.x=nx;e.y=ny;break}}
+  text(e.x,e.y-(e.ah||60)*.9,'Dodged','#c8d8ff');for(let i=0;i<6;i++)G.fx.push({k:'p',x:e.x+rnd(-10,10),y:e.y+rnd(-4,4),vx:rnd(-60,60),vy:rnd(-40,0),t:.3,m:.3,c:'#c8c8c0',s:rnd(2,4)});return true}
+/* Bosses and shades from stage 5 slip away after a burst of damage */
+function escapeCheck(e){if((G.stage||1)<5)return;if(e.escT0===undefined||G.t-e.escT0>ESCAPE.window){e.escT0=G.t;e.escHp=e.hp}
+  if(e.escHp-e.hp<e.maxHp*ESCAPE.share||(e.escCd||0)>G.t||e.act==='rise')return;
+  const foe=G.players.filter(q=>!(q.deadT>0)).sort((a,b)=>dist(a,e)-dist(b,e))[0];if(!foe)return;
+  for(let k=0;k<28;k++){const a=k<14?Math.atan2(e.y-foe.y,e.x-foe.x)+rnd(-1.2,1.2):rnd(0,TAU),d=rnd(ESCAPE.min,ESCAPE.max),nx=e.x+Math.cos(a)*d,ny=e.y+Math.sin(a)*d;
+    if(blocked(nx,ny,(e.r||14)*.7)||(G.arena&&e.kind==='boss'&&Math.hypot(nx-G.arena.x,ny-G.arena.y)>G.arena.r-40))continue;
+    G.fx.push({k:'ring',x:e.x,y:e.y-20,r:10,to:70,t:.35,m:.35,c:'rgba(200,180,255,.8)'});e.x=nx;e.y=ny;G.fx.push({k:'ring',x:e.x,y:e.y-20,r:70,to:10,t:.35,m:.35,c:'rgba(200,180,255,.8)'});
+    text(e.x,e.y-(e.ah||60),'Escaped','#c8b8ff',true);e.escCd=G.t+ESCAPE.cd;e.dodgeUntil=G.t+.5;e.escT0=G.t;e.escHp=e.hp;return}}
+/* ---------- Side quests and stage goals ----------
+   Every stage has three handwritten side quests; each run offers two or three of them. Givers wait around the
+   haven: walk up, read their story in the Quests panel and accept. Quests never block the gate. */
+const STAGE_GOAL={1:'Free Sunrise Hollow: drive out the foes and slay the Crystal Scurrier.',2:'Light the way through Noonshade Thicket and blind the Gloom Eye.',3:'Cross Duskwater Fen before the tide and silence the Banshee Phantasm.',4:'Break into the Webbed Barrow and crack the Chitin Horror.',5:'Cleanse Sporefall Marsh and fell the Spore Brute.',6:'Hold the crumbling Ruined Vale and tear apart the Flesh Amalgam.',7:'Brave the rusting woods and scrap the Rusted Ghoul.',8:'Delve the Midnight Warrens and shut down the Cyber Dread.',9:'Walk the Blightmoor and unravel the Void Weaver.',10:'Face The Last Night and end the Nameless King.'};
+const SIDE_QUESTS={
+ 1:[{id:'s1a',giver:'Miller Hob',title:"The miller's lost sheep",kind:'rescue',item:'Sheep',story:['A storm scattered my flock, and old Bramble never came home.','Find her in the hills and walk her back to the haven, would you?'],gold:40},
+    {id:'s1b',giver:'Herbwife Ela',title:'Sunpetals for a fever',kind:'gather',item:'Sunpetal',n:8,story:['The village children burn with fever.','Sunpetals bloom across the hollow. Bring me eight before it worsens.'],gold:35},
+    {id:'s1c',giver:'Watchman Dorr',title:'The bandit captain',kind:'bounty',item:'Captain Redcap',story:['A captain leads raids on our road at dusk.','End him, and the watch will pay you well.'],gold:55,loot:true}],
+ 2:[{id:'s2a',giver:'Herbalist Wren',title:'Moonpetals for the herbalist',kind:'gather',item:'Moonpetal',n:8,story:['Moonpetals only grow where the thicket is darkest.','Gather eight and I can brew sight against the Gloom.'],gold:50},
+    {id:'s2b',giver:'Ranger Tess',title:'The poisoned spring',kind:'cleanse',item:'Tainted spring',n:3,story:['Something has fouled the three springs in the thicket.','Stand by each one until the water runs clear.'],gold:55},
+    {id:'s2c',giver:'Courier Jem',title:'A letter through the thorns',kind:'deliver',item:'Sealed letter',story:['This letter must reach the woodcutters past the thorns.','Carry it to their camp. Mind the beasts.'],gold:50}],
+ 3:[{id:'s3a',giver:'Bellkeeper Oswin',title:'The drowned bell of Duskwater',kind:'hold',item:'Old bell tower',n:20,story:['When the bell tower sank, the fen went silent.','Guard the old tower while I ring it one last time.'],gold:70},
+    {id:'s3b',giver:'Fisher Maud',title:'Lost in the reeds',kind:'rescue',item:'Lost boy',story:['My boy chased a light into the reeds at dusk.','Find him and bring him home before the tide.'],gold:65},
+    {id:'s3c',giver:'Witch Nell',title:'Bog-lantern wicks',kind:'gather',item:'Glow-wick',n:10,story:['Bog lanterns guide the lost, but their wicks are spent.','Gather ten glow-wicks from the fen for me.'],gold:60}],
+ 4:[{id:'s4a',giver:'Gravekeeper Sol',title:'Silence the web-mother',kind:'bounty',item:'The Web-Mother',story:['A brood-mother nests among the barrows.','Kill her before her young hatch.'],gold:90,loot:true},
+    {id:'s4b',giver:'Priest Avel',title:'Restless barrows',kind:'cleanse',item:'Restless barrow',n:3,story:['Three barrows will not stay quiet.','Stand at each and let them rest again.'],gold:85},
+    {id:'s4c',giver:'Digger Bram',title:'Bones for the ossuary',kind:'gather',item:'Old bone',n:10,story:['The dead deserve their place in the ossuary.','Gather ten scattered bones for me.'],gold:80}],
+ 5:[{id:'s5a',giver:'Alchemist Ivo',title:'Purify the spore wells',kind:'cleanse',item:'Spore well',n:3,story:['Spores choke the three wells.','Burn them clean by standing watch over each one.'],gold:120},
+    {id:'s5b',giver:'Mushroom-wife Gilda',title:'Glowcaps for the cure',kind:'gather',item:'Glowcap',n:10,story:['Glowcaps cure the spore-cough.','Pick ten before the marsh rots them.'],gold:110},
+    {id:'s5c',giver:'Hunter Kael',title:'The rot-hound',kind:'bounty',item:'Rot-Hound Grisk',story:['A hound twisted by spores hunts my trail.','Put it down for good.'],gold:140,loot:true}],
+ 6:[{id:'s6a',giver:'Scholar Vey',title:"The vale's stolen relic",kind:'deliver',item:'Stone relic',story:['Raiders took our relic to sell beyond the vale.','I got it back. Carry it to the old shrine, quickly.'],gold:160},
+    {id:'s6b',giver:'Mason Gerd',title:'Shore up the ruins',kind:'hold',item:'Leaning ruin',n:22,story:['That old wall is about to fall on my crew.','Hold off the beasts while we brace it.'],gold:170},
+    {id:'s6c',giver:'Widow Ama',title:"A soldier's dog",kind:'rescue',item:'Loyal hound',story:["My husband's hound still waits at the battlefield.",'Bring her home to me.'],gold:150}],
+ 7:[{id:'s7a',giver:'Lamplighter Fen',title:'Rust-eaten lanterns',kind:'cleanse',item:'Rusted lantern',n:3,story:['Rust has eaten the lanterns on the woodland path.','Relight each one while I fetch oil.'],gold:210},
+    {id:'s7b',giver:'Smith Oda',title:'Iron for the forge',kind:'gather',item:'Iron scrap',n:12,story:['My forge is cold without iron.','Bring me twelve scraps from the rusting woods.'],gold:200},
+    {id:'s7c',giver:'Tinker Pell',title:'The scrap warden',kind:'bounty',item:'Scrap Warden',story:['A warden of rust guards the old machines.','Bring it down and the parts are yours.'],gold:240,loot:true}],
+ 8:[{id:'s8a',giver:'Foreman Rusk',title:"The crystal miner's last shift",kind:'rescue',item:'Trapped miner',story:['One of my miners never came up.','Find him in the warrens and lead him out.'],gold:280},
+    {id:'s8b',giver:'Seer Lio',title:'Singing crystals',kind:'gather',item:'Singing crystal',n:12,story:['The crystals hum warnings of what is coming.','Bring me twelve to listen to.'],gold:270},
+    {id:'s8c',giver:'Warden Hale',title:'Hold the lift',kind:'hold',item:'Mine lift',n:25,story:['The lift is our only way out.','Keep the creatures off it while it climbs.'],gold:300}],
+ 9:[{id:'s9a',giver:'Pilgrim Ysolde',title:'Void-touched pilgrim',kind:'deliver',item:'Pilgrim relic',story:['The void is in me. I cannot walk on.','Carry my relic to the moor shrine for me.'],gold:360},
+    {id:'s9b',giver:'Exorcist Brann',title:'Seal the rifts',kind:'cleanse',item:'Void rift',n:3,story:['Three rifts bleed the void onto the moor.','Stand at each until it seals.'],gold:380},
+    {id:'s9c',giver:'Knight Aldric',title:'The fallen champion',kind:'bounty',item:'Champion Morvane',story:['My old champion walks the moor, void-taken.','Free him with your blade.'],gold:420,loot:true}],
+ 10:[{id:'s10a',giver:'Herald Corin',title:"The king's broken crown",kind:'gather',item:'Crown shard',n:12,story:['The old crown shattered across the land.','Gather twelve shards, so his power wanes.'],gold:520},
+    {id:'s10b',giver:'Last Priest',title:'The final vigil',kind:'hold',item:'Last altar',n:30,story:['The last altar must burn until dawn.','Guard it against the night.'],gold:560},
+    {id:'s10c',giver:'Queen Mira',title:"The queen's champion",kind:'bounty',item:'The Black Knight',story:["The king's black knight hunts the living.",'End him and I will reward you as a queen should.'],gold:620,loot:true}]
+};
+const SIDE_KINDS=['gather','cleanse','bounty','rescue','deliver','hold'],SIDE_REACH=34,SIDE_CHANNEL=2.5;
+const sideDef=id=>{for(const k in SIDE_QUESTS){const q=SIDE_QUESTS[k].find(x=>x.id===id);if(q)return q}return null};
+/* Pick two or three of the stage's quests and place their givers around the haven */
+function sideInit(){G.side=[];if(G.story||G.swarm||!SIDE_QUESTS[G.stage])return;const pool=SIDE_QUESTS[G.stage].slice(),n=Math.random()<.5?2:3;
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  pool.slice(0,n).forEach((d,i)=>{const a=-Math.PI/2+(i-(n-1)/2)*.9,gx=G.safe.x+Math.cos(a)*110,gy=G.safe.y+Math.sin(a)*70;
+    G.side.push({id:d.id,kind:d.kind,st:0,have:0,need:d.n||1,t:0});addProp('sq_giver',gx,gy,14,{q:d.id})})}
+const sideOf=id=>(G.side||[]).find(q=>q.id===id),sideProps=id=>(G.props||[]).filter(o=>o.q===id&&o.kind!=='sq_giver');
+/* Accepting sets the quest up on the map */
+function sideAccept(id){const q=sideOf(id),d=sideDef(id);if(!q||!d||q.st!==0)return false;q.st=1;const far=()=>propSpot(900,6000);
+  if(q.kind==='gather')for(let i=0;i<q.need;i++){const o=far();addProp('sq_item',o.x,o.y,12,{q:id})}
+  else if(q.kind==='cleanse')for(let i=0;i<q.need;i++){const o=far();addProp('sq_totem',o.x,o.y,40,{q:id})}
+  else if(q.kind==='rescue'){const o=far();addProp('sq_lost',o.x,o.y,12,{q:id})}
+  else if(q.kind==='deliver'){addProp('sq_parcel',G.safe.x+rnd(-40,40),G.safe.y+50,12,{q:id});const o=far();addProp('sq_drop',o.x,o.y,46,{q:id})}
+  else if(q.kind==='hold'){const o=far();addProp('sq_shrine',o.x,o.y,90,{q:id})}
+  else if(q.kind==='bounty'){const o=far(),e=spawnRival(0,true,o);if(e){e.hp=e.maxHp=e.maxHp*2;e.title=d.item;e.sq=id;e.lvl=(e.lvl||recLevel(G.stage))+2;e.aware=false}}
+  G.banner={t:2.6,a:d.title,b:'Quest accepted'};sfx('menu');return true}
+function sideFinish(q){const d=sideDef(q.id);q.st=2;for(const o of G.props)if(o.q===q.id)o.done=true;G.props=G.props.filter(o=>o.q!==q.id||o.kind==='sq_giver');
+  const gold=Math.round(d.gold*Math.pow(1.12,G.stage-1));for(const p of G.players){p.gold+=gold}shareXp(xpNeed(recLevel(G.stage))*.35);
+  if(d.loot){const p=G.players[0];dropLoot({x:p.x+20,y:p.y,elite:true,kind:'rival',lvl:recLevel(G.stage)+2,gold:Math.round(gold*.5),xp:0},false)}
+  text(G.players[0].x,G.players[0].y-70,'+'+gold+' gold','#e8c95c',true);G.banner={t:3,a:'Quest complete',b:d.title};sfx('loot')}
+function sideStep(dt){if(!G.side||!G.side.length)return;const live=alivePlayers();
+  for(const q of G.side){if(q.st!==1)continue;const ps=sideProps(q.id);
+    if(q.kind==='gather'){for(const o of ps)if(!o.done&&live.some(p=>dist(p,o)<SIDE_REACH)){o.done=true;q.have++;text(o.x,o.y-30,sideDef(q.id).item,'#e0b878')}G.props=G.props.filter(o=>!(o.q===q.id&&o.kind==='sq_item'&&o.done))}
+    else if(q.kind==='cleanse'){for(const o of ps)if(!o.done){if(live.some(p=>dist(p,o)<o.r)){o.t+=dt;if(o.t>=SIDE_CHANNEL){o.done=true;q.have++;text(o.x,o.y-50,'Cleansed','#8fe6b8',true)}}else o.t=Math.max(0,o.t-dt*.5)}}
+    else if(q.kind==='rescue'){const o=ps[0];if(o){const lead=live.filter(p=>dist(p,o)<220).sort((a,b)=>dist(a,o)-dist(b,o))[0];if(lead){o.by=lead.id||1;const d=dist(lead,o);if(d>40){const a=Math.atan2(lead.y-o.y,lead.x-o.x),sp=Math.min(190,d*2);const nx=o.x+Math.cos(a)*sp*dt,ny=o.y+Math.sin(a)*sp*dt;if(!blocked(nx,ny,8)){o.x=nx;o.y=ny}}}else o.by=0;if(dist(o,G.safe)<80)q.have=1}}
+    else if(q.kind==='deliver'){const o=ps.find(x=>x.kind==='sq_parcel'),to=ps.find(x=>x.kind==='sq_drop');if(o&&to){let c=o.by?live.find(p=>(p.id||1)===o.by):null;if(!c){c=live.find(p=>dist(p,o)<SIDE_REACH);if(c)o.by=c.id||1}if(c){o.x=c.x;o.y=c.y-2}if(dist(o,to)<to.r)q.have=1}}
+    else if(q.kind==='hold'){const o=ps[0];if(o){if(live.some(p=>dist(p,o)<o.r)){if(!o.by){o.by=1;for(let i=0;i<3+Math.floor(G.stage/3);i++)spawnMob(0,{x:o.x+rnd(-260,260),y:o.y+rnd(-200,200)})}q.have=Math.min(q.need,q.have+dt);o.t=q.have}}}
+    else if(q.kind==='bounty'){const e=G.enemies.find(x=>x.sq===q.id);if(!e||e.dead)q.have=1}
+    if(q.have>=q.need)sideFinish(q)}}
+/* Where the HUD arrow should point for a tracked quest */
+function sideTargets(id){const q=sideOf(id);if(!q)return[];if(q.st===0){const g=(G.props||[]).find(o=>o.q===id&&o.kind==='sq_giver');return g?[{x:g.x,y:g.y,label:'Quest'}]:[]}if(q.st!==1)return[];
+  if(q.kind==='bounty'){const e=G.enemies.find(x=>x.sq===id&&!x.dead);return e?[{x:e.x,y:e.y,label:sideDef(id).item}]:[]}
+  if(q.kind==='rescue'){const o=sideProps(id)[0];return o?[{x:o.by?G.safe.x:o.x,y:o.by?G.safe.y:o.y,label:o.by?'Haven':sideDef(id).item}]:[]}
+  if(q.kind==='deliver'){const o=sideProps(id).find(x=>x.kind===(sideProps(id).find(y=>y.kind==='sq_parcel'&&y.by)?'sq_drop':'sq_parcel'));return o?[{x:o.x,y:o.y,label:o.kind==='sq_drop'?'Deliver':sideDef(id).item}]:[]}
+  return sideProps(id).filter(o=>!o.done).slice(0,6).map(o=>({x:o.x,y:o.y,label:sideDef(id).item}))}
+const sideLine=q=>{const d=sideDef(q.id);if(!d)return'';return d.title+(q.st===2?' · done':q.st===0?' · talk to '+d.giver:q.kind==='hold'?' '+Math.floor(q.have)+'/'+q.need+'s':q.need>1?' '+Math.floor(q.have)+'/'+q.need:'')};
+/* Sent to clients as compact JSON: [id,state,have,need,targets] */
+const sideWire=()=>JSON.stringify((G.side||[]).map(q=>[q.id,q.st,Math.floor(q.have*10)/10,q.need,sideTargets(q.id).map(t=>[Math.round(t.x),Math.round(t.y),t.label])]));
+/* ---------- The Shade (stage 5+) ----------
+   Before the boss, each living player meets a darkened double of their own character: twice the life, damage
+   and speed of an elite of that character at the player's level (four times on stage 10, speed capped).
+   The boss can only be summoned once every shade has fallen. */
+const SHADE={from:5,mul:2,finalMul:4,maxSpeed:2.8};
+const shadeMul=()=>(G.stage||1)>=10?SHADE.finalMul:SHADE.mul,shadesAlive=()=>G.enemies.some(e=>e.shade&&!e.dead);
+const needShades=()=>(G.stage||1)>=SHADE.from&&!G.story&&!G.swarm&&!G.shadeDone&&!G.shadeUp;
+function spawnShade(p,at){const name=p.char,fac=factionOf(name),arch=ROSTER[fac]&&ROSTER[fac][name];if(!arch)return null;
+  const s=G.stage,w=p.weapon||weaponOf(name),method=WEAPONS[w]?WEAPONS[w].m:'melee',a=Object.assign({},ARCH[arch].e),k=shadeMul();
+  a.melee=method!=='shoot'&&method!=='spell';a.atk=a.melee?Math.min(a.atk,1.1):method==='spell'?1.6:1.3;
+  const hp=mobUnit(s,p.lvl)*a.hp*2.5*k,sp=Math.min(SHADE.maxSpeed,k)*p.s.speed;
+  const e={role:METHOD_ROLE[method]||(a.melee?'rusher':'shooter'),kind:'rival',shade:true,mirrorOf:p.id||1,title:'Shade of '+label(name),name,a,w,method,healT:rnd(1,3),castT:0,guarding:false,x:at.x,y:at.y,r:a.r*1.1,lvl:p.lvl+2,
+    hp,maxHp:hp,dmg:mobHit(s,p.lvl)*a.dmg*1.3*k,sp,xp:xpNeed(p.lvl)*.6,gold:60*Math.pow(1.25,s-1),elite:false,cd:rnd(.6,1.2),wind:0,ang:rnd(TAU),aware:true,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU),target:p.id||1};
+  G.enemies.push(e);return e}
+function summonShades(){const ps=alivePlayers();ps.forEach((q,i)=>{const a=i/Math.max(1,ps.length)*TAU,at={x:G.gate.x+Math.cos(a)*70,y:G.gate.y-60+Math.sin(a)*40};spawnShade(q,blocked(at.x,at.y,16)?{x:G.gate.x,y:G.gate.y-40}:at)});
+  G.shadeUp=true;shake(8);sfx('boss_roar');G.banner={t:3.2,a:ps.length>1?'Your shades bar the way':'Your shade bars the way',b:'Defeat it to face the boss'}}
 function summonBoss(kit,at){
   const n=G.stage,k=kit||n,st=STAGES[k-1],g=G.gate,o=at||{x:g.x,y:g.y-40};
   const e={kind:'boss',kit:k,name:st.label||st.boss,art:st.boss,ah:st.ah,x:o.x,y:o.y,r:st.r,hp:bossHp(n),maxHp:bossHp(n),dmg:bossDmg(n),sp:58+n*3,xp:xpNeed(recLevel(n)),gold:40*Math.pow(1.25,n-1),cd:1,ang:0,aware:true,flash:0,kx:0,ky:0,ph:rnd(TAU),act:'rise',actT:.95,hitCd:0,atkShow:0,wind:0,walk:0,fs:1,recover:0,recoil:0,release:0,trail:[],guard:0,guardMax:BOSS_GUARD_MAX,staggerT:0,phase:0,breatherT:0,enrageT:BOSS_ENRAGE_BASE+BOSS_ENRAGE_STEP*n,tel:null};
+  {const m=bossMult(n);if(m>1){e.hp=e.maxHp=e.maxHp*m;e.dmg*=1+(m-1)*.35;e.sp*=Math.min(1.6,1+.06*(m-1));e.enrageT=Math.max(60,e.enrageT/(1+.1*(m-1)));e.mult=m}}
   partyToughen(e);G.enemies.push(e);G.boss=e;G.arena=at?null:{x:G.gate.x,y:G.gate.y-40,r:430};shake(10);sfx('boom');
   if(k===3)spawnLanterns();if(k===5)spawnSporeArena();if(k===7)spawnGhoulArena();
   sfx('boss_roar');const rec=recLevel(n),lv=G.p.lvl;
@@ -802,7 +895,7 @@ function expose(e,duration=2){if(e.dead)return;e.exposedT=Math.max(e.exposedT||0
 /* Hit-stop: heavy hits freeze the action for a moment so they land with weight. Solo only; the main loop slows time while it runs. */
 const HIT_STOP=.06;
 function hitEnemy(e,base,ang,kb,heavy=false){if(heavy&&kb>0)G.hitStop=Math.max(G.hitStop||0,HIT_STOP);
-  if(e.dead||e.buried||e.fleshDown||e.scrapDown)return;const p=G.p;if(bossWarded(e)){if(!(e.wardT>G.t)){e.wardT=G.t+1;text(e.x,e.y-110,e.ghostT>0?'UNTOUCHABLE':'NEEDS LANTERN LIGHT','#c8b8ff',true)}return}if(e.role==='lurker'&&e.grab&&(G.players.length===1||(p.id||1)!==e.grab))lurkRelease(e,true);if(e.eyeT>0&&eyeBehind(e,p)&&!(e.eyeCd>G.t)){e.eyeCd=G.t+.4;bossGuard(e,BOSS_GUARD_GAIN.eye);base*=1.5;text(e.x,e.y-e.ah,'EYE HIT','#ffd860',true)}let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
+  if(e.dead||e.buried||e.fleshDown||e.scrapDown)return;const p=G.p;if((e.dodgeUntil||0)>G.t)return;if(!heavy&&kb>0&&tryDodge(e,ang))return;if(bossWarded(e)){if(!(e.wardT>G.t)){e.wardT=G.t+1;text(e.x,e.y-110,e.ghostT>0?'UNTOUCHABLE':'NEEDS LANTERN LIGHT','#c8b8ff',true)}return}if(e.role==='lurker'&&e.grab&&(G.players.length===1||(p.id||1)!==e.grab))lurkRelease(e,true);if(e.eyeT>0&&eyeBehind(e,p)&&!(e.eyeCd>G.t)){e.eyeCd=G.t+.4;bossGuard(e,BOSS_GUARD_GAIN.eye);base*=1.5;text(e.x,e.y-e.ah,'EYE HIT','#ffd860',true)}let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
   if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
   if(justBroke)bossGuard(e,BOSS_GUARD_GAIN.break);
   const el=ELEMENT[p.char],prev=e.statusType,solo=G.players.length===1,rid=(el&&e.statusT>0&&prev&&G.t>=(e.reactAt||0)&&(solo||(e.statusBy||0)!==(p.id||0)))?(solo?'resonance':reactionOf(prev,el)):'';
@@ -841,7 +934,7 @@ function gainXp(x){const p=G.p;p.xp+=x;let up=false;
   while(p.xp>=xpNeed(p.lvl)){p.xp-=xpNeed(p.lvl);p.lvl++;p.sp++;up=true}
   if(up){if(!G.swarm)achievementCheck(p);recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana;sfx('level');burst(p.x,p.y-20,'#e8c95c',28,220);text(p.x,p.y-74,'Level '+p.lvl,'#e8c95c',true);addLog('Level '+p.lvl+'. Skill point earned (press T).');writeSave()}}
 function hurtPlayer(d){
-  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor*(1-Math.min(90,(p.rust||0)+(p.fieldRust||0))/100)+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*(p.veh?.7:1)*abilGuard(p)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;beaconHit(p);p.hitT=.18;shake(5);sfx('hurt');
+  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor*(1-Math.min(90,(p.rust||0)+(p.fieldRust||0))/100)+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*abilGuard(p)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;beaconHit(p);p.hitT=.18;shake(5);sfx('hurt');
   text(p.x,p.y-72,'-'+Math.round(v),'#ff6a5f');burst(p.x,p.y-20,'#f0805c',8);if(!p.guard)bleed(p.x,p.y-24,rnd(-1,1),rnd(-1,1),clamp(Math.round(v/Math.max(1,p.s.maxHp)*60),3,22));
   if(p.hp<=0){p.hp=0;if(G.players.length===1&&!p.secondWind){p.secondWind=true;playerDown(p,true);writeSave()}else if(G.mp)playerDown(p);else if(G.swarm){p.hp=0;endSwarm()}else{p.gold=Math.floor(p.gold*.8);writeSave();setMode('dead')}}
 }
@@ -1309,7 +1402,7 @@ function ultHit(u,n){
   shake(12);tone(70,28,.5,'sawtooth',.09);noiseHit(.45,.13);
   if(n===0){G.shots=G.shots.filter(s=>s.from!=='e');G.hazards=(G.hazards||[]).filter(h=>h.from!=='e')}
   G.fx.push({k:'ultStyle',x:p.x,y:p.y-30,t:.55,m:.55,char:p.char,phase:'burst',beat:n,c:u.col});
-  for(const e of G.enemies.slice()){if(e.dead||e.fleshDown||e.scrapDown||dist(e,p)>ULT_RADIUS)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);G.fx.push({k:'ultStyle',x:e.x,y:e.y-25,t:.4,m:.4,char:p.char,phase:'impact',c:u.col});glowP(e.x,e.y-30,u.col,8,190,.5,4);const hp=e.fleshSplit&&G.flesh?G.flesh.one.fleshTotal:e.hp;hitEnemy(e,ultDmgFor(e,p,lb),a,260);const after=e.fleshSplit&&G.flesh?G.flesh.one.fleshTotal:e.hp;if(G.link&&G.link.ids.includes(p.id)&&!e.dead&&!e.fleshDown)G.link.hits.push({e,p,base:Math.max(0,hp-after)/(1+lb),bonus:lb})}
+  for(const e of G.enemies.slice()){if(e.dead||e.fleshDown||e.scrapDown||dist(e,p)>ULT_RADIUS)continue;const a=Math.atan2(e.y-p.y,e.x-p.x);G.fx.push({k:'ultStyle',x:e.x,y:e.y-25,t:.4,m:.4,char:p.char,phase:'impact',c:u.col});glowP(e.x,e.y-30,u.col,8,190,.5,4);const hp=e.fleshSplit&&G.flesh?G.flesh.one.fleshTotal:e.hp;hitEnemy(e,ultDmgFor(e,p,lb),a,260,true);const after=e.fleshSplit&&G.flesh?G.flesh.one.fleshTotal:e.hp;if(G.link&&G.link.ids.includes(p.id)&&!e.dead&&!e.fleshDown)G.link.hits.push({e,p,base:Math.max(0,hp-after)/(1+lb),bonus:lb})}
   for(const c of (G.props||[]).slice())if(c.kind==='scrapPart'&&!c.done&&dist(c,p)<ULT_RADIUS)scrapPartHit(c,p);
   for(const c of G.npcs)if(!c.dead&&dist(c,p)<ULT_RADIUS)hitNpc(c,d,Math.atan2(c.y-p.y,c.x-p.x),true);
 }
@@ -1364,37 +1457,8 @@ function stageCleared(){const n=G.stage;for(const p of G.players){if(n>=p.maxSta
 
 /* ---------- Update ---------- */
 function nearestEnemy(){let b=null,bd=380;for(const e of G.enemies){if(e.dead||e.fleshDown||e.scrapDown||concealed(e,G.p))continue;const d=dist(e,G.p);if(d<bd&&los(e,G.p)){bd=d;b=e}}for(const c of G.props||[]){if((c.kind||c.k)!=='scrapPart'||c.done||c.d)continue;const d=dist(c,G.p);if(d<bd&&los(c,G.p)){bd=d;b=c}}return b}
-/* ---------- Drivable vehicles ----------
-   Carts, wagons and mine carts on land, rowing boats on water, a racer at the track. F gets in or out
-   (when nothing else nearby wants F). No attacks while driving; fast drives knock enemies aside. */
-const VEH={cart:{max:360,acc:440,turn:3.2,r:18},wagon:{max:300,acc:360,turn:2.6,r:20},mine:{max:380,acc:470,turn:3.3,r:18},racer:{max:430,acc:540,turn:3.7,r:17},boat:{max:280,acc:320,turn:2.5,r:18,water:true}};
-const VEH_REACH=48,RAM={speed:200,cd:.5},DRIVE_BLOCK=new Set(['dash','ult','special','ability','use','spell','heal','team']);
-function spawnVehicles(){G.vehicles=(G.w.vspots||[]).map((v,i)=>({id:i+1,kind:v.kind,x:v.x,y:v.y,a:v.a,sp:0,by:0}));for(const q of G.players||[])q.veh=0}
-const vehOf=p=>p&&p.veh?(G.vehicles||[]).find(v=>v.id===p.veh):null;
-/* Where a vehicle may be: boats on water (and under bridges), the rest anywhere a person can walk except open water */
-function vehTileOk(v,x,y){const r=VEH[v.kind].r*.7;for(const [ox,oy] of [[-r,-r],[r,-r],[-r,r],[r,r]]){const tx=Math.floor((x+ox)/T),ty=Math.floor((y+oy)/T);if(wall(tx,ty))return false;const g=G.w.ground[idx(tx,ty)];if(VEH[v.kind].water?(g!==3&&g!==4):g===3)return false}return true}
-function nearVehicle(p){let best=null,bd=VEH_REACH;for(const v of G.vehicles||[]){if(v.by)continue;const d=Math.hypot(v.x-p.x,v.y-p.y);if(d<bd){bd=d;best=v}}return best}
-/* F belongs to driving only when you are driving, or a free vehicle is close and you carry nothing */
-const canDrive=p=>!!p&&!(p.deadT>0)&&!(p.respawnT>0)&&(!!p.veh||(!p.carry&&!!nearVehicle(p)));
-function enterVehicle(p,v){p.veh=v.id;v.by=p.id||1;v.sp=0;p.x=v.x;p.y=v.y;p.dashT=0;p.chg=0;p.beam=null}
-function leaveVehicle(p){const v=vehOf(p);p.veh=0;if(!v)return;v.by=0;v.sp=0;
-  // step off to a side that is open ground
-  for(const a of [v.a+Math.PI/2,v.a-Math.PI/2,v.a+Math.PI,v.a]){const x=v.x+Math.cos(a)*34,y=v.y+Math.sin(a)*34;if(!blocked(x,y,p.r||12)){p.x=x;p.y=y;return}}}
-function toggleDrive(p){if(!p)return false;if(p.veh){leaveVehicle(p);return true}const v=!p.carry&&nearVehicle(p);if(!v)return false;enterVehicle(p,v);return true}
-/* Arcade handling: turn toward the stick, speed up when facing it, coast and bounce off walls */
-function driveStep(p,mv,dt,predict){const v=vehOf(p);if(!v){p.veh=0;return false}const d=VEH[v.kind],env=envSpeed(p),inp=Math.hypot(mv.x,mv.y);
-  if(inp>.2&&env>0){const want=Math.atan2(mv.y,mv.x);let diff=((want-v.a+Math.PI*3)%TAU)-Math.PI;v.a+=clamp(diff,-d.turn*dt,d.turn*dt);v.sp+=d.acc*dt*(Math.cos(diff)>-.1?1:-.7)}
-  else v.sp-=Math.sign(v.sp)*Math.min(Math.abs(v.sp),280*dt);
-  v.sp=clamp(v.sp,-d.max*.4,d.max*(env>0?Math.min(1,env):0)*(p.fastT>0?1.15:1));
-  const nx=v.x+Math.cos(v.a)*v.sp*dt,ny=v.y+Math.sin(v.a)*v.sp*dt;
-  if(vehTileOk(v,nx,v.y))v.x=nx;else v.sp*=-.3;if(vehTileOk(v,v.x,ny))v.y=ny;else v.sp*=-.3;
-  p.x=v.x;p.y=v.y;p.face=v.a;p.moveA=v.a;p.moving=Math.abs(v.sp)>12;if(p.moving)p.walk+=dt*Math.abs(v.sp)/30;
-  // ramming: enemies in the way are struck and thrown aside; bosses are only pushed
-  if(!predict&&Math.abs(v.sp)>RAM.speed)for(const e of G.enemies){if(e.dead||(e.ramT||0)>G.t||Math.hypot(e.x-v.x,e.y-v.y)>d.r+(e.r||14)+6)continue;e.ramT=G.t+RAM.cd;const k=Math.abs(v.sp)/d.max,ax=Math.cos(v.a),ay=Math.sin(v.a);
-    if(e.kind==='boss'){e.x+=ax*14;e.y+=ay*14;v.sp*=.3}else{hitEnemy(e,(10+G.stage*4)*k,v.a,320*k);v.sp*=.8}}
-  return true}
 function updatePlayer(p,dt){
-  G.p=p;applyInput(p);if(p.veh){mouse.left=mouse.right=false;touchHold.slash=touchHold.guard=false;if(p.deadT>0||p.respawnT>0)leaveVehicle(p)}if(p.respawnT>0){p.respawnT-=dt;p.moving=false;if(p.respawnT<=0)respawn(p);return}if(p.deadT>0){p.inv=Math.max(0,p.inv-dt);p.deadT-=dt;if(p.deadT<=0){if(p.windDown){p.windDown=false;revive(p)}else bleedOut(p);return}const v=moveVec();move(p,v.x*p.s.speed*.25*dt,v.y*p.s.speed*.25*dt);p.moving=!!(v.x||v.y);if(p.moving){p.walk+=dt*5;p.moveA=Math.atan2(v.y,v.x)}return}
+  G.p=p;applyInput(p);if(p.respawnT>0){p.respawnT-=dt;p.moving=false;if(p.respawnT<=0)respawn(p);return}if(p.deadT>0){p.inv=Math.max(0,p.inv-dt);p.deadT-=dt;if(p.deadT<=0){if(p.windDown){p.windDown=false;revive(p)}else bleedOut(p);return}const v=moveVec();move(p,v.x*p.s.speed*.25*dt,v.y*p.s.speed*.25*dt);p.moving=!!(v.x||v.y);if(p.moving){p.walk+=dt*5;p.moveA=Math.atan2(v.y,v.x)}return}
   updateRevive(p,dt);
   p.weaponHealCd=Math.max(0,(p.weaponHealCd||0)-dt);p.teamCd=Math.max(0,(p.teamCd||0)-dt);p.breakReady=Math.max(0,(p.breakReady||0)-dt);p.tauntGuard=Math.max(0,(p.tauntGuard||0)-dt);if(p.mendT>0){const t=Math.min(dt,p.mendT);p.mendT-=t;const h=Math.min(p.s.maxHp-p.hp,p.mendRate*t),healer=G.players.find(q=>q.id===p.mendBy);p.hp+=h;if(healer)threatHeal(healer,h)}
   for(const k in p.cd)p.cd[k]=Math.max(0,p.cd[k]-dt);
@@ -1402,8 +1466,7 @@ function updatePlayer(p,dt){
   if(p.fastT>0)p.fastT-=dt;if(p.magicT>0)p.magicT-=dt;
   p.mana=Math.min(p.s.maxMana,p.mana+p.s.regen*dt*chainBonus().mana);if(auraHas(p,'medic'))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.006*dt);
   p.specT=Math.max(0,(p.specT||0)-dt);tickAbility(p,dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec();p.sprint=canSprint(p,v);if(p.sprint)p.mana=Math.max(0,p.mana-SPRINT.mana*dt);const drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*abilSpeed(p)*(p.sprint?SPRINT.mul:1)*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*(p.beam?0:p.chg>0?CHARGE.slow:1)*chainBonus().spd;p.moving=!!(v.x||v.y)&&!p.beam;
-  if(p.veh&&driveStep(p,v,dt)){}
-  else if(p.lungeT>0)lungeStep(p,dt);
+  if(p.lungeT>0)lungeStep(p,dt);
   else if(p.dashT>0&&!(p.webT>0)){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
   else{move(p,v.x*sp*dt,v.y*sp*dt);if(p.moving){p.walk+=dt*11*(p.sprint?SPRINT.stride:1);p.moveA=Math.atan2(v.y,v.x)}}
   if(drag)move(drag,p.x-ox,p.y-oy);
@@ -1433,7 +1496,7 @@ function update(dt){
   const real=dt;let slow=1;
   chainTick(real);tickLink(real);
   for(const p of G.players){G.p=p;if(p.ult){tickUlt(real);tagOwned(p);if(!G.mp&&p.ult)slow=p.ult.t<ULT_HITS[0]?.06:.45}else if(p.combo){p.comboT-=real;if(p.comboT<=0){p.combo=0;p.comboTier=null}}p.comboPop=Math.max(0,p.comboPop-real*4)}
-  dt*=slow;bossEggTick(dt);G.t+=dt;G.hour=(G.hour+dt/20)%24;objStep(dt);
+  dt*=slow;bossEggTick(dt);G.t+=dt;G.hour=(G.hour+dt/20)%24;objStep(dt);sideStep(dt);
   for(const p of G.players)updatePlayer(p,dt);
   valeTick(dt);G.p=G.players[0];
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
@@ -1463,7 +1526,8 @@ function update(dt){
   for(const s of G.shots)if(s.life<=0&&s.breaks&&!s.pooled){s.pooled=s.pooled||!s.pool;if(s.from==='p'){G.p=ownerOf(s);explode(s)}else{impact(s,s.blast);for(const q of G.players){G.p=q;if(Math.hypot(q.x-s.x,q.y-22-s.y)<s.blast+q.r)hurtPlayer(s.dmg)}}}
   G.shots=G.shots.filter(s=>s.life>0);G.enemies=G.enemies.filter(e=>!e.dead);
   G.loot=G.loot.filter(l=>{l.t+=dt;const p=nearestPlayer(l);G.p=p;const d=dist(l,p),mag=(l.kind==='item'||(l.kind==='weapon'&&!p.weapons.includes(l.w)))?0:96;if(mag&&d<mag){const a=Math.atan2(p.y-l.y,p.x-l.x);l.x+=Math.cos(a)*300*dt;l.y+=Math.sin(a)*300*dt}if(d<(l.kind==='item'||l.kind==='weapon'?30:18)){pickup(l);return false}return true});
-  for(const q of alivePlayers()){if(G.gate.open&&!G.boss&&!G.clearPending&&!(q.deadT>0||q.respawnT>0)&&dist(q,G.gate)<46){G.p=q;summonBoss()}}
+  if(G.shadeUp&&!shadesAlive()){G.shadeUp=false;G.shadeDone=true;G.banner={t:2.6,a:'The way is open',b:'The boss awaits at the gate'}}
+  for(const q of alivePlayers()){if(G.gate.open&&!G.boss&&!G.clearPending&&!G.shadeUp&&!(q.deadT>0||q.respawnT>0)&&dist(q,G.gate)<46){G.p=q;if(needShades())summonShades();else summonBoss()}}
   if(G.clearPending){G.clearPending-=dt;if(G.clearPending<=0){G.clearPending=0;if(G.mode==='play')setMode('clear')}}
   fleshTick(dt);G.p=G.players[0];tickFx(dt);
   if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null}
@@ -1602,7 +1666,7 @@ function stalkerAct(e,dt,d,seen){const p=G.p;
   if(seen&&d<STALKER_SPRING&&dist(p,G.safe)>110){e.aimT=STALKER_AIM;text(e.x,e.y-88,'AMBUSH','#ff8f80',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:10,to:60,t:STALKER_AIM,m:STALKER_AIM,c:'#ff8f80'});return true}
   if(e.flash>0){e.lurk=false;e.aware=true;return false}
   return true}
-function updateEnemy(e,dt){
+function updateEnemy(e,dt){if(e.kind==='boss'||e.shade)escapeCheck(e);
   if(e.dead||e.fleshDown||e.scrapDown)return;threatDecay(e,dt);const p=G.p;e.tauntT=Math.max(0,(e.tauntT||0)-dt);e.markT=Math.max(0,(e.markT||0)-dt);e.brokenT=Math.max(0,(e.brokenT||0)-dt);e.exposedT=Math.max(0,(e.exposedT||0)-dt);e.statusT=Math.max(0,(e.statusT||0)-dt);e.shatterT=Math.max(0,(e.shatterT||0)-dt);e.slowT=Math.max(0,(e.slowT||0)-dt);
   if(e.rotT>0&&!bossWarded(e)){e.rotT=Math.max(0,e.rotT-dt);const rotBy=G.players.find(x=>(x.id||0)===(e.rotBy||0)),was=G.p;if(rotBy)G.p=rotBy;e.hp-=e.rotRate*dt;if(e.kind==='boss'&&[6,7].includes(e.kit||G.stage))bossPhaseCheck(e);e.flash=Math.max(e.flash||0,.05);if(e.hp<=0){killEnemy(e);G.p=was;return}G.p=was}
   if(e.frozenT>0){e.frozenT=Math.max(0,e.frozenT-dt);e.moving=false;return}
@@ -1651,11 +1715,24 @@ function updateEnemy(e,dt){
 }
 /* A boss sometimes follows one attack straight into another, more often when hurt. Each still has its full warning. */
 const bossChains=low=>Math.random()<(low?AI.bossChainLow:AI.bossChain);
+/* ---------- Boss final attack ----------
+   Once per fight, at a quarter of its life, a boss stops, a warning ring spreads, and after the wind-up it unleashes its
+   final attack around itself. A dash (or simply being outside the ring) avoids it. Clients show a full-screen scene. */
+const FINAL={on:true,at:.25,wind:2.2,r:280,mul:2.2,names:{'Crystal Scurrier':'Shard Storm','Gloom Eye':'Abyssal Gaze','Banshee Phantasm':'Death Wail','Chitin Horror':'Carapace Cataclysm','Spore Brute':'Rot Bloom','Flesh Amalgam':'Feast of Flesh','Rusted Ghoul':'Iron Requiem','Cyber Dread':'Overload Protocol','Void Weaver':'The Unmaking','Nameless King':'The Last Night'}};
+function bossFinal(e){
+  if(e.act!=='final'){if(!FINAL.on||e.finalDone||e.kind!=='boss'||e.act==='rise'||e.hp>e.maxHp*FINAL.at)return false;
+    e.finalDone=true;e.act='final';e.actT=FINAL.wind;e.tel=null;e.wind=0;e.moving=false;
+    G.fx.push({k:'bossult',art:e.art,name:e.name,move:FINAL.names[e.art]||'Final assault',x:e.x,y:e.y,t:FINAL.wind+.5,m:FINAL.wind+.5});
+    G.fx.push({k:'ring',x:e.x,y:e.y,r:24,to:FINAL.r,t:FINAL.wind,m:FINAL.wind,c:'rgba(255,90,80,.9)'});shake(6);sfx('boss_roar');text(e.x,e.y-(e.ah||100)-10,'Final attack','#ff8f80',true)}
+  e.moving=false;if(e.actT>0)return true;
+  for(const q of alivePlayers())if(dist(q,e)<FINAL.r+(q.r||12)){const me=G.p;G.p=q;hurtPlayer(e.dmg*FINAL.mul);G.p=me}
+  G.fx.push({k:'nova',x:e.x,y:e.y-30,r:FINAL.r,t:.45,m:.45,c:'255,120,90',a:0});shake(16);sfx('boom');e.act='walk';e.actT=1.2;e.cd=1;return true}
 function updateBoss(e,dt,d,seen){
   const p=G.p,n=e.kit||G.stage,low=e.hp<e.maxHp*.5;e.actT-=dt;e.hitCd=Math.max(0,e.hitCd-dt);e.ang=e.ang||0;
   e.recover=Math.max(0,e.recover-dt);e.recoil=Math.max(0,e.recoil-dt);e.release=Math.max(0,e.release-dt);
   if((e.staggerT||0)>0){e.staggerT=Math.max(0,e.staggerT-dt);e.moving=false;if(Math.random()<.12)burst(e.x+rnd(-e.r,e.r),e.y-16,'#ffd860',1,50);return}
   if((e.breatherT||0)>0){e.breatherT=Math.max(0,e.breatherT-dt);e.moving=false;e.tel=null;return}
+  if(bossFinal(e))return;
   bossEnrage(e,dt);if(n===1)bossPillarRegen(e,dt);
   e.eyeT=Math.max(0,(e.eyeT||0)-dt);e.ghostT=Math.max(0,(e.ghostT||0)-dt);
   if(bossActStage(e,dt,d,seen,p,n))return;

@@ -7,7 +7,6 @@ import {wallFaces} from '../three/geometry.js';
 import {STAGE_THEMES,THEME_KEYS,themeFor} from '../three/stages.js';
 import {TREE_KINDS,EXTRA_KINDS,scatterExtras,buildVegetation} from '../three/vegetation.js';
 import {WEATHER} from '../three/vfx.js';
-import {VEHICLES,placeVehicles,buildVehicles} from '../three/vehicles.js';
 let n=0;const ok=(c,m)=>{assert.ok(c,m);n++;console.log('  ok  '+m)};
 
 ok(DAYRIM64.length===64&&new Set(DAYRIM64).size===64,'DAYRIM-64 has 64 different colours');
@@ -49,15 +48,7 @@ ok(themeFor(1)===STAGE_THEMES[0]&&themeFor(10)===STAGE_THEMES[9]&&themeFor(99)==
    if(g.children.length<3)throw new Error(th.n+' built too little');g.userData.dispose()}
  ok(true,'every stage kit builds its trees, shrubs, grass and scenery')}
 
-// Weather and vehicles
+// Weather
 ok(STAGE_THEMES.every(t=>WEATHER[t.weather]),'every stage has a weather recipe');
 ok(new Set(STAGE_THEMES.map(t=>t.weather)).size===10,'each stage has its own weather');
-{const MW=24,MH=24,N=MW*MH,map=new Uint8Array(N),ground=new Uint8Array(N);
- for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=y*MW+x;if(y%6===0&&x<12)map[i]=1;if(x>=15&&x<=19&&y>3&&y<20)ground[i]=3}
- const st={map,ground,MW,MH,T:40},tile=o=>Math.floor(o.y/40)*MW+Math.floor(o.x/40);
- const v=placeVehicles(STAGE_THEMES[0],st,[]);
- ok(v.some(o=>o.t==='boat')&&v.filter(o=>o.t==='boat').every(o=>ground[tile(o)]===3),'boats are moored on water');
- ok(v.filter(o=>o.t!=='boat').every(o=>!map[tile(o)]),'carts and wagons never sit inside a wall');
- ok(placeVehicles(STAGE_THEMES[9],st,[]).every(o=>o.t!=='boat'),'no boats on the Last Night\'s lava');
- const g=buildVehicles(STAGE_THEMES[0],Object.keys(VEHICLES).map((t,i)=>({t,x:i*60,y:0,a:0,v:0})));ok(g.children.length>=Object.keys(VEHICLES).length,'boat, cart, wagon and car models all build');g.userData.dispose()}
 console.log('\n'+n+' checks passed');

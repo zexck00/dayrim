@@ -4,6 +4,44 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### 21 November 2026
+
+- Side quests: three per stage with their own story (30 in all), two or three offered each run by givers at the haven. Rewards are gold, experience and, for bounties, treasure.
+- Quests panel (J, or the Quests button): the stage goal with its steps, every side quest with its story, status and reward, and a Track button for what the HUD follows.
+- New chibi pixel bosses for all ten stages, scarier and gorier, each with its own animated aura.
+- Bosses unleash a final attack once, at a quarter of their life, shown in a full-screen scene with their portrait.
+- From stage 5 bosses are tougher (2× to 4× life, 10× on stage 10), faster, dodge plain hits and slip away after a burst of damage. Minions dodge too.
+- From stage 5 your own Shade waits at the gate: a darkened double of your character that must fall before the boss appears.
+- Removed: drivable vehicles, the race track and the cart roads.
+
+### Added
+
+**Side quests and the Quests panel**
+- Each stage has three handwritten side quests, each with its own giver, story and reward. A run offers two or three of them.
+- Givers stand around the haven with a gold "!" (not started) or "?" (under way). Walk up and press F, or open the Quests panel.
+- Six kinds: gather items across the map, cleanse cursed totems by standing at them, rescue someone and lead them home, deliver a parcel, hold a shrine against a wave, and hunt a named bounty.
+- Rewards: gold scaled to the stage and party experience; bounties also drop treasure. Side quests never keep the gate shut.
+- The Quests panel (J or the Quests button) shows the stage goal with its steps (including the Shade and the boss) and every side quest. Track picks the main goal or one quest for the HUD line and the arrow.
+- Online, side quests are shared by the party and accepted through a checked server action.
+
+**Bosses**
+- The ten stage bosses are redrawn as full-chibi pixel art: a big head with a detailed face (glowing or bloodshot eyes, teeth, scars), blood, wounds and exposed bone, and walking, wind-up and hit poses. They break apart when they die.
+- Each boss has its own animated aura in its colours: crystal shards, smoke rings with watching eyes, wailing wisps, scuttling shadows with embers, spore clouds, blood mist with veins, rust sparks, electric arcs, void tendrils, and a crimson corona of flames.
+- Final attack: once per fight, at a quarter of its life, a boss stops, a warning ring spreads, and after the wind-up it blasts everything inside. A full-screen scene shows its portrait and the attack's name (for example Shard Storm, Iron Requiem, The Last Night). A dash or leaving the ring avoids it.
+
+**Harder late stages**
+- From stage 5 bosses have more life: 2×, 2.5×, 3×, 3.5× and 4× on stages 5 to 9, and 10× on stage 10. They hit harder, move faster and enrage sooner.
+- From stage 5 bosses dodge plain hits (15% on stage 5 up to 45% on stage 10) and blink away after losing 12% of their life in three seconds. Minions dodge too (8% up to 22%) and move faster.
+- Charged shots, beams, abilities and ultimates can't be dodged.
+- From stage 5, reaching the open gate summons your Shade: a darkened copy of your character in black-violet smoke, with twice the life, damage and speed of an elite of your character at your level (four times on stage 10, speed capped). The boss appears only once every Shade has fallen; online, each player gets their own.
+
+### Removed
+- Drivable vehicles (carts, wagons, mine carts, boats and the racer), the race track and the cart roads. The bigger maps, river, ponds, woods and wading stay.
+
+### Fixed
+- Spots for objectives and enemies are found reliably on the bigger maps.
+
+
 ### 13 November 2026
 
 - Full chibi characters: all 40 heroes and villains, minions and townspeople redrawn with big heads, eyes, brows and oversized weapons, matching their character cards.
