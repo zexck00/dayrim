@@ -348,17 +348,28 @@ function nightness(h){h=(h%24+24)%24;if(h>=8&&h<17)return 0;if(h>=17&&h<20)retur
 /* Day and night rules (C-73, design section 16). nightness() above is the smooth light level for drawing and crowds;
    the rules read the four periods from this one table. enemyDmg: enemies spawned in the period. gold and xp: kill rewards.
    elite: multiplies the elite chance of rivals and the strong chance of minions. shop: safehouse prices. safeHeal: safehouse
-   healing. el: player damage bonus by element. warnAt: the dusk warning hour. */
+   healing. ranged: chance a hero or villain rival is re-picked from the ranged fighters (the day's "more shooters").
+   el: player damage bonus by element. crowdNight: extra rivals on the streets at full night (scaled by nightness, so
+   dusk ramps up and day is quietest). retreat: night-born rivals leave at dawn (see dawnRetreat). warnAt: the warning hour. */
 const DAYNIGHT={
   periods:[
-    {id:'dawn',n:'Dawn',from:5,to:8,enemyDmg:1,gold:1,xp:1,elite:1,shop:1,safeHeal:1.5,el:{}},
-    {id:'day',n:'Day',from:8,to:17,enemyDmg:1,gold:1,xp:1,elite:1,shop:.9,safeHeal:1,el:{holy:1.15}},
-    {id:'dusk',n:'Dusk',from:17,to:20,enemyDmg:1,gold:1,xp:1,elite:1,shop:1,safeHeal:1,el:{burn:1.15}},
-    {id:'night',n:'Night',from:20,to:5,enemyDmg:1.15,gold:1.25,xp:1.25,elite:2,shop:1,safeHeal:1,el:{void:1.15}}],
-  warnAt:19,warn:{a:'Night is coming',b:'Enemies grow stronger at 20:00. Elites are twice as likely.'}
+    {id:'dawn',n:'Dawn',from:5,to:8,enemyDmg:1,gold:1,xp:1,elite:1,shop:1,safeHeal:1.5,ranged:0,el:{}},
+    {id:'day',n:'Day',from:8,to:17,enemyDmg:1,gold:1,xp:1,elite:1,shop:.9,safeHeal:1,ranged:.5,el:{holy:1.15}},
+    {id:'dusk',n:'Dusk',from:17,to:20,enemyDmg:1,gold:1,xp:1,elite:1,shop:1,safeHeal:1,ranged:0,el:{burn:1.15}},
+    {id:'night',n:'Night',from:20,to:5,enemyDmg:1.15,gold:1.25,xp:1.25,elite:2,shop:1,safeHeal:1,ranged:0,el:{void:1.15}}],
+  crowdNight:5,retreat:{far:650,unseen:400,maxT:8},warnAt:19,warn:{a:'Night is coming',b:'Enemies grow stronger at 20:00. Elites are twice as likely.'}
 };
 function period(h){h=(h%24+24)%24;return DAYNIGHT.periods.find(q=>q.from<q.to?h>=q.from&&h<q.to:h>=q.from||h<q.to)}
 const dn=()=>period(G.hour),elemTime=el=>(el&&dn().el[el])||1;
+/* Dawn: ordinary rivals that arrived at night give up and walk away, then vanish out of sight (no kill, no reward).
+   Bosses, elites, villains, Shades, Swarm waves, story foes, stage enemies (stalkers, lurkers and the like) and anyone
+   mid-attack stay and fight. */
+const RETREAT_ROLES=['rusher','brute','shooter','caster','guard','healer'];
+const canRetreat=e=>e.bornNight&&e.kind==='rival'&&!e.elite&&!e.vill&&!e.shade&&!e.swarm&&!G.swarm&&!G.story&&RETREAT_ROLES.includes(e.role)&&!e.shieldbearer&&!e.scrapGolem&&!(e.wind>0)&&!(e.healWind>0);
+function dawnRetreat(e,dt){if(!e.retreat){if(dn().id!=='dawn'||!canRetreat(e))return false;e.retreat=true;e.retreatT=0;e.aware=false;e.wind=0;text(e.x,e.y-70,'Retreats','#d8c8a8')}
+  const q=nearestPlayer(e),R=DAYNIGHT.retreat;e.retreatT+=dt;const d=q?dist(e,q):1e9;
+  if(!q||d>R.far||(d>R.unseen&&!los(e,q))||e.retreatT>R.maxT){e.dead=true;e.gone=true;return true}
+  const b=Math.atan2(e.y-q.y,e.x-q.x);stepMove(e,b,e.sp*dt);e.ang=b;e.walk+=dt*6;e.moving=true;return true}
 /* The clock crossed the warning hour this frame (handles the wrap past midnight). */
 function duskCrossed(h0,h1){const w=DAYNIGHT.warnAt;return h1>=h0?h0<w&&h1>=w:h0<w||h1>=w}
 function tintOf(h,n){h=(h%24+24)%24;const warm=(h>=5&&h<8)||(h>=16&&h<20);return warm&&n<.75?{c:[235,120,60],a:.16+.12*Math.sin(n*Math.PI)}:{c:[14,18,52],a:n*.62}}
@@ -567,20 +578,22 @@ function spawnMob(minD=500,at=null,forceStrong=null){
   const a={melee:true,range:strong?30:18,atk:strong?1.5:1.05,r:strong?20:12};
   const e={role:strong?'brute':'rusher',kind:'rival',mob:strong?'strong':'weak',owner:own,name:m.n,art:m.n,ah:m.ah,a,method:'melee',healT:9,castT:0,guarding:false,x:o.x,y:o.y,r:a.r,lvl:L+(strong?1:0),hp:mobUnit(s,L)*k.hp,maxHp:mobUnit(s,L)*k.hp,dmg:mobHit(s,L)*k.dmg*night,sp:k.sp*(1+s*.012)*Math.min(1.6,1+.15*Math.max(0,s-4)),xp:9*Math.pow(1.22,s-1)*(strong?2.4:.65),gold:rnd(2,6)*Math.pow(1.22,s-1)*(strong?2.5:.6),elite:false,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU),fs:1};
   if(!strong&&G.stage===1&&G.enemies.filter(x=>x.role==='healer').length===0&&G.enemies.length>=2){e.role='healer';e.method='heal';e.a.melee=false;e.a.atk=1.8;e.healT=2}
-  partyToughen(e);G.enemies.push(e);return e;
+  e.bornNight=P.id==='night';partyToughen(e);G.enemies.push(e);return e;
 }
 /* Every minute two villains walk in. They come from the far side of the player, not on top of them. */
 function spawnVillainPair(){for(let i=0;i<2;i++){const e=spawnRival(620,false,null,pick(ENEMY_VILLAINS));if(e){e.hp*=2.6;e.maxHp=e.hp;e.xp*=4;e.gold*=3;e.dmg*=1.25;e.vill=true}}G.banner={t:2.6,a:'Two villains arrive',b:'Their minions came first. Now they want you.'};sfx('boom');G.npcs.forEach(c=>say(c,'villain',.25))}
+const isRangedName=n=>['shoot','spell'].includes(WEAPONS[weaponOf(n)].m);
+function dayPick(fac){const all=Object.keys(ROSTER[fac]),rng=all.filter(isRangedName);return rng.length&&Math.random()<dn().ranged?pick(rng):pick(all)}
 function spawnRival(minD=500,elite=null,at=null,force=null){
   const o=at||randomOpen(minD,1500);if(!o)return null;
-  const fac=factionOf(G.p.char)==='hero'?'villain':'hero',name=force||(useMobs()?pick(ENEMY_VILLAINS):pick(Object.keys(ROSTER[fac]))),s=G.stage,sc=stageScale(s),w=weaponOf(name),method=WEAPONS[w].m,a=Object.assign({},ARCH[ROSTER[fac][name]].e);
+  const fac=factionOf(G.p.char)==='hero'?'villain':'hero',name=force||(useMobs()?pick(ENEMY_VILLAINS):dayPick(fac)),s=G.stage,sc=stageScale(s),w=weaponOf(name),method=WEAPONS[w].m,a=Object.assign({},ARCH[ROSTER[fac][name]].e);
   a.melee=method!=='shoot'&&method!=='spell';
   if(a.melee)a.atk=Math.min(a.atk,1.3);else a.atk=method==='spell'?2.1:1.7;
   if(method==='unarmed'){a.atk*=.75;a.dmg*=.85}
   const P=dn(),el=elite===null?Math.random()<(.06+s*.008)*P.elite:elite,m=el?2.5:1;
   const night=P.enemyDmg;
   const e={role:METHOD_ROLE[method]||(a.melee?'rusher':'shooter'),kind:'rival',name,a,w,method,healT:rnd(1,3),castT:0,guarding:false,x:o.x,y:o.y,r:a.r*(el?1.1:1),hp:mobUnit(s)*a.hp*m,maxHp:mobUnit(s)*a.hp*m,dmg:mobHit(s)*a.dmg*(el?1.3:1)*night,sp:a.sp*(1+s*.012),xp:9*Math.pow(1.22,s-1)*(el?3:1),gold:rnd(2,6)*Math.pow(1.22,s-1)*(el?3:1),elite:el,cd:rnd(.4,1),wind:0,ang:rnd(TAU),aware:false,flash:0,kx:0,ky:0,ph:rnd(TAU),walk:rnd(9),atkShow:0,wander:0,wa:rnd(TAU)};
-  partyToughen(e);G.enemies.push(e);return e;
+  e.bornNight=P.id==='night';partyToughen(e);G.enemies.push(e);return e;
 }
 function spawnNpc(){const o=randomOpen(0,5000);if(!o)return;const hp=26*stageScale(G.stage);G.npcs.push({name:pick(NPC_NAMES),x:o.x,y:o.y,r:9,dx:0,dy:1,t:0,walk:rnd(9),quip:null,qt:0,sp:rnd(34,56),hp,maxHp:hp,scare:0,kx:0,ky:0,flash:0})}
 /* ---------- Boss framework (C-17) ----------
@@ -1518,7 +1531,7 @@ function update(dt){
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
   // keep the streets populated: more rivals at night, more citizens by day
   const n=nightness(G.hour);G.spawnT-=dt;
-  if(G.swarm)swarmTick(dt);else if(G.story)storyTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*5))*partyCrowd()*(MW>100?1.4:1)),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue()&&!bloaterDue()&&!shieldbearerDue()&&!scrapGolemDue())useMobs()?spawnMob(520):spawnRival(520);
+  if(G.swarm)swarmTick(dt);else if(G.story)storyTick(dt);else if(G.spawnT<=0){G.spawnT=1.4;const target=Math.round((9+G.stage+Math.round(n*DAYNIGHT.crowdNight))*partyCrowd()*(MW>100?1.4:1)),count=G.enemies.filter(e=>e.kind==='rival').length;if(count<target&&!G.clearPending&&!stalkerDue()&&!lurkerDue()&&!webberDue()&&!bloaterDue()&&!shieldbearerDue()&&!scrapGolemDue())useMobs()?spawnMob(520):spawnRival(520);
     const wantN=Math.round(14*(1-n)+3);if(G.npcs.length<wantN)spawnNpc();else if(G.npcs.length>wantN)G.npcs.splice(G.npcs.findIndex(c=>!c.wounded&&dist(c,nearestPlayer(c))>500)>>>0,1)}
   if(useMobs()&&!G.clearPending&&!G.swarm&&!G.story){G.villT-=dt;if(G.villT<=0){G.villT=60;spawnVillainPair()}}
   updateNpcs(dt);tickHazards(dt);G.p=G.players[0];
@@ -1687,6 +1700,7 @@ function updateEnemy(e,dt){if(e.kind==='boss'||e.shade)escapeCheck(e);
   if(e.rotT>0&&!bossWarded(e)){e.rotT=Math.max(0,e.rotT-dt);const rotBy=G.players.find(x=>(x.id||0)===(e.rotBy||0)),was=G.p;if(rotBy)G.p=rotBy;e.hp-=e.rotRate*dt;if(e.kind==='boss'&&[6,7].includes(e.kit||G.stage))bossPhaseCheck(e);e.flash=Math.max(e.flash||0,.05);if(e.hp<=0){killEnemy(e);G.p=was;return}G.p=was}
   if(e.frozenT>0){e.frozenT=Math.max(0,e.frozenT-dt);e.moving=false;return}
   if(e.stunT>0){e.stunT=Math.max(0,e.stunT-dt);e.moving=false;return}
+  if((e.retreat||e.bornNight)&&dawnRetreat(e,dt))return;
   /* An invisible target: the enemy loses track and stands still until it can see someone again */
   if(p&&abilStealth(p)&&e.kind!=='boss'){e.aware=false;e.moving=false;e.wind=0;return}e.moving=false;e.cd-=dt;e.flash=Math.max(0,e.flash-dt);e.atkShow=Math.max(0,e.atkShow-dt);e.castT=Math.max(0,(e.castT||0)-dt);
   if(e.kx||e.ky){move(e,e.kx*dt,e.ky*dt);const dec=Math.pow(.005,dt);e.kx*=dec;e.ky*=dec;if(Math.abs(e.kx)+Math.abs(e.ky)<4){e.kx=0;e.ky=0}}

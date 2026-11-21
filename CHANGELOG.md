@@ -6,7 +6,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### 21 November 2026
 
-- Day and night rules: dawn, day, dusk and night each change the fight. Night brings stronger enemies, twice the elites and richer kills; shops are 10% cheaper by day; the safehouse heals faster at dawn; holy, burn and void characters deal 15% more by day, at dusk and at night; and a warning sounds at 19:00 before night falls.
+- Day and night rules: dawn, day, dusk and night each change the fight. Night brings stronger enemies, twice the elites and richer kills; shops are 10% cheaper by day; the safehouse heals faster at dawn; holy, burn and void characters deal 15% more by day, at dusk and at night; and a warning sounds at 19:00 before night falls. By day there are fewer enemies and more of them shoot or cast; at dawn, ordinary enemies that came out in the night give up and walk away (elites, villains and anyone mid-attack stay).
 - Side quests: three per stage with their own story (30 in all), two or three offered each run by givers at the haven. Rewards are gold, experience and, for bounties, treasure.
 - Quests panel (J, or the Quests button): the stage goal with its steps, every side quest with its story, status and reward, and a Track button for what the HUD follows.
 - New chibi pixel bosses for all ten stages, scarier and gorier, each with its own animated aura.
