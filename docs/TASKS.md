@@ -19,6 +19,23 @@ The split below assumes these strengths. I don't know each person's skills, so s
 - Follow the rules in [AGENTS.md](../AGENTS.md). Rules go in `game/src/game.js`, and anything a player does online must be checked on the server.
 - Sizes are rough effort: **S** is up to a day, **M** is 2 to 4 days, **L** is a week or more. Dates depend on how many hours each person has.
 
+## Progress snapshot — 2026-11-21
+
+Checked against the code on `dev` at `c5ccf7a`. `main` is at `64c0568` (PR #28, 2026-11-13); the two newer commits below are on `dev` only.
+
+**Verification on `dev` (2026-11-21):** `npm test` passed: all 780 reaction pairs (259 named, 521 resonance), **892 rule checks, 1014 story checks, 21 Pixel 3D checks and 54 networking checks**. These are automated checks. No human playtest has been recorded since C's first impression on 2026-11-07.
+
+**Landed since the last snapshot, with no task row before (rows added below):**
+- 2026-11-10 to 11-13 (on `main`): Ability and Use for every character (Z-70), sprint and smoother animation (Z-71), Story mode "The Ten Hours" with three chapters (Z-72), full chibi characters with hold-to-charge beams, lunges and charged shots plus stagger (Z-73), all 40 signature passives in `PASSIVES` (see Z-30 and C-58).
+- 2026-11-20 (`dev`): the Pixel 3D world in `game/three/` replaces the old optional Three.js effects layer, and stages are bigger (D-26 updated). Vehicles came in and were removed again on 11-21.
+- 2026-11-21 (`dev`): side quests and the Quests panel (Z-74), a once-per-fight boss final attack at 25% life (Z-75), harder late stages (Z-76) and the Shade (Z-77).
+
+**Balance warning:** from stage 5, bosses now have more life (`BOSS_MULT`: ×2, ×2.5, ×3, ×3.5, ×4 on stages 5 to 9 and ×10 on stage 10), and bosses and minions dodge plain hits (`DODGE`). This stacks with party scaling (C-05) and the AI overhaul (C-86). Balance numbers measured before `c5ccf7a` (C-06, C-40, C-94) are out of date.
+
+**Stages 8 to 10 (C-50 to C-55):** only the objective steps (carry two lanterns, hold three shrines, survive the trials), names, art and final-attack names exist. The stage rules (darkness, corruption, repeated trials), the Lightbreaker and Corruptor, and the bosses' own mechanics (Hack Terminals, Tethered Pairs, the Nameless King's phases) are not built; these bosses use the shared boss kit.
+
+**Next work for C:** see "Next work" in the 2026-11-07 snapshot for the human playtest items, which are still open. The next code task is C-73 (day and night rules), because it unblocks C-74, C-75, C-83, C-84 and D-51.
+
 ## Progress snapshot — 2026-11-07
 
 **Status meanings:** implemented means code and the stated automated checks exist; **prototype** means usable but incomplete or awaiting balance, UI and Z review; open means the task’s full acceptance criteria have not been met. A prototype does not imply a merged pull request or a completed human playtest. The combat fixes are merged to `dev` (PR #8) but not yet to `main`; human playtest status is not established. See [Combat depth review](COMBAT_DEPTH_REVIEW.md) for follow-ups.
@@ -80,7 +97,7 @@ Before this slice, multiplayer used enemy life ×1/×1.7/×2.4/×3.1, unchanged 
 | D-06 | D | M | Make a headless party bot for the server, that joins real rooms and plays by itself | Prototype WebSocket runner reports time, downs, wipes, estimated damage and Hope; one four-bot sample cleared Stage 1 in 138.9 seconds. Repeat across seeds and compositions. | |
 | C-01 | C | S | Fix the ultimate exploit: divide boss percent damage by party size | 4 ultimates deal the same percent as 1 solo | |
 | C-05 | C | M | **Party difficulty** (section 9): heroes, villains and bosses get ×1, ×2, ×4 or ×8 life and damage by party size. Replaces `partyToughen`. All living enemies rescale when someone joins or leaves, and keep their percentage of life. | Unit tests for 1 to 4 players, and for joining and leaving during a boss fight. Solo is unchanged. | C-01 |
-| C-06 | C | M | **Check the new difficulty is playable:** run ×2, ×4 and ×8 on stages 1 to 3 and report downs, wipes and clear time | Results shared with Z, with a recommendation on damage. Any change gets Z's approval. | C-05, D-06 |
+| C-06 | C | M | **Check the new difficulty is playable:** run ×2, ×4 and ×8 on stages 1 to 3 and report downs, wipes and clear time | Results shared with Z, with a recommendation on damage. Any change gets Z's approval. Later stages also need checking against `BOSS_MULT` and `DODGE` (Z-76). | C-05, D-06 |
 | C-02 | C | S | Scale the kill quota with party size, using the section 9 table in one place | Unit tests for 1 to 4 players | |
 | C-03 | C | M | Turn scaling into one data table (difficulty, minion life, count, quota, Hope) | All scaling reads from the table | C-02, C-05 |
 | C-04 | C | S | Make citizen fear per player, so that one player's NPC kill doesn't affect everyone | Test added | |
@@ -124,10 +141,10 @@ C-10 and C-11 are provisional recovery implementations pending Z’s decision an
 | C-26 | C | M | Balance the five passive role auras in solo and parties; review stacking, range, recovery and clarity | All 40 characters covered; tests and human balance notes reviewed by Z | D-06 |
 | C-27 | C | M | Playtest the two safehouse weapon upgrades, including melee arcs, ranged cones and spell blasts | Prototype: melee, ranged and spell upgrades show current and next effects; signature moves use the same two damage tiers. Tier-2 pistol/bow piercing, non-boss shield interrupts and nearby ally healing are implemented. Rule tests, delayed online purchase confirmation, reduced-motion checks and desktop/phone-viewport checks pass. | Z review and human playtesting of balance, progression and visual clarity | D-06 |
 | C-28 | C | M | Review boss-gate boon choices and their run/save lifecycle | Choices are discoverable, meaningful and reset at the agreed end of a run; tested solo and online | C-18 |
-| C-29 | C | S | **Haste:** levels and trained Agility shorten every cooldown through one `cdMul`, floored at 60% of base | Rule tests cover the curve, the floor and that dash and team abilities use it; sheet shows Haste | |
-| C-30 | C | S | **Gore pass:** damage-scaled blood, chunks on heavy hits and kills, pools, wound trails, per-family blood colour | Works solo and online, decal list capped, tests added; Z review | |
+| C-29 | C | S | **Haste:** levels and trained Agility shorten every cooldown through one `cdMul`, floored at 60% of base | Prototype: implemented with rule tests and shown on the character sheet. Needs Z review and a balance pass. | |
+| C-30 | C | S | **Gore pass:** damage-scaled blood, chunks on heavy hits and kills, pools, wound trails, per-family blood colour | Prototype: implemented with a capped decal list (`GORE.cap`) and rule tests. Z review open. | |
 | C-86 | C | L | **Enemy AI overhaul:** attack slots and circling, tracked wind-ups, combos, delayed swings, punishes, leading shots, role behaviour, boss chains and a hits-to-down damage curve | Prototype: tuned from the `AI` table and `WEAK_HITS_TO_DOWN` in `game.js`, with rule tests and `game/tools/ai-trial.js` samples. Changes how solo plays, so it needs Z's approval. | Recorded playtests with several players, kit villain behaviour and Z's review of the ×8 party stack with stronger enemies. C's first play on 2026-11-07 felt good. |
-| D-26 | D | M | Measure and polish the optional bundled Three.js r187 effects layer | Offline fallback, context loss, reduced motion and performance tested on target devices | D-09 |
+| D-26 | D | M | Measure and polish the Pixel 3D world (`game/three/`, bundled as `vendor/three-world.js`). It replaced the optional Three.js r187 effects layer on 2026-11-20. | Offline fallback, context loss, reduced motion and performance tested on target devices. `test-three.mjs` has 21 automated checks; no device measurements yet. | D-09 |
 
 ### Minions, day and night, power-ups
 
@@ -197,6 +214,21 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 | C-93 | C | S | **Entry:** a Swarm picker in single-player and a Swarm option when creating a room, clamped to the furthest stage reached; the room list shows the wave | Prototype with networking tests | |
 | C-94 | C | M | **Balance:** human runs solo and in parties; set the growth curve | Bot samples only. A perfect-dodging bot reached wave 28 alone without falling, so human results decide the curve. | C-90 |
 
+## Landed outside the plan
+
+Work that was built before it had a task row. Owners are who built it; Z approves anything players see or feel, as usual. Prototype means the same as in the progress snapshot.
+
+| ID | Owner | Size | Task | Done when | Needs |
+|---|---|---|---|---|---|
+| Z-70 | Z | M | **Ability and Use** for every character: press C to ready, click to use, with game-style notifications (2026-11-11) | Prototype: in `main` with rule tests. Balance and human playtests open. | |
+| Z-71 | Z | S | **Movement feel:** 8-step walk, 5-step attack, sprint on Shift for 8 mana a second (2026-11-11) | Prototype: in `main`. Human playtests open. | |
+| Z-72 | Z | L | **Story mode "The Ten Hours":** a game modes screen and three chapters, one per boss of stages 1 to 3, with its own save per side (2026-11-11) | Prototype: in `main`; `test-story.js` has 1014 checks. Chapters for stages 4 to 10 and human playtests open. | |
+| Z-73 | Z | L | **Chibi characters and charged attacks:** all 40 characters redrawn; hold to charge a beam, lunge or gun-specific charged shot; heavy hits stagger (2026-11-13) | Prototype: in `main`. Human playtests open. | |
+| Z-74 | Z | M | **Side quests:** 30 handwritten quests (three per stage, two or three offered per run) in six kinds, and the Quests panel on J (2026-11-21) | Prototype: on `dev` with rule tests; online acceptance is a checked server action. Human playtests open. | |
+| Z-75 | Z | S | **Boss final attack:** once per fight at 25% life, a ring and a full-screen scene; a dash or leaving the ring avoids it. Tuned from `FINAL` in `game.js` (2026-11-21) | Prototype: on `dev` with rule tests. Readability and balance need human playtests. | C-17 |
+| Z-76 | Z | S | **Harder late stages:** from stage 5, more boss life (`BOSS_MULT`), and bosses and minions dodge plain hits (`DODGE`); charged shots, beams, abilities and ultimates can't be dodged (2026-11-21) | Prototype: on `dev` with rule tests. Needs a balance pass with C-06, C-40 and C-60. | |
+| Z-77 | Z | M | **The Shade:** from stage 5, a dark copy of each player must fall before the boss appears. Tuned from `SHADE` (2026-11-21) | Prototype: on `dev` with rule tests. Balance and human playtests open. | |
+
 ## M2 Middle game
 
 | ID | Owner | Size | Task | Done when | Needs |
@@ -211,7 +243,7 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 | C-37 | C | M | Boss: Rusted Ghoul (Generator Shock) | Prototype: hook, cleaves, Rust Field, Last Stand and solo/party Generator Shock have rule coverage. Balance, readability and final art need human review. | C-17 |
 | C-38 | C | L | **Villain side** (section 7): Hero Recruit minions, NPC Dread, patrols, ending text | Villain party has the same quality of fight | C-19 |
 | C-39 | C | M | **Director:** pressure-based spawning (section 11) | Fights come in waves, with breaks | C-19 |
-| C-40 | C | M | Balance pass on stages 1 to 7 using D-06 bots and playtests | Solo and party clear rates recorded | D-06 |
+| C-40 | C | M | Balance pass on stages 1 to 7 using D-06 bots and playtests | Solo and party clear rates recorded. Must include the stage 5 to 7 boss life, dodge and Shade changes from 2026-11-21 (Z-76, Z-77). | D-06 |
 | D-20 | D | M | Replace JSON file saves with a database, with a migration | Old saves still load | |
 | D-21 | D | M | **Optional accounts:** sign in so that progress isn't tied to a browser. Link existing token saves. | A player can move device | D-20 |
 | D-22 | D | S | Quick Join: joins a public room of the right side and stage | Works with no code | D-14 |
@@ -240,15 +272,15 @@ An endless wave mode on the stage maps, added on 2026-11-08. It is tuned from th
 
 | ID | Owner | Size | Task | Done when | Needs |
 |---|---|---|---|---|---|
-| C-50 | C | L | Stage 8 Midnight Warrens: darkness, lanterns, Lightbreaker | Done | C-18 |
-| C-51 | C | L | Boss: Cyber Dread (Hack Terminals) | Solo and party versions tested | C-17 |
-| C-52 | C | L | Stage 9 Blightmoor: corruption, shrines, Corruptor | Done | C-18 |
-| C-53 | C | L | Boss: Void Weaver (Tethered Pairs) | As above | C-17 |
-| C-54 | C | L | Stage 10 The Last Night: 3 trials | Done | C-30 to C-52 |
-| C-55 | C | L | Boss: Nameless King, 4 phases, boss echoes and Final Toll | Beaten by a real party, and by one solo tester | C-16, C-35 to C-53 |
+| C-50 | C | L | Stage 8 Midnight Warrens: darkness, lanterns, Lightbreaker | Done. Open: only the objective steps exist (kill quota, then carry two lanterns to the exit). Darkness, the 200-unit light rule and the Lightbreaker are not built. | C-18 |
+| C-51 | C | L | Boss: Cyber Dread (Hack Terminals) | Solo and party versions tested. Open: uses the shared boss kit with the Overload Protocol final attack and ×3.5 life; Hack Terminals is not built. | C-17 |
+| C-52 | C | L | Stage 9 Blightmoor: corruption, shrines, Corruptor | Done. Open: only the objective steps exist (kill quota, then hold three shrines at once). Spreading corruption and the Corruptor are not built. | C-18 |
+| C-53 | C | L | Boss: Void Weaver (Tethered Pairs) | As above. Open: uses the shared boss kit with The Unmaking final attack and ×4 life; Tethered Pairs is not built. | C-17 |
+| C-54 | C | L | Stage 10 The Last Night: 3 trials | Done. Open: the objective is a single 24-kill step; the three trials that repeat earlier stage rules are not built. | C-30 to C-52 |
+| C-55 | C | L | Boss: Nameless King, 4 phases, boss echoes and Final Toll | Beaten by a real party, and by one solo tester. Open: uses the shared boss kit with The Last Night final attack, ×10 life and 45% dodge; the four phases, boss echoes and Final Toll are not built. | C-16, C-35 to C-53 |
 | C-56 | C | M | **Difficulty tiers** and elite modifiers (section 9) | Veteran and Nightmare work on every stage | C-39 |
 | C-57 | C | M | **Team skills** (section 13) and stage scoring (section 8) | Saved and shown at stage end | Existing independent skills are grouped and previewed in the Skills menu; team skills and stage scoring remain open. |
-| C-58 | C | L | **Signature passives** for 40 characters. Design with Z. | Each one tested | Z-30 |
+| C-58 | C | L | **Signature passives** for 40 characters. Design with Z. | Prototype: all 40 are in `PASSIVES` and on the character menu; rule tests check every character has one and that each stat passive changes its character. Effect-type passives (for example the three video villains) and balance need human review. | Z-30 |
 | D-30 | D | M | Stage results screen, team scoreboard, and best records per room | Works online and solo | C-57 |
 | D-31 | D | M | Darkness and light rendering that works on phones | Passes D-25 test | C-50 |
 | D-32 | D | S | Version check: tells players to reload when the server updates | No mismatch errors | |
@@ -338,4 +370,4 @@ Idle, walk, attack with wind-up, defeated. Needed for: the 3 existing villain mi
 
 ## Task counts
 
-The former owner and milestone totals predate the current prototypes and follow-up tasks. Recount after the team agrees which acceptance criteria are complete; do not treat prototype rows as closed. C still owns most of the combat work, so D can take objective work once C-17 and C-18 are ready if the team agrees.
+The former owner and milestone totals predate the current prototypes, follow-up tasks and the "Landed outside the plan" rows. Recount after the team agrees which acceptance criteria are complete; do not treat prototype rows as closed. C still owns most of the combat work, so D can take objective work once C-17 and C-18 are ready if the team agrees.

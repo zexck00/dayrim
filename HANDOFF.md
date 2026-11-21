@@ -1,6 +1,6 @@
 # Handoff
 
-For the next person or agent working on Dayrim. State as of 2026-11-08: unreleased work on top of version 0.1.0, on `dev` with the enemy AI overhaul, Milestone 1 (Stages 1 to 3 and their bosses) and The Swarm. The task and design documents distinguish prototypes from the target design.
+For the next person or agent working on Dayrim. State as of 2026-11-21: unreleased work on top of version 0.1.0. `main` is at PR #28 (2026-11-13: chibi characters, Story mode, abilities). `dev` adds the Pixel 3D world, side quests, boss final attacks, harder late stages and the Shade. The task and design documents distinguish prototypes from the target design; [docs/TASKS.md](docs/TASKS.md) has the latest snapshot.
 
 ## Where things stand
 
@@ -8,7 +8,7 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 
 | Area | Status |
 |---|---|
-| Latest rules and networking suite | 478 rule checks, 45 networking checks and all 780 reaction pairs passed after the correctness sweep (2026-11-08) |
+| Latest full suite | `npm test` on `dev` at `c5ccf7a` (2026-11-21): all 780 reaction pairs, 892 rule checks, 1014 story checks, 21 Pixel 3D checks and 54 networking checks passed |
 | Server, rooms, saves, abuse limits | Tested over real WebSockets (`game/server/test.js`) |
 | Browser checks | Automated checks cover two tabs, solo/online G actions, a checkpoint boon, viewport layout, weapon icons and the optional 3D layer; not a substitute for human playtests |
 | Full stage to boss kill and next stage online | Tested by a bot, one player |
@@ -20,6 +20,8 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 | Touch controls, phones | Emulated portrait and landscape touch gestures checked in Chromium; no real-phone playtest yet |
 | Voice lines | Decoded and triggered by code. **Nobody has listened to them.** |
 | The Swarm | Bots only: a perfect-dodging bot reached wave 28 alone, others waves 19–24, and none wiped in 25 minutes. Nobody has played it, so the growth curve is a guess. |
+| Late-stage difficulty (`BOSS_MULT`, `DODGE`, `SHADE`) | Rule tests only. No bot or human balance numbers since it landed on 2026-11-21; earlier balance results for stages 5 to 10 no longer apply. |
+| Stages 8 to 10 | Objective steps, names and art only. Stage rules, new enemies and boss mechanics are not built (C-50 to C-55). |
 | Human playtest results | No results recorded; ask players about danger, role abilities, reactions, recovery and boon discovery |
 
 ## Open work
@@ -95,6 +97,13 @@ So anything belonging to one player goes on the player object (`p.combo`, `p.ult
 **Your own movement is predicted.** The browser moves your character at once and records each move in `net.pending`. On each snapshot it takes the server's position, adds the moves not yet acknowledged, and eases toward the result. It snaps if the gap passes 110 units. Other players and enemies glide toward their last reported position. The speed formula in `netUpdate` must match `updatePlayer`, including the Scout aura and crawl/drag modifiers.
 
 ## Current prototypes
+
+- Harder late stages (`game.js`, next to the boss section): `BOSS_MULT` multiplies boss life from stage 5 (×2 up to ×4 on stage 9, ×10 on stage 10), and `DODGE` gives bosses (15% to 45%) and minions (8% to 22%) a chance to dodge plain hits, with a short cooldown between dodges (`bossCd`, `mobCd`). `dodgeChance` is 0 on stages 1 to 4. Charged shots, beams, abilities and ultimates always land. This stacks on top of party scaling.
+- The Shade: `SHADE` (`from:5`, `mul:2`, `finalMul:4`, `maxSpeed`) spawns a darkened copy of each player at the open gate from stage 5; the boss is summoned only after every Shade has fallen. Online, each player gets their own.
+- Boss final attack: `FINAL` sets the trigger (25% life), wind-up, radius, damage and the attack name per boss. It fires once per fight. `test-rules.js` turns it off at the top (`FINAL.on=false`) so older boss tests are not disturbed, and turns it on only for its own checks; keep that in mind when a boss test fails only in a full run.
+- Side quests: `SIDE_QUESTS` holds three per stage, `SIDE_KINDS` the six kinds; `sideInit()` runs from `enterStage`. Side quests never keep the gate shut. Online, acceptance goes through a checked server action.
+- Story mode lives in `game/src/story.js` (engine), `story-data.js` (script) and `story-map.js` (maps). It is single player, with its own save per side under `dayrim-story`; `test-story.js` covers it.
+- The Pixel 3D world lives in `game/three/` and is bundled into `game/vendor/three-world.js` (`build.py` writes `THREE_WORLD_URL`). The ground maps to the screen exactly as in 2D, so aiming and hit areas are unchanged; it is drawing only. `test-three.mjs` covers it.
 
 - Character ultimates use the `ULT_STYLE` catalog for each roster member's name, palette, animated family and vector emblem. The rules and linked-ultimate damage remain shared. `ultStyle` effects carry the caster's character to nearby online observers; the local cinematic uses the same style. New names without recorded voice clips use the existing speech-synthesis fallback.
 

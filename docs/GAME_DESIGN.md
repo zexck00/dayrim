@@ -197,6 +197,15 @@ Unlocked per stage by clearing the one below.
 
 **Elite modifiers:** Shielded, Berserk, Linked (two elites share damage, so must be killed together), Vampiric, Explosive, Summoner.
 
+### Built differently (2026-11-21)
+
+Added on `dev` by Z (commit `c5ccf7a`) and not in the original design. Balance is still open.
+
+- **Late-stage bosses** have more life on Normal: ×2, ×2.5, ×3, ×3.5 and ×4 on stages 5 to 9, and ×10 on stage 10. This multiplies with party scaling and will multiply with the tiers above, so the tier numbers need a fresh look before C-56.
+- **Dodging enemies:** from stage 5, bosses dodge 15% to 45% of plain hits and minions 8% to 22%. Charged shots, beams, abilities and ultimates always land, which pushes players towards those moves late in the game.
+- **The Shade:** from stage 5, each player fights a dark copy of their own character before the boss appears.
+- **Final attack:** every boss has one big ring attack at 25% life, once per fight. Section 10 does not list these; the names are in `FINAL` in `game.js`.
+
 ## 10. Boss fights
 
 All bosses share these rules.
