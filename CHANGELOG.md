@@ -4,6 +4,17 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### 24 November 2026
+
+- Side quests can now be started on desktop and landscape screens: the Quests panel is a tall side sheet with Accept and Track beside each quest's title, and it no longer swallows clicks. Phones also get Quests in the More menu.
+- Every quest giver is a different person (30 looks) and they stand scattered across the map, not around the haven.
+- The Shade now appears from stage 2. It has three lives: twice it rises again at full life, and on its last life it takes far less damage, dodges often and heals when left alone. Its speed and attack are unchanged.
+- The bosses are back to their original pictures, now with smooth whole-body motion: breathing, step bob and squash, leaning, wind-up crouch, strike lunge, hit snap and stagger wobble. They keep their auras.
+- A boss's final attack is now a real strike: after the full-screen scene it locks onto you, shows the danger zone, then hits very hard (a circle where you stood, a wide line, or a huge ring). Dash or get out in time.
+- Unique quick attack for every hero and villain: keep holding the attack and the charge turns blue (1.2 s, the usual charged attack), green (3 s, twice as strong) and red (6 s, four times as strong). Shown in each character's details.
+- The Chronomancer is reworked. Basic shots rewind enemies two steps. The charged attack is a time-stop fan: enemies hit freeze for 2, 4 or 6 s (blue, green, red) and take 50% more from the Chronomancer while frozen. The new Time Field ability freezes every enemy in a wide area for 10 s and gives the whole party +50% damage and double move and attack speed for that time. Against bosses, freezes and the buff are halved.
+
+
 ### 21 November 2026
 
 - Day and night rules: dawn, day, dusk and night each change the fight. Night brings stronger enemies, twice the elites and richer kills; shops are 10% cheaper by day; the safehouse heals faster at dawn; holy, burn and void characters deal 15% more by day, at dusk and at night; and a warning sounds at 19:00 before night falls. By day there are fewer enemies and more of them shoot or cast; at dawn, ordinary enemies that came out in the night give up and walk away (elites, villains and anyone mid-attack stay).

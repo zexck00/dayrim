@@ -43,7 +43,7 @@ function objNow(){const o=G.obj;if(!o)return null;const st=o.steps&&o.steps[o.i]
 /* Side-quest objects: givers with a "!", items to gather, totems to cleanse, the lost one, the parcel and its drop, the shrine to hold */
 const trackedQuest=()=>{const id=store.get('dayrim-track');return id&&id!=='main'?(G.side||[]).find(q=>q.id===id&&q.st!==2)||null:null};
 function drawSideProp(o){const t=G.t,k=o.k,d=sideDef(o.q)||{},R=(c,x,y,w,h)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h)};
-  if(k==='sq_giver'){shadow(o.x,o.y,9);blit(ctx,'Tourist',o.x,o.y,2,'idle',Math.floor(t*2)%2,false,0);const q=(G.side||[]).find(x=>x.id===o.q);if(q&&q.st!==2){const b=Math.sin(t*4)*2;ctx.save();ctx.font='900 18px "Cinzel",serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#1a0e04';const m=q.st===0?'!':'?';ctx.strokeText(m,o.x,o.y-84+b);ctx.fillStyle=q.st===0?'#f0c23c':'#c8c4b0';ctx.fillText(m,o.x,o.y-84+b);ctx.restore()}return}
+  if(k==='sq_giver'){shadow(o.x,o.y,9);blit(ctx,d.art||'Tourist',o.x,o.y,2,'idle',Math.floor(t*2)%2,false,0);const q=(G.side||[]).find(x=>x.id===o.q);if(q&&q.st!==2){const b=Math.sin(t*4)*2;ctx.save();ctx.font='900 18px "Cinzel",serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#1a0e04';const m=q.st===0?'!':'?';ctx.strokeText(m,o.x,o.y-84+b);ctx.fillStyle=q.st===0?'#f0c23c':'#c8c4b0';ctx.fillText(m,o.x,o.y-84+b);ctx.restore()}return}
   if(k==='sq_item'){const b=Math.sin(t*3+o.x)*3,g=ctx.createRadialGradient(o.x,o.y-12+b,1,o.x,o.y-12+b,16);g.addColorStop(0,'rgba(255,230,150,.6)');g.addColorStop(1,'rgba(255,230,150,0)');ctx.fillStyle=g;ctx.fillRect(o.x-16,o.y-28+b,32,32);R('#3a2410',o.x-5,o.y-17+b,10,10);R('#f0c23c',o.x-4,o.y-16+b,8,8);R('#fff6c0',o.x-2,o.y-14+b,3,3);return}
   if(k==='sq_totem'){const q=clamp((o.t||0)/SIDE_CHANNEL,0,1);ctx.save();ctx.strokeStyle=o.d?'#5c7a68':'rgba(160,110,230,.7)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.beginPath();ctx.ellipse(o.x,o.y,o.r,o.r*.6,0,0,TAU);ctx.stroke();ctx.setLineDash([]);if(q>0){ctx.strokeStyle='#8fe6b8';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(o.x,o.y,o.r,o.r*.6,0,-Math.PI/2,-Math.PI/2+TAU*q);ctx.stroke()}ctx.restore();shadow(o.x,o.y,10);R('#4e4a5a',o.x-7,o.y-34,14,34);R('#6a6574',o.x-7,o.y-34,5,34);R(o.d?'#8fe6b8':'#9a7ad8',o.x-3,o.y-28+Math.sin(t*5)*1,6,6);return}
   if(k==='sq_lost'){shadow(o.x,o.y,9);const beast=/sheep|hound|dog/i.test(d.item||'');if(beast){const c=/sheep/i.test(d.item)?'#f0ece0':'#8a6840',w=Math.sin(t*10)*(o.by?2:0);R('#2a211a',o.x-9,o.y-6+w,3,6);R('#2a211a',o.x+6,o.y-6-w,3,6);R(c,o.x-11,o.y-16,22,11);R(c,o.x+8,o.y-21,8,8);R('#1a1626',o.x+12,o.y-19,2,2)}else blit(ctx,'Tourist',o.x,o.y,2,o.by?'walk':'idle',Math.floor(t*(o.by?8:2))%2,false,0);
@@ -140,7 +140,27 @@ function drawSing(S){const R=60+20*Math.sin(G.t*6),sp=reduced?0:G.t*5;ctx.save()
 /* ---------- Charge and beam ----------
    Charging: a ball of the character's colour grows and pulses at the hands while sparks gather into it; a ring
    turns once it is strong enough to fire. Beam: a start ball, a glowing body that reaches out, and an end cap. */
-function drawChargeFx(p){
+/* Unique quick attack: the charge glows blue, then green (3 s), then red (6 s) */
+const TIER_COL=['','111,180,255','111,220,138','255,90,74'];
+function drawChargeTier(p){const t=p.chgTier||0;if(!t||!(p.chg>=1))return;const col=TIER_COL[t],pul=reduced?0:Math.sin(G.t*(6+t*3))*.5+.5,R=20+t*6+pul*3;
+  ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(p.x,p.y-26,4,p.x,p.y-26,R*1.9);g.addColorStop(0,'rgba('+col+','+(.18+.1*t)+')');g.addColorStop(1,'rgba('+col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,p.y-26,R*1.5,R*1.9,0,0,TAU);ctx.fill();
+  ctx.strokeStyle='rgba('+col+','+(.55+.35*pul)+')';ctx.lineWidth=2+t;ctx.beginPath();ctx.ellipse(p.x,p.y+2,R,R*.4,0,0,TAU);ctx.stroke();
+  if(t>=2&&!reduced)for(let i=0;i<t*3;i++){const q=(G.t*1.2+i/(t*3))%1;ctx.fillStyle='rgba('+col+','+(1-q).toFixed(2)+')';ctx.fillRect(p.x+Math.sin(i*2.4+G.t*3)*R,p.y-q*70,2,3)}ctx.restore()}
+/* Chronomancer: the time-stop fan, the Time Field, the rewind after-images, frozen foes and the time buff on players */
+function drawTimeFx(){ctx.save();
+  for(const f of G.fx){const q=1-f.t/f.m,al=clamp(1-q,0,1);
+    if(f.k==='timefan'){const col=TIER_COL[f.tier||1];ctx.fillStyle='rgba('+col+','+(.35*al).toFixed(2)+')';ctx.beginPath();ctx.moveTo(f.x,f.y-20);ctx.arc(f.x,f.y-20,f.r*(.6+.4*q),f.a-f.arc,f.a+f.arc);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(220,250,255,'+al.toFixed(2)+')';ctx.lineWidth=2;for(let i=0;i<=6;i++){const a=f.a-f.arc+i*f.arc/3;ctx.beginPath();ctx.moveTo(f.x+Math.cos(a)*f.r*.8,f.y-20+Math.sin(a)*f.r*.8);ctx.lineTo(f.x+Math.cos(a)*f.r,f.y-20+Math.sin(a)*f.r);ctx.stroke()}}
+    else if(f.k==='timefield'){const R=f.r*Math.min(1,q*2.5);ctx.strokeStyle='rgba(112,221,255,'+al.toFixed(2)+')';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(f.x,f.y,R,R*.62,0,0,TAU);ctx.stroke();ctx.fillStyle='rgba(112,221,255,'+(.15*al).toFixed(2)+')';ctx.fill();
+      ctx.lineWidth=2;for(let i=0;i<12;i++){const a=i/12*TAU;ctx.beginPath();ctx.moveTo(f.x+Math.cos(a)*R*.88,f.y+Math.sin(a)*R*.55);ctx.lineTo(f.x+Math.cos(a)*R,f.y+Math.sin(a)*R*.62);ctx.stroke()}
+      const hand=-Math.PI/2+q*TAU;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x+Math.cos(hand)*R*.7,f.y+Math.sin(hand)*R*.43);ctx.stroke()}
+    else if(f.k==='rewind'){for(let i=0;i<4;i++){const u=i/3,x=f.x0+(f.x1-f.x0)*u,y=f.y0+(f.y1-f.y0)*u;ctx.fillStyle='rgba(112,221,255,'+(al*(1-u*.6)*.6).toFixed(2)+')';ctx.beginPath();ctx.ellipse(x,y-22,10,22,0,0,TAU);ctx.fill()}
+      ctx.strokeStyle='rgba(220,250,255,'+al.toFixed(2)+')';ctx.lineWidth=2;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(f.x0,f.y0-22);ctx.lineTo(f.x1,f.y1-22);ctx.stroke();ctx.setLineDash([])}}
+  for(const e of G.enemies){if(!(e.frozenT>0)||!e.tsBy||e.dead)continue;const y=e.y-(e.ah||60)-18;ctx.fillStyle='rgba(112,221,255,.18)';ctx.beginPath();ctx.ellipse(e.x,e.y-(e.ah||50)*.45,(e.r||14)+10,(e.ah||50)*.55,0,0,TAU);ctx.fill();
+    ctx.fillStyle='#0d1a24';ctx.beginPath();ctx.arc(e.x,y,8,0,TAU);ctx.fill();ctx.strokeStyle='#9ff0ff';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.moveTo(e.x,y);ctx.lineTo(e.x,y-5);ctx.moveTo(e.x,y);ctx.lineTo(e.x+4,y);ctx.stroke();
+    ctx.font='700 11px "Alegreya",serif';ctx.textAlign='center';ctx.fillStyle='#9ff0ff';ctx.fillText(Math.ceil(e.frozenT)+'s',e.x,y-12)}
+  for(const q of G.players){if(!(q.timeBuffT>0)||q.deadT>0)continue;const a=G.t*4;ctx.strokeStyle='rgba(112,221,255,.7)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(q.x,q.y+2,22,8,0,a,a+4);ctx.stroke()}
+  ctx.restore()}
+function drawChargeFx(p){drawChargeTier(p);
   const col=spellCol(p.char,'orb'),c=Math.cos(p.face),sn=Math.sin(p.face);
   /* Marksmen aim instead: the fan of the coming charged shot grows and brightens; a ring turns once it is ready. */
   if(p.chg>0&&shotUser(p)){const C=CHARGED_SHOT[p.weapon]||CHARGED_SHOT.pistol,k=p.chg,ok=k>=CHARGE.min,hx=p.x+c*20,hy=p.y-24+sn*20,L=(C.flash?C.flash.range:Math.min(260,C.sp*(C.life||.5)))*(.35+.65*k),n=C.flash?5:Math.max(1,Math.min(C.n,7)),sp=C.flash?C.flash.arc*2:C.spread;
@@ -299,7 +319,9 @@ function shadeAura(e,front){const t=G.t+(e.ph||0);ctx.save();
     ctx.strokeStyle='rgba(150,80,230,'+(.35+.2*Math.sin(t*5)).toFixed(2)+')';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(e.x,e.y+2,26+Math.sin(t*3)*3,9,0,0,TAU);ctx.stroke()}
   else if(!reduced){for(let i=0;i<4;i++){const q=(t*.8+i/4)%1,x=e.x+Math.sin(i*1.7+t*2)*22,y=e.y-20-q*60;ctx.fillStyle='rgba(180,120,255,'+(.5*(1-q)).toFixed(2)+')';ctx.fillRect(x,y,2,2)}}
   ctx.restore()}
-function drawRival(e){if(!e.shade)return drawRival0(e);shadeAura(e,false);blitDark=true;try{drawRival0(e)}finally{blitDark=false}shadeAura(e,true)}
+function drawRival(e){if(!e.shade)return drawRival0(e);shadeAura(e,false);blitDark=true;try{drawRival0(e)}finally{blitDark=false}shadeAura(e,true);
+  // its lives as three violet gems over its head
+  const n=e.lives||1;for(let i=0;i<3;i++){const x=e.x-14+i*14,y=e.y-104;ctx.fillStyle='#1a0e24';ctx.fillRect(x-5,y-5,10,10);ctx.fillStyle=i<n?(n===1?'#ff5a7a':'#b07aff'):'#3a2f5a';ctx.fillRect(x-3,y-3,6,6)}}
 function drawRival0(e){
   if(e.art)return drawMob(e);
   if(e.vill){drawKitActor(e,e.moving,e.walk,e.ang,{key:KIT_OF[e.name]});enemyBar(e,56,e.y-74,5,'#ff4a6a');return}
@@ -392,30 +414,40 @@ function bossPose(e){
   return P;
 }
 function paintBossCells(c,art,h,st,tm,P,seed,extra){
-  const a=CAST[art],k=h/a.h,w=a.w*k,cols=12,rows=16,cw=a.w/cols,ch=a.h/rows,dw=w/cols,dh=h/rows,tq=st.jerk?Math.floor(tm/st.jerk)*st.jerk:tm;
+  const a=CAST[art],k=h/a.h,w=a.w*k,cols=12,rows=16,cw=a.w/cols,ch=a.h/rows,dw=w/cols,dh=h/rows,tq=tm,SOFT=.5;
   const walk=P.walk,ph=(seedPhase(seed)+tq*(walk?3.2*st.rate*(walk>1?1.7:1):0));
   for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){
     const u=(q+.5)/cols,v=(r+.5)/rows;let dx=0,dy=0;
     if(st.step&&walk){const w2=clamp((v-st.legV)/(1-st.legV),0,1),left=u<.5,sn=Math.sin(ph);
-      dy-=Math.max(0,left?sn:-sn)*st.step*w2*Math.min(walk,1.5);dx+=(left?sn:-sn)*st.step*.5*w2;
+      dy-=Math.max(0,left?sn:-sn)*st.step*SOFT*w2*Math.min(walk,1.5);dx+=(left?sn:-sn)*st.step*.5*SOFT*w2;
       dy+=(v<st.legV?Math.abs(sn)*-st.bob*1:0);if(st.sway)dx+=sn*st.sway*h*(1-v)}
     else if(st.bob)dy+=Math.sin(tq*2.4+seed)*st.bob*.45*(1-v);
-    if(st.jitter&&walk&&v>st.legV)dx+=Math.sin(tq*40+q*2.1)*st.jitter;
+    if(st.jitter&&walk&&v>st.legV)dx+=Math.sin(tq*14+q*1.3)*st.jitter*SOFT;
     if(st.float)dy+=Math.sin(tq*2.3+seed)*st.float-st.float;
-    if(st.wave){const am=st.wave*(v*v+.08)*(1+P.glow*.5);dx+=Math.sin(v*st.waveK-tq*3.2+u*2)*am;dy+=Math.cos(u*6+tq*2.2)*am*.2}
-    if(st.radial){const ux=u-.5,uy=v-.5,d=Math.hypot(ux,uy),an=Math.atan2(uy,ux),edge=clamp((d-.26)/.24,0,1);const wr=Math.sin(an*5+tq*3.4)*st.radial*edge;dx+=Math.cos(an+1.57)*wr;dy+=Math.sin(an+1.57)*wr}
+    if(st.wave){const am=st.wave*SOFT*(v*v+.08)*(1+P.glow*.5);dx+=Math.sin(v*st.waveK-tq*3.2+u*2)*am;dy+=Math.cos(u*6+tq*2.2)*am*.2}
+    if(st.radial){const ux=u-.5,uy=v-.5,d=Math.hypot(ux,uy),an=Math.atan2(uy,ux),edge=clamp((d-.26)/.24,0,1);const wr=Math.sin(an*5+tq*3.4)*st.radial*SOFT*edge;dx+=Math.cos(an+1.57)*wr;dy+=Math.sin(an+1.57)*wr}
     if(st.arms&&P.arm){const side=clamp((Math.abs(u-.5)-.16)/.3,0,1),band=clamp(1-Math.abs(v-.4)/.28,0,1);dy-=P.arm*st.arms*side*band;dx+=(u<.5?-1:1)*P.arm*st.arms*.3*side*band}
     if(extra){const o=extra(u,v,q,r);dx+=o[0];dy+=o[1];if(o[2]!==undefined)c.globalAlpha=o[2]}
     c.drawImage(ATLAS,a.x+q*cw,a.y+r*ch,cw,ch,-w/2+q*dw+dx-.4,-h+r*dh+dy-.4,dw+.9,dh+.9);
   }
 }
 const seedPhase=s=>s*7.3;
-/* Stage bosses with a chibi painter (monsters.js) draw that, wrapped in their aura; other big foes bend their atlas picture */
-const CHIBI_SCALE=92;
-function paintChibi(ca,e,P,t,h){const [pose,f]=chibiPose(e,P,t),im=chibiFrame(e.art,pose,f),k=h/CHIBI_SCALE;ca.imageSmoothingEnabled=false;ca.drawImage(im,-CB_N/2*k,-CB_FOOT*k,CB_N*k,CB_N*k)}
+/* Whole-body motion for bosses, like the characters: breathing at rest, a bob and a squash on each step, a lean into
+   movement, a crouch to wind up, a lunge to strike, a snap back when hit and a wobble when staggered. Every value eases
+   toward its target, so the picture moves smoothly instead of jumping between poses. */
+function bossBody(e,P,h,t){const b=e._b||(e._b={dx:0,dy:0,rot:0,sx:1,sy:1,t:G.t}),dt=clamp(G.t-b.t,0,.1);b.t=G.t;
+  let dx=0,dy=0,rot=0,sx=1,sy=1;const ph=(e.walk||0)*.31*BOSS_RATE(e);
+  if(e.moving||P.walk){const s=Math.sin(ph*2);dy=-Math.abs(Math.sin(ph))*h*.035;sy=1-.035*Math.max(0,Math.cos(ph*2));sx=1+.02*Math.max(0,Math.cos(ph*2));rot=.06+s*.02}
+  else{const br=Math.sin(t*2.1+(e.ph||0));sy=1+.022*br;sx=1-.012*br;dy=-br*h*.006}
+  if(e.wind>0||P.arm>0||(e.tel&&!e.tel.done)){sy*=.9;sx*=1.07;rot-=.11;dy+=h*.02}
+  if(e.atkShow>0||e.release>0){sy*=1.08;sx*=.95;rot+=.15;dx+=h*.08}
+  if(e.flash>0||e.recoil>0){rot-=.09;dx-=h*.04;sx*=1.03}
+  if((e.staggerT||0)>0){rot+=Math.sin(t*16)*.12;sy*=.92;dy+=h*.03}
+  if(e.act==='final'){const q=Math.sin(t*30)*.02;sx*=1.06+q;sy*=1.06-q;rot+=Math.sin(t*22)*.04}
+  const k=1-Math.exp(-dt*14);b.dx+=(dx-b.dx)*k;b.dy+=(dy-b.dy)*k;b.rot+=(rot-b.rot)*k;b.sx+=(sx-b.sx)*k;b.sy+=(sy-b.sy)*k;return b}
 function drawBossSprite(c,e,t,only){
-  const chibi=!!CB[e.art];if(!chibi&&(!ATLAS.complete||!ATLAS.naturalWidth))return;
-  if(chibi&&!only){const k=ctx;ctx=c;try{drawBossAura(c,e,false)}finally{ctx=k}}
+  if(!ATLAS.complete||!ATLAS.naturalWidth)return;const aura=!!AURA[e.art]&&!only;
+  if(aura)drawBossAura(c,e,false);
   const st=BOSS_STYLE[STYLE_OF[e.art]],P=only||bossPose(e),h=e.ah,seed=e.ph||0;
   const target=(e.act==='charge'?Math.cos(e.ang)<0:G.p&&G.p.x<e.x)?-1:1;e.fs=(e.fs===undefined?target:e.fs+(target-e.fs)*.14);
   const tx=Math.abs(e.fs)<.25?(e.fs<0?-.25:.25):e.fs;
@@ -423,15 +455,17 @@ function drawBossSprite(c,e,t,only){
   c.save();c.translate(e.x+sh[0],e.y+4+sh[1]);c.imageSmoothingEnabled=true;
   if(P.rise<1){const w=h*2;c.beginPath();c.rect(-w,-h*1.6,w*2,h*1.6+6);c.clip();c.translate(0,h*(1-P.rise)*.95)}
   c.scale(tx,1);c.rotate(P.rot);c.scale(P.sx,P.sy);c.translate(0,P.dy);
+  if(!only&&e.kind==='boss'){const b=bossBody(e,P,h,t);c.translate(b.dx,b.dy);c.rotate(b.rot);c.scale(b.sx,b.sy)}
   // walk phase follows distance walked, so feet match ground speed
   const tm=(e.walk||0)*.31+0*t;
-  const anim=chibi?(ca=>paintChibi(ca,e,P,t,h)):((ca,extra)=>paintBossCells(ca,e.art,h,st,P.walk?tm:t,P,seed,extra));
+  const anim=(ca,extra)=>paintBossCells(ca,e.art,h,st,P.walk?tm:t,P,seed,extra);
   anim(c);
   if(e.flash>0||P.glow>0||P.tint>0){c.globalCompositeOperation='lighter';c.globalAlpha=Math.min(.9,(e.flash>0?.7:0)+P.glow*.32+P.tint);anim(c);c.globalCompositeOperation='source-over';c.globalAlpha=1}
   c.restore();
-  if(chibi&&!only)drawBossAura(c,e,true);
+  if(aura)drawBossAura(c,e,true);
 }
 function drawBoss(e){
+  if(e.act==='final'&&e.finalAim)drawFinalZone(e);
   if(!e.buried)shadow(e.x,e.y,(e.r+8)*(e.act==='rise'?clamp(1-e.actT/.95,.2,1):1));
   if((e.kit||G.stage)===4&&(e.phase||0)<2){const a=e.ang||0,r=e.r+18;ctx.save();ctx.strokeStyle='#f6ca83';ctx.lineWidth=5;ctx.beginPath();ctx.arc(e.x,e.y,r,a-Math.PI/2,a+Math.PI/2);ctx.stroke();ctx.strokeStyle='#8ff0b0';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,r,a+Math.PI/2,a+3*Math.PI/2);ctx.stroke();ctx.restore()}
   if(e.rustField){ctx.save();ctx.strokeStyle='rgba(220,140,75,.65)';ctx.lineWidth=4;ctx.setLineDash([9,7]);ctx.beginPath();ctx.arc(e.x,e.y,e.r+32,0,TAU);ctx.stroke();ctx.restore()}
@@ -456,15 +490,7 @@ function drawBoss(e){
   ctx.globalAlpha=1;
   if(e.fleshSplit){ctx.save();ctx.textAlign='center';ctx.font='700 13px "Alegreya",serif';ctx.lineWidth=3;ctx.strokeStyle='#151018';const t=e.fleshDown?'DOWN · '+Math.ceil((G.boss&&G.boss.fleshTime)||0)+'s':'BODY '+e.fleshSide;ctx.strokeText(t,e.x,e.y+27);ctx.fillStyle=e.fleshDown?'#ffd080':'#eab1b1';ctx.fillText(t,e.x,e.y+27);if(!e.fleshDown){ctx.fillStyle='#20191b';ctx.fillRect(e.x-30,e.y+32,60,5);ctx.fillStyle='#e8463f';ctx.fillRect(e.x-29,e.y+33,58*clamp(e.hp/(e.maxHp*FLESH.rejoin),0,1),3)}ctx.restore()}
 }
-/* A chibi boss bursts apart: the frame breaks into 8×8 chunks that fly, fall and fade, with a flash first */
-function chibiDeath(f){const q=1-f.t/f.m,sn=q<.28,b=clamp((q-.28)/.72,0,1),im=chibiFrame(f.art,'hit',0),k=f.ah/CHIBI_SCALE,n=8,cs=CB_N/n;
-  ctx.save();ctx.translate(f.x+(sn?rnd(-3,3):0),f.y+4);ctx.scale(f.fs<0?-1:1,1);ctx.imageSmoothingEnabled=false;
-  for(let r=0;r<n;r++)for(let c=0;c<n;c++){const j=Math.sin(c*12.9+r*78.2)*43758.5,rn=j-Math.floor(j),u=(c+.5)/n,v=(r+.5)/n,an=Math.atan2(v-.6,u-.5),sp=f.ah*(.35+rn*.9);
-    ctx.globalAlpha=clamp(1-b*(1+rn*.5),0,1);if(ctx.globalAlpha<=0)continue;ctx.drawImage(im,c*cs,r*cs,cs,cs,(c*cs-CB_N/2)*k+Math.cos(an)*sp*b,(r*cs-CB_FOOT)*k+Math.sin(an)*sp*b-f.ah*.4*b+f.ah*1.2*b*b,cs*k+.5,cs*k+.5)}
-  if(sn){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.6*q/.28;ctx.drawImage(im,-CB_N/2*k,-CB_FOOT*k,CB_N*k,CB_N*k);ctx.globalCompositeOperation='source-over'}
-  ctx.globalAlpha=1;ctx.restore()}
 function drawBossDeath(f){
-  if(CB[f.art])return chibiDeath(f);
   if(!ATLAS.complete||!ATLAS.naturalWidth)return;
   const q=1-f.t/f.m,st=BOSS_STYLE[STYLE_OF[f.art]],sn=q<.28;
   ctx.save();ctx.translate(f.x+(sn?rnd(-3,3):0),f.y+4);ctx.imageSmoothingEnabled=true;ctx.scale(f.fs<0?-1:1,1);
@@ -587,6 +613,7 @@ function render(){
   if(D3)ctx=W3.octx;
   const list=[...G.enemies.filter(e=>!concealed(e,G.p)),...G.players.filter(q=>!(q.respawnT>0)),...G.loot,...G.npcs,...G.w.props.filter(inView)].filter(inView).sort((a,b)=>a.y-b.y);
   list.forEach(o=>{if(o.stats){drawPlayer(o);if(G.mp&&o!==G.p)drawTag(o);if(o.deadT>0)drawDowned(o)}else if(typeof o.t==='string'){if(D3)w3Prop(o);else drawProp(o)}else if(o.kind==='boss'){if(D3)w3Boss(o,drawBoss);else drawBoss(o);drawCombatMarker(o);drawTargetMark(o)}else if(o.kind==='rival'){drawRival(o);drawCombatMarker(o);drawTargetMark(o);if(o.title)drawStoryEliteTag(o)}else if(o.name&&o.quip!==undefined)drawNpc(o);else drawLoot(o)});
+  drawTimeFx();
   for(const q of G.players)if((q.abil||q.abilCast)&&!(q.deadT>0))drawAbility(q);
   for(const q of G.players)if(q.sing&&inView(q.sing))drawSing(q.sing);
   {const me=G.p;if(me&&me.char==='Toxin Alchemist'&&!(me.deadT>0)&&!reduced){ctx.save();ctx.strokeStyle='rgba(140,240,70,'+(.18+.08*Math.sin(G.t*3)).toFixed(3)+')';ctx.lineWidth=2;ctx.setLineDash([4,6]);ctx.beginPath();ctx.ellipse(me.x,me.y,TOXIC_AURA.r,TOXIC_AURA.r*.6,0,0,TAU);ctx.stroke();ctx.restore()}}
@@ -597,6 +624,7 @@ function render(){
   (G.props||[]).forEach(o=>{if(inView(o))drawProp2(o.k?o:Object.assign({},o,{k:o.kind,d:o.done?1:0}))});
   (G.hazards||[]).forEach(h=>{if(inView(h))drawHazard(h)});
   G.fx.forEach(f=>{if(f.k==='bossdie')drawBossDeath(f);else if(f.k==='kitdie'){const nm=Object.keys(KIT_OF).find(n=>KIT_OF[n]===f.key),q=1-clamp(f.t/f.m,0,1);if(nm)blit(ctx,nm,f.x,f.y,2,'hit',0,!!f.mir,(f.mir?-1:1)*Math.min(1.5,(f.m-f.t)*3),clamp(f.t/1.2,0,1))}});
+  G.fx.forEach(f=>{if(f.k==='finalfx')drawFinalFx(f)});
   G.fx.forEach(f=>{if(f.k!=='ring')return;const q=reduced?.5:1-f.t/f.m;ctx.strokeStyle=f.c;ctx.globalAlpha=clamp(f.t/f.m,0,1);ctx.lineWidth=4;const R=f.r+(f.to-f.r)*q;ctx.beginPath();if(f.shape==='diamond'){ctx.moveTo(f.x,f.y-R);ctx.lineTo(f.x+R,f.y);ctx.lineTo(f.x,f.y+R);ctx.lineTo(f.x-R,f.y);ctx.closePath()}else ctx.arc(f.x,f.y,R,0,TAU);ctx.stroke();ctx.globalAlpha=1});
   // day and night lighting
   const n=nightness(G.hour),tint=tintOf(G.hour,n);

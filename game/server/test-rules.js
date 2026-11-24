@@ -883,13 +883,19 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
   b.dodgeUntil=0;b.dodgeCd=0;const hp2=b.hp;T.hitEnemy(b,50,0,90,true);ok(b.hp<hp2,'charged hits, beams and abilities are never dodged');T.DODGE.boss=keep}
  {go(4);ok(T.dodgeChance({mob:'weak'})===0&&T.dodgeChance({kind:'boss'})===0,'nothing dodges on stages 1 to 4');go(6);ok(T.dodgeChance({mob:'weak'})>0&&T.dodgeChance({kind:'boss'})>T.dodgeChance({mob:'weak'}),'from stage 5 minions dodge, bosses more often')}
  {const {G2,b}=bossAt(6);b.escT0=G2.t;b.escHp=b.maxHp;b.hp=b.maxHp*.8;b.escCd=0;b.act='walk';const x=b.x,y=b.y;T.escapeCheck(b);ok(Math.hypot(b.x-x,b.y-y)>=100&&b.escCd>G2.t,'a late boss escapes after a burst of damage')}
- {const G2=go(4);G2.boss=null;G2.gate.open=true;p.x=G2.gate.x;p.y=G2.gate.y;st(2);ok(!!G2.boss&&!G2.enemies.some(e=>e.shade),'stage 4 goes straight to the boss')}
- {const G2=go(5);G2.boss=null;G2.gate.open=true;p.x=G2.gate.x;p.y=G2.gate.y;st(2);const sh=G2.enemies.filter(e=>e.shade);
-  ok(sh.length===1&&!G2.boss&&sh[0].name===p.char&&sh[0].title==='Shade of '+T.label(p.char),'on stage 5 your shade appears at the gate first');
+ {const G2=go(1);G2.boss=null;G2.gate.open=true;p.x=G2.gate.x;p.y=G2.gate.y;st(2);ok(!!G2.boss&&!G2.enemies.some(e=>e.shade),'stage 1 goes straight to the boss')}
+ {const G2=go(2);G2.boss=null;G2.gate.open=true;p.x=G2.gate.x;p.y=G2.gate.y;st(2);const sh=G2.enemies.filter(e=>e.shade);
+  ok(sh.length===1&&!G2.boss&&sh[0].name===p.char&&sh[0].title==='Shade of '+T.label(p.char),'from stage 2 your shade appears at the gate first');
   ok(Math.abs(sh[0].sp-2*p.s.speed)<1e-6&&sh[0].lvl===p.lvl+2,'the shade is twice as fast and matches your level');
   p.x=G2.gate.x;p.y=G2.gate.y;st(10);ok(!G2.boss,'no boss while the shade lives');
   T.restartCheckpoint();ok(!G2.shadeUp&&!G2.enemies.some(e=>e.shade),'a wipe clears the shade');p.x=G2.gate.x;p.y=G2.gate.y;G2.gate.open=true;st(2);const sh2=G2.enemies.find(e=>e.shade);ok(!!sh2,'it waits at the gate again');
-  sh2.dead=true;st(1);p.x=G2.gate.x;p.y=G2.gate.y;st(2);ok(G2.shadeDone&&!!G2.boss,'beating the shade lets the boss come')}
+  ok(sh2.lives===3,'the shade has three lives');G2.p=p;sh2.dodgeUntil=0;T.killEnemy(sh2);ok(!sh2.dead&&sh2.lives===2&&sh2.hp===sh2.maxHp,'it rises again at full life after its first fall');
+  sh2.dodgeUntil=0;T.killEnemy(sh2);ok(sh2.lives===1&&!sh2.dead,'and again after its second');
+  sh2.dodgeUntil=0;sh2.dodgeCd=G2.t+99;const crit=p.s.crit;p.s.crit=0;const before=sh2.hp;T.hitEnemy(sh2,1000,0,90,true);const lost=before-sh2.hp;p.s.crit=crit;
+  ok(lost>0&&lost<=1000*T.SHADE.lastTake*1.2,'on its last life it takes much less damage ('+Math.round(lost)+' of 1000)');
+  ok(T.dodgeChance(sh2)===T.SHADE.lastDodge,'and dodges far more often');
+  sh2.hp=sh2.maxHp*.5;sh2.lastHit=G2.t-10;const h0=sh2.hp;st(30);ok(sh2.hp>h0||sh2.dead,'and heals when it is left alone');
+  sh2.hp=1;sh2.dodgeUntil=0;T.killEnemy(sh2);st(1);p.x=G2.gate.x;p.y=G2.gate.y;st(2);ok(G2.shadeDone&&!!G2.boss,'only beating its last life lets the boss come')}
  {const G2=go(10);G2.boss=null;G2.gate.open=true;p.x=G2.gate.x;p.y=G2.gate.y;st(2);const sh=G2.enemies.find(e=>e.shade);const five=2,ten=4;
   ok(!!sh&&Math.abs(sh.sp-Math.min(T.SHADE.maxSpeed,ten)*p.s.speed)<1e-6,'on stage 10 the shade is faster still (capped)');
   ok(Math.abs(sh.dmg/(T.mobHit(10,p.lvl)*sh.a.dmg*1.3)-ten)<1e-6,'on stage 10 the shade hits four times as hard as its base')}
@@ -901,7 +907,9 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  const SQ=T.SIDE_QUESTS,all=Object.values(SQ).flat();
  ok(Object.keys(SQ).length===10&&Object.values(SQ).every(l=>l.length===3)&&new Set(all.map(q=>q.id)).size===30,'every stage has three side quests of its own (30 in all)');
  ok(all.every(q=>q.giver&&q.title&&q.story.length>=2&&q.gold>0)&&Object.keys(T.STAGE_GOAL).length===10,'each quest has a giver, a story and a reward; each stage has a goal');
- {let good=true;for(let n=1;n<=10;n++){const g=go(n);const ids=SQ[n].map(q=>q.id);if(!(g.side.length>=2&&g.side.length<=3&&g.side.every(q=>ids.includes(q.id)&&q.st===0)&&g.props.filter(o=>o.kind==='sq_giver').length===g.side.length))good=false}ok(good,'each stage offers two or three of its own quests, with a giver by the haven')}
+ {let good=true;for(let n=1;n<=10;n++){const g=go(n);const ids=SQ[n].map(q=>q.id);if(!(g.side.length>=2&&g.side.length<=3&&g.side.every(q=>ids.includes(q.id)&&q.st===0)&&g.props.filter(o=>o.kind==='sq_giver').length===g.side.length))good=false}ok(good,'each stage offers two or three of its own quests, each with its own giver')}
+ {const g=go(4);const gv=g.props.filter(o=>o.kind==='sq_giver');ok(gv.every(o=>Math.hypot(o.x-g.safe.x,o.y-g.safe.y)>400)&&gv.every((o,i)=>gv.every((q,j)=>i===j||Math.hypot(o.x-q.x,o.y-q.y)>200)),'givers are scattered over the map, not gathered at the haven')}
+ ok(new Set(Object.values(T.SIDE_QUESTS).flat().map(q=>q.art)).size===30,'every quest giver looks different')
  const finish={
   gather:(g,q)=>{for(const o of g.props.filter(o=>o.q===q.id&&o.kind==='sq_item')){p.x=o.x;p.y=o.y;st()}},
   cleanse:(g,q)=>{for(const o of g.props.filter(o=>o.q===q.id&&o.kind==='sq_totem')){p.x=o.x;p.y=o.y;st(90)}},
@@ -923,9 +931,20 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  b.hp=b.maxHp*.5;st();ok(b.act!=='final'&&!b.finalDone,'no final attack above a quarter of life');
  let saw=false;const evs=[];r.ev=evs;b.hp=b.maxHp*.2;s.step(r,1/30);saw=evs.some(v=>v.e&&v.e[0]==='f'&&v.e[1].k==='bossult');r.ev=[];
  ok(b.act==='final'&&b.finalDone&&saw,'at a quarter of its life the boss begins its final attack, with the full-screen scene');
- const hp=p.hp;for(let i=0;i<Math.ceil(T.FINAL.wind*30)+3;i++){p.x=b.x+60;p.y=b.y;p.inv=0;p.hp=Math.max(p.hp,1);s.step(r,1/30);r.ev.length=0}
- ok(p.hp<hp&&b.act!=='final','the final attack lands on anyone inside the ring');
+ for(let i=0;i<Math.ceil(T.FINAL.wind*30)+2;i++){p.x=b.x+60;p.y=b.y;p.inv=0;s.step(r,1/30);r.ev.length=0}
+ ok(b.act==='final'&&!!b.finalAim,'after the scene the boss locks its strike onto you');
+ p.hp=p.s.maxHp;const hp=p.hp,z=b.finalAim;for(let i=0;i<Math.ceil(T.FINAL.tel*30)+3;i++){p.inv=0;if(z.k==='slam'){p.x=z.x;p.y=z.y}else{p.x=b.x+Math.cos(z.a||0)*60;p.y=b.y+Math.sin(z.a||0)*60}s.step(r,1/30);r.ev.length=0}
+ ok(p.hp<hp*.75&&b.act!=='final','the final attack really strikes, and hard, if you stay in its zone');
  b.hp=b.maxHp*.1;st(3);ok(b.act!=='final','it happens only once per fight')}
+{const r=mk(),p=s.createRoom(r,'Detective',null,'F2');T.enter(r);const g=G();g.enemies=[];g.spawnT=1e9;g.boss=null;T.summonBoss();const b=g.boss;b.act='walk';b.actT=99;b.cd=99;T.FINAL.on=true;
+ const st=(k=1)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.x=b.x+60;p.y=b.y;b.hp=b.maxHp*.2;st(Math.ceil(T.FINAL.wind*30)+2);
+ ok(!!b.finalAim,'the strike is locked');p.hp=p.s.maxHp;const hp=p.hp;
+ for(let i=0;i<Math.ceil(T.FINAL.tel*30)+3;i++){p.inv=1;p.hp=p.s.maxHp;st()}ok(p.hp===hp,'a well-timed dash (invulnerable) avoids it')}
+{const r=mk(),p=s.createRoom(r,'Detective',null,'F3');T.enter(r);const g=G();g.enemies=[];g.spawnT=1e9;g.boss=null;T.summonBoss();const b=g.boss;b.act='walk';b.actT=99;b.cd=99;
+ const st=(k=1)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.x=b.x+60;p.y=b.y;b.hp=b.maxHp*.2;st(Math.ceil(T.FINAL.wind*30)+2);
+ const z=b.finalAim;p.hp=p.s.maxHp;const hp=p.hp;let safe=null;for(let k=0;k<40&&!safe;k++){const a=k/40*Math.PI*2,c={x:b.x+Math.cos(a)*(z.r+420),y:b.y+Math.sin(a)*(z.r+420),r:12};if(!T.blocked(c.x,c.y,12)&&!T.inFinal(c,z,b))safe=c}
+ for(let i=0;i<Math.ceil(T.FINAL.tel*30)+3;i++){if(safe){p.x=safe.x;p.y=safe.y}p.inv=0;st()}ok(!safe||p.hp===hp,'stepping out of the zone avoids it')}
+T.FINAL.on=false;
 // C-73: day and night rules read from one table.
 {const DN=T.DAYNIGHT,dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),at=h=>T.period(h).id,VM_MATH=()=>T.G.constructor.constructor('return Math')(); // the rules run in their own vm realm, with their own Math
  ok([[0,'night'],[4.99,'night'],[5,'dawn'],[7.99,'dawn'],[8,'day'],[16.99,'day'],[17,'dusk'],[19.99,'dusk'],[20,'night'],[23.99,'night'],[24,'night'],[-1,'night']].every(([h,id])=>at(h)===id),'four periods cover the clock: dawn 05-08, day 08-17, dusk 17-20, night 20-05');
@@ -965,6 +984,29 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  {g.hour=6;g.enemies=[];const e=T.spawnRival(0,false,{x:p.x+200,y:p.y},'Necromancer');e.role='rusher';T.updateEnemy(e,.1);ok(!e.retreat,'enemies that arrive at dawn do not retreat')}
  const drop=h=>{g.hour=h;g.enemies=[];g.loot=[];const e=T.spawnRival(0,false,{x:p.x+300,y:p.y},'Necromancer');e.gold=100;const M=VM_MATH(),rnd=M.random;M.random=()=>0;try{T.killEnemy(e)}finally{M.random=rnd}const l=g.loot.find(x=>x.kind==='gold');return l?l.amt:0};
  ok(drop(12)===100&&drop(22)===125&&drop(18)===100,'a kill at night drops 25% more gold')}
+
+/* ---------- Unique quick attack and the Chronomancer ---------- */
+{const r=mk(),p=s.createRoom(r,'Detective',null,'U');T.enter(r);const g=G();g.enemies=[];g.spawnT=1e9;g.p=p;
+ const tier=(chg,h)=>{p.chg=chg;p.holdT=h;const t=T.chargeTier(p);p.chg=0;p.holdT=0;return t};
+ ok(tier(.8,1)===0&&tier(1,1.3)===1&&tier(1,3.1)===2&&tier(1,6.2)===3,'holding gives blue at a full charge, green at 3 s and red at 6 s');
+ const shotDmg=t=>{g.shots=[];p.cd.slash=0;T.releaseCharge(p,1,t);const d=g.shots.filter(x=>x.from==='p').reduce((a,x)=>a+x.dmg,0);g.shots=[];return d};
+ const blue=shotDmg(1),green=shotDmg(2),red=shotDmg(3);ok(blue>0&&Math.abs(green/blue-2)<.01&&Math.abs(red/blue-4)<.01,'green charged attacks hit twice as hard as blue, red four times')}
+{const r=mk(),p=s.createRoom(r,'Chronomancer',null,'C');T.enter(r);const g=G();g.enemies=[];g.spawnT=1e9;g.p=p;const st=(k=1)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const foe=(dx,dy,boss)=>{const e=T.spawnMob(0,{x:p.x+dx,y:p.y+dy},false);e.hp=e.maxHp=1e6;if(boss)e.kind='boss';e.cd=99;e.aware=false;return e};
+ p.face=0;
+ {const e=foe(120,0);e.hist=[];for(let i=0;i<8;i++)e.hist.push({x:p.x+40+i*10,y:p.y});const back=e.hist[e.hist.length-1-T.CHRONO.back];T.hitEnemy(e,10,0,90);ok(e.x===back.x&&e.y===back.y,'a basic shot rewinds the enemy two steps back');g.enemies=[]}
+ for(const [t,sec] of [[1,2],[2,4],[3,6]]){const e=foe(80,0);g.p=p;T.releaseCharge(p,1,t);ok(Math.abs(e.frozenT-sec)<.01,['','blue','green','red'][t]+' time-stop fan freezes enemies hit for '+sec+' s');g.enemies=[]}
+ {const e=foe(80,0,true);T.releaseCharge(p,1,3);ok(Math.abs(e.frozenT-3)<.01,'bosses are frozen half as long');g.enemies=[]}
+ {const e=foe(80,0),e2=foe(-80,0);T.releaseCharge(p,1,1);ok(e.frozenT>0&&!(e2.frozenT>0),'the fan only reaches enemies in front');
+  const crit=p.s.crit;p.s.crit=0;let fz=0,nm=0;for(let k=0;k<20;k++){g.enemies=[];const a=foe(80,0),o=foe(60,40);T.timeStop(a,4,p.id||1);let h=a.hp;T.hitEnemy(a,100,0,0,true);fz+=h-a.hp;h=o.hp;T.hitEnemy(o,100,0,0,true);nm+=h-o.hp}p.s.crit=crit;
+  ok(fz/nm>1.35&&fz/nm<1.65,'enemies frozen by the Chronomancer take 50% more from it ('+(fz/nm).toFixed(2)+'x on average)');g.enemies=[]}
+ {const ab=T.ABILITIES.Chronomancer;ok(ab.fx==='timefield'&&ab.n==='Time Field','the Chronomancer ability is Time Field');
+  const near=foe(200,0),far=foe(900,0);const q2=s.addPlayer(r,'Ranger',null,'C2');T.enter(r);q2.x=p.x+40;q2.y=p.y;g.boss=null;
+  T.ABILITY_FIRE.timefield(p,ab,{},T.abilityDamage(p));ok(Math.abs(near.frozenT-10)<.01&&!(far.frozenT>0),'Time Field freezes enemies in a wide area for 10 s');
+  ok(p.timeBuffT===10&&q2.timeBuffT===10&&T.timeHaste(p)===2&&Math.abs(T.timeDmg(q2)-1.5)<1e-9,'and gives the party +50% damage and double speed for that time');
+  g.p=p;p.cd.slash=0;p.weapon=p.weapon||'pistol';const W=s.test.WEAPONS?null:null;T.doAttack();const fast=p.cd.slash;p.timeBuffT=0;p.cd.slash=0;T.doAttack();const slow=p.cd.slash;ok(fast>0&&Math.abs(slow/fast-2)<.01,'and attacks come twice as fast');
+  g.enemies=[];const b=foe(150,0,true);g.boss=b;T.ABILITY_FIRE.timefield(p,ab,{},T.abilityDamage(p));ok(Math.abs(b.frozenT-5)<.01&&p.timeBuffT===5&&T.timeHaste(p)===1.5&&Math.abs(T.timeDmg(p)-1.25)<1e-9,'against a boss the freeze and the buff are halved');g.boss=null;g.enemies=[]}
+}
 console.log('\n'+n+' checks passed');
 
 

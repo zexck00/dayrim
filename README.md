@@ -28,7 +28,7 @@ Open http://localhost:8080, choose a character and press **Play online**. To try
 |---|---|
 | WASD or arrows | Move |
 | Mouse | Aim |
-| Left click | Attack. Hold to charge, let go to fire: casters fire a beam, marksmen fire a charged shot that suits their gun (shotgun, arrow volley, overcharged plasma, gale burst), melee fighters lunge. |
+| Left click | Attack. Hold to charge (blue at 1.2 s; keep holding for green at 3 s, twice as strong, and red at 6 s, four times as strong), let go to fire: casters fire a beam, marksmen fire a charged shot that suits their gun (shotgun, arrow volley, overcharged plasma, gale burst), melee fighters lunge. |
 | Hold right click | Shield |
 | Q | Spell |
 | C | Ready your ability: lock a target, pick an ally, aim a spot or line, grab an enemy, or start a buff. Left click uses it. C again cancels an aimed ability, or fires the finisher of a buff or grab. It hits for ten basic attacks; 60 second cooldown (Max Heal: 90). |
