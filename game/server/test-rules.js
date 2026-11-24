@@ -777,7 +777,7 @@ const PLAY=Object.keys(T.ROSTER.hero).concat(Object.keys(T.ROSTER.villain));
 ok(PLAY.every(n=>T.ABILITIES[n]&&T.ABILITY_FIRE[T.ABILITIES[n].fx]&&T.ABILITIES[n].n&&T.ABILITIES[n].use),'all '+PLAY.length+' playable characters have an Ability and a Use');
 for(const ch of PLAY){const ab=T.ABILITIES[ch],r=mk(),p=s.createRoom(r,ch,null,'Ab');T.enter(r);G().enemies=[];G().npcs=[];G().p=p;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;if(ab.fx==='heal')p.hp=p.s.maxHp*.3;
- p.actions.push({n:'ability'});run(ab.charge?Math.ceil(ab.charge*30)+2:1);const armed=!!(p.abil||p.abilCast);const x0=e.x,y0=e.y;p.actions.push({n:'use'});run(45);
+ p.actions.push({n:'ability'});run(ab.charge?Math.ceil(ab.charge*30)+2:1);const armed=!!(p.abil||p.abilCast);const x0=e.x,y0=e.y;p.actions.push({n:'use'});run(ab.fx==='meteor'?90:45);
  const landed=ab.fx==='heal'?p.hp>=p.s.maxHp-1e-6:e.hp<e.maxHp||Math.hypot(e.x-x0,e.y-y0)>20;
  ok(armed&&landed&&!p.abil&&!p.abilCast&&p.abilT>0,ch+': '+ab.n+' then '+ab.use+' lands')}
 // One button: a hold kind fires on release, an again kind fires its finisher on the second press.
@@ -856,14 +856,47 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
    const es=[0,1,2].map(i=>{const e=T.spawnMob(0,{x:p.x+150+i*20,y:p.y-20+i*20},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=60;return e});p.input.ax=es[1].x;p.input.ay=es[1].y-22;p.mana=p.s.maxMana;return{r,p,es}};
  const hold=(r,p)=>{p.input.l=true;run(r,Math.ceil((T.CHARGE.delay+T.CHARGE.time+.1)*30));G().shots=[];p.input.l=false;run(r,1)};
  {const {r,p}=setup('Toxin Alchemist');hold(r,p);const f=G().shots.filter(x=>x.from==='p'&&x.fx==='flask'&&x.lob);ok(!p.beam&&f.length===3&&f.every(x=>x.pool),'Toxin Alchemist: a charged throw lobs three flasks that leave pools')}
- {const {r,p}=setup('Void Empress');hold(r,p);const o=G().shots.filter(x=>x.from==='p'&&x.fx==='orb'&&x.big);ok(!p.beam&&o.length===1&&o[0].blast>100,'Void Empress: a charged cast fires one heavy void orb')}
+ {const {r,p,es}=setup('Void Empress');hold(r,p);ok(!p.beam&&!G().shots.some(x=>x.from==='p'&&x.big)&&es.some(e=>e.hp<e.maxHp),'Void Empress: a charged cast opens a void area at the aim')}
  {const {r,p}=setup('Necromancer');hold(r,p);ok(!!p.beam,'Necromancer: a charged cast fires a soul beam')}
  {const {r,p,es}=setup('Necromancer');p.actions.push({n:'ability'});run(r,1);p.actions.push({n:'use'});let skulls=0;for(let i=0;i<70;i++){run(r,1);skulls=Math.max(skulls,G().shots.filter(x=>x.home).length)}ok(skulls===5&&es.some(e=>e.hp<e.maxHp),'Soul Swarm releases five homing skulls that hit')}
  {const {r,p}=setup('Toxin Alchemist');p.actions.push({n:'ability'});run(r,1);p.actions.push({n:'use'});run(r,90);ok(G().hazards.filter(h=>h.from==='p').length>=4,'Plague Rain leaves several poison pools')}
- {const {r,p,es}=setup('Void Empress');const d0=Math.hypot(es[2].x-es[1].x,es[2].y-es[1].y);p.actions.push({n:'ability'});run(r,1);p.actions.push({n:'use'});let opened=false;for(let i=0;i<60;i++){run(r,1);if(p.sing)opened=true}const S=G();ok(opened&&es.every(e=>e.hp<e.maxHp),'Singularity opens, pulls and hurts the enemies around it')}
+ {const {r,p,es}=setup('Void Empress');p.lvl=1;p.actions.push({n:'ability'});run(r,1);p.actions.push({n:'use'});run(r,40);const held=es.every(e=>e.voidT>4);const h1=es.map(e=>e.hp);run(r,150);
+  ok(held&&!p.voidF&&es.every((e,i)=>e.hp<h1[i]||e.hp<e.maxHp),'Void Field traps every enemy in the area for 5 seconds and small voids strike them')}
  {const {r,p,es}=setup('Toxin Alchemist');const e=es[0];e.x=p.x+50;e.y=p.y;const hp=e.hp;run(r,40);ok(e.hp<hp,'Toxic Aura poisons a nearby enemy')}
  {const {r,p,es}=setup('Necromancer');p.hp=p.s.maxHp*.5;const hp=p.hp;const e=es[0];e.hp=1;G().p=p;T.hitEnemy(e,10,0,0);ok(e.dead&&p.hp>hp,'Grave Harvest heals the Necromancer on a kill')}
  {const {r,p,es}=setup('Void Empress');G().p=p;T.hitEnemy(es[0],5,0,0);ok(es[0].slowT>=1.4,'Gravity Well slows enemies hit by her spells')}}
+
+/* ---------- Signature kits: Firefighter, Voidwalker, Shadow Monarch, Void Empress ---------- */
+{const run=(r,k)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const setup=(ch,n=3)=>{const r=mk(),p=s.createRoom(r,ch,null,'Kit');T.enter(r);G().enemies=[];G().npcs=[];G().spawnT=G().villT=1e9;G().p=p;const W=G().w,c=W.open.find(c=>c%MW_>10&&c%MW_<MW_-16&&(c/MW_|0)>8&&(c/MW_|0)<MH_-9);for(let dy=-7;dy<=7;dy++)for(let dx=-10;dx<=14;dx++)W.map[c+dy*MW_+dx]=0;p.x=(c%MW_+.5)*40;p.y=((c/MW_|0)+.5)*40;p.inv=1e9;p.s.crit=0;
+   const es=[...Array(n)].map((_,i)=>{const e=T.spawnMob(0,{x:p.x+150+i*20,y:p.y-20+i*20},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=60;e.dodge=0;return e});p.input.ax=es[1].x;p.input.ay=es[1].y-22;p.mana=p.s.maxMana;return{r,p,es,x0:p.x,y0:p.y}};
+ const plus=T.plus;
+ ok(plus(1)===1.5&&plus(2)===2&&plus(6)===4,'a +1 on attacks, abilities and speed is +50%');
+ {const {p}=setup('Firefighter');ok(T.sigHit(p,'axe')===2&&T.sigHit(p,'pistol')===1,'Firefighter: the fire axe hits +2 (double)');ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='4,6,10','Firefighter: the quick attack is 4×, 6× and 10× (blue, green, red)')}
+ {const {p}=setup('Detective');ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='1,2,4','other characters keep 1×, 2× and 4×')}
+ {const {r,p,es,x0,y0}=setup('Firefighter');p.input.x=1;run(r,15);const walk=p.x-x0;p.x=x0;p.y=y0;p.input.x=0;p.actions.push({n:'ability'});run(r,1);const on=T.riding(p);p.x=x0-40;p.input.x=1;run(r,15);const ride=p.x-x0+40;
+  ok(on&&ride>walk*3,'Fire Truck: the ride is about four times as fast ('+Math.round(walk)+' → '+Math.round(ride)+' px)');ok(es[0].hp<es[0].maxHp,'Fire Truck: ramming an enemy hurts it');
+  p.input.l=true;run(r,10);ok(p.boost===1&&!(p.chg>0),'holding attack while riding boosts instead of charging');p.input.l=false;p.input.x=0;run(r,8*30);ok(!T.riding(p),'the ride ends after 8 seconds')}
+ {const {r,p,es}=setup('Firefighter');p.actions.push({n:'ability'});run(r,1);G().p=p;const hit=boost=>{const e=es[boost];e.x=p.x+20;e.y=p.y;e.stunT=60;p.moving=true;p.moveA=0;p.boost=boost;const h0=e.hp;T.truckStep(p,1/30);return h0-e.hp};
+  let a=0,b=0;for(let i=0;i<20;i++){G().t+=1;a+=hit(0);b+=hit(1)}ok(Math.abs(b/a-4/3)<.1,'a boosted ram (+6) hits a third harder than a plain ram (+4)')}
+ {const {r,p,es}=setup('Shadow Monarch');G().p=p;ok(Math.abs(T.stealOf(p)-.1)<1e-9,'Shadow Monarch: sword hits steal 10% of the damage as life');p.hp=p.s.maxHp*.3;const h=p.hp;T.hitEnemy(es[0],100,0,0,true);ok(p.hp>h,'the stolen life heals the Monarch');
+  ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='1,2,5','Shadow Monarch: the quick attack is 1×, 2× and 5×');
+  p.actions.push({n:'ability'});run(r,1);G().p=p;ok(T.batForm(p)&&Math.abs(T.stealOf(p)-.5)<1e-9&&T.batK(p,'dmg')===3.5&&T.batK(p,'haste')===3.5,'Vampire Form: +5 attack, attack speed and life steal');
+  run(r,10*30+2);ok(!T.batForm(p),'Vampire Form ends after 10 seconds')}
+ for(const [ch,hold,sc] of [['Voidwalker',3,1],['Void Empress',5,2]]){const {r,p,es}=setup(ch);run(r,1);G().p=p;es.forEach(e=>e.stunT=0);T.releaseCharge(p,1,3);
+  ok(es[1].scaredT>sc-.05&&es[1].hp<es[1].maxHp,ch+': a red void area hurts and scares for '+sc+' s');
+  const q=setup(ch);run(q.r,1);G().p=q.p;q.p.weapon=T.weaponOf(ch);q.p.cd.slash=0;G().shots=[];T.doAttack();ok(G().shots.some(x=>x.vpush>0),ch+': basic shots open a void that pushes back');
+  const v=setup(ch);v.p.lvl=7;v.p.actions.push({n:'ability'});run(v.r,1);v.p.actions.push({n:'use'});run(v.r,40);const F=v.p.voidF;
+  ok(F&&v.es.every(e=>e.voidT>hold-.5&&e.voidT<=hold),ch+': Void Field traps for '+hold+' s');ok(F&&Math.abs(F.gap-hold/7)<.01,ch+': a level 7 caster sends seven void strikes');
+  {const b=setup(ch),e=b.es[0];G().p=b.p;e.kind='boss';b.p.voidF=null;b.p.actions.push({n:'ability'});run(b.r,1);b.p.actions.push({n:'use'});run(b.r,40);ok(e.voidT>0&&e.voidT<=hold/2,ch+': bosses are trapped for half as long')}}
+ {const {r,p,es}=setup('Pyromancer');run(r,1);G().p=p;ok(T.sigHit(p,'orb')===1.5&&[1,2,3].map(t=>T.tierMul(p,t)).join()==='2,3,5','Pyromancer: fire bolts hit +1; quick attack ×2, ×3, ×5');
+  const e=es[0];T.hitEnemy(e,100,0,0,true);ok(e.blazeT===3&&e.blazeD>0,'Pyromancer: a hit sets the enemy ablaze for 3 s');const h=e.hp;run(r,30);ok(e.hp<h,'burning keeps hurting the enemy');run(r,70);ok(!(e.blazeT>0),'the burn ends after 3 s')}
+ {const {r,p,es}=setup('Pyromancer');run(r,1);G().p=p;G().hazards=[];T.releaseCharge(p,1,1);ok(es.some(e=>e.hp<e.maxHp)&&!G().hazards.length,'blue: Flame Wave burns the enemies in front')}
+ {const {r,p,es}=setup('Pyromancer');run(r,1);G().p=p;G().hazards=[];T.releaseCharge(p,1,2);ok(es.some(e=>e.hp<e.maxHp)&&G().hazards.filter(h=>h.fire).length===3,'green: Fire Wall leaves three patches of burning ground')}
+ {const {r,p,es}=setup('Pyromancer');run(r,1);G().p=p;G().hazards=[];es.forEach(e=>e.stunT=0);T.releaseCharge(p,1,3);ok(es[1].hp<es[1].maxHp&&es[1].stunT>0&&G().hazards.filter(h=>h.fire).length===1,'red: Flame Pillar at the aim hurts, stuns and burns the ground')}
+ {const {r,p,es}=setup('Pyromancer');p.lvl=7;p.actions.push({n:'ability'});run(r,1);p.actions.push({n:'use'});let n=0;for(let i=0;i<45&&!n;i++){run(r,1);if(p.meteor)n=p.meteor.left+p.meteor.falls.length+(p.meteor.tick>0?1:0)}
+  ok(n===9,'Meteor Storm: a level 7 Pyromancer calls 9 meteors ('+n+')');run(r,150);ok(!p.meteor&&es.some(e=>e.hp<e.maxHp),'the meteors land and hurt enemies in the area')}
+}
 
 /* ---------- Bigger stages ---------- */
 {const r=mk(),p=s.createRoom(r,'Detective',null,'V');T.enter(r);const g=G(),w=g.w,MWv=T.MW,MHv=T.MH,N=MWv*MHv,tile=(x,y)=>Math.floor(y/40)*MWv+Math.floor(x/40);

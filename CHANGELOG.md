@@ -6,6 +6,13 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### 24 November 2026
 
+- Pixel 3D: names, levels, enemy labels and timers above heroes, villains and enemies are now sharp. They were drawn on the low-resolution pixel layer and dithered.
+- New signature kits for four characters. "+1" on an attack, ability or speed means +50%; life steal +1 returns 10% of the damage as life.
+  - Firefighter: the fire axe hits +2. Quick attack +4, +6, +10 (blue, green, red). New ability Fire Truck: ride a fire truck for 8 s at +6 speed; ramming enemies hits +4, and holding attack boosts (+6). C again ends it with a hose blast.
+  - Voidwalker: basic shots open a small void that pushes enemies back (+1). The charged attack opens a void area at your aim (+1, +2, +3; red also scares for 1 s). New ability Void Field traps every enemy in a wide area for 3 s while small voids strike it, one strike per player level.
+  - Void Empress: the same, stronger: void shots +2, void area +2, +4, +5 with a 2 s scare on red, and a Void Field that traps for 5 s with +3 strikes.
+  - Pyromancer: fire bolts hit +1 and set enemies ablaze for 3 s. Quick attack: blue Flame Wave (a cone of fire, ×2), green Fire Wall (the wave plus burning ground, ×3), red Flame Pillar at your aim that stuns (×5). New ability Meteor Storm: 6 meteors plus one for every two levels (up to 12) rain on the aimed area; each blasts, sets enemies ablaze and burns the ground.
+  - Shadow Monarch: sword hits steal life. Quick attack +1, +2, +5 with 10%, 20% and 40% life steal. New ability Vampire Form: fly on bat wings for 10 s with +5 attack, attack speed, life steal and speed.
 - Side quests can now be started on desktop and landscape screens: the Quests panel is a tall side sheet with Accept and Track beside each quest's title, and it no longer swallows clicks. Phones also get Quests in the More menu.
 - Every quest giver is a different person (30 looks) and they stand scattered across the map, not around the haven.
 - The Shade now appears from stage 2. It has three lives: twice it rises again at full life, and on its last life it takes far less damage, dodges often and heals when left alone. Its speed and attack are unchanged.

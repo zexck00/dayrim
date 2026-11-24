@@ -64,7 +64,7 @@ function w3Begin(cam,sx,sy){
   for(const cv of [L.underCanvas,L.overCanvas])if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}
   W3.base=new DOMMatrix([iw/vw,0,0,ih/vh,iw/2-(cam.x+sx)*iw/vw,ih/2-(cam.y+sy)*ih/vh]);W3.baseInv=W3.base.inverse();
   for(const c of [L.underCtx,L.overCtx]){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,iw,ih);c.imageSmoothingEnabled=false;c.setTransform(W3.base)}
-  W3.uctx=L.underCtx;W3.octx=L.overCtx;W3.cards.length=0;W3.d3=true;ctx=W3.uctx;shadowTo=W3.uctx;
+  w3Text(L.overCtx);L.overCtx.__txt.length=0;W3.uctx=L.underCtx;W3.octx=L.overCtx;W3.cards.length=0;W3.d3=true;ctx=W3.uctx;shadowTo=W3.uctx;
 }
 /* blit() hands its sprite here when it would draw on the over layer at full opacity */
 function w3Card(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo){
@@ -123,7 +123,17 @@ function w3End(lt){
   // back to the screen with the usual world transform, for damage numbers and callouts
   ctx.setTransform(zoom*dpr,0,0,zoom*dpr,(W/2-W3.f.cx*zoom)*dpr,(H/2-W3.f.cy*zoom)*dpr);
   W3.frame=Object.assign({W,H,dpr,cards:W3.cards,opts:W3.opts},W3.f,lt);
+  // text held back from the pixel layer is drawn here at full screen resolution
+  const o=FX3.layer.overCtx,S=ctx.getTransform(),list=o.__txt||[];ctx.save();
+  for(const t of list){ctx.setTransform(S.multiply(W3.baseInv).multiply(t.m));ctx.font=t.font;ctx.fillStyle=t.fill;ctx.strokeStyle=t.stroke;ctx.lineWidth=t.lw;ctx.lineJoin=t.lj;ctx.textAlign=t.al;ctx.textBaseline=t.bl;ctx.globalAlpha=t.ga;
+    if(t.mw===undefined)ctx[t.op](t.s,t.x,t.y);else ctx[t.op](t.s,t.x,t.y,t.mw)}
+  ctx.restore();list.length=0;
 }
+/* Text on the 3D overlay would be drawn at pixel-art resolution and dithered, so it looks blurry.
+   Names, levels, labels and timers are kept aside instead and drawn crisp on the screen in w3End. */
+function w3Text(c){if(c.__txt)return;c.__txt=[];const P=CanvasRenderingContext2D.prototype;
+  for(const op of ['fillText','strokeText'])c[op]=function(s,x,y,mw){if(!W3.d3||W3.baking)return mw===undefined?P[op].call(this,s,x,y):P[op].call(this,s,x,y,mw);
+    this.__txt.push({op,s:String(s),x,y,mw,m:this.getTransform(),font:this.font,fill:this.fillStyle,stroke:this.strokeStyle,lw:this.lineWidth,lj:this.lineJoin,al:this.textAlign,bl:this.textBaseline,ga:this.globalAlpha})}}
 function drawFx3(now){
   const show=!!(W3.frame&&w3On());fx3Canvas.hidden=!show;if(!show){W3.frame=null;return}
   const t0=performance.now();
