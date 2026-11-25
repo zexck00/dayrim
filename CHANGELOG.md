@@ -4,6 +4,10 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### 26 November 2026
+
+- Stage 5 (Sporefall Marsh) toxin is much gentler: it builds at 0.5% a second (was 1.25%), spore clouds add 4% (was 8%), and full toxin hurts 1.5% of your life every 2 seconds (was 4% every second) and never takes you below 20% life. Eight clean springs are scattered over the map (shown on the minimap); standing in one clears toxin fast.
+
 ### 25 November 2026
 
 - Fixed: blank character cards on the character screen for some players. The character art now retries if its download fails, falls back to a PNG copy for browsers that cannot show WebP, and the character screen redraws as soon as the art arrives. The server now serves PNG files.
