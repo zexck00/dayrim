@@ -13,7 +13,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parent.parent
 INLINE='--inline' in sys.argv
 out_dir=root/'assets'
-MIME={'.webp':'image/webp','.jpg':'image/jpeg','.mp4':'video/mp4','.m4a':'audio/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.js':'text/javascript'}
+MIME={'.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.mp4':'video/mp4','.m4a':'audio/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.js':'text/javascript'}
 used=set()
 
 def asset(path,name=None):
@@ -34,6 +34,9 @@ h=int.from_bytes(atlas[27:30],'little')+1 if w else None
 assert w and h,'expected an extended WebP atlas'
 J=lambda o:json.dumps(o,separators=(',',':'))
 data=f'const ATLAS_URL={J(asset(atlas_p,"cast"))};\nconst CAST={J(cast)},AW={w},AH={h};\n'
+# A PNG copy of the character art, fetched only if the WebP fails to load (see ATLAS in game.js)
+png_p=root/'sprites/dayrim-cast.png'
+data+='const ATLAS_PNG_URL='+(J(asset(png_p,'cast-png')) if png_p.exists() and not INLINE else '""')+';\n'
 vo=root/'sprites'/'voice'
 data+='const VOICE_CLIPS='+J({f.stem:asset(f,'voice-'+f.stem) for f in sorted(vo.glob('*.wav'))})+';\n'
 sx=root/'sprites'/'sfx'

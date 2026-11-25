@@ -15,7 +15,7 @@ const TICK=1/30,SNAP_EVERY=2,SAVE_EVERY=20000,ROOM_GRACE=30000;
 const profiles=new Profiles(path.join(DATA,'profiles'));
 /* Pictures and sounds the page links to. Names carry a content hash, so each file can be cached for good. */
 const ASSETS=process.env.ASSETS_DIR||path.join(path.dirname(PAGE),'assets');
-const ASSET_TYPES={'.webp':'image/webp','.jpg':'image/jpeg','.mp4':'video/mp4','.m4a':'audio/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.js':'text/javascript; charset=utf-8'};
+const ASSET_TYPES={'.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.mp4':'video/mp4','.m4a':'audio/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.js':'text/javascript; charset=utf-8'};
 const page=fs.readFileSync(PAGE),pageGz=zlib.gzipSync(page,{level:9}),pageTag='"'+crypto.createHash('sha1').update(page).digest('hex').slice(0,16)+'"';
 const rooms=new Map(),conns=new Set(),byToken=new Map(),perIp=new Map();
 

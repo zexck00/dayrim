@@ -65,7 +65,7 @@ function setMode(m){
 const cardStyle=n=>{if(CARD_ART[n])return 'width:100%;aspect-ratio:222/296;background:url('+CARD_ART[n]+') center/100% 100% no-repeat';const a=CAST[n];return 'width:100%;aspect-ratio:'+a.w+'/'+a.h+';background-size:'+(AW/a.w*100)+'% '+(AH/a.h*100)+'%;background-position:'+(a.x/(AW-a.w)*100)+'% '+(a.y/(AH-a.h)*100)+'%'};
 /* The Swarm picker: any stage this character has reached. */
 function swarmPanel(sv){const top=sv&&sv.char===chosen?Math.max(sv.stage||1,sv.maxStage||1):1;let best=0;try{best=JSON.parse(localStorage.getItem('dayrim-swarm-best')||'{}')[chosen]||0}catch(e){}
-  return '<div class="cont"><span>The Swarm: endless waves on a stage map. Nothing carries over to your saved game.'+(best?' Best: wave '+best+'.':'')+'</span>'+Array.from({length:Math.min(10,top)},(_,i)=>'<button class="buy" type="button" data-swarm="'+(i+1)+'">Stage '+(i+1)+'</button>').join('')+'</div>'}
+  return '<div class="cont"><span>The Swarm: endless waves on a stage map. Nothing carries over to your saved game.'+(best?' Best: wave '+best+'.':'')+'</span>'+Array.from({length:Math.min(10,top)},(_,i)=>'<button class="buy" type="button" data-swarm="'+(i+1)+'">Stage '+(i+1)+'</button>').join('')+(netAvailable()?'<button class="ghost" type="button" id="swarmnet" style="margin-left:8px">Swarm online</button>':'')+'</div>'}
 function renderSelect(){
   const c=$('card'),names=Object.keys(ROSTER[selTab]),a=archOf(chosen),sv=readSave(),foe=factionOf(chosen)==='hero'?'villains':'heroes';
   const abil=ABILITIES[chosen]?' · C '+ABILITIES[chosen].n.toLowerCase()+(RIDE_FX.has(ABILITIES[chosen].fx)?', C again to end':', click to use'):'',controls=touchMode?'Drag on the game to move. Aim is automatic. Hold Attack to charge.':'WASD move · Mouse aim · Left click attack (hold to charge)'+abil+' · Hold right click shield · Q spell · E heal · Space dodge · Hold Shift sprint · V ultimate · Tab change weapon · 1 potion · Hold F revive · G team ability · 2 fast pill · 3 magic pill · T skills · L fullscreen';
@@ -73,14 +73,15 @@ function renderSelect(){
   c.innerHTML='<div class="sel-top"><h2><button class="ghost tomodes" id="tomodes" type="button" aria-label="Back to game modes">‹ Modes</button>Choose your character</h2><div class="tabs"><button class="tab" type="button" data-tab="hero" aria-pressed="'+(selTab==='hero')+'">Heroes</button><button class="tab" type="button" data-tab="villain" aria-pressed="'+(selTab==='villain')+'">Villains</button></div></div>'+
   (sv?'<div class="cont"><span>Saved: '+esc(theName(sv.char))+', level '+sv.lvl+', stage '+sv.stage+'</span><button class="go" id="cont" type="button">Continue</button></div>':'')+
   '<div class="sel-body"><div class="roster">'+names.map((n,ri)=>'<button class="rc h" type="button" data-c="'+esc(n)+'" aria-pressed="'+(n===chosen)+'" aria-label="'+esc(theName(n))+', '+ARCH[ROSTER[selTab][n]].n+'"><i style="'+cardStyle(n)+'"></i>'+(CARD_ART[n]?'':'<b>'+String(ri+1).padStart(2,'0')+'</b>')+'</button>').join('')+'</div>'+
-  '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>'+esc(theName(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p>'+(passiveOf(chosen)?'<p class="passive"><b>Passive · '+esc(passiveOf(chosen)[0])+':</b> '+esc(passiveOf(chosen)[1])+'</p>':'')+'<p class="passive"><b>Unique quick attack:</b> '+esc(quickAttackText(chosen))+'</p>'+(ABILITIES[chosen]?'<p class="passive ability-note"><b>Ability · '+esc(abilityTitle(ABILITIES[chosen]))+':</b> '+esc(ABILITIES[chosen].d)+' <i>'+(RIDE_FX.has(ABILITIES[chosen].fx)?'C to start, C again to end early. You keep attacking.':'C to ready, click to use.')+'</i></p>':'')+'<button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
+  '<div class="detail"><div class="pv"><canvas id="pv" width="96" height="96" aria-label="Animated pixel preview"></canvas><span id="pvl" class="ctl"></span></div><h3>'+esc(theName(chosen))+'</h3><div class="role">'+(factionOf(chosen)==='hero'?'Hero':'Villain')+' · '+a.n+'</div><p>'+a.d+'</p>'+(passiveOf(chosen)?'<p class="passive"><b>Passive · '+esc(passiveOf(chosen)[0])+':</b> '+esc(passiveOf(chosen)[1])+'</p>':'')+'<p class="passive"><b>Unique quick attack:</b> '+esc(quickAttackText(chosen))+'</p>'+(ABILITIES[chosen]?'<p class="passive ability-note"><b>Ability · '+esc(abilityTitle(ABILITIES[chosen]))+':</b> '+esc(ABILITIES[chosen].d)+' <i>'+(RIDE_FX.has(ABILITIES[chosen].fx)?'C to start, C again to end early. You keep attacking.':'C to ready, click to use.')+'</i></p>':'')+mateRow()+'<button class="go" id="go" type="button">'+(sv?(confirmNew?'Confirm: erase saved run':'New game'):'Start game')+'</button><button class="ghost" id="swarm" type="button" style="margin-left:8px">The Swarm</button>'+(swarmPick?swarmPanel(sv):'')+(netAvailable()?'<button class="ghost" id="online" type="button" style="margin-left:8px">Play online</button>':'')+'<div class="sbs">'+statBars(STATS[chosen])+'</div><p class="ctl">Starts with: '+WEAPONS[w0].n+' ('+METHODS[WEAPONS[w0].m].n.toLowerCase()+'). Enemies: the '+foe+'.</p><p class="ctl">'+controls+'</p></div></div>';
   c.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{selTab=b.dataset.tab;playSound(selTab==='hero'?'heroBrowse':'villainBrowse');renderSelect()});
   c.querySelectorAll('.rc').forEach(b=>{b.onclick=()=>{chosen=b.dataset.c;playSound(factionOf(chosen)==='hero'?'heroBrowse':'villainBrowse');confirmNew=false;try{localStorage.setItem('dayrim-char',chosen)}catch(e){}G.p.char=chosen;recalc();renderSelect()}});
-  $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();announce('start',2);clearSave();newRun(chosen);addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
+  $('go').onclick=()=>{if(sv&&!confirmNew){confirmNew=true;renderSelect();return}confirmNew=false;audioOn();announce('start',2);clearSave();newRun(chosen);addCompanions(mates());addLog('You hit the streets as the '+esc(label(chosen))+'.');setMode('play')};
+  c.querySelectorAll('[data-mate]').forEach(b=>b.onclick=()=>{store.set('dayrim-mates',b.dataset.mate);renderSelect()});
   $('tomodes').onclick=showModes;
-  const onl=$('online');if(onl)onl.onclick=()=>{audioOn();renderLobby()};
-  {const sw=$('swarm');if(sw)sw.onclick=()=>{swarmPick=!swarmPick;renderSelect()}}c.querySelectorAll('[data-swarm]').forEach(b=>b.onclick=()=>{audioOn();announce('start',2);swarmPick=false;startSwarmRun(chosen,+b.dataset.swarm);addLog('The Swarm begins. Nothing here changes your saved game.')});
-  const ct=$('cont');if(ct)ct.onclick=()=>{audioOn();announce('start',2);loadRun(sv);addLog('Welcome back, '+esc(label(sv.char))+'.');setMode('play')};
+  const onl=$('online');if(onl)onl.onclick=()=>{audioOn();renderLobby(false)};
+  {const sw=$('swarm');if(sw)sw.onclick=()=>{swarmPick=!swarmPick;renderSelect()}}{const sn=$('swarmnet');if(sn)sn.onclick=()=>{audioOn();swarmPick=false;renderLobby(true)}}c.querySelectorAll('[data-swarm]').forEach(b=>b.onclick=()=>{audioOn();announce('start',2);swarmPick=false;startSwarmRun(chosen,+b.dataset.swarm);addCompanions(mates());addLog('The Swarm begins. Nothing here changes your saved game.')});
+  const ct=$('cont');if(ct)ct.onclick=()=>{audioOn();announce('start',2);loadRun(sv);addCompanions(mates());addLog('Welcome back, '+esc(label(sv.char))+'.');setMode('play')};
 }
 /* Summaries come from the same upgrade tables that the attack rules use. */
 function upgradeSummary(w,n){if(w.m==='shoot'){const u=GUN_UP[n];return u.angles.length+' shot'+(u.angles.length===1?'':'s')+' at '+Math.round(u.damage*100)+'% each'}if(w.m==='spell'){const u=SPELL_UP[n];return u.angles.length+' blast'+(u.angles.length===1?'':'s')+' at '+Math.round(u.damage*100)+'% each · radius '+u.blast}return 'Damage +'+Math.round((MELEE_UP[n]-1)*100)+'% · reach '+meleeReach(w,n)+' · swing '+Math.round(meleeArc(n)*2*180/Math.PI)+'°'}
@@ -139,20 +140,28 @@ function toggleQuests(open,focus){const show=open===undefined?qpanel.hidden:open
 qpanel.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;const a=b.dataset.q,id=b.dataset.id;
   if(a==='close')toggleQuests(false);else if(a==='track')setTrack(id);else if(a==='accept'){doAct('quest',id);store.set('dayrim-track',id);setTimeout(renderQuests,60)}});
 questBtn.onclick=()=>toggleQuests();
+/* If the character art arrives after the character screen is drawn (slow connection, or the PNG fallback), draw it again */
+ATLAS.addEventListener('load',()=>{try{if(document.querySelector('#card .rc'))renderSelect()}catch(e){}});{const pe=$('party');if(pe)pe.addEventListener('click',ev=>{const b=ev.target.closest('[data-tp]');if(!b||b.disabled)return;b.blur();doAct('tp',+b.dataset.tp)})}{const ub=$('unstuckbtn');if(ub)ub.onclick=()=>{ub.blur();doAct('unstuck')}}{const hb=$('hopbtn');if(hb)hb.onclick=()=>{hb.blur();doAct('ride')}}
 const nearGiver=()=>G.p&&(G.props||[]).find(o=>(o.k||o.kind)==='sq_giver'&&Math.hypot(o.x-G.p.x,o.y-G.p.y)<46);
 /* The hold-to-charge tiers, as shown in character details */
 const QUICK_TEXT={
  Firefighter:'Fire axe hits +2. Hold to charge: blue (1.2 s) +4, green (3 s hold) +6, red (6 s hold) +10.',
  Voidwalker:'Basic shots open a small void that pushes enemies back (+1). Hold to charge a void area at your aim: blue +1, green (3 s hold) +2, red (6 s hold) +3 and scares enemies for 1 s.',
  'Shadow Monarch':'Sword hits steal life (+1, 10% of the damage). Hold to charge: blue +1 dmg and +1 life steal, green (3 s hold) +2 and +2, red (6 s hold) +5 dmg and +4 life steal.',
+ Guardian:'Shield bashes hit +1 and taunt the enemy. Hold to charge: blue (1.2 s) Shield Slam, a close cone that stuns (×1.5); green (3 s hold) Bulwark Wave, a long cone that throws enemies back (×2.5); red (6 s hold) Judgement, a holy ring that stuns and taunts everything around you (×4).',
+ 'Soul Forger':'Hammer hits +1 and splash molten sparks on enemies next to the target. Hold to charge: blue (1.2 s) Anvil Slam, a ring around you (×2); green (3 s hold) Molten Fissure, a burning line ahead (×3); red (6 s hold) Anvil Fall, an anvil crushes your aim and stuns (×5).',
  Pyromancer:'Fire bolts hit +1 and set enemies ablaze for 3 s. Hold to charge: blue (1.2 s) Flame Wave, a cone of fire (×2); green (3 s hold) Fire Wall, the wave plus burning ground (×3); red (6 s hold) Flame Pillar at your aim that stuns (×5).',
  'Void Empress':'Basic shots open a void that pushes enemies back (+2). Hold to charge a void area at your aim: blue +2, green (3 s hold) +4, red (6 s hold) +5 and scares enemies for 2 s.'};
+/* AI teammates for single play: none, +1, +2 or +3, remembered on this device */
+const mates=()=>clamp(+(store.get('dayrim-mates')||0)|0,0,3);
+function mateRow(){const n=mates();return '<div class="mates" role="group" aria-label="AI teammates"><span>AI teammates</span>'+[0,1,2,3].map(k=>'<button type="button" class="mate'+(k===n?' on':'')+'" data-mate="'+k+'" aria-pressed="'+(k===n)+'">'+(k?'+'+k:'None')+'</button>').join('')+
+  (n?'<small>Random '+(factionOf(chosen)==='hero'?'heroes':'villains')+', one level below you. Enemies get tougher, as for a party of '+(n+1)+'.</small>':'')+'</div>'}
 function quickAttackText(n){if(QUICK_TEXT[n])return QUICK_TEXT[n];if(n==='Chronomancer')return 'Hold to charge a time-stop fan. Blue (1.2 s) freezes enemies hit for 2 s, green (3 s hold) for 4 s, red (6 s hold) for 6 s, and frozen enemies take 50% more from you. Basic shots rewind enemies two steps.';
   return 'Hold to charge. Blue (1.2 s) is the charged attack, green (3 s hold) hits twice as hard, red (6 s hold) four times as hard.'}
 /* Input. Online, actions go to the server. Alone, they run here. */
-const LOCAL_ACT={quest:v=>sideAccept(v),dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),ability:()=>doAbility(),use:()=>doUse(),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
+const LOCAL_ACT={quest:v=>sideAccept(v),unstuck:()=>doUnstuck(),ride:()=>doRide(),tp:v=>doTeleport(v),dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),ability:()=>doAbility(),use:()=>doUse(),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
 /* Name shown in menus: Ability → what using it does. How to use it is the same for everyone. */
-const RIDE_FX=new Set(['truck','bat']),abilityTitle=ab=>ab.n+' → '+ab.use,ABILITY_HOW='Press C to ready it, then click to use it (on touch, tap Ability again). C again cancels; for buffs and grabs it fires the finisher.';
+const RIDE_FX=new Set(['truck','bat','aegis','anvil']),abilityTitle=ab=>ab.n+' → '+ab.use,ABILITY_HOW='Press C to ready it, then click to use it (on touch, tap Ability again). C again cancels; for buffs and grabs it fires the finisher.';
 function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(n==='ability')touchAim=null;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
 function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}
@@ -177,6 +186,8 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(G.mode!=='play')return;if(GAME_CODES.has(ev.code))ev.preventDefault();if(ev.repeat)return;keys.add(ev.code);
   if(ev.code==='KeyF'&&G.story&&storyAct())return;
   if(ev.code==='KeyJ'){toggleQuests();return}
+  if(ev.code==='KeyU'){doAct('unstuck');return}
+  if(ev.code==='KeyH'){doAct('ride');return}
   if(ev.code==='KeyF'&&!G.story){const g=nearGiver();if(g){toggleQuests(true,g.q);return}}
   if(ev.code==='KeyM')toggleSound();
   if(ev.code==='Space')doAct('dash');
@@ -187,7 +198,7 @@ addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
   if(ev.code==='KeyR'&&G.p.nearSafe){menuTab='shop';setMode('menu')}});
 addEventListener('keyup',ev=>{keys.delete(ev.code);if(ev.code==='ShiftLeft'||ev.code==='ShiftRight')sprintKey=false;if(ev.code==='KeyF'&&netOn())netAct('revive',false)});
 addEventListener('blur',()=>{keys.clear();sprintKey=false;resetTouch();mouse.left=mouse.right=false;if(G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')});
-function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';titleMusic();menuMusic();gameAmbience()}
+function toggleSound(){muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';titleMusic();menuMusic();gameAmbience();stageSong()}
 /* Menu music and the browse sounds. The files are the owner's, from ASSETS/audio, converted by tools/make_sfx.sh. */
 const SOUND_BUF={},SOUND_WAIT={};let menuSrc=null,menuGain=null,browseSrc=null;
 /* Sounds load in priority order: the title song and menu music first, then the browse sounds and start line, then everything else */
@@ -214,10 +225,19 @@ function loopTrim(s,b){const d=b.getChannelData(0);let i=0,j=d.length-1;while(i<
 /* In-game background: both ambience tracks loop at their own lengths, so the mix keeps shifting.
    The "half volume" file is the loud one (about -22 dB) and the other is very quiet (about -51 dB),
    so these gains bring them to about -34 and -38 dB, a soft bed under the game at about -32 dB. */
-const AMB_MIX={ambB:.25,ambA:4.6};let ambSrcs=null,ambGain=null;
-function gameAmbience(){const want=!muted&&!!ac&&!!SOUND_BUF.ambA&&!!SOUND_BUF.ambB&&!!G&&G.mode!=='title'&&!G.boss;if(want===!!ambSrcs)return;const now=ac?ac.currentTime:0;
-  if(want){try{const m=ac.createGain();m.gain.setValueAtTime(0,now);m.gain.linearRampToValueAtTime(1,now+2.5);m.connect(ac.destination);ambSrcs=Object.entries(AMB_MIX).map(([k,v])=>{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[k];const off=loopTrim(s,SOUND_BUF[k]);g.gain.value=v;s.connect(g).connect(m);s.start(now,off);return s});ambGain=m}catch(e){ambSrcs=null}}
+const AMB_MIX={ambB:.25,ambA:4.6};let ambSrcs=null,ambGain=null,ambGains={};
+function gameAmbience(){const want=!muted&&!!ac&&!!SOUND_BUF.ambA&&!!SOUND_BUF.ambB&&!!G&&G.mode!=='title'&&!G.boss&&!victoryOn();if(want===!!ambSrcs)return;const now=ac?ac.currentTime:0;
+  if(want){try{const m=ac.createGain();m.gain.setValueAtTime(0,now);m.gain.linearRampToValueAtTime(1,now+2.5);m.connect(ac.destination);ambSrcs=Object.entries(AMB_MIX).map(([k,v])=>{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[k];const off=loopTrim(s,SOUND_BUF[k]);g.gain.value=v*(k==='ambA'&&songStage()?SONG.birds:1);ambGains[k]=g;s.connect(g).connect(m);s.start(now,off);return s});ambGain=m}catch(e){ambSrcs=null}}
   else{const ss=ambSrcs,m=ambGain;ambSrcs=ambGain=null;try{m.gain.cancelScheduledValues(now);m.gain.setValueAtTime(m.gain.value,now);m.gain.linearRampToValueAtTime(0,now+1);ss.forEach(s=>s.stop(now+1.05))}catch(e){}}}
+/* Stage song: "For the King" plays on stages 2, 4, 6, 8 and 10 (stage 1 and the odd stages keep the ambience alone).
+   While it plays the bird track (ambience A, the one full of chirps) drops to half so the song sits on top. Boss music takes over in a boss fight. */
+const SONG={k:'mus_for_the_king',stages:[2,4,6,8,10],vol:.3,birds:.5};let songSrc=null;
+const songStage=()=>!!G&&!G.story&&SONG.stages.includes(G.stage);
+function stageSong(){const want=!muted&&!!ac&&!!SOUND_BUF[SONG.k]&&!!G&&G.mode!=='title'&&!G.boss&&!victoryOn()&&songStage();
+  if(ambGains.ambA&&ac){try{ambGains.ambA.gain.setTargetAtTime(AMB_MIX.ambA*(want?SONG.birds:1),ac.currentTime,.6)}catch(e){}}
+  if(want===!!songSrc)return;const now=ac?ac.currentTime:0;
+  if(want){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[SONG.k];s.loop=true;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(SONG.vol,now+2.5);s.connect(g).connect(ac.destination);s.start();songSrc={s,g}}catch(e){songSrc=null}}
+  else{const o=songSrc;songSrc=null;try{o.g.gain.cancelScheduledValues(now);o.g.gain.setValueAtTime(o.g.gain.value,now);o.g.gain.linearRampToValueAtTime(0,now+1.5);o.s.stop(now+1.55)}catch(e){}}}
 /* Footsteps. The ground under each player picks the sound, and each surface has several takes.
    Grass uses the dirt takes (8 of them, as grass is walked on most), sandy paths use dirt v2,
    stone clearings use stone, ponds use water and bridges use wood. Water and wood are boosted to match. */
@@ -255,18 +275,27 @@ function playAsset(n){if(n==='rivalDown'){if(performance.now()-rivalAnnT>6000){r
   if(n in GEN_GAP){const now=performance.now();if(now-(genLast[n]||0)<GEN_GAP[n])return true;genLast[n]=now}
   const a=ASSET_SFX[n]||genSet(n);if(!a)return false;if(!ASSET_SFX[n])(window.__genLog=window.__genLog||[]).push(n);const ks=a.keys.filter(k=>SOUND_BUF[k]);if(!ks.length)return false;
   try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[ks[Math.floor(Math.random()*ks.length)]];s.playbackRate.value=.95+Math.random()*.1;g.gain.value=a.vol;s.connect(g).connect(ac.destination);s.start()}catch(e){}return true}
-/* Boss music: the entrance track for the first minute, then the "not defeated yet" track, back to ambience after */
-const BOSS_MUS={mus_boss:.35,mus_boss_late:.3};let bossMus=null,bossT0=0,bossSeen=null,bossLastHp=1,downSeen={},stageSeen=0;
+/* Boss music: the entrance track loops through the fight. After the first minute the "not defeated yet" track cuts in
+   for 10 seconds, then again every 30 seconds while the boss lives. When the boss falls the victory loop plays (up to
+   45 seconds, or until you leave the stage), and the ambience waits for it. */
+const BOSS_MUS={mus_boss:.35,mus_boss_late:.3,mus_victory:.4},BOSS_LATE={after:60,burst:10,gap:30},VICTORY_MS=45000;let victoryAt=-1e9,victoryStage=0;
+const victoryOn=()=>!!G&&G.stage===victoryStage&&performance.now()-victoryAt<VICTORY_MS&&!G.boss;
+const lateDue=t=>t>=BOSS_LATE.after&&((t-BOSS_LATE.after)%(BOSS_LATE.burst+BOSS_LATE.gap))<BOSS_LATE.burst;let lateMus=null;
+/* The burst plays on top of the entrance music, which dips under it, so the entrance music never restarts */
+function lateBurst(on){if(!ac||on===!!lateMus)return;const now=ac.currentTime;
+  if(on&&SOUND_BUF.mus_boss_late){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF.mus_boss_late;loopTrim(s,SOUND_BUF.mus_boss_late);g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(BOSS_MUS.mus_boss_late,now+.6);s.connect(g).connect(ac.destination);s.start();lateMus={s,g};
+    if(bossMus&&bossMus.k==='mus_boss')bossMus.g.gain.setTargetAtTime(BOSS_MUS.mus_boss*.25,now,.3)}catch(e){lateMus=null}}
+  else if(!on){const o=lateMus;lateMus=null;try{o.g.gain.cancelScheduledValues(now);o.g.gain.setValueAtTime(o.g.gain.value,now);o.g.gain.linearRampToValueAtTime(0,now+1.2);o.s.stop(now+1.25)}catch(e){}if(bossMus&&bossMus.k==='mus_boss')try{bossMus.g.gain.setTargetAtTime(BOSS_MUS.mus_boss,now,.5)}catch(e){}}}let bossMus=null,bossT0=0,bossSeen=null,bossLastHp=1,downSeen={},stageSeen=0;
 function setBossMusic(k){if(bossMus&&bossMus.k===k)return;const now=ac.currentTime;if(bossMus){const o=bossMus;try{o.g.gain.cancelScheduledValues(now);o.g.gain.setValueAtTime(o.g.gain.value,now);o.g.gain.linearRampToValueAtTime(0,now+1.5);o.s.stop(now+1.55)}catch(e){}bossMus=null}
   if(k&&SOUND_BUF[k]){try{const s=ac.createBufferSource(),g=ac.createGain();s.buffer=SOUND_BUF[k];loopTrim(s,SOUND_BUF[k]);g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(BOSS_MUS[k],now+1.5);s.connect(g).connect(ac.destination);s.start();bossMus={k,s,g}}catch(e){}}}
 const isDown=q=>q.deadT>0||q.downed||q.hp<=0;
 /* Watches the game each frame for moments that have a sound: a boss arriving or falling, and players going down */
-function soundWatch(){if(!ac||!G||!G.p||G.mode==='title'){if(bossMus&&ac)setBossMusic(null);bossSeen=null;downSeen={};return}
+function soundWatch(){if(!ac||!G||!G.p||G.mode==='title'){if(bossMus&&ac)setBossMusic(null);if(ac)lateBurst(false);bossSeen=null;downSeen={};return}
   if(G.stage!==stageSeen){stageSeen=G.stage;bossSeen=null}
   const b=G.boss;if(b&&b!==bossSeen){bossSeen=b;bossT0=G.t;announce('boss_fight',3)}
-  if(b){bossLastHp=b.hp/(b.maxHp||1);setBossMusic(muted?null:(G.t-bossT0<60?'mus_boss':'mus_boss_late'))}
-  else{if(bossSeen&&(bossSeen.dead||bossSeen.hp<=bossSeen.maxHp*.25||bossLastHp<.25))announce('boss_defeated',4);bossSeen=null;if(bossMus)setBossMusic(null)}
-  gameAmbience();watchFirstBlood();
+  if(b){bossLastHp=b.hp/(b.maxHp||1);setBossMusic(muted?null:'mus_boss');lateBurst(!muted&&lateDue(G.t-bossT0))}
+  else{lateBurst(false);if(bossSeen&&(bossSeen.dead||bossSeen.hp<=bossSeen.maxHp*.25||bossLastHp<.25)){announce('boss_defeated',4);victoryAt=performance.now();victoryStage=G.stage}bossSeen=null;setBossMusic(!muted&&victoryOn()?'mus_victory':null)}
+  gameAmbience();stageSong();watchFirstBlood();
   const me=G.p,ps=G.players||[me];for(const q of ps){const d=isDown(q),was=!!downSeen[q.id||0];downSeen[q.id||0]=d;if(!d||was)continue;
     const all=ps.every(isDown),others=ps.filter(o=>o!==q);
     if(q===me)announce(all&&others.length?'all_down':'you_down',4);
@@ -298,7 +327,7 @@ function updateTouchStatus(){if(!touchMode||G.mode!=='play'||!G.p)return;touchAb
   for(const [id,status] of Object.entries(states)){const b=$('touch').querySelector('[data-a="'+id+'"]'),value=status||'';if(b.dataset.status===value)continue;b.dataset.status=value;b.dataset.state=value?'waiting':id==='ult'?'ready':'';b.setAttribute('aria-label',b.querySelector('.touch-label').textContent+(value?', '+value:''))}}
 $('touch').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b)return;ev.preventDefault();const a=b.dataset.a;
   if(a==='more'){const panel=$('touch-extra');panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));return}if(b.closest('#touch-extra'))closeTouchExtra();
-  if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(a==='quests')toggleQuests();if(a==='ability'){doAct(G.p&&G.p.abil?'use':'ability')}if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
+  if(['slash','guard','revive'].includes(a)){touchPointers.set(ev.pointerId,a);touchHold[a]=true;b.classList.add('held');b.setPointerCapture(ev.pointerId);if(a==='revive'&&netOn())netAct('revive',true)}if(a==='swap')doAct('cycle',1);if(a==='quests')toggleQuests();if(a==='unstuck')doAct('unstuck');if(a==='ride')doAct('ride');if(a==='ability'){doAct(G.p&&G.p.abil?'use':'ability')}if(['ult','team','special','spell','heal','dash','potion','fast','magic'].includes(a))doAct(a);if(a==='menu'){menuTab=G.p.nearSafe?'shop':'skills';setMode('menu')}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>$('touch').addEventListener(n,ev=>{const a=touchPointers.get(ev.pointerId);if(!a)return;touchPointers.delete(ev.pointerId);if(![...touchPointers.values()].includes(a)){touchHold[a]=false;const b=$('touch').querySelector('[data-a="'+a+'"]');if(b)b.classList.remove('held');if(a==='revive'&&netOn())netAct('revive',false)}}));
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.previousElementSibling,done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected';setTimeout(()=>b.textContent='Copy',1400)};try{navigator.clipboard.writeText(pre.textContent).then(done,sel)}catch(e){sel()}}));
 if('IntersectionObserver'in window)new IntersectionObserver(es=>{es.forEach(e=>{if(e.intersectionRatio<.35&&G&&G.mode==='play'&&!window.__botOn&&!netOn())setMode('pause')})},{threshold:[.35]}).observe($('screen'));
@@ -319,6 +348,8 @@ function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
   footsteps();soundWatch();
   touchStatusT-=dt;if(touchStatusT<=0){touchStatusT=.1;updateTouchStatus();updateScoutButton();storyButton()}
+  {const pe=$('party');if(pe&&!pe.hidden&&G.mode!=='play')pe.hidden=true}
+  {const hb=$('hopbtn'),me=G.p;if(hb){const drv=!!me&&riding(me),seat=drv&&seatedWith(me),on=G.mode==='play'&&!!me&&(!!me.rideWith||canHopIn(me)||(drv&&(!!seat||!!pickUpTarget(me))));if(hb.hidden===on)hb.hidden=!on;const t=!me?'':me.rideWith?'In the fire truck · Hop out (H or Space)':drv?(seat?'Drop off (H)':'Pick up (H)'):'Hop in (H)';if(on&&hb.textContent!==t)hb.textContent=t}}
   try{render();drawFx3(now)}catch(err){ctx=ctx0;shadowTo=null;W3.d3=false;ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';if(!window.__renderErr){window.__renderErr=err.message;console.error(err)}}
   statT+=dt;if(isDirty){isDirty=false;statT=0;renderPanel()}else if(statT>.25){statT=0;renderStats()}
   requestAnimationFrame(tick)}
@@ -351,5 +382,5 @@ function splashTick(now){if(!splashOn())return;const dt=Math.min(.05,(now-(spLas
   drawEmbers($('spfx'),spEmbers,dt);requestAnimationFrame(splashTick)}
 demoScene();resize();setMode('title');
 initModes();initSplash();
-window.__dayrim={get state(){return G},net,objTargets,get sound(){return{boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,firstBloodAt:firstBloodAt===-Infinity?null:Math.round(firstBloodAt),titlePlaying:!!titleSrc,titleGain:titleGain&&+titleGain.gain.value.toFixed(2),ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER,STORY,storyBegin,storyMap,storyDone,storyAct,dlgNext,dlgSkip,showModes,killEnemy};
+window.__dayrim={get state(){return G},net,objTargets,get sound(){return{song:!!songSrc,victory:victoryOn(),late:!!lateMus,birds:ambGains.ambA?+ambGains.ambA.gain.value.toFixed(2):null,boss:bossMus&&bossMus.k,announced:[...(window.__annLog||[])],ambiencePlaying:!!ambSrcs,steps:(window.__stepLog||[]).length,loaded:Object.keys(SOUND_BUF),menuPlaying:!!menuSrc,firstBloodAt:firstBloodAt===-Infinity?null:Math.round(firstBloodAt),titlePlaying:!!titleSrc,titleGain:titleGain&&+titleGain.gain.value.toFixed(2),ambiencePlaying:!!ambSrcs,context:ac&&ac.state,muted}},enterStage,summonBoss,recalc,frame,SPECS,update,keys,mouse,doDash,usePotion,useFast,useMagic,setMode,newRun,gymCost,shopCost,SKILLS,dropLoot,VOICE_BUF,voice,doUlt,addRage,doMove,KIT_OF,KIT,spawnVillainPair,spawnMob,SHOP,GYM,recLevel,quota,xpNeed,STAGES,idx,MW,MH,T,dist,los,drawBossSprite,bossPose,drawBossDeath,doSpell,doHeal,wearBest,equipWeapon,weaponDamage,WEAPONS,METHODS,STATS,guardArmor,ROSTER,STORY,storyBegin,storyMap,storyDone,storyAct,dlgNext,dlgSkip,showModes,killEnemy};
 requestAnimationFrame(tick);

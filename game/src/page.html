@@ -480,6 +480,34 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 
 /* ---------- Quests panel: the stage goal and side quests, in the medieval plaque style ---------- */
 .questb{top:calc(244px*var(--k,1))!important}
+.unstuckb{top:calc(272px*var(--k,1))!important}
+.mates{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 10px}.mates>span{font:700 13px 'Cinzel',serif;color:#f0d9a0;margin-right:4px}.mates small{flex-basis:100%;color:#cdbb92;font-size:12px}.mate{font:600 13px 'Alegreya',serif;padding:5px 11px;border-radius:6px;border:1px solid #6a4a22;background:#2a1c10;color:#e9dcc0;cursor:pointer}.mate.on{background:#e8b04a;color:#2a1608;border-color:#f6d27a}
+.hopb{position:absolute;z-index:7;left:50%;bottom:calc(150px*var(--k,1));transform:translateX(-50%);padding:10px 22px;font:700 16px 'Cinzel',serif;color:#2a1608;background:linear-gradient(#ffd27a,#e8932e);border:2px solid #5a2a08;border-radius:8px;box-shadow:0 3px 0 #5a2a08,0 0 18px rgba(255,150,60,.55);cursor:pointer}
+.hopb[hidden]{display:none}
+.md-nav button.md-off{opacity:.45;cursor:default;filter:grayscale(.6)}
+.party{position:absolute;z-index:6;box-sizing:border-box;padding:6px 7px 7px;background:linear-gradient(180deg,rgba(58,42,26,.92),rgba(28,19,11,.94));border:1px solid #b88743;box-shadow:inset 0 0 0 3px rgba(20,12,6,.9),inset 0 0 0 4px #5d4025,0 4px 14px rgba(0,0,0,.45);border-radius:4px;font-family:'Alegreya',serif;color:#f2ecd8;pointer-events:auto}
+.party[hidden]{display:none}
+.pr-head{display:flex;justify-content:space-between;align-items:baseline;font:700 11px 'Cinzel',serif;letter-spacing:.06em;color:#e8c27a;padding:0 2px 4px;border-bottom:1px solid rgba(184,135,67,.35);margin-bottom:4px}
+.pr-head em{font:600 11px 'Alegreya',serif;font-style:normal;color:#8fe0ff;letter-spacing:0}
+.pr{display:flex;align-items:center;gap:7px;padding:3px 2px;border-radius:3px}
+.pr+.pr{border-top:1px solid rgba(184,135,67,.18)}
+.pr.me{background:rgba(240,194,60,.07)}
+.pr-badge{flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;font:700 12px 'Cinzel',serif;color:#fff;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 60%,color-mix(in srgb,var(--c) 60%,#000));border:1px solid rgba(0,0,0,.6);box-shadow:0 0 0 1px rgba(232,194,122,.5)}
+.pr-main{flex:1;min-width:0}
+.pr-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-bottom:2px}
+.pr-name{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr.ai .pr-name{color:#cfe8a8}.pr:not(.me):not(.ai) .pr-name{color:#8fe0ff}
+.pr-lv{flex:none;font:700 10.5px 'Alegreya',serif;color:#2a1608;background:#e8b04a;border-radius:8px;padding:0 6px;line-height:15px}
+.pr-bar{position:relative;height:13px;background:#1e150d;border:1px solid #0c0703;border-radius:2px;overflow:hidden}
+.pr-bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(#e0574a,#a52a20);transition:width .2s}
+.pr-bar i[data-s=mid]{background:linear-gradient(#f0954a,#c0601f)}.pr-bar i[data-s=low]{background:linear-gradient(#ff5a4f,#c01d14);animation:prlow .8s infinite alternate}.pr-bar i[data-s=down]{background:linear-gradient(#6a6058,#4a4038)}
+@keyframes prlow{to{filter:brightness(1.35)}}
+.pr-bar span{position:relative;display:block;text-align:center;font:700 10px/13px 'Alegreya',serif;color:#fff;text-shadow:0 1px 1px #000;white-space:nowrap;overflow:hidden}
+.pr.isdown .pr-bar span{color:#ffcf65}
+.pr-tp{position:relative;flex:0 0 26px;height:24px;border-radius:4px;border:1px solid #6fc8e8;background:linear-gradient(#2a5a74,#173546);color:#dff6ff;font-size:14px;cursor:pointer;padding:0;line-height:22px}
+.pr-tp:hover:not(:disabled){filter:brightness(1.25)}.pr-tp:disabled{opacity:.45;cursor:default}
+.pr-tp em{position:absolute;inset:0;display:grid;place-items:center;font:700 10px 'Alegreya',serif;font-style:normal;background:rgba(10,20,30,.75);border-radius:3px}.pr-tp em:empty{display:none}
+@media (prefers-reduced-motion:reduce){.pr-bar i{transition:none;animation:none!important}}
 .qpanel{position:absolute;z-index:8;right:12px;top:calc(56px*var(--k,1));bottom:calc(84px*var(--k,1));width:min(420px,calc(100% - 24px));overflow:auto;overscroll-behavior:contain;padding:14px 14px 10px;color:#e8dcc4;font-family:"Alegreya",Georgia,serif;
   background:radial-gradient(ellipse 120% 50% at 50% 0,rgba(120,80,40,.22),rgba(0,0,0,0) 60%),linear-gradient(180deg,rgba(29,21,14,.96),rgba(15,10,6,.97));
   box-shadow:inset 0 0 0 1px #0d0906,inset 0 0 0 2px #8a6a3c,inset 0 0 0 4px #24180e,inset 0 0 0 5px #5c4426,0 12px 34px #000c;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px)}
@@ -507,8 +535,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
   <section class="stage" aria-label="Playable prototype">
     <div class="screen" id="screen">
       <canvas id="fx3" class="fx3" aria-hidden="true" hidden></canvas><canvas id="c" aria-label="Game view"></canvas>
-      <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button><button class="sound questb" id="questbtn" type="button" aria-expanded="false" aria-controls="qpanel">Quests (J)</button>
-      <div class="qpanel" id="qpanel" role="dialog" aria-label="Quests" hidden></div>
+      <button class="sound" id="sound" type="button">Sound on</button><button class="sound menub" id="menubtn" type="button">Menu (T)</button><button class="sound fsb" id="fsbtn" type="button">Fullscreen</button><button class="sound fx3b" id="fx3btn" type="button" aria-pressed="false">3D effects off</button><button class="sound questb" id="questbtn" type="button" aria-expanded="false" aria-controls="qpanel">Quests (J)</button><button class="hopb" id="hopbtn" type="button" hidden>Hop in (H)</button><button class="sound unstuckb" id="unstuckbtn" type="button" title="Get out of a wall, or back to the haven">Unstuck (U)</button>
+      <div class="qpanel" id="qpanel" role="dialog" aria-label="Quests" hidden></div><div class="party" id="party" role="group" aria-label="Party" hidden></div>
       <div class="joystick" id="joystick" aria-hidden="true" hidden><i></i></div>
       <button class="scout-revive" id="scout-revive" type="button" hidden>Hold to revive scout</button>
       <div class="touch" id="touch" aria-label="Touch controls" hidden>
@@ -532,7 +560,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
           <button type="button" data-a="more" aria-expanded="false" aria-controls="touch-extra"><span class="touch-icon" aria-hidden="true">•••</span><span class="touch-label">More</span></button>
           <button type="button" data-a="menu"><span class="touch-icon" aria-hidden="true">☰</span><span class="touch-label">Menu</span></button>
           <div class="touch-extra" id="touch-extra" hidden>
-            <button type="button" data-a="swap"><span class="touch-icon" aria-hidden="true">⇄</span><span class="touch-label">Weapon</span></button><button type="button" data-a="special"><span class="touch-icon" aria-hidden="true">✶</span><span class="touch-label">Special</span></button><button type="button" data-a="quests"><span class="touch-icon" aria-hidden="true">!</span><span class="touch-label">Quests</span></button>
+            <button type="button" data-a="swap"><span class="touch-icon" aria-hidden="true">⇄</span><span class="touch-label">Weapon</span></button><button type="button" data-a="special"><span class="touch-icon" aria-hidden="true">✶</span><span class="touch-label">Special</span></button><button type="button" data-a="quests"><span class="touch-icon" aria-hidden="true">!</span><span class="touch-label">Quests</span></button><button type="button" data-a="unstuck"><span class="touch-icon" aria-hidden="true">⤴</span><span class="touch-label">Unstuck</span></button>
           </div>
         </div>
       </div>
@@ -546,9 +574,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
         <aside class="md-side">
           <img class="md-logo" id="mdlogo" alt="Dayrim">
           <nav class="md-nav" aria-label="Game modes">
-            <button type="button" data-m="story"><b>Story</b><small>The Ten Hours · 3 chapters</small></button>
-            <button type="button" data-m="quick"><b>Quick Game</b><small>Stages, the Swarm and online play</small></button>
-            <button type="button" data-m="war"><b>Warzone</b><small>Coming soon · watch the trailer</small></button>
+            <button type="button" data-m="quick"><b>Quick Game</b><small>Stages, the Swarm, AI teammates and online play</small></button>
+            <button type="button" data-m="story" class="md-off" disabled aria-disabled="true"><b>Story</b></button>
+            <button type="button" data-m="war" class="md-off" disabled aria-disabled="true"><b>Warzone</b></button>
           </nav>
           <footer class="md-foot"><button type="button" id="mdlog" class="md-ver" aria-label="Version and changelog"><span id="mdver"></span><small>Changelog</small></button></footer>
         </aside>

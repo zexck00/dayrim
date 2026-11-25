@@ -4,6 +4,31 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### 25 November 2026
+
+- Fixed: blank character cards on the character screen for some players. The character art now retries if its download fails, falls back to a PNG copy for browsers that cannot show WebP, and the character screen redraws as soon as the art arrives. The server now serves PNG files.
+- All game files were checked: every picture, sound and script the game links to is in the repository and served by the dev site, so every player gets the same files. The two new music tracks are smaller (96 kbps).
+- Side quest givers no longer end up next to each other on rare maps.
+- Boss music: the entrance track now plays through the whole fight. The "not defeated yet" track only cuts in for 10 seconds after the first minute, then again every 30 seconds while the boss lives, with the entrance music dipping under it. When the boss falls, the boss victory loop plays (up to 45 seconds) before the ambience returns.
+- New stage song, "For the King", on stages 2, 4, 6, 8 and 10. Stage 1 and the other odd stages keep the usual ambience. While the song plays the birds drop to half volume; boss music still takes over in boss fights.
+- Fire Truck passenger fix: online, the passenger's view now follows the truck smoothly instead of lagging and jumping. Dodge (Space) hops out as well as H, and the button says so.
+- Teleport: every teammate in the party panel (online or AI) has a Teleport button. It puts you next to them; one teleport per minute, whoever you pick. Not to a downed teammate.
+- The party panel is redrawn as a proper panel: a role badge, name, level chip, a health bar that turns orange and red as life drops, status (down, reviving, coming back), and a header showing when Teleport is ready.
+- AI teammates that get stuck behind something far from you rejoin you after 2 seconds.
+- Story mode and Warzone are paused for now so work can focus on Quick Game. Quick Game is first on the modes screen; Story and Warzone are greyed out.
+- Two tanks with new kits:
+  - Guardian (hero): shield bashes hit +1 and taunt the enemy. Quick attack: blue Shield Slam (close cone, stuns, ×1.5), green Bulwark Wave (long cone that throws enemies back, ×2.5), red Judgement (holy ring that stuns and taunts, ×4). New ability Aegis: for 6 s nearby enemies turn on the Guardian, and damage to him and allies near him is soaked by a shield worth half his life plus a quarter per extra party member. It breaks when used up; C again releases what it soaked as a holy blast.
+  - Soul Forger (villain): hammer hits +1 and splash molten sparks. Quick attack: blue Anvil Slam (ring, ×2), green Molten Fissure (burning line, ×3), red Anvil Fall (anvil crushes your aim and stuns, ×5). New ability Soul Anvil: the same shield and taunt, plus a molten aura that burns nearby enemies harder the more it soaks; C again heals allies from what it soaked.
+  - Both keep attacking normally while the shield is up.
+- Party panel under the stage box: you, then every online teammate and AI teammate, with level, life, and status (down, reviving, Second Wind, or when and where they come back: the haven or the boss arena).
+- Fire Truck: the driving Firefighter presses H once to pick up the nearest player (teammate or AI teammate); H again drops them off. Passengers can still hop in or out with H.
+- Bigger parties earn more gold: every gold drop is ×1.5 for two players, ×2 for three and ×2.5 for four (AI teammates count).
+- AI teammates for single play: on the character screen choose None, +1, +2 or +3. They are random characters from your side, one level below you with 15% less damage and life, less speed and slower attacks. They follow you, fight, use charged attacks and abilities, and drink potions when low. Enemies scale up as for a party of that size. Team puzzles (split plates, lanterns, coils, toxic load) keep their solo rules, and loot, saves and achievements stay yours. A fallen AI teammate gets back up at the haven after a while.
+- The Swarm online is easier to find: the online lobby now has its own Create Swarm room button with a stage choice, and the single-player Swarm panel has a Swarm online button.
+- Boss fights no longer fence players in. The arena edge used to push players back and could pin them inside walls (reported in the Spore Brute fight). Players can now go anywhere, and a respawn during a boss fight always lands in the open.
+- New Unstuck button (U, or Unstuck in the touch More menu): gets you out of a wall to the nearest open spot, or back to the haven (the boss arena's edge during a boss fight). 10 second cooldown; not while down.
+- Fire Truck passenger: one other player near a riding Firefighter can hop in (H, or the Hop in button). They ride behind the driver and can still attack. Once the seat is taken nobody else sees the button. The passenger is dropped off when they hop out, when the ride ends or when either of them goes down.
+
 ### 24 November 2026
 
 - Pixel 3D: names, levels, enemy labels and timers above heroes, villains and enemies are now sharp. They were drawn on the low-resolution pixel layer and dithered.

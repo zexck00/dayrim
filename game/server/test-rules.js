@@ -125,7 +125,7 @@ const r3=mk(),p3=s.createRoom(r3,'Detective',{...sv,gold:777},'A');ok(p3.gold===
 for(const ch of['Necromancer','Void Empress','Toxin Alchemist','Mad Scientist','Demon Knight']){const r=mk(),p=s.createRoom(r,ch,null,'V'),q=s.addPlayer(r,ch,null,'W');for(let i=0;i<1800;i++){p.input.x=Math.sin(i/40);p.input.y=Math.cos(i/70);p.input.ax=p.x+Math.cos(i/9)*90;p.input.ay=p.y+Math.sin(i/9)*90;p.input.l=i%7<3;q.input.ax=p.x;q.input.ay=p.y;q.input.r=i%30<10;if(i%90===0){p.actions.push({n:'spell'},{n:'special'},{n:'dash'});q.actions.push({n:'heal'},{n:'potion'})}s.step(r,1/30);r.ev.length=0}ok(true,ch+' pair plays one minute: '+p.kills+' kills')}
 s.removePlayer(room,a);step(30);ok(G().players.length===1,'the game carries on after a player leaves');
 // Threat: an enemy walks at whoever earned its attention, not only whoever is nearest.
-const tr=mk(),tp=s.createRoom(tr,'Guardian',null,'Threat'),tq=s.addPlayer(tr,'Detective',null,'Quiet');T.enter(tr);G().enemies=[];
+const tr=mk(),tp=s.createRoom(tr,'Cyborg',null,'Threat'),tq=s.addPlayer(tr,'Detective',null,'Quiet');T.enter(tr);G().enemies=[];
 const tpt=G().w.open.find(c=>Math.hypot((c%MW_+.5)*40-G().safe.x,((c/MW_|0)+.5)*40-G().safe.y)>500),ttx=(tpt%MW_+.5)*40,tty=((tpt/MW_|0)+.5)*40;
 tp.x=ttx-160;tp.y=tty;tq.x=ttx+40;tq.y=tty;
 const te=T.spawnMob(0,{x:ttx,y:tty},false);te.aware=true;te.hp=te.maxHp=100000;te.role='';te.kind='rival';
@@ -358,11 +358,11 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  // Enrage when the clock runs out.
  bz.breatherT=0;bz.enrageT=.01;T.updateBoss(bz,.02,300,true);
  ok(bz.enraged,'the boss enrages when its clock runs out');
- // The arena keeps the party inside, and a wipe respawns at its edge.
+ // Players are free to leave the boss arena (it used to fence them in, which could trap them in walls); a respawn still lands near its edge, never in a wall.
  const out=G().arena;bp.x=out.x+out.r+400;bp.y=out.y;s.step(br,1/30);br.ev.length=0;
- ok(Math.hypot(bp.x-out.x,bp.y-out.y)<=out.r+1,'the arena keeps players inside');
+ ok(Math.hypot(bp.x-out.x,bp.y-out.y)>out.r+300,'players can leave the boss arena');
  bp.deadT=0;bp.respawnT=.01;bp.hp=0;s.step(br,1/30);br.ev.length=0;
- const rd=Math.hypot(bp.x-out.x,bp.y-out.y);ok(rd>out.r-120&&rd<=out.r+1,'a respawn lands at the arena edge: '+Math.round(rd));
+ const rd=Math.hypot(bp.x-out.x,bp.y-out.y);ok(rd>out.r-300&&rd<out.r+300&&!T.blocked(bp.x,bp.y,bp.r||14),'a respawn lands near the arena edge, in the open: '+Math.round(rd));
  // Killing the boss opens the arena again.
  bp.deadT=0;bp.respawnT=0;bp.hp=bp.s.maxHp;G().p=bp;
  for(let i=0;i<20&&G().boss;i++)T.hitEnemy(bz,bz.maxHp,0,0);
@@ -798,7 +798,7 @@ ok(T.hasFinisher(T.ABILITIES.Cyborg)&&T.hasFinisher(T.ABILITIES.Prodigy)&&!T.has
 // Buffs change the rules only while they are armed.
 {const r=mk(),p=s.createRoom(r,'Cyborg',null,'Titan'),q=s.addPlayer(r,'Guardian',null,'Wall');T.enter(r);G().enemies=[];G().p=p;const base=T.abilityDamage(p);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;G().p=p;
  ok(T.abilSize(p)===2&&Math.abs(T.abilityDamage(p)/base-1.5)<1e-9&&T.abilGuard(p)<.7,'Titan Form doubles size, adds half again to damage and cuts damage taken');
- q.x=p.x+30;q.y=p.y;q.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(Math.abs(T.abilGuard(p)/.67-.5)<1e-9,'a Guardian dome halves damage for allies inside')}
+ q.x=p.x+30;q.y=p.y;q.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;G().p=p;p.inv=0;const h=p.hp;T.hurtPlayer(50);ok(p.hp===h&&q.tankPool<q.tankMax,'the Guardian\'s Aegis soaks damage to an ally inside')}
 {const r=mk(),p=s.createRoom(r,'Phantom',null,'Fast');T.enter(r);G().p=p;ok(T.abilSpeed(p)===1,'no speed boost before Overdrive');p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(T.abilSpeed(p)===2&&p.abilT>0,'Overdrive doubles speed and starts its cooldown')}
 {const r=mk(),p=s.createRoom(r,'Hero Shadow',null,'Gone');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+60,y:p.y},false);e.aware=true;p.actions.push({n:'ability'});for(let i=0;i<10;i++){s.step(r,1/30);r.ev.length=0}ok(!e.aware&&p.inv>0,'enemies lose track of an invisible player, who cannot be hurt')}
 {const r=mk(),p=s.createRoom(r,'Blood Reaper',null,'Roar');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+150,y:p.y},false);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(e.tauntT>0&&e.tauntId===(p.id||0),'a roar taunts nearby enemies')}
@@ -897,6 +897,69 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  {const {r,p,es}=setup('Pyromancer');p.lvl=7;p.actions.push({n:'ability'});run(r,1);p.actions.push({n:'use'});let n=0;for(let i=0;i<45&&!n;i++){run(r,1);if(p.meteor)n=p.meteor.left+p.meteor.falls.length+(p.meteor.tick>0?1:0)}
   ok(n===9,'Meteor Storm: a level 7 Pyromancer calls 9 meteors ('+n+')');run(r,150);ok(!p.meteor&&es.some(e=>e.hp<e.maxHp),'the meteors land and hurt enemies in the area')}
 }
+
+/* ---------- Never stuck: boss-fight respawn spot and Unstuck ---------- */
+{let bad=0,tot=0;for(let st=1;st<=10;st++)for(let k=0;k<6;k++){const r=mk(),p=s.createRoom(r,'Detective',{maxStage:st},'Spot');T.enter(r);if(G().stage!==st){p.nearSafe=true;s.hostAction(r,p,'travel',String(st));T.enter(r)}
+   G().arena={x:G().gate.x,y:G().gate.y-40,r:430};G().boss={dead:false};const at=T.homeSpot(p);tot++;if(T.blocked(at.x,at.y,p.r||14))bad++;G().boss=null;G().arena=null}
+ ok(bad===0,'a boss-fight respawn spot is never inside a wall ('+tot+' maps, stages 1 to 10)')}
+{const r=mk(),p=s.createRoom(r,'Detective',null,'Stuck');T.enter(r);G().enemies=[];const W=G().w,c=W.open.find(c=>W.map[c+1]&&W.map[c+2]);
+ p.x=(c%MW_+1.5)*40;p.y=((c/MW_|0)+.5)*40;ok(T.blocked(p.x,p.y,p.r||14),'a player can end up inside a wall');p.actions.push({n:'unstuck'});s.step(r,1/30);r.ev.length=0;
+ ok(!T.blocked(p.x,p.y,p.r||14)&&Math.hypot(p.x-(c%MW_+1.5)*40,p.y-((c/MW_|0)+.5)*40)<200,'Unstuck moves them to the nearest open spot');
+ const x1=p.x,y1=p.y;p.actions.push({n:'unstuck'});s.step(r,1/30);r.ev.length=0;ok(p.x===x1&&p.y===y1&&p.unstuckT>T.UNSTUCK_CD-1,'Unstuck has a 10 second cooldown');
+ p.unstuckT=0;p.x=G().safe.x+900;p.y=G().safe.y;{const o=T.freeSpot(p.x,p.y,14);p.x=o.x;p.y=o.y}p.actions.push({n:'unstuck'});s.step(r,1/30);r.ev.length=0;ok(Math.hypot(p.x-G().safe.x,p.y-G().safe.y)<160,'when not inside a wall, Unstuck sends them back to the haven');
+ p.unstuckT=0;p.deadT=5;const x2=p.x;p.actions.push({n:'unstuck'});s.step(r,1/30);r.ev.length=0;ok(p.x===x2||p.deadT>0,'a downed player cannot use Unstuck')}
+
+/* ---------- Fire Truck passenger seat ---------- */
+{const r=mk(),f=s.createRoom(r,'Firefighter',null,'Driver'),q=s.addPlayer(r,'Detective',null,'Rider'),z=s.addPlayer(r,'Ranger',null,'Third');T.enter(r);G().enemies=[];G().spawnT=G().villT=1e9;
+ const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};for(const o of [f,q,z]){o.x=G().safe.x;o.y=G().safe.y;o.inv=1e9}q.x+=50;z.x-=50;
+ G().p=q;ok(!T.canHopIn(q),'nobody can hop in before the truck is out');f.actions.push({n:'ability'});run(1);G().p=q;ok(T.canHopIn(q)&&T.canHopIn(z),'players near a riding Firefighter can hop in');
+ q.actions.push({n:'ride'});run(1);ok(q.rideWith===(f.id||1),'the first one in takes the seat');G().p=z;ok(!T.canHopIn(z),'the seat is taken, so a third player gets no hop-in');
+ z.actions.push({n:'ride'});run(1);ok(!z.rideWith,'the third player cannot squeeze in');
+ f.input.x=1;run(20);f.input.x=0;run(1);ok(Math.abs(Math.abs(q.x-f.x)-T.SEAT.back)<1&&Math.abs(q.y-f.y)<2,'the passenger rides along behind the driver');
+ q.actions.push({n:'ride'});run(1);ok(!q.rideWith,'hopping out frees the seat');G().p=z;z.x=f.x;z.y=f.y+30;ok(T.canHopIn(z),'then someone else can hop in');
+ z.actions.push({n:'dash'});run(1);ok(!z.rideWith,'dodging also hops out');G().p=z;z.x=f.x;z.y=f.y+30;z.actions.push({n:'ride'});run(1);ok(z.rideWith,'they take the free seat');run(9*30);ok(!z.rideWith,'the ride ending drops the passenger off')}
+
+{const r=mk(),f=s.createRoom(r,'Firefighter',null,'Driver2'),q=s.addPlayer(r,'Detective',null,'Rider2');T.enter(r);G().enemies=[];G().spawnT=G().villT=1e9;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ for(const o of [f,q]){o.x=G().safe.x;o.y=G().safe.y;o.inv=1e9}q.x+=140;f.actions.push({n:'ability'});run(1);G().p=f;ok(T.pickUpTarget(f)===q,'a riding Firefighter can pick up a player within reach');
+ f.actions.push({n:'ride'});run(1);ok(q.rideWith===(f.id||1),'one H press from the driver puts the nearest player in the seat');f.actions.push({n:'ride'});run(1);ok(!q.rideWith,'H again drops them off')}
+{const r=mk(),p=s.createRoom(r,'Detective',null,'Gold');T.enter(r);ok(T.partyGold()===1,'solo gold drops are unchanged');s.addPlayer(r,'Guardian',null,'G2');s.addPlayer(r,'Ranger',null,'G3');T.enter(r);ok(T.partyGold()===2,'a party of three gets twice the gold per drop');
+ G().loot=[];G().p=p;const e=T.spawnMob(0,{x:p.x+300,y:p.y},false);e.gold=10;let got=0;for(let i=0;i<40;i++){G().loot=[];T.dropLoot(e,1);got=Math.max(got,...G().loot.filter(l=>l.kind==='gold').map(l=>l.amt))}ok(got>=20,'drops carry the party gold bonus ('+got+' from a 10 gold enemy)')}
+/* ---------- Tanks: Guardian and Soul Forger ---------- */
+{const run=(r,k)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const setup=(ch,n)=>{const r=mk(),t=s.createRoom(r,ch,null,'Tank'),list=[t];for(let i=1;i<n;i++)list.push(s.addPlayer(r,'Detective',null,'Ally'+i));T.enter(r);G().enemies=[];G().spawnT=G().villT=1e9;for(const q of list){q.x=G().safe.x+list.indexOf(q)*30;q.y=G().safe.y}return{r,t,list}};
+ for(const ch of ['Guardian','Soul Forger']){
+  {const {r,t}=setup(ch,1);t.actions.push({n:'ability'});run(r,1);ok(Math.abs(t.tankMax-t.s.maxHp*.5)<1,ch+': alone, the shield is worth half the tank\'s life')}
+  {const {r,t,list}=setup(ch,4);t.actions.push({n:'ability'});run(r,1);ok(Math.abs(t.tankMax-t.s.maxHp*1.25)<1,ch+': in a party of four it is worth one and a quarter lives');
+   const a=list[1];G().p=a;a.inv=0;const h=a.hp,pool=t.tankPool;T.hurtPlayer(120);ok(a.hp===h&&t.tankPool<pool,ch+': damage to an ally nearby is soaked by the shield');
+   const far=list[2];far.x=t.x+600;G().p=far;far.inv=0;const h2=far.hp;T.hurtPlayer(60);ok(far.hp<h2,ch+': allies far away are not covered');
+   const e=T.spawnMob(0,{x:t.x+150,y:t.y},false);e.hp=e.maxHp=1e6;e.sp=0;run(r,16);ok(e.tauntT>0&&e.tauntId===(t.id||0),ch+': nearby enemies turn on the tank');
+   G().p=a;a.inv=0;T.hurtPlayer(t.tankPool+500);ok(!(t.tankPool>0)&&!t.abil,ch+': a big enough hit breaks the shield');run(r,1)}
+  {const {r,t}=setup(ch,1);t.actions.push({n:'ability'});run(r,6*30+5);ok(!t.abil&&!(t.tankPool>0),ch+': the shield lasts 6 seconds')}}
+ {const {r,t}=setup('Guardian',1);G().p=t;const e=T.spawnMob(0,{x:t.x+40,y:t.y},false);e.hp=e.maxHp=1e6;T.hitEnemy(e,10,0,0);ok(e.tauntT>0&&e.tauntId===(t.id||0),'Guardian: a hit taunts the enemy');ok(T.tierMul(t,3)===4,'Guardian: quick attack up to ×4')}
+ {const {r,t}=setup('Soul Forger',1);G().p=t;t.s.crit=0;const e=T.spawnMob(0,{x:t.x+40,y:t.y},false),o=T.spawnMob(0,{x:t.x+80,y:t.y},false);for(const x of [e,o]){x.hp=x.maxHp=1e6;x.dodge=0}T.hitEnemy(e,100,0,0);ok(o.hp<o.maxHp,'Soul Forger: hammer hits splash molten sparks on enemies next to the target');ok(T.tierMul(t,3)===5,'Soul Forger: quick attack up to ×5')}
+ for(const [ch,f] of [['Guardian','guardCharge'],['Soul Forger','forgeCharge']])for(const tier of [1,2,3]){const {r,t}=setup(ch,1);run(r,1);G().p=t;t.face=0;t.input.ax=t.x+150;t.input.ay=t.y;run(r,1);G().p=t;t.face=0;const e=T.spawnMob(0,{x:t.x+90,y:t.y},false);e.hp=e.maxHp=1e6;e.dodge=0;G().hazards=[];T[f](t,tier,1);ok(e.hp<e.maxHp,ch+': quick attack tier '+tier+' hits')}}
+
+/* ---------- Teleport to a teammate ---------- */
+{const r=mk(),a=s.createRoom(r,'Detective',null,'TA'),b=s.addPlayer(r,'Guardian',null,'TB'),c=s.addPlayer(r,'Ranger',null,'TC'),d=s.addPlayer(r,'Druid',null,'TD');T.enter(r);G().enemies=[];G().spawnT=G().villT=1e9;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const far=o=>{const p=T.freeSpot(G().safe.x+700,G().safe.y+300,13);o.x=p.x;o.y=p.y};a.x=G().safe.x;a.y=G().safe.y;far(c);
+ a.actions.push({n:'tp',v:c.id});run(1);ok(Math.hypot(a.x-c.x,a.y-c.y)<120&&a.tpT>T.TELEPORT_CD-1,'Teleport puts you next to the teammate you picked');
+ const x=a.x,y=a.y;b.x=G().safe.x;b.y=G().safe.y;a.actions.push({n:'tp',v:b.id});run(1);ok(a.x===x&&a.y===y,'only one teleport per minute, whoever you pick');
+ a.tpT=0;d.deadT=10;a.actions.push({n:'tp',v:d.id});run(1);ok(a.x===x&&a.y===y,'you cannot teleport to a downed teammate');
+ a.actions.push({n:'tp',v:'x'});a.actions.push({n:'tp',v:-5});a.actions.push({n:'tp',v:a.id});run(1);ok(a.x===x&&a.y===y&&!(a.tpT>0),'bad or self targets are ignored');
+ a.actions.push({n:'tp',v:b.id});run(1);ok(Math.hypot(a.x-b.x,a.y-b.y)<120,'after the cooldown you can teleport to another teammate')}
+
+/* ---------- AI teammates (single player) ---------- */
+{const r=mk(),p=s.createRoom(r,'Detective',{lvl:6},'Solo');T.enter(r);G().mp=false;G().enemies=[];G().spawnT=G().villT=1e9;p.lvl=6;G().p=p;T.recalc&&0;
+ const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};T.addCompanions(3);const ai=G().players.filter(q=>q.ai);
+ ok(ai.length===3&&new Set(ai.map(q=>q.char)).size===3&&ai.every(q=>q.char!==p.char&&s.factionOf(q.char)==='hero'),'three AI teammates join, different heroes from your side');
+ ok(ai.every(q=>q.lvl===p.lvl-1),'AI teammates play one level below you');
+ {const q=ai[0],was=G().p;G().p=q;T.recalc();const s1=Object.assign({},q.s);q.ai=0;T.recalc();const s0=Object.assign({},q.s);q.ai=1;T.recalc();G().p=was;
+  ok(Math.abs(s1.dmg/s0.dmg-.85)<1e-6&&Math.abs(s1.maxHp/s0.maxHp-.85)<1e-6&&s1.speed<s0.speed&&s1.cdMul>s0.cdMul,'AI teammates have 15% less damage and life, less speed and slower attacks')}
+ ok(T.partySize()===4&&T.partyScale().difficulty===8,'enemies scale as for a party of four');ok(T.soloPlay()&&T.humanSize()===1,'puzzles that need real teammates keep their solo rules');
+ for(const q of ai){const o=T.freeSpot(p.x+450,p.y,13);q.x=o.x;q.y=o.y}p.input.x=0;run(120);ok(ai.every(q=>Math.hypot(q.x-p.x,q.y-p.y)<400),'AI teammates come back to you');
+ const e=T.spawnMob(0,{x:p.x+150,y:p.y},false);e.hp=e.maxHp=1e6;e.sp=0;e.stunT=60;p.inv=1e9;run(150);ok(e.hp<e.maxHp,'AI teammates fight the enemy near you');
+ const q=ai[1];G().p=q;q.inv=0;q.hp=1;T.hurtPlayer(999);ok(G().mode==='play'&&q.deadT>0,'a fallen AI teammate goes down; your run goes on');
+ G().p=p;T.addCompanions(0);ok(G().players.length===1&&T.partySize()===1,'choosing none removes them')}
 
 /* ---------- Bigger stages ---------- */
 {const r=mk(),p=s.createRoom(r,'Detective',null,'V');T.enter(r);const g=G(),w=g.w,MWv=T.MW,MHv=T.MH,N=MWv*MHv,tile=(x,y)=>Math.floor(y/40)*MWv+Math.floor(x/40);

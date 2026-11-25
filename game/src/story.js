@@ -207,7 +207,7 @@ function startWarzone(){clearTimeout(wzTimer);const v=$('mdvid');if(!v.src)v.src
 function renderWarzone(){const v=$('mdvid');if(v.hidden)startWarzone();modeOpen='war';
   modePanel('<div class="mp-head"><button class="ghost mp-back" type="button">‹ Back</button><h2>Warzone</h2></div><p class="mp-kick">Coming soon</p><p class="mp-lede">Heroes and villains clash in open battle. Warzone is not playable yet.</p><button class="ghost" id="wzsound" type="button">'+(v.muted?'Sound on':'Sound off')+'</button>');
   $('modes').classList.add('wz');$('mdpanel').classList.add('wz');$('wzsound').onclick=()=>{v.muted=!v.muted;$('wzsound').textContent=v.muted?'Sound on':'Sound off'}}
-function showModes(){const m=$('modes');m.hidden=false;m.classList.remove('open');stopWarzone();modeOpen=null;$('mdpanel').hidden=true;$('mdpanel').innerHTML='';$('mdart').style.backgroundImage='url('+TITLE_URLS[modeArt]+')';setModeArt('poster');$('mdlogo').src=TITLE_URLS.words;$('mdver').textContent='v'+GAME_VERSION;document.documentElement.style.setProperty('--stone','url('+TITLE_URLS.stone+')');const b=m.querySelector('[data-m=story]');if(b&&!touchMode)try{b.focus({preventScroll:true})}catch(e){}}
+function showModes(){const m=$('modes');m.hidden=false;m.classList.remove('open');stopWarzone();modeOpen=null;$('mdpanel').hidden=true;$('mdpanel').innerHTML='';$('mdart').style.backgroundImage='url('+TITLE_URLS[modeArt]+')';setModeArt('poster');$('mdlogo').src=TITLE_URLS.words;$('mdver').textContent='v'+GAME_VERSION;document.documentElement.style.setProperty('--stone','url('+TITLE_URLS.stone+')');const b=m.querySelector('[data-m=quick]');if(b&&!touchMode)try{b.focus({preventScroll:true})}catch(e){}}
 function hideModes(){stopWarzone();$('modes').hidden=true}
 function modePanel(html){const m=$('modes'),p=$('mdpanel');m.classList.add('open');p.hidden=false;p.innerHTML=html;p.scrollTop=0;const bk=p.querySelector('.mp-back');if(bk)bk.onclick=()=>{m.classList.remove('open');p.hidden=true;p.innerHTML='';stopWarzone();modeOpen=null;setModeArt('poster')}}
 function renderStoryPanel(){
@@ -243,10 +243,12 @@ function changelogHtml(md){
 function renderChangelog(){stopWarzone();modeOpen=null;modePanel('<div class="mp-head"><button class="ghost mp-back" type="button">‹ Back</button><h2>Changelog</h2></div><p class="mp-kick">Dayrim v'+esc(GAME_VERSION)+'</p><div class="mp-log">'+changelogHtml(CHANGELOG_MD)+'</div>')}
 function initModes(){
   const m=$('modes');
-  m.querySelector('[data-m=story]').onclick=()=>{audioOn();stopWarzone();modeOpen='story';setModeArt('story');renderStoryPanel()};
+  /* Story mode is paused while Quick Game is the focus; its code stays, ready to switch back on */
+  m.querySelector('[data-m=story]').onclick=()=>{};
   m.querySelector('[data-m=quick]').onclick=()=>{audioOn();hideModes();if(G.mode!=='title')setMode('title')};
-  m.querySelector('[data-m=war]').onclick=()=>{audioOn();renderWarzone()};
-  {const w=m.querySelector('[data-m=war]'),on=()=>{if(modeOpen!=='war'){audioOn();startWarzone()}},off=()=>{if(modeOpen!=='war')stopWarzone()};w.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')on()});w.addEventListener('focus',on);w.addEventListener('pointerleave',off);w.addEventListener('blur',off)}
+  /* Warzone is greyed out too for now: no panel, no trailer on hover */
+  m.querySelector('[data-m=war]').onclick=()=>{};
+  if(false){const w=m.querySelector('[data-m=war]'),on=()=>{if(modeOpen!=='war'){audioOn();startWarzone()}},off=()=>{if(modeOpen!=='war')stopWarzone()};w.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')on()});w.addEventListener('focus',on);w.addEventListener('pointerleave',off);w.addEventListener('blur',off)}
   /* Pointing at a mode shows its poster; leaving shows the open mode's poster, or the title poster */
   const art={story:'story',quick:'quick'};m.querySelectorAll('.md-nav button').forEach(b=>{const k=art[b.dataset.m];if(!k)return;const on=()=>{if(modeOpen!=='war')setModeArt(k)},off=()=>{if(modeOpen!=='war')setModeArt(modeOpen==='story'?'story':'poster')};b.addEventListener('pointerenter',on);b.addEventListener('focus',on);b.addEventListener('pointerleave',off);b.addEventListener('blur',off)});
   $('mdlog').onclick=renderChangelog;

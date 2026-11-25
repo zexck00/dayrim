@@ -82,7 +82,8 @@ function netSnapshot(m){
   G.boss=net.bossId?E.e.get(net.bossId)||null:null;
   if(m.v)for(const v of m.v)netEvent(v);
   // Your own position: trust the server, add back the moves it has not seen yet, and ease toward that
-  if(me.tx!==undefined){const a=m.a;while(net.pending.length&&net.pending[0].s<=a)net.pending.shift();let x=me.tx,y=me.ty;for(const q of net.pending){x+=q.dx;y+=q.dy}const ex=x-me.x,ey=y-me.y,err=Math.hypot(ex,ey);if(err>110){me.x=x;me.y=y;G.cam.x=x;G.cam.y=y;net.down=false}else{me.x+=ex*.22;me.y+=ey*.22}}
+  if(me.rideWith&&me.tx!==undefined){net.pending=[];me.x=me.tx;me.y=me.ty}
+  else if(me.tx!==undefined){const a=m.a;while(net.pending.length&&net.pending[0].s<=a)net.pending.shift();let x=me.tx,y=me.ty;for(const q of net.pending){x+=q.dx;y+=q.dy}const ex=x-me.x,ey=y-me.y,err=Math.hypot(ex,ey);if(err>110){me.x=x;me.y=y;G.cam.x=x;G.cam.y=y;net.down=false}else{me.x+=ex*.22;me.y+=ey*.22}}
 }
 function netEvent(v){switch(v[0]){
   case's':sfx(v[1]);break;case'v':voice(v[1]);break;case't':tone(v[1],v[2],v[3],v[4],v[5],v[6]);break;case'o':noiseHit(v[1],v[2]);break;case'g':stinger(v[1]);break;case'k':shake(v[1]);break;
@@ -94,6 +95,8 @@ function netEvent(v){switch(v[0]){
 function netUpdate(dt){
   const me=G.p,k=Math.min(1,dt*14);G.t+=dt;net.pingT-=dt;if(net.pingT<=0){net.pingT=2;netSend({t:'ping',c:performance.now()})}
   const glide=o=>{if(o.tx===undefined)return;const ex=o.tx-o.x,ey=o.ty-o.y;if(Math.abs(ex)+Math.abs(ey)>260){o.x=o.tx;o.y=o.ty}else{o.x+=ex*k;o.y+=ey*k}};
+  /* a passenger sits behind the driver as drawn on this screen, every frame, so the view follows the truck smoothly */
+  if(me.rideWith){const f=G.players.find(q=>(q.id||1)===me.rideWith);if(f&&f!==me){const fl=Math.cos(truckA(f))<0?-1:1;me.x=f.x-fl*SEAT.back;me.y=f.y-1;me.moving=false}}
   G.enemies.forEach(glide);G.npcs.forEach(glide);G.players.forEach(q=>{if(q!==me)glide(q)});
   for(const s of G.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;trail(s,dt)}
   for(const h of G.hazards)h.t-=dt;for(const l of G.loot)l.t+=dt;
@@ -103,9 +106,9 @@ function netUpdate(dt){
   const playing=G.mode==='play'&&!(me.deadT>0||me.respawnT>0),v=G.mode==='play'&&!(me.respawnT>0)?moveVec():{x:0,y:0},guard=playing&&(mouse.right||touchHold.guard);
   if(touchMode){const n=nearestEnemy();if(n)me.face=Math.atan2(n.y-me.y,n.x-me.x);else if(v.x||v.y)me.face=Math.atan2(v.y,v.x)}else if(playing)me.face=Math.atan2(mouse.y-(me.y-22),mouse.x-me.x);
   const bx=me.x,by=me.y;if(me.deadT>0||me.respawnT>0)net.dash=0;
-  if(me.webT>0)net.dash=0;
+  if(me.webT>0||me.rideWith)net.dash=0;
   if(!(me.deadT>0)&&net.dash>0){net.dash-=dt;move(me,net.dx*520*dt,net.dy*520*dt)}
-  else if(v.x||v.y){me.sprint=canSprint(me,v);const sp=envSpeed(me)*me.s.speed*abilSpeed(me)*timeHaste(me)*sigSpeed(me)*(me.sprint?SPRINT.mul:1)*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*(me.beam?0:me.chg>0?CHARGE.slow:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11*(me.sprint?SPRINT.stride:1);me.moveA=Math.atan2(v.y,v.x)}
+  else if(!me.rideWith&&(v.x||v.y)){me.sprint=canSprint(me,v);const sp=envSpeed(me)*me.s.speed*abilSpeed(me)*timeHaste(me)*sigSpeed(me)*(me.sprint?SPRINT.mul:1)*(me.deadT>0?.25:(auraHas(me,'scout')?1.08:1)*(archKey(me.char)==='scout'&&me.reviveTarget?.5:1)*(me.fastT>0?1.4:1)*(guard?.55:1)*(me.mv?.3:1)*(me.beam?0:me.chg>0?CHARGE.slow:1)*chainBonus().spd);move(me,v.x*sp*dt,v.y*sp*dt);me.walk+=dt*11*(me.sprint?SPRINT.stride:1);me.moveA=Math.atan2(v.y,v.x)}
   me.moving=!!(v.x||v.y);
   if(me.x!==bx||me.y!==by)net.pending.push({s:net.seq+1,dx:me.x-bx,dy:me.y-by});if(net.pending.length>240)net.pending.shift();
   net.reviveT-=dt;if(net.reviveT<=0&&G.mode==='play'&&(keys.has('KeyF')||touchHold.revive)){net.reviveT=.2;netSend({t:'a',n:'revive',v:true})}net.sendT+=dt;net.idleT+=dt;if(net.sendT>=1/30){net.sendT=0;netSendInput(false,v,playing)}
@@ -134,18 +137,20 @@ function netOverlay(m,c){
   return false;
 }
 let lobbyPoll=null;
-function renderLobby(){
+function renderLobby(swarm){if(swarm!==undefined)net.swarmPick=!!swarm;
   net.lobby=true;const c=$('card');$('ov').hidden=false;
   const side=factionOf(chosen),nm=net.name||store.get('dayrim-name')||'';
   c.innerHTML='<div class="sel-top"><h2>Play online</h2></div><div class="mlist"><p class="mhead">Up to 4 players fight together. You play as <b>the '+esc(label(chosen))+'</b> ('+(side==='hero'?'hero':'villain')+'). Everyone in a room plays on the same side.</p>'+
    (net.err?'<p class="mhead" role="alert" style="color:#ff8f80">'+esc(net.err)+'</p>':'')+
    '<div class="mrow"><div><strong><label for="nm">Your name</label></strong></div><input id="nm" maxlength="16" autocomplete="nickname" value="'+esc(nm)+'" style="font:inherit;padding:8px;min-width:0;width:170px"></div>'+
-   '<div class="mrow"><div><strong>New room</strong><span><label><input type="checkbox" id="prv"> Private: only people with the code can join</label><label><input type="checkbox" id="swm"> The Swarm on stage <select id="sws">'+[1,2,3,4,5,6,7,8,9,10].map(n=>'<option>'+n+'</option>').join('')+'</select> (up to your furthest stage)</label></span></div><button type="button" class="buy" id="mk">Create</button></div>'+
+   '<div class="mrow"><div><strong>New room</strong><span>Stages: the story stages with your party. <label><input type="checkbox" id="prv"> Private: only people with the code can join</label></span></div><button type="button" class="buy" id="mk">Create room</button></div>'+
+   '<div class="mrow"'+(net.swarmPick?' style="outline:2px solid #e8b04a;outline-offset:2px"':'')+'><div><strong>New Swarm room</strong><span>The Swarm online: endless waves together on stage <select id="sws" aria-label="Swarm stage">'+[1,2,3,4,5,6,7,8,9,10].map(n=>'<option>'+n+'</option>').join('')+'</select> (up to your furthest stage). Nothing carries over to your saved game.</span></div><button type="button" class="buy" id="mks">Create Swarm room</button></div>'+
    '<div class="mrow"><div><strong><label for="cd">Join with a code</label></strong></div><input id="cd" maxlength="5" autocapitalize="characters" autocomplete="off" style="font:inherit;padding:8px;width:90px;text-transform:uppercase"><button type="button" class="buy" id="jn">Join</button></div>'+
    '<div id="rl"></div></div><div class="btnrow"><button class="ghost" id="bk" type="button">Back to characters</button></div>';
   const setName=()=>{net.name=$('nm').value.slice(0,16);store.set('dayrim-name',net.name)};
   const go=msg=>{setName();net.err='';netConnect(()=>{netSend({t:'name',name:net.name});netSend(msg)})};
-  $('mk').onclick=()=>go({t:'create',char:chosen,private:$('prv').checked,mode:$('swm').checked?'swarm':'story',stage:+$('sws').value||1});
+  $('mk').onclick=()=>go({t:'create',char:chosen,private:$('prv').checked,mode:'story'});
+  $('mks').onclick=()=>go({t:'create',char:chosen,private:$('prv').checked,mode:'swarm',stage:+$('sws').value||1});
   $('jn').onclick=()=>{const code=$('cd').value;if(code.trim())go({t:'join',code,char:chosen})};
   $('bk').onclick=()=>{net.lobby=false;net.err='';clearInterval(lobbyPoll);renderSelect()};
   paintRooms();clearInterval(lobbyPoll);const poll=()=>{if(!net.lobby){clearInterval(lobbyPoll);return}netConnect(()=>netSend({t:'rooms'}))};poll();lobbyPoll=setInterval(poll,3000);
@@ -155,12 +160,11 @@ function paintRooms(){const el=$('rl');if(!el)return;
   el.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>{const nm=$('nm');net.name=nm?nm.value.slice(0,16):net.name;store.set('dayrim-name',net.name);net.err='';netConnect(()=>{netSend({t:'name',name:net.name});netSend({t:'join',code:b.dataset.room,char:chosen})})})}
 /* Party list, room code and the respawn message, drawn over the game */
 function netHud(small,portrait=false,landscape=false){
-  const me=G.p,x=12;let y=landscape?108:portrait?(G.boss?182:132):touchMode?(H<500?220:195):(small?116:70);ctx.textAlign='left';
-  if(portrait){mobilePanel(6,y-14,148,23+(G.players.length-1)*17);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle='#f0c23c';ctx.fillText('Hope '+(G.hope??0)+'/'+(G.hopeMax??0)+' · Difficulty ×'+partyScale().difficulty,x,y,136);y+=18}else{
-  ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?180:225,66+G.players.length*17);
+  const me=G.p,x=12;let y=(landscape?108:portrait?(G.boss?182:132):touchMode?(H<500?220:195):(small?116:70))+PARTY_H;ctx.textAlign='left';
+  if(portrait){mobilePanel(6,y-14,148,23);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle='#f0c23c';ctx.fillText('Hope '+(G.hope??0)+'/'+(G.hopeMax??0)+' · Difficulty ×'+partyScale().difficulty,x,y,136);y+=18}else{
+  ctx.fillStyle='rgba(5,10,20,.62)';ctx.fillRect(6,y-14,small?180:225,52);
   ctx.font='500 11px "IBM Plex Mono",monospace';ctx.fillStyle='#f0c23c';ctx.fillText('Room '+net.code+' · Hope '+(G.hope??0)+'/'+(G.hopeMax??0),x,y);y+=15;{const chg=net.scaleNotice>performance.now();ctx.fillStyle=chg?'#8fe6ff':'#f0c23c';ctx.fillText((chg?'Difficulty changed ×':'Difficulty ×')+partyScale().difficulty+' · Spent '+(G.hopeSpent||0),x,y,small?168:210)}y+=15;ctx.fillStyle='#f0c23c';ctx.fillText('Retry: '+(G.gate&&G.gate.open?'boss gate':'objective checkpoint'),x,y,small?168:210);y+=16;}
 
-  for(const q of G.players){if(portrait&&q===me)continue;const hp=clamp(q.hp/((q.s&&q.s.maxHp)||1),0,1),isHost=q.id===net.host;ctx.fillStyle='rgba(5,10,20,.85)';ctx.fillRect(x,y-9,small?50:70,9);ctx.fillStyle=q.deadT>0?'#555':'#d8483c';ctx.fillRect(x+1,y-8,((small?50:70)-2)*hp,7);ctx.font='600 12px Barlow,sans-serif';ctx.fillStyle=q===me?'#ffffff':'#8fe0ff';const rev=G.players.find(z=>z.reviveTarget===q.id&&z.reviveProgress>0),status=q.respawnT>0?' · '+Math.ceil(q.respawnT)+'s':q.deadT>0?(rev?' · '+Math.round(rev.reviveProgress*100)+'%':' · down '+Math.ceil(q.deadT)+'s'):'';ctx.fillText((isHost?'★ ':'')+(q.pname||'Player')+status,x+(small?55:76),y,portrait?84:small?113:149);y+=17}
   const selected=G.players.find(q=>q.id===me.reviveTarget&&q.deadT>0);if(selected){ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#8fe6ff';ctx.fillText('Reviving '+(selected.pname||label(selected.char))+' · '+Math.round(me.reviveProgress*100)+'%',x,y,portrait?136:W-24);y+=16}else if(G.players.some(q=>q!==me&&q.deadT>0)){ctx.font='600 11px Barlow,sans-serif';ctx.fillStyle='#d8e9ff';ctx.fillText((touchMode?'Hold revive':'Hold F')+' near an ally ('+(archKey(me.char)==='medic'?120:60)+')',x,y,portrait?136:W-24);y+=16}
   const big=(a,b)=>{const y=portrait&&!landscape?Math.max(portraitBounds().top+20,Math.min(H*.45,portraitBounds().bottom-30)):H*.45;ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(5,10,20,.9)';ctx.font='700 '+(small?26:42)+'px "Pixelify Sans",monospace';ctx.strokeText(a,W/2,y,portrait?W-24:W);ctx.fillStyle='#ff8f80';ctx.fillText(a,W/2,y,portrait?W-24:W);ctx.font='600 15px Barlow,sans-serif';ctx.lineWidth=3;ctx.strokeText(b,W/2,y+26,portrait?W-24:W);ctx.fillStyle='#f2ecd8';ctx.fillText(b,W/2,y+26,portrait?W-24:W)};
   if(net.down)big('Reconnecting','Trying to get back to room '+net.code);

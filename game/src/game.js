@@ -13,8 +13,11 @@ const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* ctx is swapped while Pixel 3D draws its layers; ctx0 is always the screen */
 const canvas=$('c'),ctx0=canvas.getContext('2d');let ctx=ctx0;
-const ATLAS=new Image();ATLAS.src=ATLAS_URL;
-document.documentElement.style.setProperty('--atlas','url("'+ATLAS_URL+'")');
+/* The character art behind every card and sprite. WebP first; if it fails, try once more, then the PNG copy
+   (for a browser without WebP or a broken download), so nobody is left with blank character cards. */
+const ATLAS=new Image();
+{let tries=0;const set=u=>{ATLAS.src=u;document.documentElement.style.setProperty('--atlas','url("'+u+'")')};
+ ATLAS.onerror=()=>{tries++;if(tries===1)setTimeout(()=>set(ATLAS_URL+'?retry=1'),800);else if(tries===2&&typeof ATLAS_PNG_URL==='string'&&ATLAS_PNG_URL)set(ATLAS_PNG_URL)};set(ATLAS_URL)}
 const artStyle=(n,bw,bh)=>{if(CARD_ART[n]){const w=Math.min(bw,bh*.75);return 'width:'+Math.round(w)+'px;height:'+Math.round(w/.75)+'px;background:url('+CARD_ART[n]+') center/100% 100% no-repeat'}const a=CAST[n],k=Math.min(bw/a.w,bh/a.h);return 'width:'+Math.round(a.w*k)+'px;height:'+Math.round(a.h*k)+'px;background-size:'+AW*k+'px '+AH*k+'px;background-position:'+(-a.x*k)+'px '+(-a.y*k)+'px'};
 
 /* ---------- Data ---------- */
@@ -162,7 +165,7 @@ const ACHIEVEMENTS=[
 function achievementNotice(p,id){} // Browser and server supply their own presentation.
 function achievementValue(p,a){if((p.achievements||{})[a.id])return a.goal;if(a.key==='weapon')return Math.max(0,...Object.keys(p.weaponUpgrades||{}).map(id=>upgradeLevel(p,id)));if(a.key==='event'||a.key==='revive'||a.key==='partyBoss')return 0;return Math.max(0,Number(p[a.key])||0)}
 function achievementStore(p){if(G.mp||G.demo)return;try{let all=JSON.parse(localStorage.getItem('dayrim-achievements')||'{}');if(!all||typeof all!=='object'||Array.isArray(all))all={};all[p.char]=p.achievements;localStorage.setItem('dayrim-achievements',JSON.stringify(all))}catch(e){}}
-function achievementUnlock(p,id,notify=true){if(G.demo||!ACHIEVEMENTS.some(a=>a.id===id)||p.achievements[id])return false;p.achievements[id]=true;if(notify)achievementNotice(p,id);achievementStore(p);return true}
+function achievementUnlock(p,id,notify=true){if(p.ai||G.demo||!ACHIEVEMENTS.some(a=>a.id===id)||p.achievements[id])return false;p.achievements[id]=true;if(notify)achievementNotice(p,id);achievementStore(p);return true}
 function achievementCheck(p,notify=true){for(const a of ACHIEVEMENTS)if((!notify||!G.swarm||a.key==='swarmBest')&&achievementValue(p,a)>=a.goal)achievementUnlock(p,a.id,notify)}
 function achievementInit(p,solo=false){const saved=p.achievements&&typeof p.achievements==='object'&&!Array.isArray(p.achievements)?p.achievements:{};let local={};if(solo)try{local=JSON.parse(localStorage.getItem('dayrim-achievements')||'{}')[p.char]||{};p.swarmBest=Math.max(p.swarmBest||0,JSON.parse(localStorage.getItem('dayrim-swarm-best')||'{}')[p.char]||0)}catch(e){}if(!local||typeof local!=='object'||Array.isArray(local))local={};p.achievements={};for(const a of ACHIEVEMENTS)if(saved[a.id]===true||local[a.id]===true)p.achievements[a.id]=true;achievementCheck(p,false);if(solo)achievementStore(p)}
 const STAGES=[
@@ -250,7 +253,7 @@ try{const c=localStorage.getItem('dayrim-char');if(c&&archKey(c)){chosen=c;selTa
 function readSave(){try{const r=JSON.parse(localStorage.getItem('dayrim-save')||'null');return r&&archKey(r.char)?r:null}catch(e){return null}}
 /* Starting a Swarm run builds a character and enters a stage, which would normally save. Hold saves until the run is marked. */
 let saveHold=false;
-function writeSave(){if(!G||G.demo||G.mp||G.swarm||G.story||saveHold)return;const p=G.p;try{localStorage.setItem('dayrim-save',JSON.stringify({char:p.char,lvl:p.lvl,xp:p.xp,gold:p.gold,potions:p.potions,fast:p.fast,magic:p.magic,gear:p.gear,bag:p.bag,weapons:p.weapons,weapon:p.weapon,skills:p.skills,train:p.train,sp:p.sp,kills:p.kills,rage:p.rage,bestCombo:p.bestCombo,stage:G.stage,runBoons:p.runBoons,weaponUpgrades:p.weaponUpgrades,achievements:p.achievements,secondWind:!!p.secondWind,maxStage:p.maxStage,beaten:p.beaten}))}catch(e){}}
+function writeSave(){if(!G||G.demo||G.mp||G.swarm||G.story||saveHold)return;const p=(G.players||[]).find(q=>!q.ai)||G.p;try{localStorage.setItem('dayrim-save',JSON.stringify({char:p.char,lvl:p.lvl,xp:p.xp,gold:p.gold,potions:p.potions,fast:p.fast,magic:p.magic,gear:p.gear,bag:p.bag,weapons:p.weapons,weapon:p.weapon,skills:p.skills,train:p.train,sp:p.sp,kills:p.kills,rage:p.rage,bestCombo:p.bestCombo,stage:G.stage,runBoons:p.runBoons,weaponUpgrades:p.weaponUpgrades,achievements:p.achievements,secondWind:!!p.secondWind,maxStage:p.maxStage,beaten:p.beaten}))}catch(e){}}
 function clearSave(){try{localStorage.removeItem('dayrim-save')}catch(e){}}
 
 /* ---------- Audio ---------- */
@@ -330,6 +333,22 @@ function genCity(){
 }
 const wall=(tx,ty)=>tx<0||ty<0||tx>=MW||ty>=MH||G.w.map[idx(tx,ty)]===1;
 function blocked(x,y,r){const a=r*.8;return wall((x-a)/T|0,(y-a)/T|0)||wall((x+a)/T|0,(y-a)/T|0)||wall((x-a)/T|0,(y+a)/T|0)||wall((x+a)/T|0,(y+a)/T|0)}
+/* The nearest place someone of radius r can stand, searching outward tile by tile (walkable tiles all connect to the haven) */
+function freeSpot(x,y,r=14){if(!blocked(x,y,r))return{x,y};const tx=x/T|0,ty=y/T|0;
+  for(let d=1;d<=14;d++){let best=null,bd=Infinity;for(let j=-d;j<=d;j++)for(let i=-d;i<=d;i++){if(Math.max(Math.abs(i),Math.abs(j))!==d)continue;const cx=(tx+i+.5)*T,cy=(ty+j+.5)*T;if(blocked(cx,cy,r))continue;const k=Math.hypot(cx-x,cy-y);if(k<bd){bd=k;best={x:cx,y:cy}}}if(best)return best}
+  return{x:G.safe.x+60,y:G.safe.y+30}}
+/* Teleport: jump next to any teammate (online or AI) from the party list. One shared 60 second cooldown. */
+const TELEPORT_CD=60;
+const canTeleportTo=(p,q)=>!!p&&!!q&&q!==p&&!(q.deadT>0||q.respawnT>0)&&!(p.deadT>0||p.respawnT>0)&&!((p.tpT||0)>0)&&G.mode==='play';
+function doTeleport(id){const p=G.p,q=G.players.find(o=>(o.id||1)===id);if(!canTeleportTo(p,q))return;if(p.rideWith)hopOut(p);if(p.carry){p.carry.by=0;p.carry=null}
+  burst(p.x,p.y-20,'#8fe0ff',16,160);const o=freeSpot(q.x-Math.cos(q.face||0)*40,q.y+20,p.r||13);p.x=o.x;p.y=o.y;p.dashT=0;p.inv=Math.max(p.inv||0,1);p.tpT=TELEPORT_CD;
+  G.fx.push({k:'ring',x:p.x,y:p.y,r:10,to:70,t:.4,m:.4,c:'#8fe0ff'});text(p.x,p.y-80,'Teleported','#8fe0ff',true);sfx('dash')}
+/* Unstuck (U): out of a wall to the nearest open spot, otherwise back to the haven (or the edge of the boss arena) */
+const UNSTUCK_CD=10;
+function homeSpot(p){let x=G.safe.x+60,y=G.safe.y+30;if(G.boss&&G.arena){const a=Math.atan2(G.safe.y-G.arena.y,G.safe.x-G.arena.x);x=G.arena.x+Math.cos(a)*(G.arena.r-45);y=G.arena.y+Math.sin(a)*(G.arena.r-45)}return freeSpot(x,y,p.r||14)}
+function doUnstuck(){const p=G.p;if(!p||p.deadT>0||p.respawnT>0||G.mode!=='play')return;if((p.unstuckT||0)>0){addLog('Unstuck ready in '+Math.ceil(p.unstuckT)+' seconds.');return}
+  p.unstuckT=UNSTUCK_CD;if(p.carry){p.carry.by=0;p.carry=null}const to=blocked(p.x,p.y,p.r||14)?freeSpot(p.x,p.y,p.r||14):homeSpot(p);p.x=to.x;p.y=to.y;p.dashT=0;p.inv=Math.max(p.inv||0,1.5);
+  burst(p.x,p.y-20,'#8fe0ff',14,140);text(p.x,p.y-80,'Unstuck','#8fe0ff',true)}
 function move(e,dx,dy){let hit=false;if(!blocked(e.x+dx,e.y,e.r))e.x+=dx;else hit=true;if(!blocked(e.x,e.y+dy,e.r))e.y+=dy;else hit=true;return hit}
 function los(a,b){const d=dist(a,b),n=Math.ceil(d/18);for(let i=1;i<n;i++){const t=i/n;if(wall((a.x+(b.x-a.x)*t)/T|0,(a.y+(b.y-a.y)*t)/T|0))return false}return true}
 function updateFlow(){
@@ -384,6 +403,7 @@ function recalc(){
   s.maxHp*=1+sk('tough')*.06;s.speed=Math.min(290,s.speed*(1+sk('foot')*.02));s.regen+=sk('focus');s.crit+=sk('crit')*.015;s.leech+=sk('leech')*.5;s.guardMul+=sk('guard')*.12;s.mendMul+=sk('mend')*.1;
   /* Haste: levels and Agility shorten every ability cooldown, but never past 60% of the base timer. Character quirks apply first, so the floor holds for them too. */
   s.cdMul=Math.max(.6,Math.min(1,s.cdMul));s.crit=Math.min(CRIT_CAP,s.crit);if(isCaster(p.char))s.regen*=CASTER_REGEN;
+  if(p.ai){s.dmg*=AI_MATE.k;s.maxHp*=AI_MATE.k;s.speed*=AI_MATE.spd;s.cdMul*=AI_MATE.cd}
   p.s=s;p.hp=Math.min(p.hp,s.maxHp);p.mana=Math.min(p.mana,s.maxMana);dirty();
 }
 function baseState(demo){return{mode:'title',demo,mp:false,players:[],t:0,hour:6,p:null,enemies:[],npcs:[],shots:[],loot:[],fx:[],texts:[],log:[],shake:0,flowT:0,banner:null,boss:null,spawnT:0,killsStage:0,stage:1,w:null,quipT:3,props:[],chain:{n:0,t:0,tier:null},link:null}}
@@ -470,7 +490,7 @@ function holdStep(st,dt){
   const zs=G.obj.zones||[];
   /* A zone lit alone stays lit, so someone joining mid-step cannot undo it: the step finishes one zone at a time. */
   if(zs.some(z=>z.done))st.alone=true;
-  const split=st.simul&&!st.alone&&partySize()>=st.need;
+  const split=st.simul&&!st.alone&&humanSize()>=st.need;
   st.split=!!split;
   if(split){const held=zs.filter(z=>playersNear(z,60)).length;st.holdT=held>=st.need?(st.holdT||0)+dt:0;st.met=st.holdT>=st.t;st.have=held;
     for(const z of zs){z.t=st.met?st.t:st.holdT;if(st.met)z.done=true}}
@@ -516,6 +536,8 @@ function enterStage(n,keepKills){for(const q of G.players){q.abil=null;q.abilCas
 }
 /* Prototype party scaling; tune after party and human playtests. */
 const PARTY_SCALE=[{difficulty:1,minion:1,count:1,quota:1,hope:0},{difficulty:2,minion:1.6,count:1.3,quota:1.4,hope:4},{difficulty:4,minion:2.2,count:1.6,quota:1.8,hope:5},{difficulty:8,minion:2.8,count:1.9,quota:2.2,hope:6}];
+/* Bigger parties face tougher enemies, so every gold drop grows with the party: ×1, ×1.5, ×2, ×2.5 (AI teammates count) */
+const partyGold=()=>1+.5*(partySize()-1);
 const partySize=()=>Math.max(1,Math.min(4,G.players.length)),partyScale=()=>PARTY_SCALE[partySize()-1],partyCrowd=()=>partyScale().count;
 function enemyScale(e){const s=partyScale();return e.mob?s.minion:s.difficulty}
 function partyToughen(e){const k=enemyScale(e);e.hp*=k;e.maxHp*=k;if(!e.mob)e.dmg*=partyScale().difficulty;e.partyLife=k;e.partyDamage=e.mob?1:partyScale().difficulty;return e}
@@ -523,12 +545,12 @@ function offerBoons(){for(const p of G.players){const b=p.runBoons||{};if((b.wid
 function rescaleParty(){if(G.mp){const max=Math.max(3,partyScale().hope);G.hopeMax=max;G.hope=Math.max(0,max-(G.hopeSpent||0))}for(const e of G.enemies){if(e.dead)continue;const life=enemyScale(e),damage=e.mob?1:partyScale().difficulty;e.hp*=life/(e.partyLife||1);e.maxHp*=life/(e.partyLife||1);e.dmg*=damage/(e.partyDamage||1);e.partyLife=life;e.partyDamage=damage}if(G.gate&&!G.gate.open&&G.obj&&G.obj.done)openGate();}
 const alivePlayers=()=>{const a=G.players.filter(q=>!(q.deadT>0)&&!(q.respawnT>0));return a.length?a:G.players};
 function rusherTarget(e){if(e.role!=='rusher'||!e.aware)return null;const a=G.players.filter(q=>!q.deadT&&!q.respawnT&&dist(q,e)<600&&['shooter','medic'].includes(archKey(q.char)));return a.sort((a,b)=>dist(a,e)-dist(b,e))[0]||null}
-function nearestPlayer(o){let b=null,bd=Infinity;for(const q of alivePlayers()){const d=dist(q,o);if(d<bd){bd=d;b=q}}return b}
+function nearestPlayer(o,human){let b=null,bd=Infinity;for(const q of alivePlayers()){if(human&&q.ai&&G.players.some(h=>!h.ai))continue;const d=dist(q,o);if(d<bd){bd=d;b=q}}return b}
 const ownerOf=s=>G.players.find(q=>q.id===s.pid)||G.players[0];
-function shareXp(x){const me=G.p;for(const q of G.players){G.p=q;gainXp(x)}G.p=me}
+function shareXp(x){const me=G.p;for(const q of G.players){if(q.ai)continue;G.p=q;gainXp(x)}G.p=me}
 function playerDown(p,wind=false){sfx('downed');p.beam=null;p.burst=null;p.lungeT=0;p.chg=0;p.holdT=0;if(p.carry&&p.carry.kind==='canister'){p.carry.by=0;p.carry=null}p.windDown=wind;p.downCount=G.t-p.lastDown<=60?p.downCount+1:0;p.lastDown=G.t;p.deadT=wind?3:Math.max(8,20-p.downCount*5);p.respawnT=0;p.ult=null;p.mv=null;p.guard=false;p.combo=0;p.comboT=0;p.comboTier=null;p.dashT=0;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.breakReady=0;p.tauntGuard=0;p.mendT=0;p.moving=false;bleed(p.x,p.y-20,rnd(-1,1),rnd(-1,1),wind?8:16);burst(p.x,p.y-20,'#f0805c',wind?10:24,200);addLog(wind?'Second Wind: getting up in 3 seconds.':'You are down. An ally can revive you.')}
 function revive(p){sfx('revive_done');p.deadT=0;p.respawnT=0;p.hp=p.s.maxHp*.35;p.inv=1.5;p.moving=false;burst(p.x,p.y-20,'#6fdca0',18,120)}
-function respawn(p){p.deadT=0;p.respawnT=0;p.x=G.safe.x+60;p.y=G.safe.y+30;if(G.boss&&G.arena){const a=Math.atan2(G.safe.y-G.arena.y,G.safe.x-G.arena.x);p.x=G.arena.x+Math.cos(a)*(G.arena.r-45);p.y=G.arena.y+Math.sin(a)*(G.arena.r-45)}p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
+function respawn(p){p.deadT=0;p.respawnT=0;{const to=homeSpot(p);p.x=to.x;p.y=to.y}p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=2;p.fastT=p.magicT=0}
 function restartCheckpoint(){if(G.swarm){endSwarm();return}const gate=G.gate.open;G.shadeUp=false;G.enemies=[];G.shots=[];G.hazards=[];G.fx=[];G.boss=null;G.arena=null;G.flesh=null;clearLanterns();clearBossEggs();clearSporeBoss();clearGhoul();clearVale();clearScrap();for(const q of G.players)clearEncounterStatus(q);G.clearPending=0;G.spawnT=3;G.villT=60;G.hopeSpent=0;G.hope=G.hopeMax;if(!gate)G.killsStage=0;for(const [i,p] of G.players.entries()){p.deadT=0;p.respawnT=0;p.windDown=false;p.hp=p.s.maxHp;p.mana=p.s.maxMana;p.inv=3;p.dashT=0;p.ult=null;p.mv=null;p.guard=false;p.reviveHold=0;p.reviveTarget=0;p.reviveProgress=0;p.downCount=0;p.lastDown=-100;p.fastT=0;p.magicT=0;p.x=gate?G.gate.x+(i-1.5)*28:G.safe.x+60-i*30;p.y=gate?G.gate.y+100:G.safe.y+30}resetStepState();G.banner={t:4,a:'Party wiped',b:gate?'Retry from the boss gate':'Retry from the latest objective checkpoint'};writeSave()}
 function bleedOut(p){p.deadT=0;p.respawnT=8;p.gold=Math.floor(p.gold*.8);p.moving=false;const wipe=G.mp&&!G.clearPending&&G.hope<=0&&!G.players.some(q=>q!==p&&q.deadT<=0&&q.respawnT<=0);if(G.mp&&G.hope>0){G.hopeSpent++;G.hope--;}addLog('You bled out and lost 20% of your gold.');if(wipe)restartCheckpoint();writeSave()}
 /* Hold to revive. A downed ally comes first; with none in reach, the same key picks a wounded NPC back up. */
@@ -556,7 +578,7 @@ function loadRun(sv){
 function demoScene(){
   G=baseState(true);G.p=freshPlayer(chosen);G.players=[G.p];recalc();enterStage(1);G.p.hp=G.p.s.maxHp;G.p.mana=G.p.s.maxMana;G.hour=11;G.banner=null;
 }
-function addLog(html){G.log.unshift(html);G.log.length=Math.min(G.log.length,6);dirty()}
+function addLog(html){if(G.p&&G.p.ai)return;G.log.unshift(html);G.log.length=Math.min(G.log.length,6);dirty()}
 let isDirty=true;function dirty(){isDirty=true}
 
 /* Tries scale with map area, so the bigger stages find spots as reliably as the small ones */
@@ -626,11 +648,11 @@ function spawnPillars(n){let made=0;for(let i=0;i<220&&made<n;i++){const c=pick(
     if(G.boss&&Math.hypot(G.boss.x-x,G.boss.y-y)>300)continue;
     addProp('pillar',x,y,26);made++}
   while(made<n){const a=rnd(TAU),o=G.boss||G.p;addProp('pillar',o.x+Math.cos(a)*170,o.y+Math.sin(a)*170,26);made++}
-  G.banner={t:2.6,a:'Crystal pillars',b:G.players.length===1?'A charged move breaks one':'Hit one together, within 2s'}}
+  G.banner={t:2.6,a:'Crystal pillars',b:soloPlay()?'A charged move breaks one':'Hit one together, within 2s'}}
 function breakPillar(c){if(!c||c.done)return false;c.done=true;G.fx.push({k:'ring',x:c.x,y:c.y,r:10,to:90,t:.35,m:.35,c:'#bff0ff'});burst(c.x,c.y,'#bff0ff',26,210);shake(4);sfx('boom');text(c.x,c.y-44,'Pillar broken','#8fd6ff',true);return true}
 /* A pillar only breaks on timing, never on raw damage. */
 function pillarHit(c,p,charged){if(!c||c.done)return false;
-  if(G.players.length===1){if(!charged){text(c.x,c.y-44,'Charged move','#8fd6ff',true);return false}const done=breakPillar(c);if(done)achievementUnlock(p,'pillar');return done}
+  if(soloPlay()){if(!charged){text(c.x,c.y-44,'Charged move','#8fd6ff',true);return false}const done=breakPillar(c);if(done)achievementUnlock(p,'pillar');return done}
   c.hits=(c.hits||[]).filter(h=>G.t-h.t<=PILLAR_WINDOW&&h.id!==(p.id||0));
   c.hits.push({id:p.id||0,t:G.t});
   if(c.hits.length>=2){const done=breakPillar(c);if(done)for(const h of c.hits){const q=G.players.find(q=>(q.id||0)===h.id);if(q)achievementUnlock(q,'pillar')}return done}
@@ -669,12 +691,12 @@ const lanternLit=l=>!!(l.by||l.t>0);
 const bossWarded=e=>e.kind==='boss'&&((e.ghostT||0)>0||((e.kit||G.stage)===3&&G.props.some(l=>l.kind==='lantern')&&!G.props.some(l=>l.kind==='lantern'&&lanternLit(l)&&dist(l,e)<BANSHEE.lanternR)));
 function clearEncounterStatus(p){p.grabT=p.stunT=p.blindT=p.possT=p.webT=p.toxin=p.toxinTick=p.toxicLoad=p.loadMark=p.fallT=p.rust=p.fieldRust=0}
 function clearLanterns(){G.props=G.props.filter(o=>o.kind!=='lantern');for(const q of G.players)if(q.carry&&q.carry.kind==='lantern')q.carry=null}
-function spawnLanterns(){clearLanterns();const o=G.arena||G.boss||G.gate;for(const s of[-1,1]){let x=o.x+s*150,y=o.y+60;if(blocked(x,y,12)){x=o.x;y=o.y}addProp('lantern',x,y,12)}G.banner={t:3.2,a:'Lantern Anchor',b:G.players.length===1?'Carry a lantern to her and hold F to set it down':'Only lantern light lets you hurt her. Hold F to set one down'}}
-function lanternTick(dt){for(const l of G.props){if(l.kind!=='lantern')continue;l.cool=Math.max(0,(l.cool||0)-dt);if(l.dropBy){const d=G.players.find(q=>(q.id||1)===l.dropBy);if(!d||dist(d,l)>40)l.dropBy=0}if(l.by){const c=G.players.find(q=>(q.id||1)===l.by);if(!c||c.carry!==l||c.deadT>0||c.respawnT>0){l.by=0;l.t=G.players.length===1?999:BANSHEE.lanternLit;if(c&&c.carry===l)c.carry=null}else{l.x=c.x;l.y=c.y}}else if(l.t>0&&l.t<900)l.t=Math.max(0,l.t-dt)}}
+function spawnLanterns(){clearLanterns();const o=G.arena||G.boss||G.gate;for(const s of[-1,1]){let x=o.x+s*150,y=o.y+60;if(blocked(x,y,12)){x=o.x;y=o.y}addProp('lantern',x,y,12)}G.banner={t:3.2,a:'Lantern Anchor',b:soloPlay()?'Carry a lantern to her and hold F to set it down':'Only lantern light lets you hurt her. Hold F to set one down'}}
+function lanternTick(dt){for(const l of G.props){if(l.kind!=='lantern')continue;l.cool=Math.max(0,(l.cool||0)-dt);if(l.dropBy){const d=G.players.find(q=>(q.id||1)===l.dropBy);if(!d||dist(d,l)>40)l.dropBy=0}if(l.by){const c=G.players.find(q=>(q.id||1)===l.by);if(!c||c.carry!==l||c.deadT>0||c.respawnT>0){l.by=0;l.t=soloPlay()?999:BANSHEE.lanternLit;if(c&&c.carry===l)c.carry=null}else{l.x=c.x;l.y=c.y}}else if(l.t>0&&l.t<900)l.t=Math.max(0,l.t-dt)}}
 function lanternStep(p){const ls=G.props.filter(o=>o.kind==='lantern');if(!ls.length)return;
   if(!p.carry){const l=ls.find(l=>!l.by&&!(l.cool>0)&&l.dropBy!==(p.id||1)&&dist(p,l)<28);if(l){l.by=p.id||1;l.x=p.x;l.y=p.y;p.carry=l;text(p.x,p.y-70,'Hold F to set the lantern down','#ffe2a0',true)}return}
   const f=G.mp?p.reviveHold>0:(keys.has('KeyF')||touchHold.revive);
-  if(p.carry.kind==='lantern'&&f&&!G.players.some(q=>q!==p&&q.deadT>0&&dist(q,p)<120)){const l=p.carry;l.by=0;l.t=G.players.length===1?999:BANSHEE.lanternLit;l.cool=1;l.dropBy=p.id||1;p.carry=null;text(p.x,p.y-70,'Lantern set','#ffe2a0',true)}}
+  if(p.carry.kind==='lantern'&&f&&!G.players.some(q=>q!==p&&q.deadT>0&&dist(q,p)<120)){const l=p.carry;l.by=0;l.t=soloPlay()?999:BANSHEE.lanternLit;l.cool=1;l.dropBy=p.id||1;p.carry=null;text(p.x,p.y-70,'Lantern set','#ffe2a0',true)}}
 /* Stage 4: the shell protects the front until the molt. */
 const CHITIN={sacT:10,chargeT:1.6,chargeSp:480,stumble:3};
 function shellBlock(e,p){return e.kind==='boss'&&(e.kit||G.stage)===4&&(e.phase||0)<2&&angGap(Math.atan2(p.y-e.y,p.x-e.x),e.ang)<Math.PI/2?.1:1}
@@ -691,7 +713,7 @@ function spawnMushrooms(e){for(const a of [0,TAU/3,2*TAU/3]){const o=sporeSpot(a
 function pickSpore(e){const r=Math.random();if((e.phase||0)>=2&&r<.3){e.act='toxicStorm';const t=bossTelegraph(e,'storm',(G.arena&&G.arena.r)||430,SPORE_BOSS.stormT);t.x=G.arena?G.arena.x:e.x;t.y=G.arena?G.arena.y:e.y;G.banner={t:1.3,a:'Toxic storm',b:'Stand in a clean zone'};return}if(r<.65){e.act='sporeCast';bossTelegraph(e,'spots',SPORE.cloudR,.8).spots=[{x:G.p.x,y:G.p.y}];return}e.act='sporeSlam';bossTelegraph(e,'circle',e.r+100,.9)}
 function cleanSporeAt(q){return G.props.some(v=>v.kind==='sporeVent'&&dist(q,v)<v.r)}
 function purifierTick(dt){for(const c of G.props){if(c.kind!=='purifier')continue;c.cool=Math.max(0,(c.cool||0)-dt);if(c.dropBy){const q=G.players.find(p=>(p.id||1)===c.dropBy);if(!q||dist(q,c)>40)c.dropBy=0}if(c.by){const q=G.players.find(p=>(p.id||1)===c.by);if(!q||q.carry!==c||q.deadT>0||q.respawnT>0){c.by=0;if(q&&q.carry===c)q.carry=null}else{c.x=q.x;c.y=q.y;const f=G.mp?q.reviveHold>0:(keys.has('KeyF')||touchHold.revive);if(f&&!G.players.some(p=>p!==q&&p.deadT>0&&dist(p,q)<120)){q.carry=null;c.by=0;c.cool=1;c.dropBy=q.id||1}}}else if(!c.cool){const q=G.players.find(p=>!p.carry&&!p.mv&&!p.ult&&!(p.deadT>0||p.respawnT>0)&&(p.id||1)!==c.dropBy&&dist(p,c)<28);if(q){q.carry=c;c.by=q.id||1;text(q.x,q.y-70,'Purifier: hold F to drop','#b8ec72',true)}}}}
-function sporeBossTick(dt){const e=G.boss;if(!e||(e.kit||G.stage)!==5)return;if(G.players.length>1&&!G.props.some(c=>c.kind==='purifier')){const o=sporeSpot(Math.PI/2,190);addProp('purifier',o.x,o.y,12,{sporeBoss:true})}purifierTick(dt);const live=G.players.filter(p=>!(p.deadT>0||p.respawnT>0));if(!live.length)return;
+function sporeBossTick(dt){const e=G.boss;if(!e||(e.kit||G.stage)!==5)return;if(!soloPlay()&&!G.props.some(c=>c.kind==='purifier')){const o=sporeSpot(Math.PI/2,190);addProp('purifier',o.x,o.y,12,{sporeBoss:true})}purifierTick(dt);const live=G.players.filter(p=>!p.ai&&!(p.deadT>0||p.respawnT>0));if(!live.length)return;
   const shrooms=G.enemies.filter(m=>m.role==='mushroom'&&!m.dead).length;if(shrooms)e.hp=Math.min(e.maxHp,e.hp+e.maxHp*SPORE_BOSS.regen*shrooms*dt);
   e.loadCd=(e.loadCd||0)-dt;let mark=live.find(p=>(p.id||1)===e.loadId);if(!mark||e.loadCd<=0){mark=live.find(p=>!(p.toxicLoad>0))||live[0];e.loadId=mark.id||1;e.loadCd=SPORE_BOSS.markEvery;text(mark.x,mark.y-90,'TOXIC LOAD','#b8ec72',true)}
   for(const q of G.players)q.loadMark=q===mark?1:0;
@@ -703,7 +725,7 @@ const FLESH={split:.66,rejoin:.33,apart:300,heal:.012,partyWindow:10,soloWindow:
 function splitFlesh(e){const life=e.maxHp*FLESH.split/2,one=sporeSpot(0,180),two=sporeSpot(Math.PI,180);e.x=one.x;e.y=one.y;e.hp=life;e.fleshSplit=true;e.fleshSide=1;e.fleshDown=false;e.fleshTotal=life*2;const b=Object.assign({},e,{x:two.x,y:two.y,hp:life,fleshSide:2,th:{},targetId:0,statusT:0,rotT:0,shatterT:0,slowT:0,brokenT:0,markT:0,exposedT:0,tauntT:0,staggerT:0,trail:[],tel:null,act:'walk',actT:2,breatherT:2,kx:0,ky:0});delete b.id;G.enemies.push(b);G.flesh={one:e,two:b,t:0};G.banner={t:3,a:'Keep them apart',b:'Separate the bodies or they heal'};}
 function fleshRejoin(hp){const f=G.flesh;if(!f)return;const a=f.one,b=f.two;a.hp=Math.max(1,Math.min(a.maxHp*FLESH.rejoin,hp));a.phase=2;a.fleshSplit=false;a.fleshDown=false;a.fleshSide=0;a.fleshTotal=null;a.fleshTime=0;a.act='walk';a.actT=2;a.breatherT=2;a.tel=null;b.dead=true;G.flesh=null;G.shots=G.shots.filter(s=>s.from!=='e');G.banner={t:3,a:'Bodies rejoined',b:'Finish the Flesh Amalgam'};sfx('boom')}
 function fleshAfterDamage(e){const f=G.flesh;if(!f)return;const a=f.one,b=f.two;a.fleshTotal=Math.max(0,a.hp)+Math.max(0,b.hp);if(!a.fleshDown&&!b.fleshDown&&a.hp>0&&b.hp>0&&a.fleshTotal<=a.maxHp*FLESH.rejoin)fleshRejoin(a.fleshTotal)}
-function fleshDownBody(e){const f=G.flesh;if(!f||e.fleshDown)return;e.hp=0;e.fleshDown=true;e.act='walk';e.tel=null;e.moving=false;e.flash=0;e.rotT=0;if(f.one.fleshDown&&f.two.fleshDown){fleshRejoin(f.one.maxHp*FLESH.rejoin);return}f.t=G.players.length===1?FLESH.soloWindow:FLESH.partyWindow;f.one.fleshTime=f.t;f.one.fleshTotal=Math.max(0,f.one.hp)+Math.max(0,f.two.hp);G.banner={t:3,a:'One body is down',b:'Defeat the other within '+f.t+' seconds'};sfx('boom')}
+function fleshDownBody(e){const f=G.flesh;if(!f||e.fleshDown)return;e.hp=0;e.fleshDown=true;e.act='walk';e.tel=null;e.moving=false;e.flash=0;e.rotT=0;if(f.one.fleshDown&&f.two.fleshDown){fleshRejoin(f.one.maxHp*FLESH.rejoin);return}f.t=soloPlay()?FLESH.soloWindow:FLESH.partyWindow;f.one.fleshTime=f.t;f.one.fleshTotal=Math.max(0,f.one.hp)+Math.max(0,f.two.hp);G.banner={t:3,a:'One body is down',b:'Defeat the other within '+f.t+' seconds'};sfx('boom')}
 function fleshTick(dt){const f=G.flesh;if(!f)return;const a=f.one,b=f.two;if(a.fleshDown||b.fleshDown){f.t=Math.max(0,f.t-dt);a.fleshTime=f.t;if(f.t<=0){const q=a.fleshDown?a:b;q.fleshDown=false;q.hp=q.maxHp*FLESH.rejoin;q.act='walk';q.actT=1;q.breatherT=1;text(q.x,q.y-q.ah,'REVIVED','#ff8f80',true);G.banner={t:2.5,a:'A body revived',b:'Bring them down together'}}}else if(dist(a,b)<FLESH.apart){for(const q of [a,b])q.hp=Math.min(q.maxHp*FLESH.rejoin,q.hp+q.maxHp*FLESH.heal*dt)}if(G.flesh)fleshAfterDamage(a)}
 function startFleshGrasp(e){e.graspId=(topThreatPlayer(e)||G.p).id||1;e.act='fleshGrasp';bossTelegraph(e,'line',FLESH.graspRange,.85)}
 function pickFlesh(e){if(Math.random()<.5)startFleshGrasp(e);else{e.act='fleshBile';bossTelegraph(e,'spots',FLESH.bileR,.9).spots=[{x:G.p.x,y:G.p.y}]}}
@@ -715,7 +737,7 @@ function farthestLiving(e){let out=null,best=-1;for(const q of G.players){if(q.d
 function startGhoulHook(e){const q=farthestLiving(e);if(!q)return startGhoulCleave(e,false);e.hookId=q.id||1;e.ang=Math.atan2(q.y-e.y,q.x-e.x);e.act='ghoulHook';bossTelegraph(e,'ghoulHook',900,.9)}
 function startGhoulCleave(e,chain){if(!chain)e.ghoulChain=0;e.act='ghoulCleave';bossTelegraph(e,'cone',e.r+GHOUL.cleaveReach,(e.phase||0)>=2?BOSS_TELEGRAPH:.9).half=GHOUL.cleaveHalf}
 function pickGhoul(e){if(Math.random()<.5)startGhoulHook(e);else startGhoulCleave(e,false)}
-function ghoulTick(dt){const e=G.boss;if(!e||(e.kit||G.stage)!==7)return;const live=G.players.filter(q=>!(q.deadT>0||q.respawnT>0)),g=G.props.find(o=>o.kind==='ghoulGen'),c=G.props.find(o=>o.kind==='ghoulCoil');if(!live.length||!g||!c)return;if(e.rustField)for(const q of live)q.fieldRust=Math.min(GHOUL.fieldMax,(q.fieldRust||0)+GHOUL.fieldRate*dt);const solo=live.length===1,power=!solo&&live.some(q=>dist(q,g)<70&&(G.mp?q.reviveHold>0:(keys.has('KeyF')||touchHold.revive))&&!G.players.some(x=>x!==q&&x.deadT>0&&dist(x,q)<120));g.by=power?1:0;c.t=Math.min(1,(c.t||0)+(solo?dt/GHOUL.soloCharge:power?dt/GHOUL.partyCharge:0));g.t=c.t;c.by=c.t>=1?1:0;if(c.by&&(solo||power)&&!(e.staggerT>0)&&dist(e,c)<c.r+e.r){const me=G.p;G.p=nearestPlayer(e)||me;bossGuard(e,(e.guardMax||BOSS_GUARD_MAX)-(e.guard||0));G.p=me;e.rustField=false;for(const q of G.players)q.fieldRust=0;c.t=g.t=0;c.by=0;G.fx.push({k:'ring',x:c.x,y:c.y,r:10,to:160,t:.5,m:.5,c:'#8fd6ff'});G.banner={t:2.6,a:'Generator Shock',b:'The Rust Field is cleared'};sfx('bolt')}}
+function ghoulTick(dt){const e=G.boss;if(!e||(e.kit||G.stage)!==7)return;const live=G.players.filter(q=>!q.ai&&!(q.deadT>0||q.respawnT>0)),g=G.props.find(o=>o.kind==='ghoulGen'),c=G.props.find(o=>o.kind==='ghoulCoil');if(!live.length||!g||!c)return;if(e.rustField)for(const q of live)q.fieldRust=Math.min(GHOUL.fieldMax,(q.fieldRust||0)+GHOUL.fieldRate*dt);const solo=live.length===1,power=!solo&&live.some(q=>dist(q,g)<70&&(G.mp?q.reviveHold>0:(keys.has('KeyF')||touchHold.revive))&&!G.players.some(x=>x!==q&&x.deadT>0&&dist(x,q)<120));g.by=power?1:0;c.t=Math.min(1,(c.t||0)+(solo?dt/GHOUL.soloCharge:power?dt/GHOUL.partyCharge:0));g.t=c.t;c.by=c.t>=1?1:0;if(c.by&&(solo||power)&&!(e.staggerT>0)&&dist(e,c)<c.r+e.r){const me=G.p;G.p=nearestPlayer(e)||me;bossGuard(e,(e.guardMax||BOSS_GUARD_MAX)-(e.guard||0));G.p=me;e.rustField=false;for(const q of G.players)q.fieldRust=0;c.t=g.t=0;c.by=0;G.fx.push({k:'ring',x:c.x,y:c.y,r:10,to:160,t:.5,m:.5,c:'#8fd6ff'});G.banner={t:2.6,a:'Generator Shock',b:'The Rust Field is cleared'};sfx('bolt')}}
 /* Stage 2 and 3 boss acts. Returns true when it handled this frame. */
 function bossActStage(e,dt,d,seen,p,n){const a=e.act;
   if(a==='ghoulHook'){const q=G.players.find(q=>(q.id||1)===e.hookId);if(q&&e.actT>.2)e.ang=Math.atan2(q.y-e.y,q.x-e.x);if(e.actT<=0){e.tel=null;if(q&&!(q.deadT>0||q.respawnT>0||q.inv>0)&&los(e,q)){const L=dist(q,e)||1,step=Math.min(GHOUL.hookPull,Math.max(0,L-e.r-q.r)),dx=(e.x-q.x)/L,dy=(e.y-q.y)/L;for(let left=step;left>0;){const n=Math.min(12,left);if(move(q,dx*n,dy*n))break;left-=n}const me=G.p;G.p=q;hurtPlayer(e.dmg);G.p=me}e.act='walk';e.actT=1.3;e.cd=1.3}return true}
@@ -730,7 +752,7 @@ function bossActStage(e,dt,d,seen,p,n){const a=e.act;
   if(a==='webSpit'){if(e.actT>.2)e.ang=Math.atan2(p.y-e.y,p.x-e.x);if(e.actT<=0){e.tel=null;const a=e.ang;G.shots.push({x:e.x,y:e.y-22,vx:Math.cos(a)*260,vy:Math.sin(a)*260,r:8,from:'e',life:3,dmg:e.dmg*.7,web:true,fx:'orb',col:'230,230,200',a});e.act='walk';e.actT=rnd(1.2,2)}return true}
   if(a==='beamAim'){if(e.actT<=0){e.tel=null;e.act='beam';e.actT=GLOOM.beamT;sfx('bolt')}return true}
   if(a==='beam'){e.beamA+=e.beamDir*GLOOM.beamSweep/GLOOM.beamT*dt;e.ang=e.beamA;bossHurtWhere(q=>inBeam(e,q,e.beamA,GLOOM.beamLen,GLOOM.beamW),e.dmg*.9);
-    if(G.players.length===1&&!(e.eyeT>0)&&p.dashT>0&&inBeam(e,p,e.beamA,GLOOM.beamLen,GLOOM.beamW+30))openEye(e,Math.atan2(p.y-e.y,p.x-e.x));
+    if(soloPlay()&&!(e.eyeT>0)&&p.dashT>0&&inBeam(e,p,e.beamA,GLOOM.beamLen,GLOOM.beamW+30))openEye(e,Math.atan2(p.y-e.y,p.x-e.x));
     if(e.actT<=0){if((e.phase||0)>=2&&!e.beamTwice){e.beamTwice=true;e.beamDir*=-1;e.act='beamAim';bossTelegraph(e,'beam',GLOOM.beamLen,BOSS_TELEGRAPH)}else{e.act='walk';e.actT=rnd(1.2,2.2)}}return true}
   if(a==='slam3'){if(e.actT<=0){const sp=(e.tel&&e.tel.spots)||[];bossHurtWhere(q=>sp.some(s=>Math.hypot(q.x-s.x,q.y-s.y)<GLOOM.slamR+q.r),e.dmg*1.2);for(const s of sp){G.fx.push({k:'ring',x:s.x,y:s.y,r:10,to:GLOOM.slamR+10,t:.3,m:.3,c:'#c88cff'});burst(s.x,s.y,'#8a6aa8',10,170)}e.tel=null;shake(5);sfx('boom');e.act='walk';e.actT=rnd(1.2,2)}return true}
   if(a==='pulse'){if(e.actT<=0){e.tel=null;for(const q of G.players)q.blindT=GLOOM.blindT;G.fx.push({k:'ring',x:e.x,y:e.y-30,r:20,to:520,t:.5,m:.5,c:'#3a2050'});text(e.x,e.y-e.ah,'BLINDING PULSE','#c88cff',true);e.act='call';e.actT=.3}return true}
@@ -810,7 +832,7 @@ const sideDef=id=>{for(const k in SIDE_QUESTS){const q=SIDE_QUESTS[k].find(x=>x.
 /* Pick two or three of the stage's quests and place their givers around the haven */
 function sideInit(){G.side=[];if(G.story||G.swarm||!SIDE_QUESTS[G.stage])return;const pool=SIDE_QUESTS[G.stage].slice(),n=Math.random()<.5?2:3;
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
-  const spots=[];pool.slice(0,n).forEach(d=>{let o=null;for(let t=0;t<40;t++){const c=propSpot(600,3600);if(spots.every(s=>Math.hypot(s.x-c.x,s.y-c.y)>GIVER_GAP)){o=c;break}o=o||c}spots.push(o);
+  const spots=[];pool.slice(0,n).forEach(d=>{let o=null,best=-1;for(let t=0;t<40;t++){const c=propSpot(600,3600),gap=Math.min(Infinity,...spots.map(s=>Math.hypot(s.x-c.x,s.y-c.y)),Math.hypot(c.x-G.safe.x,c.y-G.safe.y));if(gap>GIVER_GAP){o=c;break}if(gap>best){best=gap;o=c}}spots.push(o);
     G.side.push({id:d.id,kind:d.kind,st:0,have:0,need:d.n||1,t:0});addProp('sq_giver',o.x,o.y,14,{q:d.id})})}
 const sideOf=id=>(G.side||[]).find(q=>q.id===id),sideProps=id=>(G.props||[]).filter(o=>o.q===id&&o.kind!=='sq_giver');
 /* Accepting sets the quest up on the map */
@@ -863,7 +885,7 @@ function spawnShade(p,at){const name=p.char,fac=factionOf(name),arch=ROSTER[fac]
 function shadeRise(e){e.lives--;e.hp=e.maxHp;e.dodgeUntil=G.t+1.2;e.flash=.4;e.escT0=G.t;e.escHp=e.hp;shake(6);sfx('boss_roar');
   for(const q of alivePlayers())if(dist(q,e)<120){const a=Math.atan2(q.y-e.y,q.x-e.x);q.kx=(q.kx||0)+Math.cos(a)*380;q.ky=(q.ky||0)+Math.sin(a)*380}
   G.fx.push({k:'ring',x:e.x,y:e.y-20,r:10,to:120,t:.5,m:.5,c:'rgba(150,80,230,.9)'});text(e.x,e.y-90,e.lives===1?'Last life':'It rises again','#c8a8ff',true)}
-function summonShades(){const ps=alivePlayers();ps.forEach((q,i)=>{const a=i/Math.max(1,ps.length)*TAU,at={x:G.gate.x+Math.cos(a)*70,y:G.gate.y-60+Math.sin(a)*40};spawnShade(q,blocked(at.x,at.y,16)?{x:G.gate.x,y:G.gate.y-40}:at)});
+function summonShades(){const ps=alivePlayers().filter(q=>!q.ai);ps.forEach((q,i)=>{const a=i/Math.max(1,ps.length)*TAU,at={x:G.gate.x+Math.cos(a)*70,y:G.gate.y-60+Math.sin(a)*40};spawnShade(q,blocked(at.x,at.y,16)?{x:G.gate.x,y:G.gate.y-40}:at)});
   G.shadeUp=true;shake(8);sfx('boss_roar');G.banner={t:3.2,a:ps.length>1?'Your shades bar the way':'Your shade bars the way',b:'Defeat it to face the boss'}}
 function summonBoss(kit,at){
   const n=G.stage,k=kit||n,st=STAGES[k-1],g=G.gate,o=at||{x:g.x,y:g.y-40};
@@ -872,7 +894,7 @@ function summonBoss(kit,at){
   partyToughen(e);G.enemies.push(e);G.boss=e;G.arena=at?null:{x:G.gate.x,y:G.gate.y-40,r:430};shake(10);sfx('boom');
   if(k===3)spawnLanterns();if(k===5)spawnSporeArena();if(k===7)spawnGhoulArena();
   sfx('boss_roar');const rec=recLevel(n),lv=G.p.lvl;
-  G.banner={t:3.2,a:e.name,b:k===7?(G.players.length===1?'The coil charges itself. Lure the boss onto it.':'Hold F / Revive at the generator; lure it onto the coil.'):k===6?'Keep the two bodies apart.':k===5?(G.players.length===1?'Clean Toxic Load at the vents.':'Share Toxic Load or carry the purifier to clean it.'):k===4?'Crack the shell: attack its green back':lv<rec?'Recommended level '+rec+'. You are level '+lv+'. Train more if you fall.':'Final boss of stage '+n};
+  G.banner={t:3.2,a:e.name,b:k===7?(soloPlay()?'The coil charges itself. Lure the boss onto it.':'Hold F / Revive at the generator; lure it onto the coil.'):k===6?'Keep the two bodies apart.':k===5?(soloPlay()?'Clean Toxic Load at the vents.':'Share Toxic Load or carry the purifier to clean it.'):k===4?'Crack the shell: attack its green back':lv<rec?'Recommended level '+rec+'. You are level '+lv+'. Train more if you fall.':'Final boss of stage '+n};
 }
 
 /* ---------- Combat ---------- */
@@ -904,7 +926,7 @@ function reactChain(e,dmg,r,n){let c=0;for(const o of G.enemies.slice()){if(o.de
 const REACT_FX={
   resonance:(e,p,b)=>{e.statusT=0;return REACT_SAME},
   /* Section 5: Overload jumps to five nearby enemies. The original stun stays. */
-  overload:(e,p,b)=>{e.statusT=0;e.stunT=e.kind==='boss'?0:1;reactChain(e,b*.6,160,5);return G.players.length===1?1.15:1.3},
+  overload:(e,p,b)=>{e.statusT=0;e.stunT=e.kind==='boss'?0:1;reactChain(e,b*.6,160,5);return soloPlay()?1.15:1.3},
   /* Section 5: 200% damage, 110 units. */
   inferno:(e,p,b)=>{e.statusT=0;reactSplash(e,b,110,'#ff9a3c');G.fx.push({k:'ring',x:e.x,y:e.y,r:20,to:110,t:.35,m:.35,c:'#ff8a2c'});return 2},
   /* Section 5: 150% damage and armor removed for 4 s. Shattered targets take 25% more while it lasts. */
@@ -916,7 +938,7 @@ const REACT_FX={
   /* Section 5: pulls enemies in 160 units together, then a burst. */
   collapse:(e,p,b)=>{e.statusT=0;for(const o of G.enemies){if(o.dead||o===e)continue;const d=dist(o,e);if(d>160)continue;const a=Math.atan2(e.y-o.y,e.x-o.x),step=Math.max(0,d-Math.max(24,e.r*.8));move(o,Math.cos(a)*step,Math.sin(a)*step);reactHit(o,b*.8,'#c8a4ff')}G.fx.push({k:'ring',x:e.x,y:e.y,r:20,to:160,t:.4,m:.4,c:'#b98cff'});return 1},
   /* Section 5: nearby allies heal 10%. Solo uses half strength. */
-  purge:(e,p,b)=>{e.statusT=0;const share=G.players.length===1?.05:.1;for(const q of alivePlayers()){if(dist(q,e)>200)continue;const h=q.s.maxHp*share;q.hp=Math.min(q.s.maxHp,q.hp+h);text(q.x,q.y-72,'+'+Math.round(h),'#6fdca0',true)}return 1},
+  purge:(e,p,b)=>{e.statusT=0;const share=soloPlay()?.05:.1;for(const q of alivePlayers()){if(dist(q,e)>200)continue;const h=q.s.maxHp*share;q.hp=Math.min(q.s.maxHp,q.hp+h);text(q.x,q.y-72,'+'+Math.round(h),'#6fdca0',true)}return 1},
   /* Section 5: everyone in 200 units is stunned 1.5 s. Bosses break instead of stunning, since their guard bar does not exist yet. */
   eclipse:(e,p,b)=>{e.statusT=0;for(const o of G.enemies){if(o.dead||dist(o,e)>200)continue;if(o.kind==='boss'){o.exposedT=Math.max(o.exposedT||0,2);o.brokenT=Math.max(o.brokenT||0,2)}else o.stunT=Math.max(o.stunT||0,1.5)}G.fx.push({k:'ring',x:e.x,y:e.y,r:30,to:200,t:.5,m:.5,c:'#b0b8ff'});return 1},
   /* Bleed plus Burn: the wound burns shut, so the damage lands now instead of bleeding. */
@@ -933,10 +955,10 @@ function expose(e,duration=2){if(e.dead)return;e.exposedT=Math.max(e.exposedT||0
 /* Hit-stop: heavy hits freeze the action for a moment so they land with weight. Solo only; the main loop slows time while it runs. */
 const HIT_STOP=.06;
 function hitEnemy(e,base,ang,kb,heavy=false){if(heavy&&kb>0)G.hitStop=Math.max(G.hitStop||0,HIT_STOP);
-  if(e.dead||e.buried||e.fleshDown||e.scrapDown)return;const p=G.p;if((e.dodgeUntil||0)>G.t)return;if(e.shade){e.lastHit=G.t;if(e.lives===1)base*=SHADE.lastTake}if(p&&p.char==='Chronomancer'&&e.frozenT>0&&e.tsBy===(p.id||1))base*=1+CHRONO.bonus;if(!heavy&&kb>0&&tryDodge(e,ang))return;if(!heavy&&kb>0&&p&&p.char==='Chronomancer')chronoRewind(e);if(bossWarded(e)){if(!(e.wardT>G.t)){e.wardT=G.t+1;text(e.x,e.y-110,e.ghostT>0?'UNTOUCHABLE':'NEEDS LANTERN LIGHT','#c8b8ff',true)}return}if(e.role==='lurker'&&e.grab&&(G.players.length===1||(p.id||1)!==e.grab))lurkRelease(e,true);if(e.eyeT>0&&eyeBehind(e,p)&&!(e.eyeCd>G.t)){e.eyeCd=G.t+.4;bossGuard(e,BOSS_GUARD_GAIN.eye);base*=1.5;text(e.x,e.y-e.ah,'EYE HIT','#ffd860',true)}let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
-  if(heavy&&!justBroke&&e.brokenT>0&&(G.players.length===1||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
+  if(e.dead||e.buried||e.fleshDown||e.scrapDown)return;const p=G.p;if((e.dodgeUntil||0)>G.t)return;if(e.shade){e.lastHit=G.t;if(e.lives===1)base*=SHADE.lastTake}if(p&&p.char==='Chronomancer'&&e.frozenT>0&&e.tsBy===(p.id||1))base*=1+CHRONO.bonus;if(!heavy&&kb>0&&tryDodge(e,ang))return;if(!heavy&&kb>0&&p&&p.char==='Chronomancer')chronoRewind(e);if(bossWarded(e)){if(!(e.wardT>G.t)){e.wardT=G.t+1;text(e.x,e.y-110,e.ghostT>0?'UNTOUCHABLE':'NEEDS LANTERN LIGHT','#c8b8ff',true)}return}if(e.role==='lurker'&&e.grab&&(soloPlay()||(p.id||1)!==e.grab))lurkRelease(e,true);if(e.eyeT>0&&eyeBehind(e,p)&&!(e.eyeCd>G.t)){e.eyeCd=G.t+.4;bossGuard(e,BOSS_GUARD_GAIN.eye);base*=1.5;text(e.x,e.y-e.ah,'EYE HIT','#ffd860',true)}let justBroke=false;if(p.breakReady>0){p.breakReady=0;e.brokenT=5;e.brokenBy=p.id||0;justBroke=true;if(e.wind>0||e.healWind>0){e.wind=0;e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e)}text(e.x,e.y-80,'BROKEN','#ffd860',true)}else if(heavy&&e.healWind>0){e.healWind=0;e.healT=3;e.castT=0;e.cd=1;expose(e);text(e.x,e.y-80,'INTERRUPTED','#ffd860',true)}
+  if(heavy&&!justBroke&&e.brokenT>0&&(soloPlay()||(e.brokenBy||0)!==(p.id||0))){e.brokenT=0;base*=1.5;text(e.x,e.y-98,'BREAK STRIKE','#ffe27a',true)}
   if(justBroke)bossGuard(e,BOSS_GUARD_GAIN.break);
-  const el=ELEMENT[p.char],prev=e.statusType,solo=G.players.length===1,rid=(el&&e.statusT>0&&prev&&G.t>=(e.reactAt||0)&&(solo||(e.statusBy||0)!==(p.id||0)))?(solo?'resonance':reactionOf(prev,el)):'';
+  const el=ELEMENT[p.char],prev=e.statusType,solo=soloPlay(),rid=(el&&e.statusT>0&&prev&&G.t>=(e.reactAt||0)&&(solo||(e.statusBy||0)!==(p.id||0)))?(solo?'resonance':reactionOf(prev,el)):'';
   if(rid&&REACT_FX[rid]){sfx('react_'+rid);achievementUnlock(p,'reaction');if(!solo)achievementUnlock(p,'teamReaction');e.reactAt=G.t+REACT_CD;const mult=REACT_FX[rid](e,p,base);base*=solo?1+(mult-1)*.5:mult;text(e.x,e.y-110,REACT_NAME[rid],'#80eaff',true);G.fx.push({k:'ring',x:e.x,y:e.y,r:8,to:72,t:.4,m:.4,c:'#80eaff'});reactRage(e,p,solo?.5:1);bossGuard(e,BOSS_GUARD_GAIN.reaction*(solo?.5:1))}
   else if(el){e.statusType=el;e.statusT=4;e.statusBy=p.id||0}
   base*=elemTime(el);if(e.shatterT>0)base*=1.25;if((e.staggerT||0)>0)base*=BOSS_STAGGER_DMG;
@@ -944,7 +966,7 @@ function hitEnemy(e,base,ang,kb,heavy=false){if(heavy&&kb>0)G.hitStop=Math.max(G
   e.hp-=d;e.flash=.11;e.aware=true;if(p&&p.char==='Void Empress'&&(WEAPONS[p.weapon]||{}).m==='spell')e.slowT=Math.max(e.slowT||0,1.5);if(e.hp>0)enemySfx(e,'hurt');threatAdd(e,p.id||0,100*d/Math.max(1,e.maxHp));bossPhaseCheck(e);if(e.kind==='boss')e.recoil=.16;const res=e.kind==='boss'?.15:1;e.kx+=Math.cos(ang)*kb*res;e.ky+=Math.sin(ang)*kb*res;
   G.fx.push({k:'spark',x:e.x,y:e.y-24,a:ang,t:crit?.26:.18,m:crit?.26:.18,crit:crit?1:0,c:heavy||crit?'255,220,120':'255,250,235'});
   text(e.x,e.y-(e.kind==='boss'?e.ah*.7:66),Math.round(d)+(crit?'!':''),crit?'#ffd86b':'#fff',crit);if(crit||(e.exposedT||0)>0)G.fx.push({k:'ring',x:e.x,y:e.y-20,r:6,to:e.r*1.6,t:.22,m:.22,c:crit?'#ffd86b':'#f2ecd8'});goreSpray(e,ang,d/Math.max(1,e.maxHp),crit);burst(e.x,e.y-20,'#f0805c',crit?4:1);if(crit||heavy)goreChunks(e,ang,crit?2:1);
-  if(p.s.leech>0)p.hp=Math.min(p.s.maxHp,p.hp+p.s.leech);lifeSteal(p,d);if(p.char==='Pyromancer')ignite(e,p,d);sfx('hit');if(crit)shake(2);
+  if(p.s.leech>0)p.hp=Math.min(p.s.maxHp,p.hp+p.s.leech);lifeSteal(p,d);if(p.char==='Pyromancer')ignite(e,p,d);sigOnHit(p,e,d,heavy);sfx('hit');if(crit)shake(2);
   if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){if(e.shade&&(e.lives||1)>1){shadeRise(e);return}
@@ -962,7 +984,7 @@ function killEnemy(e){if(e.shade&&(e.lives||1)>1){shadeRise(e);return}
 }
 function dropLoot(e,night){
   const boss=e.kind==='boss',start=G.loot.length; // no equipment or weapons for now: gold, potions and pills only
-  if(Math.random()<(boss?1:.7))G.loot.push({x:e.x+rnd(-16,16),y:e.y+rnd(-16,16),kind:'gold',amt:Math.round(e.gold*night),t:0});
+  if(Math.random()<(boss?1:.7))G.loot.push({x:e.x+rnd(-16,16),y:e.y+rnd(-16,16),kind:'gold',amt:Math.round(e.gold*night*partyGold()),t:0});
   if(boss||Math.random()<(e.elite?.3:.1))G.loot.push({x:e.x+rnd(-16,16),y:e.y+rnd(-16,16),kind:'potions',t:0});
   if(Math.random()<(boss?.8:e.elite?.2:.05))G.loot.push({x:e.x+rnd(-16,16),y:e.y+rnd(-16,16),kind:'fast',t:0});
   if(Math.random()<(boss?.8:e.elite?.2:.05))G.loot.push({x:e.x+rnd(-16,16),y:e.y+rnd(-16,16),kind:'magic',t:0});
@@ -970,11 +992,11 @@ function dropLoot(e,night){
 }
 function gainXp(x){const p=G.p;p.xp+=x;let up=false;
   while(p.xp>=xpNeed(p.lvl)){p.xp-=xpNeed(p.lvl);p.lvl++;p.sp++;up=true}
-  if(up){if(!G.swarm)achievementCheck(p);recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana;sfx('level');burst(p.x,p.y-20,'#e8c95c',28,220);text(p.x,p.y-74,'Level '+p.lvl,'#e8c95c',true);addLog('Level '+p.lvl+'. Skill point earned (press T).');writeSave()}}
+  if(up){if(!G.swarm)achievementCheck(p);recalc();p.hp=p.s.maxHp;p.mana=p.s.maxMana;sfx('level');burst(p.x,p.y-20,'#e8c95c',28,220);text(p.x,p.y-74,'Level '+p.lvl,'#e8c95c',true);addLog('Level '+p.lvl+'. Skill point earned (press T).');writeSave();if(!p.ai)aiLevel()}}
 function hurtPlayer(d){
-  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}const ar=p.s.armor*(1-Math.min(90,(p.rust||0)+(p.fieldRust||0))/100)+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*abilGuard(p)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;beaconHit(p);p.hitT=.18;shake(5);sfx('hurt');
+  const p=G.p;if(G.mode!=='play'||p.respawnT>0||p.inv>0)return;if(p.deadT>0){p.deadT=Math.max(.001,p.deadT-3);p.inv=.4;return;}let ar=p.s.armor*(1-Math.min(90,(p.rust||0)+(p.fieldRust||0))/100)+(p.guard?guardArmor(p):0),red=ar/(ar+60),v=d*(1-red)*abilGuard(p)*(auraHas(p,'bruiser')?.92:1)*(p.tauntGuard>0?.7:1);{const left=tankSoak(p,v);if(left<=0){p.inv=.4;return}if(left<v){v=left}}if(p.guard)burst(p.x+Math.cos(p.face)*18,p.y-24,'#8fd0ff',7,120);p.hp-=v;p.inv=.4;beaconHit(p);p.hitT=.18;shake(5);sfx('hurt');
   text(p.x,p.y-72,'-'+Math.round(v),'#ff6a5f');burst(p.x,p.y-20,'#f0805c',8);if(!p.guard)bleed(p.x,p.y-24,rnd(-1,1),rnd(-1,1),clamp(Math.round(v/Math.max(1,p.s.maxHp)*60),3,22));
-  if(p.hp<=0){p.hp=0;if(G.players.length===1&&!p.secondWind){p.secondWind=true;playerDown(p,true);writeSave()}else if(G.mp)playerDown(p);else if(G.swarm){p.hp=0;endSwarm()}else{p.gold=Math.floor(p.gold*.8);writeSave();setMode('dead')}}
+  if(p.hp<=0){p.hp=0;if(p.ai)playerDown(p);else if(soloPlay()&&!p.secondWind){p.secondWind=true;playerDown(p,true);writeSave()}else if(G.mp)playerDown(p);else if(G.swarm){p.hp=0;endSwarm()}else{p.gold=Math.floor(p.gold*.8);writeSave();setMode('dead')}}
 }
 /* An upgraded shield cancels ordinary enemies' current wind-up, never a boss move. */
 function shieldInterrupt(e){if(!e||e.dead||e.kind==='boss'||!((e.wind||0)>0||(e.healWind||0)>0))return false;achievementUnlock(G.p,'interrupt');e.wind=0;e.healWind=0;e.healT=Math.max(e.healT||0,3);e.castT=0;e.cd=Math.max(e.cd||0,1);text(e.x,e.y-98,'INTERRUPTED','#8fd0ff',true);G.fx.push({k:'shieldFx',x:e.x,y:e.y-24,a:Math.atan2(e.y-G.p.y,e.x-G.p.x),t:.28,m:.28});burst(e.x,e.y-24,'#8fd0ff',6,100);return true}
@@ -1069,8 +1091,44 @@ const SIG={
  'Shadow Monarch':{steal:1,tier:[1,1,2,5],stealT:[1,1,2,4],bat:{dmg:5,haste:5,steal:5,speed:5}},
  'Void Empress':{hit:2,push:80,tier:[1,2,4,5],scare:[0,0,0,2],area:125,field:{hold:5,hit:3}},
  Pyromancer:{hit:1,tier:[1,2,3,5],blaze:{t:3,tick:.5,k:.1},wave:{r:210,arc:.6,mul:2.2},wall:{n:3,r:58,t:3,dps:.3},pillar:{range:360,r:105,mul:2.6,stun:.8},
-   meteor:{base:6,max:12,gap:.3,fall:.55,blast:85,k:.15,ground:{r:60,t:2.5,dps:.04}}}
+   meteor:{base:6,max:12,gap:.3,fall:.55,blast:85,k:.15,ground:{r:60,t:2.5,dps:.04}}},
+ Guardian:{hit:1,tier:[1,1.5,2.5,4],taunt:1.5},
+ 'Soul Forger':{hit:1,tier:[1,2,3,5],splash:{r:70,k:.35}}
 };
+/* ---------- Tanks: the Guardian (hero) and the Soul Forger (villain) ----------
+   Guardian: shield bashes hit +1 and taunt what they hit (1.5 s). Quick attack: blue Shield Slam (a close cone that
+   stuns), green Bulwark Wave (a long cone that throws enemies back), red Judgement (a holy ring that stuns and taunts).
+   Soul Forger: hammer hits +1 and splash molten sparks on enemies next to the target. Quick attack: blue Anvil Slam
+   (a ring around you), green Molten Fissure (a burning line ahead), red Anvil Fall (an anvil crushes your aim).
+   Ability (both): for 6 s every enemy near the tank turns on it, and damage to allies near the tank (and to the tank)
+   is soaked by a shield of 50% of the tank's life, plus 25% per extra party member, so it scales with level and party
+   size. It breaks when used up. The Guardian's finisher releases the soaked damage as a holy blast; the Soul Forger's
+   aura burns nearby enemies harder the more it soaks, and its finisher heals allies from what it soaked. */
+const TANK={r:230,taunt:320,base:.5,per:.25,refresh:.5};
+const tankUp=q=>!!q&&(abilBuff(q,'aegis')||abilBuff(q,'anvil'))&&q.tankPool>0&&!(q.deadT>0||q.respawnT>0);
+function tankSoak(p,v){const t=G.players.find(q=>tankUp(q)&&(q===p||dist(q,p)<TANK.r));if(!t||!(v>0))return v;const take=Math.min(v,t.tankPool);
+  t.tankPool=+(t.tankPool-take).toFixed(1);t.tankAbs=(t.tankAbs||0)+take;t.tankBurst=(t.tankBurst||0)+take;G.fx.push({k:'soak',x0:p.x,y0:p.y,x1:t.x,y1:t.y,f:abilBuff(t,'aegis')?1:2,t:.35,m:.35});
+  text(p.x,p.y-72,'Shielded '+Math.round(take),abilBuff(t,'aegis')?'#ffe08a':'#ffb070');if(t.tankPool<=0){text(t.x,t.y-100,'Shield broken','#ff8f80',true);abilityEnd(t)}return v-take}
+function tankTaunt(p,r,sec){for(const e of G.enemies)if(foeAlive(e)&&dist(e,p)<r){e.tauntT=Math.max(e.tauntT||0,sec);e.tauntId=p.id||0;e.aware=true}}
+function tankArm(p,ab){const pool=p.s.maxHp*(TANK.base+TANK.per*(partySize()-1));p.tankPool=p.tankMax=+pool.toFixed(1);p.tankAbs=0;p.tankBurst=0;p.tankTk=0;tankTaunt(p,TANK.taunt,ab.dur);
+  text(p.x,p.y-96,ab.fx==='aegis'?'AEGIS':'SOUL ANVIL',ab.fx==='aegis'?'#ffe08a':'#ffb070',true);G.fx.push({k:'tankup',x:p.x,y:p.y,r:TANK.r,f:ab.fx==='aegis'?1:2,t:.6,m:.6});shake(4);sfx('boom')}
+function tankStep(p,dt){if(!(abilBuff(p,'aegis')||abilBuff(p,'anvil'))){if(p.tankPool)p.tankPool=0;return}p.tankTk=(p.tankTk||0)-dt;if(p.tankTk>0)return;p.tankTk=TANK.refresh;tankTaunt(p,TANK.taunt,1);
+  if(abilBuff(p,'anvil')){const k=(p.tankBurst||0)*.6;p.tankBurst=0;for(const e of G.enemies.slice())if(foeAlive(e)&&dist(e,p)<150)hitEnemy(e,basicHit(p)*.25+k/2,Math.atan2(e.y-p.y,e.x-p.x),0,true)}}
+let FORGE_SPLASH=false;
+function sigOnHit(p,e,d,heavy){if(p.char==='Guardian'&&foeAlive(e)){e.tauntT=Math.max(e.tauntT||0,SIG.Guardian.taunt);e.tauntId=p.id||0}
+  if(p.char==='Soul Forger'&&!heavy&&!FORGE_SPLASH){const S=SIG['Soul Forger'].splash;FORGE_SPLASH=true;try{for(const o of G.enemies.slice())if(o!==e&&foeAlive(o)&&dist(o,e)<S.r+(o.r||14))hitEnemy(o,d*S.k,Math.atan2(o.y-e.y,o.x-e.x),60,true)}finally{FORGE_SPLASH=false}G.fx.push({k:'sparks',x:e.x,y:e.y,t:.35,m:.35})}}
+const inCone=(p,e,r,arc)=>dist(e,p)<=r+(e.r||14)&&angGap(Math.atan2(e.y-p.y,e.x-p.x),p.face)<=arc;
+function guardCharge(p,tier,k){const t=Math.max(1,tier||1),b=basicHit(p);
+  if(t===1){for(const e of G.enemies.slice())if(foeAlive(e)&&inCone(p,e,130,1)){hitEnemy(e,b*2.4*k,p.face,260,true);if(!e.dead)stunFor(e,.6)}tankTaunt(p,160,3);G.fx.push({k:'shieldslam',x:p.x,y:p.y,a:p.face,r:130,arc:1,t:.4,m:.4});text(p.x,p.y-92,'SHIELD SLAM','#ffe08a',true)}
+  else if(t===2){for(const e of G.enemies.slice())if(foeAlive(e)&&inCone(p,e,230,.75)){hitEnemy(e,b*2.4*k,p.face,320,true);if(!e.dead)stunFor(e,.4)}tankTaunt(p,260,4);G.fx.push({k:'shieldslam',x:p.x,y:p.y,a:p.face,r:230,arc:.75,wave:1,t:.55,m:.55});text(p.x,p.y-92,'BULWARK WAVE','#ffe08a',true)}
+  else{for(const e of G.enemies.slice())if(foeAlive(e)&&dist(e,p)<190+(e.r||14)){hitEnemy(e,b*2.6*k,Math.atan2(e.y-p.y,e.x-p.x),200,true);if(!e.dead)stunFor(e,1.2)}tankTaunt(p,300,5);p.inv=Math.max(p.inv||0,.5);G.fx.push({k:'judgement',x:p.x,y:p.y,r:190,t:.9,m:.9});text(p.x,p.y-92,'JUDGEMENT','#fff2b0',true)}
+  p.castT=.3;sfx('boom');shake(2+t*1.5)}
+function forgeCharge(p,tier,k){const t=Math.max(1,tier||1),b=basicHit(p);
+  if(t===1){for(const e of G.enemies.slice())if(foeAlive(e)&&dist(e,p)<120+(e.r||14)){hitEnemy(e,b*2.4*k,Math.atan2(e.y-p.y,e.x-p.x),180,true);if(!e.dead)stunFor(e,.4)}G.fx.push({k:'anvilslam',x:p.x,y:p.y,r:120,t:.45,m:.45});text(p.x,p.y-92,'ANVIL SLAM','#ffb070',true)}
+  else if(t===2){const a=p.face;for(const e of onLine(p.x,p.y,a,260,40))hitEnemy(e,b*2.4*k,a,120,true);for(let i=1;i<=3;i++)fireGround(p,p.x+Math.cos(a)*i*80,p.y+Math.sin(a)*i*80,50,3,b*.3*k);G.fx.push({k:'fissure',x:p.x,y:p.y,a,len:260,t:.6,m:.6});text(p.x,p.y-92,'MOLTEN FISSURE','#ff9a4a',true)}
+  else{const to=clampRange(p,abilAim(p),340);for(const e of G.enemies.slice())if(foeAlive(e)&&Math.hypot(e.x-to.x,e.y-to.y)<130+(e.r||14)){hitEnemy(e,b*2.8*k,Math.atan2(e.y-to.y,e.x-to.x),160,true);if(!e.dead)stunFor(e,1.5)}fireGround(p,to.x,to.y,100,3,b*.3*k);G.fx.push({k:'anvilfall',x:to.x,y:to.y,r:130,t:.8,m:.8});text(p.x,p.y-92,'ANVIL FALL','#ff7a3a',true)}
+  p.castT=.3;sfx('boom');shake(2+t*1.5)}
+
 /* Pyromancer: every hit sets the enemy ablaze for 3 s (a tenth of the hit every half second, refreshed by new hits).
    Quick attack: blue Flame Wave (a cone of fire), green Fire Wall (the wave leaves three patches of burning ground),
    red Flame Pillar (erupts at your aim, stuns and leaves burning ground). Meteor Storm (ability) rains 6 meteors, plus
@@ -1099,7 +1157,7 @@ const sigOf=p=>p&&SIG[p.char]||null,ownWeapon=(p,id)=>id===weaponOf(p.char);
 const tierMul=(p,t)=>((sigOf(p)||{}).tier||CHARGE_TIER.mul)[t||0];
 /* the basic attack bonus applies to the character's own weapon */
 const sigHit=(p,id)=>{const S=sigOf(p);return S&&S.hit&&ownWeapon(p,id)?plus(S.hit):1};
-const riding=p=>abilBuff(p,'truck'),batForm=p=>abilBuff(p,'bat'),keepsAttack=p=>riding(p)||batForm(p);
+const riding=p=>abilBuff(p,'truck'),batForm=p=>abilBuff(p,'bat'),keepsAttack=p=>riding(p)||batForm(p)||abilBuff(p,'aegis')||abilBuff(p,'anvil');
 const batK=(p,k)=>batForm(p)?plus(SIG['Shadow Monarch'].bat[k]):1;
 const sigSpeed=p=>(riding(p)?plus(SIG.Firefighter.truck.speed)*(p.boost?SIG.Firefighter.truck.boostSpeed:1):1)*batK(p,'speed');
 function stealOf(p){const S=sigOf(p);if(!S||!S.steal)return 0;if(batForm(p))return STEAL_STEP*S.bat.steal;return STEAL_STEP*(p.lungeT>0?S.stealT[p.lungeTier||1]:S.steal)}
@@ -1119,6 +1177,63 @@ function truckStep(p,dt){const S=SIG.Firefighter.truck,seen=RAMMED.get(p)||new M
   for(const e of G.enemies.slice()){if(!foeAlive(e)||Math.hypot(e.x-fx,e.y-fy)>S.r+(e.r||14))continue;if((seen.get(e)||0)>G.t)continue;seen.set(e,G.t+S.gap);
     hitEnemy(e,basicHit(p)*plus(p.boost?S.boost:S.ram),a,0,true);if(!e.dead&&e.kind!=='boss'){shove(e,a+(Math.random()<.5?-.6:.6),70);stunFor(e,.3)}
     G.fx.push({k:'ram',x:e.x,y:e.y,a,boost:p.boost?1:0,t:.3,m:.3});shake(p.boost?3:2)}}
+/* ---------- AI teammates (single player) ----------
+   After choosing single play you can bring 1 to 3 AI teammates, picked at random from your side. They play one level
+   below you with 15% less damage and life, 10% less speed and slower attacks, and they count as party members, so
+   enemies scale up as for a real party. Puzzles that need real teammates (split plates, lanterns, coils, toxic load)
+   keep their solo rules, and loot and saves stay yours. They follow you, fight what threatens you, use their charged
+   attack and ability now and then, drink a potion when low, and catch up if they fall far behind. */
+const AI_MATE={max:3,lvlGap:1,k:.85,spd:.9,cd:1.15,follow:110,engage:430,leash:950,keep:{shoot:230,spell:220},think:.15};
+const humans=()=>G.players.filter(q=>!q.ai),soloPlay=()=>humans().length<=1,humanSize=()=>Math.max(1,Math.min(4,humans().length));
+const leadOf=()=>G.players.find(q=>!q.ai)||G.players[0];
+function addCompanions(n){n=clamp(n|0,0,AI_MATE.max);G.players=G.players.filter(q=>!q.ai);if(n&&!G.mp){const lead=leadOf(),pool=Object.keys(ROSTER[factionOf(lead.char)]).filter(c=>c!==lead.char);
+  for(let i=0;i<n&&pool.length;i++){const ch=pool.splice(Math.floor(Math.random()*pool.length),1)[0],q=freshPlayer(ch);q.id=101+i;q.ai=1;q.input={s:0,x:0,y:0,ax:0,ay:0,l:false,r:false,sp:false};q.actions=[];q.pname=label(ch)+' (AI)';q.stats=STATS[ch];achievementInit(q,false);G.players.push(q)}
+  aiSync()}rescaleParty()}
+function aiSync(){const lead=leadOf(),was=G.p;G.players.forEach((q,i)=>{if(!q.ai)return;q.lvl=Math.max(1,(lead.lvl||1)-AI_MATE.lvlGap);G.p=q;recalc();q.hp=q.s.maxHp;q.mana=q.s.maxMana;q.deadT=q.respawnT=0;
+  const o=freeSpot(lead.x-36*i,lead.y+34,q.r||13);q.x=o.x;q.y=o.y;q.aiIn=null});G.p=was}
+/* AI teammates stay one level below you as you level up, keeping their share of life */
+function aiLevel(){const lead=leadOf(),was=G.p;for(const q of G.players){if(!q.ai)continue;const k=q.s?q.hp/q.s.maxHp:1;q.lvl=Math.max(1,(lead.lvl||1)-AI_MATE.lvlGap);G.p=q;recalc();q.hp=q.s.maxHp*k}G.p=was}
+function aiThink(p,dt){const i=p.aiIn||(p.aiIn={x:0,y:0,ax:p.x,ay:p.y-22,l:false,t:0}),lead=leadOf();i.t-=dt;
+  if(p.deadT>0||p.respawnT>0||!lead){i.x=i.y=0;i.l=false;return}
+  if(!(lead.deadT>0)&&dist(p,lead)>AI_MATE.leash){const o=freeSpot(lead.x-30,lead.y+30,p.r||13);p.x=o.x;p.y=o.y}
+  /* stuck behind something while far away: after 2 s without progress, rejoin */
+  {const far=dist(p,lead)>250&&!(lead.deadT>0);if(!far){p.aiStuck=0;p.aiMark=null}else{if(!p.aiMark){p.aiMark={x:p.x,y:p.y};p.aiStuck=0}p.aiStuck+=dt;if(p.aiStuck>2){if(Math.hypot(p.x-p.aiMark.x,p.y-p.aiMark.y)<40){const o=freeSpot(lead.x-30,lead.y+30,p.r||13);p.x=o.x;p.y=o.y}p.aiMark=null}}}
+  if(i.t>0)return;i.t=AI_MATE.think;
+  let foe=null,bd=AI_MATE.engage;for(const e of G.enemies){if(!foeAlive(e)||e.buried||concealed(e,p))continue;const d=dist(e,p);if(d<bd&&dist(e,lead)<AI_MATE.engage+250){bd=d;foe=e}}
+  const W=WEAPONS[p.weapon]||{},ranged=W.m==='shoot'||W.m==='spell',want=ranged?AI_MATE.keep[W.m]:(W.reach||50)*.7;let tx,ty;
+  if(foe){const d=dist(foe,p),a=Math.atan2(foe.y-p.y,foe.x-p.x),side=p.id%2?1:-1;i.ax=foe.x;i.ay=foe.y-22;
+    if(d>want+30){tx=foe.x;ty=foe.y}else if(ranged&&d<want-60){tx=p.x-Math.cos(a)*80;ty=p.y-Math.sin(a)*80}else{tx=p.x+Math.cos(a+side*Math.PI/2)*40;ty=p.y+Math.sin(a+side*Math.PI/2)*40}
+    const reach=d<=(ranged?want+120:(W.reach||50)+(foe.r||14)+6);
+    if(p.abil&&!keepsAttack(p))i.l=!i.l;
+    else if(reach){if(p.aiHold>0){p.aiHold-=AI_MATE.think;i.l=true}else if(Math.random()<.08){p.aiHold=1.3;i.l=true}else i.l=!i.l}else{i.l=false;p.aiHold=0}
+    if(!(p.abilT>0)&&!p.abil&&!p.abilCast&&d<300&&Math.random()<.2)p.aiDo='ability';
+    else if(p.hp<p.s.maxHp*.35&&p.potions>0&&Math.random()<.3)p.aiDo='potion'}
+  else{i.l=false;p.aiHold=0;const a=G.players.indexOf(p)*2.1+.8;tx=lead.x+Math.cos(a)*AI_MATE.follow;ty=lead.y+Math.sin(a)*AI_MATE.follow*.6;i.ax=tx+Math.cos(a)*50;i.ay=ty-22}
+  const dx=tx-p.x,dy=ty-p.y,L=Math.hypot(dx,dy);if(L>14){i.x=dx/L;i.y=dy/L;if(blocked(p.x+i.x*22,p.y+i.y*22,p.r||13)){const a=Math.atan2(i.y,i.x)+(p.id%2?1:-1)*Math.PI/2;i.x=Math.cos(a);i.y=Math.sin(a)}}else i.x=i.y=0}
+/* An AI's turn runs the normal player rules with its own stick and mouse, then puts yours back */
+function aiTurn(p,dt){G.p=p;aiThink(p,dt);const i=p.aiIn,s={jo:joy.on,jx:joy.dx,jy:joy.dy,mx:mouse.x,my:mouse.y,ml:mouse.left,mr:mouse.right,sp:sprintKey,ts:touchHold.slash,tg:touchHold.guard,tm:touchMode,ta:touchAim};
+  if(p.input)Object.assign(p.input,{x:i.x,y:i.y,ax:i.ax,ay:i.ay,l:!!i.l,r:false,sp:false});
+  joy.on=true;joy.dx=i.x;joy.dy=i.y;mouse.x=i.ax;mouse.y=i.ay;mouse.left=!!i.l;mouse.right=false;sprintKey=false;touchHold.slash=false;touchHold.guard=false;touchMode=false;touchAim=null;
+  try{const a=p.aiDo;p.aiDo=null;if(a==='ability')doAbility();else if(a==='potion')usePotion();updatePlayer(p,dt)}
+  finally{joy.on=s.jo;joy.dx=s.jx;joy.dy=s.jy;mouse.x=s.mx;mouse.y=s.my;mouse.left=s.ml;mouse.right=s.mr;sprintKey=s.sp;touchHold.slash=s.ts;touchHold.guard=s.tg;touchMode=s.tm;touchAim=s.ta}}
+{const base=enterStage;enterStage=function(...a){const r=base.apply(this,a);if(G.players&&G.players.some(q=>q.ai))aiSync();return r}}
+/* Fire Truck passenger: one other player near a riding Firefighter can hop in (H). They sit behind the driver, move with
+   the truck and can still attack. The seat frees when they hop out, the ride ends, or either of them goes down. */
+const SEAT={reach:95,pick:170,back:22};
+const truckA=f=>f.moving&&f.moveA!==undefined?f.moveA:f.face;
+const seatFree=f=>riding(f)&&!(f.deadT>0||f.respawnT>0)&&!G.players.some(q=>q.rideWith===(f.id||1));
+function truckNear(p){let best=null,bd=SEAT.reach;for(const f of G.players){if(f===p||!seatFree(f))continue;const d=dist(f,p);if(d<bd){bd=d;best=f}}return best}
+const canHopIn=p=>!!p&&!p.rideWith&&!riding(p)&&!(p.deadT>0||p.respawnT>0)&&!!truckNear(p);
+function hopOut(p){if(!p.rideWith)return;p.rideWith=0;const to=freeSpot(p.x,p.y+26,p.r||14);p.x=to.x;p.y=to.y;p.inv=Math.max(p.inv||0,.6)}
+/* The driver presses H once: the nearest player in reach (a teammate or an AI teammate) hops in; H again drops them off */
+const seatedWith=f=>G.players.find(q=>q.rideWith===(f.id||1));
+function pickUpTarget(f){if(!riding(f)||f.deadT>0)return null;let best=null,bd=SEAT.pick;for(const q of G.players){if(q===f||q.rideWith||riding(q)||q.deadT>0||q.respawnT>0)continue;const d=dist(q,f);if(d<bd){bd=d;best=q}}return best}
+function doRide(){const p=G.p;if(!p)return;
+  if(riding(p)){const s=seatedWith(p);if(s){hopOut(s);return}const q=pickUpTarget(p);if(!q)return;if(q.carry){q.carry.by=0;q.carry=null}q.rideWith=p.id||1;text(q.x,q.y-80,'Hop in','#ffb070',true);sfx('lock');return}
+  if(p.rideWith){hopOut(p);return}if(!canHopIn(p))return;const f=truckNear(p);if(p.carry){p.carry.by=0;p.carry=null}p.rideWith=f.id||1;text(p.x,p.y-80,'Hop in','#ffb070',true);sfx('lock')}
+function seatStep(){for(const p of G.players){if(!p.rideWith)continue;const f=G.players.find(q=>(q.id||1)===p.rideWith);
+  if(!f||f===p||!riding(f)||f.deadT>0||f.respawnT>0||p.deadT>0||p.respawnT>0||riding(p)){hopOut(p);continue}
+  const fl=Math.cos(truckA(f))<0?-1:1;p.x=f.x-fl*SEAT.back;p.y=f.y-1;p.moving=false;p.dashT=0}}
 /* Void Field: holds what it caught; small voids strike each one from all sides */
 const VOID_CAUGHT=new WeakMap();
 function voidStep(p,dt){const F=p.voidF;F.t-=dt;F.tick-=dt;
@@ -1128,6 +1243,8 @@ function voidStep(p,dt){const F=p.voidF;F.t-=dt;F.tick-=dt;
 function releaseCharge(p,c,tier=0){const k=+(chargePower(c)*tierMul(p,tier)).toFixed(2),a=p.face;p.mv=null;p.lungeTier=tier||1;
   if(sigOf(p)&&sigOf(p).area){p.cd.slash=Math.max(p.cd.slash,.35);voidArea(p,tier,k);return}
   if(p.char==='Pyromancer'){p.cd.slash=Math.max(p.cd.slash,.35);pyroCharge(p,tier,k);return}
+  if(p.char==='Guardian'){p.cd.slash=Math.max(p.cd.slash,.35);guardCharge(p,tier,k);return}
+  if(p.char==='Soul Forger'){p.cd.slash=Math.max(p.cd.slash,.35);forgeCharge(p,tier,k);return}
   if(p.char==='Chronomancer'){p.cd.slash=Math.max(p.cd.slash,.35);timeFan(p,Math.max(1,tier||1),chargePower(c));return}
   if(shotUser(p)){p.cd.slash=Math.max(p.cd.slash,.35);chargedShot(p,k);return}
   if(CASTER_CHARGE[p.char]){p.cd.slash=Math.max(p.cd.slash,.35);CASTER_CHARGE[p.char](p,k);return}
@@ -1307,6 +1424,8 @@ const ABILITY_FX={
  blitz:{aim:'self',dur:6,len:320,col:'130,255,220',d:'Overdrive: twice as fast for 6 seconds. The finisher dashes where you aim, untouchable, hitting everything you pass.'},
  titan:{aim:'self',dur:8,r:220,col:'255,140,80',d:'You grow to twice your size for 8 seconds: 50% more damage and a third less damage taken. The finisher stomps a stunning shockwave and ends it.'},
  timefield:{aim:'self',dur:8,r:320,col:'112,221,255',d:'Ready it, then use it: a wide field of stopped time bursts from you. Enemies inside freeze for 10 seconds (5 for bosses). For that time you and your party deal 50% more damage and move and attack twice as fast (half as much while a boss is up).'},
+ aegis:{aim:'self',dur:6,r:230,col:'255,205,94',d:'Ready it to raise the Aegis for 6 seconds: every enemy nearby turns on you, and damage to you and allies near you is soaked by a shield worth half your life, plus a quarter for each extra party member. It breaks when used up. The finisher releases what it soaked as a holy blast.'},
+ anvil:{aim:'self',dur:6,r:230,col:'232,137,42',d:'Ready it to forge the Soul Anvil for 6 seconds: every enemy nearby turns on you, and damage to you and allies near you is soaked by a shield worth half your life, plus a quarter for each extra party member. A molten aura burns nearby enemies harder the more it soaks. The finisher heals allies from what it soaked.'},
  truck:{aim:'self',dur:8,r:150,col:'255,120,60',d:'Ready it to ride a fire truck for 8 seconds: much faster (+6 speed), and ramming enemies hits them hard (+4). Hold attack while riding to boost: faster, and rams hit even harder (+6). The finisher ends the ride with a hose blast.'},
  bat:{aim:'self',dur:10,r:150,col:'220,40,70',d:'Ready it to turn into a winged vampire for 10 seconds: you fly, with +5 attack, attack speed, life steal and speed. The finisher ends it with a blood burst.'},
  meteor:{aim:'spot',range:480,r:240,col:'255,130,60',d:'Aim a spot in range. Using it calls a meteor storm on the area: 6 meteors plus one for every two player levels (up to 12). Each falls after a warning shadow, blasts, sets enemies ablaze and burns the ground.'},
@@ -1315,7 +1434,7 @@ const ABILITY_FX={
 };
 const defAbility=(fx,n,use,o={})=>Object.assign({fx},ABILITY_FX[fx],{n,use},o);
 const ABILITIES={
- Detective:defAbility('mark','Lock On','Execute'),Vigilante:defAbility('hook','Grapple','Reel In'),Guardian:defAbility('brace','Brace','Shield Bash'),Ranger:defAbility('pierce','Steady Aim','Piercing Shot'),
+ Detective:defAbility('mark','Lock On','Execute'),Vigilante:defAbility('hook','Grapple','Reel In'),Guardian:defAbility('aegis','Aegis','Aegis Release'),Ranger:defAbility('pierce','Steady Aim','Piercing Shot'),
  Inventor:defAbility('stun','Stun Gun','Taser Shot',{chain:2}),Firefighter:defAbility('truck','Fire Truck','Hose Blast'),'Hero Shadow':defAbility('vanish','Vanish','Ambush'),Prodigy:defAbility('hurl','Grab','Home Run'),
  Sage:defAbility('stun','Arcane Bind','Seal',{col:'211,168,255'}),Patriot:defAbility('dive','Falcon Dive','Triple Dive'),Phantom:defAbility('blitz','Phase Run','Phase Dash'),Pyromancer:defAbility('meteor','Meteor Storm','Call Meteors'),
  Chronomancer:defAbility('timefield','Time Field','Time Stop',{col:'112,221,255'}),Beastmaster:defAbility('leap','Stalk','Pounce'),Voidwalker:defAbility('voidfield','Void Field','Open Void'),Exorcist:defAbility('heal','Triage','Sacred Mend',{col:'255,229,159'}),
@@ -1324,7 +1443,7 @@ const ABILITIES={
  'Shadow Monarch':defAbility('bat','Vampire Form','Blood Burst'),Puppeteer:defAbility('hurl','String Grab','Fling',{col:'237,147,255'}),'Void Empress':defAbility('voidfield','Void Field','Open Void',{r:270,d:'Aim a spot in range. Using it opens a wide void: every enemy inside is trapped for 5 seconds while small voids strike it from all sides, one strike per player level (3 to 12), each +3.'}),'Plague Doctor':defAbility('heal','Triage','Black Remedy',{col:'169,227,117'}),
  'Mad Scientist':defAbility('stun','Tesla Lock','Arc Shock',{chain:2,col:'101,245,236'}),'Demon Knight':defAbility('leap','Hellmark','Infernal Leap',{col:'255,126,66'}),'Gravity Weaver':defAbility('push','Gravity Ring','Repel'),'Mecha Tyrant':defAbility('titan','Overcharge','Iron Stomp'),
  'Chrono Thief':defAbility('blitz','Haste','Time Dash',{col:'255,214,111'}),'Swarm Queen':defAbility('pool','Swarm Mark','Release Swarm',{col:'229,221,98'}),'Ice Archmage':defAbility('stun','Frost Lock','Freeze',{freeze:1,col:'168,232,255'}),'Deep Siren':defAbility('hook','Siren Lure','Undertow',{col:'110,230,255'}),
- 'Ash Shaman':defAbility('pool','Ash Circle','Eruption',{col:'255,120,60'}),'Soul Forger':defAbility('brace','Forge Ward','Anvil Bash',{col:'232,137,42'}),'Mirror Jester':defAbility('decoy','Mirror Image','Swap',{col:'255,118,193'}),'Cyber Priest':defAbility('heal','Diagnose','Full Restore',{col:'111,224,216'})
+ 'Ash Shaman':defAbility('pool','Ash Circle','Eruption',{col:'255,120,60'}),'Soul Forger':defAbility('anvil','Soul Anvil','Temper'),'Mirror Jester':defAbility('decoy','Mirror Image','Swap',{col:'255,118,193'}),'Cyber Priest':defAbility('heal','Diagnose','Full Restore',{col:'111,224,216'})
 };
 const abilityOf=p=>ABILITIES[p.char]||null;
 /* Buffs and grabs are already running once readied, so pressing C again fires their finisher instead of cancelling. */
@@ -1369,6 +1488,7 @@ function doAbility(){const p=G.p,ab=abilityOf(p);if(!ab||abilityBlocked(p)||p.ab
   p.abil=a;if(ab.aim==='self'){p.abilT=(ab.cd||SPECIAL_CD)*cdMulOf(p);abilityArm(p,ab)}sfx('lock')}
 function abilityArm(p,ab){
   if(ab.fx==='roar'){for(const e of G.enemies)if(foeAlive(e)&&dist(e,p)<ab.r){e.tauntT=Math.max(e.tauntT||0,ab.dur);e.tauntId=p.id||0}text(p.x,p.y-80,ab.n.toUpperCase(),'#ff8a70',true);shake(3)}
+  else if(ab.fx==='aegis'||ab.fx==='anvil')tankArm(p,ab);
   else if(ab.fx==='truck'||ab.fx==='bat'){text(p.x,p.y-90,ab.fx==='truck'?'FIRE TRUCK':'VAMPIRE FORM',ab.fx==='truck'?'#ffb070':'#ff6b7a',true);fxAt(p.x,p.y,ab.col,20);shake(3);sfx('boom')}
   else glowP(p.x,p.y-24,ab.col,12,160,.5,3)}
 function doUse(){const p=G.p,ab=abilityOf(p),a=p.abil;if(!ab||!a||abilityBlocked(p)||p.abilCast)return;
@@ -1410,6 +1530,8 @@ function flyShot(p,ab,c,dt,d){const S=ab.shot;
   c.px=x1;c.py=y1;return c.gone>=ab.len||wall(x1/T|0,y1/T|0)}
 /* What Use does, for each kind. c: the cast, d: special-attack damage. */
 const ABILITY_FIRE={
+ aegis(p,ab,c,d){const s=p.tankAbs||0;abilityEnd(p);p.tankPool=0;blast(p.x,p.y,200,d*.4+s*.5,260,1);G.fx.push({k:'judgement',x:p.x,y:p.y,r:200,t:.9,m:.9});text(p.x,p.y-96,'AEGIS RELEASE','#fff2b0',true);shake(6)},
+ anvil(p,ab,c,d){const s=p.tankAbs||0;abilityEnd(p);p.tankPool=0;blast(p.x,p.y,170,d*.35,220,.6);for(const q of G.players){if(q.deadT>0||q.respawnT>0||dist(q,p)>240)continue;const h=Math.min(q.s.maxHp-q.hp,s*.3);if(h>0){q.hp+=h;text(q.x,q.y-84,'+'+Math.round(h),'#80ffaa')}}G.fx.push({k:'anvilslam',x:p.x,y:p.y,r:170,t:.6,m:.6});text(p.x,p.y-96,'TEMPERED','#ffb070',true);shake(5)},
  truck(p,ab,c,d){abilityEnd(p);blast(p.x+Math.cos(p.face)*60,p.y+Math.sin(p.face)*40,ab.r*.8,d*.4,300,.6);G.fx.push({k:'hose',x:p.x,y:p.y,a:p.face,t:.5,m:.5});fxAt(p.x,p.y,'110,200,255',18);shake(4)},
  bat(p,ab,c,d){abilityEnd(p);blast(p.x,p.y,ab.r,d*.5,200,.5);fxAt(p.x,p.y,ab.col,26);shake(5)},
  meteor(p,ab,c,d){const C=SIG.Pyromancer.meteor,n=clamp(C.base+Math.floor((p.lvl||1)/2),C.base,C.max);p.meteor={x:+c.x.toFixed(1),y:+c.y.toFixed(1),r:ab.r,left:n,n,tick:0,falls:[],d:+(d*C.k).toFixed(1)};text(c.x,c.y-90,'METEOR STORM','#ffb070',true);sfx('boom')},
@@ -1461,7 +1583,7 @@ function singStep(p,dt){const S=p.sing,ab=ABILITY_FX.singularity;S.t-=dt;S.tick-
   for(const e of G.enemies){if(!foeAlive(e))continue;const r=Math.hypot(e.x-S.x,e.y-S.y);if(r<ab.r&&r>12){const k=e.kind==='boss'?.25:1;move(e,(S.x-e.x)/r*190*k*dt,(S.y-e.y)/r*190*k*dt)}}
   if(S.tick<=0){S.tick=.5;for(const e of G.enemies.slice())if(foeAlive(e)&&Math.hypot(e.x-S.x,e.y-S.y)<ab.r*.6)hitEnemy(e,S.d*.08,Math.atan2(S.y-e.y,S.x-e.x),0,false)}
   if(S.t<=0){blast(S.x,S.y,120,S.d*.6,260,.6);fxAt(S.x,S.y,ab.col,30);shake(7);sfx('boom');p.sing=null}}
-function tickAbility(p,dt){p.abilT=Math.max(0,(p.abilT||0)-dt);if(p.dive)diveStep(p,dt);if(p.sing)singStep(p,dt);if(p.voidF)voidStep(p,dt);if(p.meteor)meteorStep(p,dt);if(p.char==='Pyromancer')blazeStep(p,dt);if(riding(p))truckStep(p,dt);const ab=abilityOf(p);if(!ab)return;
+function tickAbility(p,dt){p.abilT=Math.max(0,(p.abilT||0)-dt);if(p.dive)diveStep(p,dt);if(p.sing)singStep(p,dt);if(p.voidF)voidStep(p,dt);if(p.meteor)meteorStep(p,dt);tankStep(p,dt);if(p.char==='Pyromancer')blazeStep(p,dt);if(riding(p))truckStep(p,dt);const ab=abilityOf(p);if(!ab)return;
   const c=p.abilCast;if(c){const e=abilFoe.get(p);if(c.aim==='foe'&&foeAlive(e)&&!c.fly){c.x=e.x;c.y=e.y}
     let land=false;if(c.fly)land=flyShot(p,ab,c,dt,abilityDamage(p));else{c.t-=dt;if(c.t<=0){if(ab.shot)launchShot(p,ab,c);else land=true}}
     if(land){p.abilCast=null;ABILITY_FIRE[c.fx](p,ab,c,abilityDamage(p));if(c.aim==='foe')abilFoe.delete(p);shotHits.delete(p)}}
@@ -1587,7 +1709,7 @@ const gymCost=r=>Math.round(40*Math.pow(1.3,r));
 const shopCost=s=>Math.round(s.base*(1+(G.stage-1)*.35)*dn().shop);
 const guardArmor=p=>(8+p.stats.grd*10+p.lvl*1.4)*(p.weapon==='shield'?1.6:1)*p.s.guardMul;
 function moveVec(){let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;if(joy.on){x=joy.dx;y=joy.dy}const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return{x,y}}
-function doDash(){const p=G.p;if(p.cd.dash>0||p.stunT>0||p.grabT>0||p.webT>0)return;const v=moveVec(),a=(v.x||v.y)?Math.atan2(v.y,v.x):p.face;p.cd.dash=p.s.dashCd*cdMulOf(p);p.dashT=.26;p.dashX=Math.cos(a);p.dashY=Math.sin(a);p.inv=Math.max(p.inv,.32+Math.min(3,(p.runBoons||{}).wide||0)*.12);sfx('dash')}
+function doDash(){const p=G.p;if(p.rideWith){hopOut(p);return}if(p.cd.dash>0||p.stunT>0||p.grabT>0||p.webT>0)return;const v=moveVec(),a=(v.x||v.y)?Math.atan2(v.y,v.x):p.face;p.cd.dash=p.s.dashCd*cdMulOf(p);p.dashT=.26;p.dashX=Math.cos(a);p.dashY=Math.sin(a);p.inv=Math.max(p.inv,.32+Math.min(3,(p.runBoons||{}).wide||0)*.12);sfx('dash')}
 function usePotion(){const p=G.p;if(p.cd.potion>0||p.potions<=0||p.hp>=p.s.maxHp)return;p.potions--;p.cd.potion=1;p.pickT=.4;p.healFx=.8;const h=Math.min(p.s.maxHp-p.hp,p.s.maxHp*.45);p.hp+=h;threatHeal(p,h);text(p.x,p.y-72,'+'+Math.round(h),'#86dccb',true);burst(p.x,p.y-20,'#86dccb',16);sfx('pull');dirty()}
 function useFast(){const p=G.p;if(p.fast<=0||p.fastT>0)return;p.fast--;p.fastT=20;p.pickT=.4;p.pillT=.8;p.pillC='111,180,255';text(p.x,p.y-72,'Fast Pill','#6fb4ff',true);sfx('loot');dirty()}
 function useMagic(){const p=G.p;if(p.magic<=0||p.magicT>0)return;p.magic--;p.magicT=20;p.pickT=.4;p.pillT=.8;p.pillC='200,140,255';text(p.x,p.y-72,'Magic Pill','#c88cff',true);sfx('loot');dirty()}
@@ -1613,13 +1735,11 @@ function updatePlayer(p,dt){
   p.inv=Math.max(0,p.inv-dt);p.swing=Math.max(0,p.swing-dt);p.atkT=Math.max(0,p.atkT-dt);p.pickT=Math.max(0,p.pickT-dt);p.hitT=Math.max(0,p.hitT-dt);p.castT=Math.max(0,p.castT-dt);p.guard=(mouse.right||touchHold.guard)&&p.dashT<=0;
   if(p.fastT>0)p.fastT-=dt;if(p.magicT>0)p.magicT-=dt;
   p.mana=Math.min(p.s.maxMana,p.mana+p.s.regen*dt*chainBonus().mana);if(auraHas(p,'medic'))p.hp=Math.min(p.s.maxHp,p.hp+p.s.maxHp*.006*dt);
-  p.specT=Math.max(0,(p.specT||0)-dt);tickAbility(p,dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec();p.sprint=canSprint(p,v);if(p.sprint)p.mana=Math.max(0,p.mana-SPRINT.mana*dt);const drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*abilSpeed(p)*(p.sprint?SPRINT.mul:1)*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*(p.beam?0:p.chg>0?CHARGE.slow:1)*chainBonus().spd*timeHaste(p)*sigSpeed(p);p.timeBuffT=Math.max(0,(p.timeBuffT||0)-dt);p.moving=!!(v.x||v.y)&&!p.beam;
+  p.unstuckT=Math.max(0,(p.unstuckT||0)-dt);p.tpT=Math.max(0,(p.tpT||0)-dt);p.specT=Math.max(0,(p.specT||0)-dt);tickAbility(p,dt);p.healFx=Math.max(0,(p.healFx||0)-dt);p.pillT=Math.max(0,(p.pillT||0)-dt);updateMove(p,dt);const v=moveVec();p.sprint=canSprint(p,v);if(p.sprint)p.mana=Math.max(0,p.mana-SPRINT.mana*dt);const drag=archKey(p.char)==='scout'&&p.reviveTarget?G.players.find(q=>q.id===p.reviveTarget&&q.deadT>0):null,ox=p.x,oy=p.y,sp=envSpeed(p)*p.s.speed*abilSpeed(p)*(p.sprint?SPRINT.mul:1)*(auraHas(p,'scout')?1.08:1)*(drag?.5:1)*(p.fastT>0?1.4:1)*(p.guard?.55:1)*(p.mv?.3:1)*(p.beam?0:p.chg>0?CHARGE.slow:1)*chainBonus().spd*timeHaste(p)*sigSpeed(p);p.timeBuffT=Math.max(0,(p.timeBuffT||0)-dt);p.moving=!!(v.x||v.y)&&!p.beam;
   if(p.lungeT>0)lungeStep(p,dt);
   else if(p.dashT>0&&!(p.webT>0)){p.dashT-=dt;move(p,p.dashX*520*dt,p.dashY*520*dt)}
   else{move(p,v.x*sp*dt,v.y*sp*dt);if(p.moving){p.walk+=dt*11*(p.sprint?SPRINT.stride:1);p.moveA=Math.atan2(v.y,v.x)}}
   if(drag)move(drag,p.x-ox,p.y-oy);
-  /* Arena doors: a living boss keeps the party inside. */
-  if(G.arena&&G.boss){const ad=Math.hypot(p.x-G.arena.x,p.y-G.arena.y);if(ad>G.arena.r){const aa=Math.atan2(p.y-G.arena.y,p.x-G.arena.x);p.x=G.arena.x+Math.cos(aa)*G.arena.r;p.y=G.arena.y+Math.sin(aa)*G.arena.r}}
   if(touchMode){const n=nearestEnemy();if(n)p.face=Math.atan2(n.y-p.y,n.x-p.x);else if(p.moving)p.face=Math.atan2(v.y,v.x)}else p.face=Math.atan2(mouse.y-(p.y-22),mouse.x-p.x);
   /* A click uses a readied ability; that click is spent and does not attack until the button is let go. */
   if(!mouse.left)p.clickLatch=0;else if(p.abil&&!keepsAttack(p)&&!p.clickLatch){p.clickLatch=1;doUse()}
@@ -1645,7 +1765,7 @@ function update(dt){
   chainTick(real);tickLink(real);
   for(const p of G.players){G.p=p;if(p.ult){tickUlt(real);tagOwned(p);if(!G.mp&&p.ult)slow=p.ult.t<ULT_HITS[0]?.06:.45}else if(p.combo){p.comboT-=real;if(p.comboT<=0){p.combo=0;p.comboTier=null}}p.comboPop=Math.max(0,p.comboPop-real*4)}
   dt*=slow;bossEggTick(dt);G.t+=dt;{const h0=G.hour;G.hour=(G.hour+dt/20)%24;if(duskCrossed(h0,G.hour)&&!G.swarm&&!G.story){G.banner={t:3,a:DAYNIGHT.warn.a,b:DAYNIGHT.warn.b};sfx('boss_warn')}}objStep(dt);sideStep(dt);
-  for(const p of G.players)updatePlayer(p,dt);
+  for(const p of G.players){if(p.ai)aiTurn(p,dt);else updatePlayer(p,dt)}seatStep();
   valeTick(dt);G.p=G.players[0];
   G.flowT-=dt;if(G.flowT<=0){G.flowT=.25;updateFlow()}
   // keep the streets populated: more rivals at night, more citizens by day
@@ -1673,7 +1793,7 @@ function update(dt){
     else for(const q of G.players){if(!(q.respawnT>0)&&Math.hypot(q.x-s.x,q.y-22-s.y)<q.r+s.r+2){s.life=0;G.p=q;if(s.web&&!(q.inv>0||q.deadT>0)){q.webT=WEBBED.webTime;q.dashT=0;G.banner={t:2.5,a:'Webbed',b:G.players.length>1?'An ally can attack the web to free you':'The web breaks after 5 seconds'};text(q.x,q.y-70,'WEBBED','#e6e6c8',true)}hurtPlayer(s.dmg);impact(s);break}}}
   for(const s of G.shots)if(s.life<=0&&s.breaks&&!s.pooled){s.pooled=s.pooled||!s.pool;if(s.from==='p'){G.p=ownerOf(s);explode(s)}else{impact(s,s.blast);for(const q of G.players){G.p=q;if(Math.hypot(q.x-s.x,q.y-22-s.y)<s.blast+q.r)hurtPlayer(s.dmg)}}}
   G.shots=G.shots.filter(s=>s.life>0);G.enemies=G.enemies.filter(e=>!e.dead);
-  G.loot=G.loot.filter(l=>{l.t+=dt;const p=nearestPlayer(l);G.p=p;const d=dist(l,p),mag=(l.kind==='item'||(l.kind==='weapon'&&!p.weapons.includes(l.w)))?0:96;if(mag&&d<mag){const a=Math.atan2(p.y-l.y,p.x-l.x);l.x+=Math.cos(a)*300*dt;l.y+=Math.sin(a)*300*dt}if(d<(l.kind==='item'||l.kind==='weapon'?30:18)){pickup(l);return false}return true});
+  G.loot=G.loot.filter(l=>{l.t+=dt;const p=nearestPlayer(l,true);G.p=p;const d=dist(l,p),mag=(l.kind==='item'||(l.kind==='weapon'&&!p.weapons.includes(l.w)))?0:96;if(mag&&d<mag){const a=Math.atan2(p.y-l.y,p.x-l.x);l.x+=Math.cos(a)*300*dt;l.y+=Math.sin(a)*300*dt}if(d<(l.kind==='item'||l.kind==='weapon'?30:18)){pickup(l);return false}return true});
   if(G.shadeUp&&!shadesAlive()){G.shadeUp=false;G.shadeDone=true;G.banner={t:2.6,a:'The way is open',b:'The boss awaits at the gate'}}
   for(const q of alivePlayers()){if(G.gate.open&&!G.boss&&!G.clearPending&&!G.shadeUp&&!(q.deadT>0||q.respawnT>0)&&dist(q,G.gate)<46){G.p=q;if(needShades())summonShades();else summonBoss()}}
   if(G.clearPending){G.clearPending-=dt;if(G.clearPending<=0){G.clearPending=0;if(G.mode==='play')setMode('clear')}}
@@ -1760,7 +1880,7 @@ function spawnScrapGolem(){const e=spawnMob(500,null,true);if(!e)return null;e.s
 const scrapGolemDue=()=>G.stage===7&&G.enemies.filter(e=>!e.dead&&e.scrapGolem).length<Math.round(RUST.golemCap*partyCrowd())&&spawnScrapGolem();
 function clearScrap(){G.props=G.props.filter(c=>c.kind!=='scrapPart')}
 function scrapSpot(e,dx,other){let best=null,bd=Infinity;for(const i of G.w.open){const o={x:(i%MW+.5)*T,y:((i/MW|0)+.5)*T};if(blocked(o.x,o.y,14)||other&&dist(o,other)<35||G.arena&&dist(o,G.arena)>G.arena.r-14)continue;const d=Math.hypot(o.x-e.x-dx,o.y-e.y);if(d<bd){bd=d;best=o}}return best||{x:e.x,y:e.y}}
-function scrapDisable(e){if(e.scrapDown)return;e.hp=0;e.scrapDown=true;e.scrapT=RUST.rebuild;e.flash=0;e.wind=0;e.rotT=0;e.moving=false;const a=scrapSpot(e,-34),b=scrapSpot(e,34,a);for(const o of[a,b])addProp('scrapPart',o.x,o.y,14,{golem:e});text(e.x,e.y-90,'BREAK THE PARTS','#ffd080',true);G.banner={t:2.5,a:'Scrap Golem down',b:G.players.length===1?'Break both parts before it rebuilds':'Two players must break its parts'};sfx('boom')}
+function scrapDisable(e){if(e.scrapDown)return;e.hp=0;e.scrapDown=true;e.scrapT=RUST.rebuild;e.flash=0;e.wind=0;e.rotT=0;e.moving=false;const a=scrapSpot(e,-34),b=scrapSpot(e,34,a);for(const o of[a,b])addProp('scrapPart',o.x,o.y,14,{golem:e});text(e.x,e.y-90,'BREAK THE PARTS','#ffd080',true);G.banner={t:2.5,a:'Scrap Golem down',b:soloPlay()?'Break both parts before it rebuilds':'Two players must break its parts'};sfx('boom')}
 function scrapPartHit(c,p){if(!c||c.done||!c.golem||!c.golem.scrapDown)return false;const e=c.golem,parts=G.props.filter(x=>x.kind==='scrapPart'&&x.golem===e),id=p.id||1,other=parts.find(x=>x!==c&&x.done);if(other&&other.by===id&&G.players.filter(q=>!(q.deadT>0||q.respawnT>0)).length>1){text(c.x,c.y-45,'ALLY NEEDED','#ffd080',true);return false}c.done=true;c.by=id;burst(c.x,c.y,'#d6b685',8,80);if(parts.length===2&&parts.every(x=>x.done)){for(const part of parts){const q=G.players.find(q=>(q.id||1)===part.by);if(q)achievementUnlock(q,'scrap')}G.props=G.props.filter(x=>x.golem!==e);e.scrapFinished=true;e.scrapDown=false;const me=G.p;G.p=p;killEnemy(e);G.p=me}return true}
 function scrapTick(dt){for(const e of G.enemies){if(!e.scrapDown||e.dead)continue;e.scrapT-=dt;if(e.scrapT<=0){e.scrapDown=false;e.hp=e.maxHp*.5;e.cd=1;e.wind=0;G.props=G.props.filter(c=>c.golem!==e);text(e.x,e.y-90,'REBUILT','#ffd080',true)}}}
 /* Stage 6: unstable floor warns before it collapses and reforms after a short time. */
@@ -1906,7 +2026,7 @@ function updateBoss(e,dt,d,seen){
   e.punishCd=Math.max(0,(e.punishCd||0)-dt);
   if(e.act==='walk'){
     if(e.punishCd<=0&&seen&&aiOpen(p)){e.punishCd=AI.bossPunishCd;e.actT=Math.min(e.actT,.1);e.cd=Math.min(e.cd,.1)}
-    if(d>e.r+p.r+6)steer(e,dt,e.sp*(n===6&&e.fleshSplit&&G.players.length===1?FLESH.soloSpeed:n===4?(e.phase>=2?1.5:1):(low?1.25:1)),seen);
+    if(d>e.r+p.r+6)steer(e,dt,e.sp*(n===6&&e.fleshSplit&&soloPlay()?FLESH.soloSpeed:n===4?(e.phase>=2?1.5:1):(low?1.25:1)),seen);
     const after=Math.sin((e.walk||0)*BOSS_RATE(e));
     if(e.moving&&before*after<0&&BOSS_STYLE[STYLE_OF[e.art]].step>=6){burst(e.x+(after>0?-1:1)*e.r*.6,e.y,'#8a8478',4,70);shake(.7)}
     if(d<e.r+p.r+14&&e.cd<=0){if(n===7){startGhoulCleave(e,false);return}if(n===6){startFleshGrasp(e);return}e.act=n===5?'sporeSlam':'slam';bossTelegraph(e,'circle',e.r+(n===5?100:52),n===5?.9:Math.max(.34,.6-n*.02));return}

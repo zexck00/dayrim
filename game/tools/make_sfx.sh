@@ -26,5 +26,8 @@ T=$(mktemp -d)  # FLAC goes through a plain WAV first; afconvert cannot remix it
 for i in 1 2; do afconvert -f WAVE -d LEI16@44100 -c 1 "$A/melee $i.flac" "$T/m$i.wav"; afconvert -f m4af -d aac -s 0 -b 96000 "$T/m$i.wav" "$O/sfx-melee-$i.m4a"; done
 afconvert -f m4af -d aac -c 1 -s 0 -b 96000 "$A/melee 3.wav" "$O/sfx-melee-3.m4a"
 afconvert -f m4af -d aac -b 80000 "$A/boss enter.mp3" "$O/mus-boss.m4a"
+afconvert -f m4af -d aac -b 96000 "$A/boss victory loop.wav" "$O/mus-victory.m4a"
+# Stage song for stages 2, 4, 6, 8 and 10 (the owner's "For the King"; keep the original as ASSETS/audio/for the king.ogg)
+[ -f "$A/for the king.ogg" ] && afconvert -f m4af -d aac -b 96000 "$A/for the king.ogg" "$O/mus-for-the-king.m4a"
 afconvert -f WAVE -d LEI16@44100 "$A/when boss not defeatede yet 1 minute.flac" "$T/late.wav"; afconvert -f m4af -d aac -b 72000 "$T/late.wav" "$O/mus-boss-late.m4a"; rm -r "$T"
 du -ch "$O"/an-* "$O"/sfx-* "$O"/mus-* | tail -1
