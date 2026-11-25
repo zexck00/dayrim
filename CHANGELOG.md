@@ -6,6 +6,7 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### 26 November 2026
 
+- The dev site now has every change listed for 25 November. Their first upload was held back by a build check (the game page embeds this changelog and was built before its last edit); the page is rebuilt and the check passes.
 - Stage 5 (Sporefall Marsh) toxin is much gentler: it builds at 0.5% a second (was 1.25%), spore clouds add 4% (was 8%), and full toxin hurts 1.5% of your life every 2 seconds (was 4% every second) and never takes you below 20% life. Eight clean springs are scattered over the map (shown on the minimap); standing in one clears toxin fast.
 
 ### 25 November 2026
