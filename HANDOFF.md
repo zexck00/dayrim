@@ -1,6 +1,6 @@
 # Handoff
 
-For the next person or agent working on Dayrim. State as of 2026-11-21: unreleased work on top of version 0.1.0. `main` is at PR #28 (2026-11-13: chibi characters, Story mode, abilities). `dev` adds the Pixel 3D world, side quests, boss final attacks, harder late stages and the Shade. The task and design documents distinguish prototypes from the target design; [docs/TASKS.md](docs/TASKS.md) has the latest snapshot.
+For the next person or agent working on Dayrim. State as of 2026-11-26: unreleased work on top of version 0.1.0. `main` is at PR #28 (2026-11-13: chibi characters, Story mode, abilities). `dev` (at `d6b2e20`, live at dayrim-dev) adds the Pixel 3D world, side quests, boss final attacks, harder late stages, the Shade, 14 character kits, AI teammates, the party panel with Teleport, new music and a 25% enemy boost. Story mode and Warzone are greyed out on the modes screen for now.
 
 ## Where things stand
 
@@ -8,7 +8,11 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 
 | Area | Status |
 |---|---|
-| Latest full suite | `npm test` on `dev` at `c5ccf7a` (2026-11-21): all 780 reaction pairs, 892 rule checks, 1014 story checks, 21 Pixel 3D checks and 54 networking checks passed |
+| Latest full suite | `npm test` on `dev` at `d6b2e20` (2026-11-26): 1078 rule checks, 1014 story checks, 21 Pixel 3D checks and 54 networking checks passed |
+| Dev deploy | dayrim-dev serves `d6b2e20`; all 144 linked asset files were checked to load (2026-11-26) |
+| Character kits (14 of 40) | Rule tests and short agent browser looks only. Nobody has played them. |
+| AI teammates | Rule tests and a browser look at stage 1. The AI does not do objectives or revive you. Not played through a boss. |
+| Enemy boost (`ENEMY_BOOST`, 25%) | Added 2026-11-26 with no balance check. |
 | Server, rooms, saves, abuse limits | Tested over real WebSockets (`game/server/test.js`) |
 | Browser checks | Automated checks cover two tabs, solo/online G actions, a checkpoint boon, viewport layout, weapon icons and the optional 3D layer; not a substitute for human playtests |
 | Full stage to boss kill and next stage online | Tested by a bot, one player |
@@ -20,7 +24,7 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 | Touch controls, phones | Emulated portrait and landscape touch gestures checked in Chromium; no real-phone playtest yet |
 | Voice lines | Decoded and triggered by code. **Nobody has listened to them.** |
 | The Swarm | Bots only: a perfect-dodging bot reached wave 28 alone, others waves 19–24, and none wiped in 25 minutes. Nobody has played it, so the growth curve is a guess. |
-| Late-stage difficulty (`BOSS_MULT`, `DODGE`, `SHADE`) | Rule tests only. No bot or human balance numbers since it landed on 2026-11-21; earlier balance results for stages 5 to 10 no longer apply. |
+| Late-stage difficulty (`BOSS_MULT`, `DODGE`, `SHADE`) | Rule tests only. No bot or human balance numbers since it landed on 2026-11-21; earlier balance results no longer apply, and the 2026-11-26 enemy boost stacks on top. |
 | Stages 8 to 10 | Objective steps, names and art only. Stage rules, new enemies and boss mechanics are not built (C-50 to C-55). |
 | Human playtest results | No results recorded; ask players about danger, role abilities, reactions, recovery and boon discovery |
 
@@ -29,6 +33,13 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 See [Combat depth review](docs/COMBAT_DEPTH_REVIEW.md) for C-01–C-16 findings and prioritized quality-of-life ideas.
 
 Nothing here is promised, and the owner sets priorities.
+
+- **Human playtest of Quick Game (most urgent):** solo, with AI teammates, and online with 2 to 4 people on dev. Nothing from 2026-11-24 to 11-26 has been played by a person.
+- **Balance pass:** the enemy boost, the 14 new kits and AI teammates all changed difficulty at once; re-run the balance bot and record numbers with a date.
+- **Remaining kits:** 26 characters still use the shared kit.
+- **Story mode and Warzone:** greyed out on the modes screen (`page.html`, and the handlers in `story.js`). The code and `test-story.js` still run; switch them back on when wanted.
+- **Original audio:** "For the King" was converted from the owner's download; put the original at `ASSETS/audio/for the king.ogg` so `tools/make_sfx.sh` can rebuild it.
+- **Workflow note:** the game page embeds `CHANGELOG.md`, so rebuild (`python3 game/tools/build.py`) after the last changelog edit, or CI's "dayrim.html matches sources" check fails and the release (and dev deploy) does not run.
 
 - **Party runner:** `node game/tools/party-bot.js --url ws://127.0.0.1:8080/ws --players 4 --seconds 180` drives real clients and reports outcomes. Use an isolated server and data directory; one-, two- and four-bot samples cleared Stage 1; the three-bot sample timed out and none reached Stage 3. Further seeds and human playtests remain open.
 - **Co-op balance:** `PARTY_SCALE` in `game.js` holds provisional scaling; initial one-to-four-player bot samples exist, but no human balance results are recorded. The ×8 four-player damage candidate can be punishing.

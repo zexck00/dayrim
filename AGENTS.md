@@ -25,13 +25,15 @@ cd game/server && npm start          # Run locally on port 8080.
 8. **Keep single-player working.** It must run from `dayrim.html` with no server. The balance bot is the regression check.
 9. **Never commit** `.env`, `game/data/` or `node_modules/`. Player saves live in `data/`.
 10. **Update `CHANGELOG.md` for user-visible changes.** When releasing, change `VERSION` and `game/server/package.json` together.
-11. **Update the docs whenever a task is finished, in the same pull request.** A task isn't done until the docs say so:
+11. **Update the docs every time a task is finished, before reporting it done, in the same commit or pull request.** This applies to every task, small ones and owner requests made in chat included, so the team can always see the latest work and what is left. A task isn't done until the docs say so:
     - `docs/TASKS.md`: update the task's row (status, what remains, what it needs) and the progress snapshot. Use the status words defined there: implemented, prototype or open.
     - `HANDOFF.md`: update "Where things stand", "Open work" and "Current prototypes" when the task changes what the code does or how it is tested.
     - `docs/GAME_DESIGN.md`: update it when the built game differs from the design on purpose, and say why.
     - `CHANGELOG.md`: as rule 10.
     - Record real numbers (test counts, bot results, playtests) with a date. Never mark something as tested or played if it wasn't.
     - If you work on something that isn't in `docs/TASKS.md`, add a row for it.
+    - Keep the newest progress snapshot in `docs/TASKS.md` current: what landed (with row IDs), the latest test counts with a date, warnings, and **Next work**. Keep HANDOFF.md's "Open work" list in step with it.
+    - `game/dayrim.html` embeds `CHANGELOG.md`, so run `python3 game/tools/build.py` after the last changelog edit and commit the result, or CI fails and the dev deploy does not run.
 
 ## Style
 

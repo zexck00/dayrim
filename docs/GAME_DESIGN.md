@@ -597,6 +597,20 @@ Hero parties and villain parties hear the same stage themes, with a different in
 - **A graphics setting:** Full, Medium or Low, to keep weaker laptops and phones smooth.
 - **GPU drawing (WebGL)** if many HD sprites slow the canvas down. D-09 measures this first, since it's a larger change.
 
+## Where the built game differs on purpose (2026-11-26)
+
+The owner asked for these during playtesting on dev. They change the design above on purpose:
+
+- **Character kits:** 14 characters have their own basic attack, three-colour quick attack (blue, green, red after 1.2, 3 and 6 seconds of holding) and ability, beyond the shared kit in section 7. "+1" on an attack, ability or speed means +50%; colour values are multipliers. Every hero whose own weapon shoots gets +1 shots that push back and Rapid fire (+2 attack speed after 2 seconds of steady fire).
+- **Tanks:** the Guardian and the Soul Forger can soak damage for nearby allies with a shield worth half their life plus a quarter per extra party member, and taunt enemies for 6 seconds.
+- **AI teammates:** single play can bring 1 to 3 AI teammates, one level below the player. They count for party scaling (section 6) but not for puzzles that need real teammates, which keep their solo rules.
+- **Party:** a party panel shows everyone's level, life and status, with Teleport to a teammate (60 s cooldown). Gold drops grow with party size (×1.5, ×2, ×2.5).
+- **Enemies:** every enemy is 25% stronger, there are 25% more, and they arrive 25% faster than the tables above, so the larger maps stay busy.
+- **Boss fights:** the arena no longer fences players in, because its edge could trap them in walls. Respawns always land in the open, and an Unstuck button exists.
+- **Stage 5 toxin:** gentler than first built (it builds at 0.5% a second and full toxin never takes you below 20% life), with clean springs on the map.
+- **Music:** "For the King" plays on stages 2, 4, 6, 8 and 10 with the bird ambience at half; the boss "not defeated yet" track plays in 10 second bursts and a victory loop plays on a boss kill.
+- **Modes:** Story mode and Warzone are paused (greyed out) so work can focus on Quick Game.
+
 ## 21. The Swarm
 
 An endless mode on any stage map the character has reached, alone or in a room. The stage keeps its rule, such as the Fen's water or the Thicket's cover.

@@ -19,6 +19,23 @@ The split below assumes these strengths. I don't know each person's skills, so s
 - Follow the rules in [AGENTS.md](../AGENTS.md). Rules go in `game/src/game.js`, and anything a player does online must be checked on the server.
 - Sizes are rough effort: **S** is up to a day, **M** is 2 to 4 days, **L** is a week or more. Dates depend on how many hours each person has.
 
+## Progress snapshot — 2026-11-26
+
+Checked against the code on `dev` at `d6b2e20` (2026-11-26). `main` is still at `64c0568` (PR #28, 2026-11-13); everything below is on `dev` only and live at dayrim-dev.
+
+**Verification on `dev` (2026-11-26):** `npm test` passed: **1078 rule checks, 1014 story checks, 21 Pixel 3D checks and 54 networking checks**. The dev site was checked to serve the pushed build and all 144 linked asset files. These are automated checks plus short browser looks by the agent. **No human playtest of any of this work has been recorded.**
+
+**Landed since 2026-11-21 (rows Z-78 to Z-95):**
+- Combat kits: unique quick attack tiers for everyone (Z-78); signature kits for the Chronomancer (Z-78), Firefighter, Voidwalker, Shadow Monarch, Void Empress (Z-79), Pyromancer (Z-80), Guardian and Soul Forger tanks (Z-86), Detective and Ranger (Z-93), every gun hero's basic attack (Z-94), Vigilante and Inventor (Z-95). 14 of the 40 characters now have their own kit.
+- Party and online: AI teammates for single play (Z-83), party panel with Teleport (Z-85, Z-87), party gold (Z-85), Fire Truck passenger seat (Z-82), Swarm online made easy to find (Z-84).
+- Fixes: never stuck in boss fights, safe respawns and Unstuck (Z-81); blank character cards and an asset check (Z-91); gentler Stage 5 toxin with clean springs (Z-92).
+- Sound: "For the King" on even stages and boss music bursts with a victory loop (Z-89, Z-90).
+- Story mode and Warzone are greyed out for now so work can focus on Quick Game (Z-88).
+
+**Balance warning:** on 2026-11-26 every enemy became 25% stronger, 25% more numerous and 25% faster to arrive (`ENEMY_BOOST`), on top of party scaling, `BOSS_MULT` and `DODGE`. AI teammates count for party scaling. Several new kits are very strong by design (for example the Firefighter's ×10 red charge, the ×4 Fire Truck speed and the 50% life steal forms). All balance numbers measured before 2026-11-24 are out of date.
+
+**Next work:** a human playtest of Quick Game (solo, with AI teammates, and online with 2 to 4 people) on dev, then a balance pass (C-40) using those results. The remaining 26 characters still use the shared kit.
+
 ## Progress snapshot — 2026-11-21
 
 Checked against the code on `dev` at `c5ccf7a`. `main` is at `64c0568` (PR #28, 2026-11-13); the two newer commits below are on `dev` only.
