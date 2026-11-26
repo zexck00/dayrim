@@ -96,7 +96,7 @@ function netUpdate(dt){
   const me=G.p,k=Math.min(1,dt*14);G.t+=dt;net.pingT-=dt;if(net.pingT<=0){net.pingT=2;netSend({t:'ping',c:performance.now()})}
   const glide=o=>{if(o.tx===undefined)return;const ex=o.tx-o.x,ey=o.ty-o.y;if(Math.abs(ex)+Math.abs(ey)>260){o.x=o.tx;o.y=o.ty}else{o.x+=ex*k;o.y+=ey*k}};
   /* a passenger sits behind the driver as drawn on this screen, every frame, so the view follows the truck smoothly */
-  if(me.rideWith){const f=G.players.find(q=>(q.id||1)===me.rideWith);if(f&&f!==me){const fl=Math.cos(truckA(f))<0?-1:1;me.x=f.x-fl*SEAT.back;me.y=f.y-1;me.moving=false}}
+  if(me.rideWith){const f=G.players.find(q=>(q.id||1)===me.rideWith);if(f&&f!==me){const o=seatPos(f);me.x=o.x;me.y=o.y;me.moving=false}}
   G.enemies.forEach(glide);G.npcs.forEach(glide);G.players.forEach(q=>{if(q!==me)glide(q)});
   for(const s of G.shots){s.x+=s.vx*dt;s.y+=s.vy*dt;trail(s,dt)}
   for(const h of G.hazards)h.t-=dt;for(const l of G.loot)l.t+=dt;

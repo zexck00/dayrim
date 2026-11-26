@@ -148,6 +148,11 @@ const QUICK_TEXT={
  Firefighter:'Fire axe hits +2. Hold to charge: blue (1.2 s) +4, green (3 s hold) +6, red (6 s hold) +10.',
  Voidwalker:'Basic shots open a small void that pushes enemies back (+1). Hold to charge a void area at your aim: blue +1, green (3 s hold) +2, red (6 s hold) +3 and scares enemies for 1 s.',
  'Shadow Monarch':'Sword hits steal life (+1, 10% of the damage). Hold to charge: blue +1 dmg and +1 life steal, green (3 s hold) +2 and +2, red (6 s hold) +5 dmg and +4 life steal.',
+ Detective:'Gun shots hit +1 and push back; keep firing for 2 s and attack speed goes +2. Hold to charge: blue (1.2 s) +3, green (3 s hold) +4, red (6 s hold) +7, all with a heavy push, and on red you roll aside.',
+ Ranger:'Arrows hit +1 and push back; keep firing for 2 s and attack speed goes +2. Hold to charge: blue (1.2 s) +3, green (3 s hold) +4, red (6 s hold) +7, all with a heavy push, and red empowers your next shots (+4) for 4 s.',
+ Inventor:'Ray gun shots hit +1 and slow enemies; keep firing for 2 s and attack speed goes +2. Hold to charge: blue (1.2 s) +2 with a push and a slow, green (3 s hold) +4 with a harder push and slow, red (6 s hold) a green-blue ray beam (+5) through every enemy in a line, slowing them.',
+ Vigilante:'A wide hook sweep that hits +1 and pushes back; keep attacking for 2 s and attack speed goes +2. Hold to charge: blue (1.2 s) +2 with +1 reach, green (3 s hold) +4 with +2 reach, red (6 s hold) +7 with +4 reach and a heavy push.',
+ Patriot:'Wind blasts hit +1 and push back; keep firing for 2 s and attack speed goes +2. Hold to charge: blue (1.2 s) is the charged attack, green (3 s hold) hits twice as hard, red (6 s hold) four times as hard.',
  Guardian:'Shield bashes hit +1 and taunt the enemy. Hold to charge: blue (1.2 s) Shield Slam, a close cone that stuns (×1.5); green (3 s hold) Bulwark Wave, a long cone that throws enemies back (×2.5); red (6 s hold) Judgement, a holy ring that stuns and taunts everything around you (×4).',
  'Soul Forger':'Hammer hits +1 and splash molten sparks on enemies next to the target. Hold to charge: blue (1.2 s) Anvil Slam, a ring around you (×2); green (3 s hold) Molten Fissure, a burning line ahead (×3); red (6 s hold) Anvil Fall, an anvil crushes your aim and stuns (×5).',
  Pyromancer:'Fire bolts hit +1 and set enemies ablaze for 3 s. Hold to charge: blue (1.2 s) Flame Wave, a cone of fire (×2); green (3 s hold) Fire Wall, the wave plus burning ground (×3); red (6 s hold) Flame Pillar at your aim that stuns (×5).',
@@ -161,7 +166,7 @@ function quickAttackText(n){if(QUICK_TEXT[n])return QUICK_TEXT[n];if(n==='Chrono
 /* Input. Online, actions go to the server. Alone, they run here. */
 const LOCAL_ACT={quest:v=>sideAccept(v),unstuck:()=>doUnstuck(),ride:()=>doRide(),tp:v=>doTeleport(v),dash:()=>doDash(),ult:()=>doUlt(),team:()=>doTeam(),special:()=>doMove('special'),ability:()=>doAbility(),use:()=>doUse(),spell:()=>doSpell(),heal:()=>doHeal(),potion:()=>usePotion(),fast:()=>useFast(),magic:()=>useMagic(),cycle:d=>cycleWeapon(d)};
 /* Name shown in menus: Ability → what using it does. How to use it is the same for everyone. */
-const RIDE_FX=new Set(['truck','bat','aegis','anvil']),abilityTitle=ab=>ab.n+' → '+ab.use,ABILITY_HOW='Press C to ready it, then click to use it (on touch, tap Ability again). C again cancels; for buffs and grabs it fires the finisher.';
+const RIDE_FX=new Set(['truck','bat','aegis','anvil','wolf','shade','lasso','cyborg']),abilityTitle=ab=>ab.n+' → '+ab.use,ABILITY_HOW='Press C to ready it, then click to use it (on touch, tap Ability again). C again cancels; for buffs and grabs it fires the finisher.';
 function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(n==='ability')touchAim=null;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
 function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}

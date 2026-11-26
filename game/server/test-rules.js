@@ -60,9 +60,9 @@ T.enter(ar);G().p=ap;ap.cd.slash=0;ap.weapon='pistol';G().shots=[];T.doAttack();
 // Later tiers use the same checked purchase and save path for weapons and signature moves.
 for(const [ch,id] of [['Detective','pistol']]){const r=mk(),p=s.createRoom(r,ch,null,'Later tiers');T.enter(r);G().enemies=[];p.gold=3000;p.weaponUpgrades[id]=2;for(const [tier,cost] of [[3,300],[4,450],[5,650]]){const gold=p.gold;p.nearSafe=true;p.actions.push({n:'upgrade',v:id});s.step(r,1/30);ok(T.upgradeLevel(p,id)===tier&&p.gold===gold-cost,ch+' buys tier '+tier+' at the expected cost')}const gold=p.gold;p.nearSafe=true;p.actions.push({n:'upgrade',v:id});s.step(r,1/30);ok(T.upgradeLevel(p,id)===5&&p.gold===gold,ch+' cannot buy beyond tier five');if(id==='signature'){T.enter(r);G().p=p;const max=['small','moderate','special'].map(move=>T.moveDamage(p,'',move));p.weaponUpgrades[id]=0;ok(['small','moderate','special'].every((move,i)=>Math.abs(max[i]/T.moveDamage(p,'',move)-2.1)<1e-9),ch+' tier five improves all signature moves by 110 percent');p.weaponUpgrades[id]=5}const q=s.createRoom(mk(),ch,s.saveOf(p),'Reload');ok(T.upgradeLevel(q,id)===5,ch+' retains tier five after saving')}
 // Later ranged tiers strengthen existing volleys without adding projectile count.
-{const r=mk(),p=s.createRoom(r,'Detective',null,'Late ranged');T.enter(r);G().p=p;G().enemies=[];p.weapons.push('book');for(const [id,powers,radii] of [['pistol',[.34,.38,.42],null],['book',[.5,.55,.6],[72,76,80]]])for(let tier=3;tier<=5;tier++){p.weapon=id;p.weaponUpgrades[id]=tier;p.cd.slash=0;p.mana=p.s.maxMana;G().shots=[];const base=T.weaponDamage(id)*T.dmgMul();T.doAttack();ok(G().shots.length===(id==='pistol'?5:3)&&G().shots.every(x=>Math.abs(x.dmg/base-powers[tier-3])<1e-9&&(!radii||x.blast===radii[tier-3])) ,id+' tier '+tier+' fires its balanced volley')}}
+{const r=mk(),p=s.createRoom(r,'Inventor',null,'Late ranged');T.enter(r);G().p=p;G().enemies=[];p.weapons.push('book','pistol');for(const [id,powers,radii] of [['pistol',[.34,.38,.42],null],['book',[.5,.55,.6],[72,76,80]]])for(let tier=3;tier<=5;tier++){p.weapon=id;p.weaponUpgrades[id]=tier;p.cd.slash=0;p.mana=p.s.maxMana;G().shots=[];const base=T.weaponDamage(id)*T.dmgMul();T.doAttack();ok(G().shots.length===(id==='pistol'?5:3)&&G().shots.every(x=>Math.abs(x.dmg/base-powers[tier-3])<1e-9&&(!radii||x.blast===radii[tier-3])) ,id+' tier '+tier+' fires its balanced volley')}}
 // Projectile appearance belongs to the fired shot and reaches all nearby clients.
-{const r=mk(),p=s.createRoom(r,'Detective',null,'Projectile tiers'),q=s.addPlayer(r,'Firefighter',null,'Observer'),sync=require('./sync');T.enter(r);G().p=p;G().enemies=[];q.x=p.x+20;q.y=p.y;p.weapons.push('book');for(const id of ['pistol','book'])for(const tier of [0,1,2,3,4,5]){p.weapon=id;p.weaponUpgrades[id]=tier;p.cd.slash=0;p.mana=p.s.maxMana;G().shots=[];T.doAttack();p.weaponUpgrades[id]=0;const snap=sync.snapshot(r,q,sync.newClient(),1),shots=snap.h&&snap.h[0];ok(shots&&shots.length>0&&shots.every(x=>(x.tier||0)===tier)&&G().shots.every(x=>x.tier===tier),id+' tier '+tier+' is fixed on projectiles and sent online')}}
+{const r=mk(),p=s.createRoom(r,'Inventor',null,'Projectile tiers'),q=s.addPlayer(r,'Firefighter',null,'Observer'),sync=require('./sync');T.enter(r);G().p=p;G().enemies=[];q.x=p.x+20;q.y=p.y;p.weapons.push('book','pistol');for(const id of ['pistol','book'])for(const tier of [0,1,2,3,4,5]){p.weapon=id;p.weaponUpgrades[id]=tier;p.cd.slash=0;p.mana=p.s.maxMana;G().shots=[];T.doAttack();p.weaponUpgrades[id]=0;const snap=sync.snapshot(r,q,sync.newClient(),1),shots=snap.h&&snap.h[0];ok(shots&&shots.length>0&&shots.every(x=>(x.tier||0)===tier)&&G().shots.every(x=>x.tier===tier),id+' tier '+tier+' is fixed on projectiles and sent online')}}
 // Late melee and signature damage share the same progression, while swing coverage remains bounded.
 {const r=mk(),p=s.createRoom(r,'Detective',null,'Late melee');T.enter(r);G().p=p;p.weapons.push('knife');p.weapon='knife';G().enemies=[];for(const [tier,mul] of [[3,1.7],[4,1.9],[5,2.1]]){p.weaponUpgrades.knife=tier;p.cd.slash=0;T.doAttack();ok(T.MELEE_UP[tier]===mul&&p.swingR===T.WEAPONS.knife.reach+36&&Math.abs(p.swingArc-1.6)<1e-9,'melee tier '+tier+' has bounded reach and arc')}}
 // Achievements backfill only recorded facts and notify the owner once on new unlocks.
@@ -70,7 +70,7 @@ for(const [ch,id] of [['Detective','pistol']]){const r=mk(),p=s.createRoom(r,ch,
 // Swarm achievements persist, but temporary story statistics cannot unlock story goals.
 {const r=mk(),p=s.createRoom(r,'Detective',null,'Swarm achievements');T.enter(r);const gold=p.gold;T.startSwarm();p.gold=9999;p.lvl=25;p.kills=250;p.rage=100;G().p=p;T.doUlt();G().swarm.wave=5;T.waveCleared();const save=s.saveOf(p);ok(p.achievements.wave5&&!p.achievements.level25&&!p.achievements.kills250,'swarm unlocks its wave milestone without awarding temporary story progress');ok(save.achievements.wave5&&save.achievements.ultimate&&save.gold===gold&&save.lvl===1&&save.kills===0,'swarm unlock persists without carrying run progress');const q=s.createRoom(mk(),'Detective',save,'Reload');ok(q.achievements.wave5,'swarm unlock survives reloading')}
 // The upgrade preview's tables also drive the actual projectile volleys.
-{const r=mk(),p=s.createRoom(r,'Detective',null,'Weapon tiers'),q=s.addPlayer(r,'Firefighter',null,'Observer');T.enter(r);G().enemies=[];p.weapons.push('book');G().p=p;
+{const r=mk(),p=s.createRoom(r,'Inventor',null,'Weapon tiers'),q=s.addPlayer(r,'Firefighter',null,'Observer');T.enter(r);G().enemies=[];p.weapons.push('book','pistol');G().p=p;
  for(const [weapon,counts,powers,radii] of [['pistol',[1,3,5],[1,.4,.3],null],['book',[1,3,3],[1,.45,.45],[44,56,68]]])for(let n=0;n<3;n++){p.weapon=weapon;p.weaponUpgrades[weapon]=n;p.cd.slash=0;p.mana=p.s.maxMana;G().shots=[];G().fx=[];const base=T.weaponDamage(weapon)*T.dmgMul();T.doAttack();ok(G().shots.length===counts[n]&&G().shots.every(x=>Math.abs(x.dmg/base-powers[n])<1e-9&&(!radii||x.blast===radii[n]))&&G().fx.some(f=>f.k==='ring')===(n>0),weapon+' tier '+n+' has the expected projectile effects')}
  p.weapon='pistol';p.weaponUpgrades.pistol=2;p.cd.slash=0;p.input.l=true;p.input.ax=p.x+100;p.input.ay=p.y;q.x=p.x+20;q.y=p.y;r.ev.length=0;s.step(r,1/30);p.input.l=false;const snap=require('./sync').snapshot(r,q,require('./sync').newClient(),1);ok(snap.v&&snap.v.some(v=>v[0]==='f'&&v[1].k==='ring'&&v[1].c==='#80eaff'),'an upgraded attack pulse reaches nearby online allies')}
 // Upgraded bullets pass through one distinct enemy, then stop.
@@ -757,16 +757,15 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  {const {p,b}=setup();G().p=p;b.hp=b.maxHp*.51;T.reactHit(b,b.maxHp*.02,'#fff');ok(b.phase===1&&b.rustField,'reaction splash crossing half life activates Rust Field');T.restartCheckpoint();G().p=p;T.summonBoss();const next=G().boss;next.hp=next.maxHp*.51;next.rotT=2;next.rotRate=next.maxHp*.02;G().p=p;T.updateEnemy(next,1);ok(next.phase===1&&next.rustField,'damage over time crossing half life activates Rust Field')}
 
 }
-// Abilities: C readies Lock On, a click fires it, then the special cooldown runs.
-{const r=mk(),p=s.createRoom(r,'Detective',null,'Mark');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+30,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
+// Abilities: C readies an aimed ability (the Sage's Arcane Bind), a click fires it, then the special cooldown runs.
+{const r=mk(),p=s.createRoom(r,'Sage',null,'Mark');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+30,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;
  p.actions.push({n:'use'});run(1);ok(!p.abilCast&&!(p.abilT>0),'Use does nothing until the Ability is armed');
- p.actions.push({n:'ability'});run(1);ok(p.abil&&p.abil.fx==='mark'&&Math.abs(p.abil.x-e.x)<1&&!p.abilCast,'C readies Lock On on the enemy nearest the aim');
+ p.actions.push({n:'ability'});run(1);ok(p.abil&&p.abil.fx==='stun'&&Math.abs(p.abil.x-e.x)<1&&!p.abilCast,'C readies Arcane Bind on the enemy nearest the aim');
  p.input.l=true;run(1);ok(p.abilCast&&!p.abil&&p.abilT>T.SPECIAL_CD*.5&&!(p.cd.slash>0),'a click fires it and starts the cooldown, without a normal attack');run(1);ok(!p.abil&&!(p.cd.slash>0),'holding the click does not attack until it is let go');p.input.l=false;
- const hp=e.hp;G().p=p;const d=T.abilityDamage(p);run(40);ok(!p.abilCast&&hp-e.hp>d*.5,'Execute hits the marked enemy for special-attack damage');
+ const hp=e.hp;G().p=p;const d=T.abilityDamage(p);run(40);ok(!p.abilCast&&hp-e.hp>d*.3,'Arcane Bind hits the marked enemy for special-attack damage');
  p.actions.push({n:'ability'});run(1);ok(!p.abil,'the Ability waits for its cooldown');
- p.abilT=0;e.hp=e.maxHp*.2;p.actions.push({n:'ability'});run(1);p.actions.push({n:'use'});run(40);ok(e.dead,'Execute finishes an enemy below a quarter of its life');
- G().enemies=[];p.abilT=0;p.actions.push({n:'ability'});run(1);ok(!p.abil,'Mark needs a target in range')}
+ G().enemies=[];p.abilT=0;p.actions.push({n:'ability'});run(1);ok(!p.abil,'an aimed ability needs a target in range')}
 // Strong minions: twice the old brute life, damage and speed. Minions follow the party's level when it is above the stage's.
 {const r=mk(),p=s.createRoom(r,'Detective',null,'Grow');T.enter(r);G().p=p;G().stage=2;p.lvl=1;const w=T.spawnMob(0,{x:p.x+30,y:p.y},false),st=T.spawnMob(0,{x:p.x+30,y:p.y},true);
  ok(Math.abs(st.maxHp/w.maxHp-2*3.2/.6)<1e-9&&Math.abs(st.dmg/w.dmg-2*1.7/.7)<1e-6&&st.sp===2*60*(1+2*.012),'a strong minion has twice the old life, damage and speed');
@@ -787,15 +786,15 @@ for(const ch of PLAY){const ab=T.ABILITIES[ch],r=mk(),p=s.createRoom(r,ch,null,'
 // One button: a hold kind fires on release, an again kind fires its finisher on the second press.
 {const r=mk(),p=s.createRoom(r,'Cyborg',null,'Again');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+60,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
  p.actions.push({n:'ability'});run(1);const on=T.abilSize(p)===2;p.actions.push({n:'ability'});run(40);ok(on&&e.hp<e.maxHp&&!p.abil,'pressing Titan Form again fires Titan Stomp')}
-ok(T.hasFinisher(T.ABILITIES.Cyborg)&&T.hasFinisher(T.ABILITIES.Prodigy)&&!T.hasFinisher(T.ABILITIES.Detective)&&!T.hasFinisher(T.ABILITIES.Ranger),'buffs and grabs fire their finisher on a second C; aimed abilities do not');
-{const r=mk(),p=s.createRoom(r,'Ranger',null,'Cancel');T.enter(r);G().enemies=[];G().p=p;p.actions.push({n:'ability'});s.step(r,1/30);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(!p.abil&&!p.abilCast&&!(p.abilT>0),'C again cancels an aimed ability without a cooldown')}
+ok(T.hasFinisher(T.ABILITIES.Cyborg)&&T.hasFinisher(T.ABILITIES.Prodigy)&&!T.hasFinisher(T.ABILITIES.Sage)&&!T.hasFinisher(T.ABILITIES['Soul Stealer']),'buffs and grabs fire their finisher on a second C; aimed abilities do not');
+{const r=mk(),p=s.createRoom(r,'Pyromancer',null,'Cancel');T.enter(r);G().enemies=[];G().p=p;p.actions.push({n:'ability'});s.step(r,1/30);p.actions.push({n:'ability'});s.step(r,1/30);r.ev.length=0;ok(!p.abil&&!p.abilCast&&!(p.abilT>0),'C again cancels an aimed ability without a cooldown')}
 // The Necromancer throws a skull with its small attack.
 // Ranged abilities launch a projectile that travels before it lands.
-{const r=mk(),p=s.createRoom(r,'Detective',null,'Shot');T.enter(r);G().enemies=[];G().p=p;const W=G().w;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;e.x=p.x+40;
+{const r=mk(),p=s.createRoom(r,'Sage',null,'Shot');T.enter(r);G().enemies=[];G().p=p;const W=G().w;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=30;e.x=p.x+40;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x;p.input.ay=e.y;p.actions.push({n:'ability'});run(1);p.actions.push({n:'use'});run(1);
  let flew=false,landedHp=null;for(let i=0;i<60&&p.abilCast;i++){if(p.abilCast.fly&&e.hp===e.maxHp)flew=true;run(1)}
- ok(flew&&e.hp<e.maxHp&&!p.abilCast,'Execute fires a bullet that flies before it hits')}
-{const r=mk(),p=s.createRoom(r,'Vigilante',null,'Hook');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;
+ ok(flew&&e.hp<e.maxHp&&!p.abilCast,'an aimed ability fires a projectile that flies before it hits')}
+{const r=mk(),p=s.createRoom(r,'Soul Stealer',null,'Hook');T.enter(r);G().enemies=[];G().p=p;const e=T.spawnMob(0,{x:p.x+40,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;
  const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};p.input.ax=e.x+300;p.input.ay=e.y;p.actions.push({n:'ability'});run(1);p.actions.push({n:'use'});let fly=false;for(let i=0;i<60;i++){run(1);if(p.abilCast&&p.abilCast.fly)fly=true;if(!p.abilCast&&i>2)break}
  ok(fly&&e.hp<e.maxHp,'the hook flies out and catches the first enemy on its line')}
 // Toxin Alchemist throws flasks: a straight one for the small attack, a lobbed one for the moderate.
@@ -851,7 +850,7 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  const rng=fire('Ranger');ok(!rng.p.beam&&rng.shots.length===T.CHARGED_SHOT.bow.n&&rng.shots.every(x=>x.fx==='arrow'&&x.piercing),'the Ranger looses a volley of piercing arrows');
  const inv=fire('Inventor');ok(!inv.p.beam&&inv.shots.length===1&&inv.shots[0].blast>0,'the Inventor fires one overcharged plasma bolt that explodes');
  const fal=fire('Patriot');ok(!fal.p.beam&&fal.shots.length===3&&fal.shots.every(x=>x.fx==='wind'),'Falcon EX fires a gale burst of three wind crescents');
- for(const [char,id] of [['Detective','pistol'],['Ranger','bow'],['Inventor','blaster'],['Patriot','wind']]){const r=fire(char),C=T.CHARGED_SHOT[id],total=r.shots.reduce((n,x)=>n+x.dmg,0);G().p=r.p;ok(total>T.basicHit(r.p)*2&&total<T.abilityDamage(r.p)*.5,char+': a charged shot hits hard but stays well below the ability')}
+ for(const [char,id] of [['Patriot','wind']]){const r=fire(char),C=T.CHARGED_SHOT[id],total=r.shots.reduce((n,x)=>n+x.dmg,0);G().p=r.p;ok(total>T.basicHit(r.p)*2&&total<T.abilityDamage(r.p)*.5,char+': a charged shot hits hard but stays well below the ability')}
  const sage=fire('Sage');ok(!!sage.p.beam,'casters still fire a beam')}
 // The three asset villains play like everyone else: no move kit, a basic attack, a charged attack, a new ability and passive.
 {for(const ch of ['Necromancer','Void Empress','Toxin Alchemist']){const r=mk(),p=s.createRoom(r,ch,null,'Asset');T.enter(r);ok(!T.kitOf(p)&&T.isCaster(ch)&&T.PASSIVES[ch][3]==='effect',ch+' has no move kit, attacks with its own spell weapon, and has a new passive')}
@@ -877,7 +876,7 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  const plus=T.plus;
  ok(plus(1)===1.5&&plus(2)===2&&plus(6)===4,'a +1 on attacks, abilities and speed is +50%');
  {const {p}=setup('Firefighter');ok(T.sigHit(p,'axe')===2&&T.sigHit(p,'pistol')===1,'Firefighter: the fire axe hits +2 (double)');ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='4,6,10','Firefighter: the quick attack is 4×, 6× and 10× (blue, green, red)')}
- {const {p}=setup('Detective');ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='1,2,4','other characters keep 1×, 2× and 4×')}
+ {const {p}=setup('Patriot');ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='1,2,4','other characters keep 1×, 2× and 4×')}
  {const {r,p,es,x0,y0}=setup('Firefighter');p.input.x=1;run(r,15);const walk=p.x-x0;p.x=x0;p.y=y0;p.input.x=0;p.actions.push({n:'ability'});run(r,1);const on=T.riding(p);p.x=x0-40;p.input.x=1;run(r,15);const ride=p.x-x0+40;
   ok(on&&ride>walk*3,'Fire Truck: the ride is about four times as fast ('+Math.round(walk)+' → '+Math.round(ride)+' px)');ok(es[0].hp<es[0].maxHp,'Fire Truck: ramming an enemy hurts it');
   p.input.l=true;run(r,10);ok(p.boost===1&&!(p.chg>0),'holding attack while riding boosts instead of charging');p.input.l=false;p.input.x=0;run(r,8*30);ok(!T.riding(p),'the ride ends after 8 seconds')}
@@ -919,8 +918,9 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  G().p=q;ok(!T.canHopIn(q),'nobody can hop in before the truck is out');f.actions.push({n:'ability'});run(1);G().p=q;ok(T.canHopIn(q)&&T.canHopIn(z),'players near a riding Firefighter can hop in');
  q.actions.push({n:'ride'});run(1);ok(q.rideWith===(f.id||1),'the first one in takes the seat');G().p=z;ok(!T.canHopIn(z),'the seat is taken, so a third player gets no hop-in');
  z.actions.push({n:'ride'});run(1);ok(!z.rideWith,'the third player cannot squeeze in');
- f.input.x=1;run(20);f.input.x=0;run(1);ok(Math.abs(Math.abs(q.x-f.x)-T.SEAT.back)<1&&Math.abs(q.y-f.y)<2,'the passenger rides along behind the driver');
+ f.input.x=1;f.input.ax=f.x+300;f.input.ay=f.y-22;run(20);f.input.x=0;f.input.ax=f.x+300;f.input.ay=f.y-22;run(1);ok(Math.abs(Math.abs(q.x-f.x)-T.SEAT.back)<1&&Math.abs(q.y-f.y)<2,'the passenger rides along behind the driver');
  q.actions.push({n:'ride'});run(1);ok(!q.rideWith,'hopping out frees the seat');G().p=z;z.x=f.x;z.y=f.y+30;ok(T.canHopIn(z),'then someone else can hop in');
+ z.actions.push({n:'ride'});run(1);{const views=[[0,'right'],[Math.PI,'left'],[Math.PI/2,'toward you'],[-Math.PI/2,'away']].map(([ang,n])=>{f.input.x=0;f.input.y=0;f.input.ax=f.x+Math.cos(ang)*200;f.input.ay=f.y-22+Math.sin(ang)*200;run(2);const o=T.seatPos(f);return Math.abs(z.x-o.x)<1&&Math.abs(z.y-o.y)<1&&(Math.abs(Math.sin(ang))>.5?Math.abs(z.x-f.x-T.SEAT_SIDE)<1:Math.abs(Math.abs(z.x-f.x)-T.SEAT.back)<1)});ok(views.every(Boolean),'the passenger has a seat for every view: right, left, toward you and away')}
  z.actions.push({n:'dash'});run(1);ok(!z.rideWith,'dodging also hops out');G().p=z;z.x=f.x;z.y=f.y+30;z.actions.push({n:'ride'});run(1);ok(z.rideWith,'they take the free seat');run(9*30);ok(!z.rideWith,'the ride ending drops the passenger off')}
 
 {const r=mk(),f=s.createRoom(r,'Firefighter',null,'Driver2'),q=s.addPlayer(r,'Detective',null,'Rider2');T.enter(r);G().enemies=[];G().spawnT=G().villT=1e9;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
@@ -942,6 +942,41 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
  {const {r,t}=setup('Guardian',1);G().p=t;const e=T.spawnMob(0,{x:t.x+40,y:t.y},false);e.hp=e.maxHp=1e6;T.hitEnemy(e,10,0,0);ok(e.tauntT>0&&e.tauntId===(t.id||0),'Guardian: a hit taunts the enemy');ok(T.tierMul(t,3)===4,'Guardian: quick attack up to ×4')}
  {const {r,t}=setup('Soul Forger',1);G().p=t;t.s.crit=0;const e=T.spawnMob(0,{x:t.x+40,y:t.y},false),o=T.spawnMob(0,{x:t.x+80,y:t.y},false);for(const x of [e,o]){x.hp=x.maxHp=1e6;x.dodge=0}T.hitEnemy(e,100,0,0);ok(o.hp<o.maxHp,'Soul Forger: hammer hits splash molten sparks on enemies next to the target');ok(T.tierMul(t,3)===5,'Soul Forger: quick attack up to ×5')}
  for(const [ch,f] of [['Guardian','guardCharge'],['Soul Forger','forgeCharge']])for(const tier of [1,2,3]){const {r,t}=setup(ch,1);run(r,1);G().p=t;t.face=0;t.input.ax=t.x+150;t.input.ay=t.y;run(r,1);G().p=t;t.face=0;const e=T.spawnMob(0,{x:t.x+90,y:t.y},false);e.hp=e.maxHp=1e6;e.dodge=0;G().hazards=[];T[f](t,tier,1);ok(e.hp<e.maxHp,ch+': quick attack tier '+tier+' hits')}}
+
+/* ---------- Detective and Ranger ---------- */
+{const run=(r,k)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const setup=ch=>{const r=mk(),p=s.createRoom(r,ch,null,'Gun');T.enter(r);G().enemies=[];G().npcs=[];G().spawnT=G().villT=1e9;G().p=p;p.inv=1e9;p.s.crit=0;const e=T.spawnMob(0,{x:p.x+120,y:p.y},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=60;e.dodge=0;p.input.ax=e.x;p.input.ay=e.y-22;return{r,p,e}};
+ ok(['Detective','Ranger','Inventor','Patriot'].every(n=>T.gunHero({char:n}))&&!['Sage','Firefighter','Necromancer','Mad Scientist'].some(n=>T.gunHero({char:n})),'every hero whose own weapon shoots gets the gun basic attack, and nobody else');
+ for(const ch of ['Detective','Ranger','Inventor','Patriot']){
+  {const {p}=setup(ch);if(ch==='Detective'||ch==='Ranger')ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='3,4,7',ch+': quick attack ×3, ×4, ×7');ok(T.sigHit(p,T.weaponOf(ch))===1.5,ch+': basic shots hit +1')}
+  {const {r,p}=setup(ch);run(r,1);G().p=p;p.cd.slash=0;G().shots=[];T.doAttack();ok(ch==='Inventor'?G().shots.some(x=>x.slowS>0):G().shots.some(x=>x.kb>=200),ch+(ch==='Inventor'?': ray gun shots slow enemies':': basic shots push back'))}
+  {const {r,p}=setup(ch);p.input.l=false;const cds=[];for(let i=0;i<110;i++){p.input.l=i%2===0;run(r,1);if(p.cd.slash>0&&p.input.l)cds.push(p.cd.slash)}G().p=p;ok(T.streakHaste(p)===2,ch+': after 2 seconds of steady fire, attack speed goes +2')}}
+ {const {r,p}=setup('Detective');run(r,1);G().p=p;const x0=p.x,y0=p.y;T.releaseCharge(p,1,3);ok(Math.hypot(p.x-x0,p.y-y0)>60&&p.inv>0,'Detective: a red charged shot rolls you aside')}
+ {const {r,p}=setup('Ranger');run(r,1);G().p=p;T.releaseCharge(p,1,3);ok(p.empT>3.9,'Ranger: a red charged shot empowers the next 4 seconds of shots');p.cd.slash=0;G().shots=[];T.doAttack();const a=G().shots[0].dmg;p.empT=0;p.cd.slash=0;G().shots=[];T.doAttack();const b=G().shots[0].dmg;ok(Math.abs(a/b-3)<.01,'empowered shots hit +4 (three times)')}
+ {const {r,p,e}=setup('Detective');p.actions.push({n:'ability'});run(r,1);G().p=p;ok(p.abil&&p.abil.fx==='wolf'&&Math.abs(T.stealOf(p)-.5)<1e-9,'Detective: Wolf Form with +5 life steal');
+  const far=T.freeSpot(e.x+300,e.y,14);p.x=far.x;p.y=far.y;e.stunT=0;p.input.l=true;run(r,12);p.input.l=false;run(r,1);ok(Math.hypot(p.x-e.x,p.y-e.y)<120&&e.hp<e.maxHp&&e.stunT>0,'holding attack in Wolf Form pounces on the nearest enemy and stuns it');
+  run(r,10*30);ok(!p.abil,'Wolf Form lasts 10 seconds')}
+ {const {r,p,e}=setup('Ranger');p.actions.push({n:'ability'});run(r,1);G().p=p;ok(p.abil&&p.abil.fx==='shade'&&T.abilStealth(p),'Ranger: Vanish makes you invisible');
+  p.input.l=true;run(r,12);p.input.l=false;run(r,1);ok(e.hp<e.maxHp,'holding attack while hidden calls an arrow shower on the aim');run(r,3*30);ok(!p.abil,'Vanish lasts 3 seconds')}}
+
+/* ---------- Vigilante, Inventor and the enemy boost ---------- */
+{const run=(r,k)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
+ const setup=(ch,n=1)=>{const r=mk(),p=s.createRoom(r,ch,null,'Kit');T.enter(r);G().enemies=[];G().npcs=[];G().spawnT=G().villT=1e9;G().p=p;p.inv=1e9;p.s.crit=0;const es=[...Array(n)].map((_,i)=>{const e=T.spawnMob(0,{x:p.x+70+i*30,y:p.y+(i%2?20:-20)},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=60;e.dodge=0;return e});p.input.ax=p.x+200;p.input.ay=p.y-22;return{r,p,es}};
+ {const {p}=setup('Vigilante');ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='2,4,7'&&T.sigHit(p,T.weaponOf('Vigilante'))===1.5,'Vigilante: hook hits +1; quick attack ×2, ×4, ×7')}
+ {const {r,p}=setup('Vigilante');const e=T.spawnMob(0,{x:p.x+20,y:p.y-40},false);e.hp=e.maxHp=1e7;e.sp=0;e.stunT=60;e.dodge=0;run(r,1);G().p=p;p.face=0;p.cd.slash=0;T.doAttack();ok(e.hp<e.maxHp,'Vigilante: the hook sweep is wide enough to catch an enemy off to the side')}
+ {const {r,p}=setup('Vigilante');for(let i=0;i<70;i++){p.input.l=i%2===0;run(r,1)}G().p=p;ok(T.streakHaste(p)===2,'Vigilante: Rapid fire after 2 seconds of steady attacks')}
+ {const reach=t=>{const {r,p}=setup('Vigilante');run(r,1);G().p=p;p.face=0;const e=T.spawnMob(0,{x:p.x+150,y:p.y},false);e.hp=e.maxHp=1e7;e.dodge=0;T.vigSweep(p,t,1);return e.hp<e.maxHp};ok(!reach(1)&&reach(3),'Vigilante: the red sweep reaches much farther than blue')}
+ {const {r,p,es}=setup('Vigilante',3);es.forEach(e=>e.stunT=0);p.actions.push({n:'ability'});run(r,1);G().p=p;const tied=es.filter(e=>e.tiedT>5).length;ok(tied===1&&T.lassoHaste(p)===2.5,'Lasso ties up the nearest enemy and gives +3 attack speed');
+  p.input.ax=es[1].x;p.input.ay=es[1].y-22;p.input.l=true;run(r,12);p.input.l=false;run(r,1);ok(es.every(e=>e.tiedT>0),'holding attack ropes every enemy in the area')}
+ {const {r,p,es}=setup('Inventor');run(r,1);G().p=p;p.face=0;p.input.ax=es[0].x;p.input.ay=es[0].y-22;run(r,1);G().p=p;G().shots=[];p.cd.slash=0;T.doAttack();ok(G().shots.length&&G().shots.every(x=>x.slowS>0&&!x.kb),'Inventor: ray gun shots slow instead of pushing');
+  ok([1,2,3].map(t=>T.tierMul(p,t)).join()==='2,4,5','Inventor: quick attack ×2, ×4, ×5')}
+ {const {r,p,es}=setup('Inventor',3);run(r,1);G().p=p;p.face=0;es.forEach((e,i)=>{e.x=p.x+100+i*120;e.y=p.y});T.rayBeam(p,1);ok(es.every(e=>e.hp<e.maxHp&&e.slowT>3),'Inventor: the red ray beam hits and slows every enemy in a line')}
+ {const {r,p,es}=setup('Inventor');const n0=T.partySize();p.actions.push({n:'ability'});run(r,1);const c=G().players.find(q=>q.summon);G().p=p;
+  ok(c&&c.char==='Cyborg'&&c.owner===(p.id||1)&&T.partySize()===n0,'Cyborg Ally: a Cyborg joins (without making enemies tougher)');
+  ok(c&&c.s.dmg>=p.s.dmg*1.5-1e-6&&c.s.maxHp>=p.s.maxHp*1.5-1e-6,'the Cyborg has +1 on the Inventor\'s stats');
+  es[0].stunT=0;es[0].x=p.x+60;run(r,90);ok(es[0].hp<es[0].maxHp,'the Cyborg fights beside the Inventor');run(r,9*30);ok(!G().players.some(q=>q.summon),'the Cyborg leaves after 10 seconds')}
+ ok(T.ENEMY_BOOST.hp===1.25&&T.ENEMY_BOOST.dmg===1.25&&T.ENEMY_BOOST.count===1.25&&T.ENEMY_BOOST.spawn===1.25,'enemies are 25% stronger, 25% more and arrive 25% faster');
+}
 
 /* ---------- Teleport to a teammate ---------- */
 {const r=mk(),a=s.createRoom(r,'Detective',null,'TA'),b=s.addPlayer(r,'Guardian',null,'TB'),c=s.addPlayer(r,'Ranger',null,'TC'),d=s.addPlayer(r,'Druid',null,'TD');T.enter(r);G().enemies=[];G().spawnT=G().villT=1e9;const run=k=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
@@ -977,8 +1012,8 @@ ok(T.SKILLS.every(k=>k.max===T.SKILL_MAX&&T.SKILL_MAX===100),'every skill trains
 {const r=mk(),p=s.createRoom(r,'Detective',null,'L');T.enter(r);const g=G(),st=(k=1)=>{for(let i=0;i<k;i++){s.step(r,1/30);r.ev.length=0}};
  const go=n=>{p.maxStage=10;p.x=g.safe.x;p.y=g.safe.y;p.nearSafe=true;s.hostAction(r,p,'travel',String(n));T.enter(r);G().enemies=[];G().spawnT=1e9;return G()};
  const bossAt=n=>{const G2=go(n);G2.boss=null;T.summonBoss();const b=G2.boss;b.act='walk';b.actT=99;b.cd=99;return{G2,b}};
- {const {b}=bossAt(4);ok(Math.abs(b.maxHp-T.bossHp(4))<1&&!b.mult,'stage 4 bosses are unchanged')}
- for(const [n,m] of [[5,2],[7,3],[9,4],[10,10]]){const {b}=bossAt(n);ok(Math.abs(b.maxHp/T.bossHp(n)-m)<1e-6,'stage '+n+' boss has '+m+'× life')}
+ {const {b}=bossAt(4);ok(Math.abs(b.maxHp-T.bossHp(4)*T.ENEMY_BOOST.hp)<1&&!b.mult,'stage 4 bosses have no late-stage multiplier (only the general 25% boost)')}
+ for(const [n,m] of [[5,2],[7,3],[9,4],[10,10]]){const {b}=bossAt(n);ok(Math.abs(b.maxHp/T.bossHp(n)/T.ENEMY_BOOST.hp-m)<1e-6,'stage '+n+' boss has '+m+'× life')}
  {const {G2,b}=bossAt(8),keep=T.DODGE.boss;T.DODGE.boss=()=>1;b.dodgeCd=0;b.dodgeUntil=0;const hp=b.hp;G2.p=p;T.hitEnemy(b,50,0,90);ok(b.hp===hp&&b.dodgeUntil>G2.t,'a late boss can dodge a plain hit');
   b.dodgeUntil=0;b.dodgeCd=0;const hp2=b.hp;T.hitEnemy(b,50,0,90,true);ok(b.hp<hp2,'charged hits, beams and abilities are never dodged');T.DODGE.boss=keep}
  {go(4);ok(T.dodgeChance({mob:'weak'})===0&&T.dodgeChance({kind:'boss'})===0,'nothing dodges on stages 1 to 4');go(6);ok(T.dodgeChance({mob:'weak'})>0&&T.dodgeChance({kind:'boss'})>T.dodgeChance({mob:'weak'}),'from stage 5 minions dodge, bosses more often')}
@@ -1086,7 +1121,7 @@ T.FINAL.on=false;
  ok(drop(12)===100&&drop(22)===125&&drop(18)===100,'a kill at night drops 25% more gold')}
 
 /* ---------- Unique quick attack and the Chronomancer ---------- */
-{const r=mk(),p=s.createRoom(r,'Detective',null,'U');T.enter(r);const g=G();g.enemies=[];g.spawnT=1e9;g.p=p;
+{const r=mk(),p=s.createRoom(r,'Patriot',null,'U');T.enter(r);const g=G();g.enemies=[];g.spawnT=1e9;g.p=p;
  const tier=(chg,h)=>{p.chg=chg;p.holdT=h;const t=T.chargeTier(p);p.chg=0;p.holdT=0;return t};
  ok(tier(.8,1)===0&&tier(1,1.3)===1&&tier(1,3.1)===2&&tier(1,6.2)===3,'holding gives blue at a full charge, green at 3 s and red at 6 s');
  const shotDmg=t=>{g.shots=[];p.cd.slash=0;T.releaseCharge(p,1,t);const d=g.shots.filter(x=>x.from==='p').reduce((a,x)=>a+x.dmg,0);g.shots=[];return d};

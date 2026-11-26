@@ -6,6 +6,17 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ### 26 November 2026
 
+- New kits for the Vigilante and the Inventor:
+  - Vigilante: a wide hook sweep that hits +1 and pushes back, with Rapid fire after 2 seconds of steady attacks. Quick attack +2, +4, +7 with +1, +2 and +4 reach. New ability Lasso: ties up the nearest enemy for 6 seconds (2 for bosses) and gives +3 attack speed while it is tied; holding attack ropes every enemy in the aimed area for 2 seconds; C again yanks the tied enemy.
+  - Inventor: ray gun shots hit +1 and slow enemies, with Rapid fire. Quick attack: blue +2 and green +4 bolts that push and slow harder; red is a green-blue ray beam (+5) through every enemy in a line, slowing them. New ability Cyborg Ally: a Cyborg fights beside him for 10 seconds with +1 on all his stats and uses its own ability; C again overloads it in a blast.
+- Enemies are 25% stronger (life and damage), there are 25% more of them, and they arrive 25% faster, so the larger maps never feel empty.
+- Every hero who fights with a gun or bow now has the Detective's basic attack: the Detective, the Ranger, the Inventor (blaster) and Falcon EX (gale gauntlets). Their own weapon hits +1 and pushes enemies back, and after 2 seconds of steady fire their attack speed goes +2 ("Rapid fire") until they pause. Their charged attacks and abilities are unchanged.
+- Fire Truck passenger: the seat now follows all four views of the truck. Driving right or left the passenger sits behind the driver; driving toward or away from you they sit side by side (the driver moves over). The passenger faces the way the truck is going, and still turns to aim when attacking.
+- The werewolf, Vampire Form and Fire Truck now have front and back views. The werewolf strides toward or away from you (open coat, vest and tie in front; coat vent and tail behind). The vampire's wings sit behind him from the front and spread over his back from behind. The fire truck is drawn head-on (windshield, grille, headlights) or from the rear (doors, hose reel, tail lights), with the Firefighter at the wheel.
+- New kits for the Detective and the Ranger:
+  - Both: basic shots hit +1 and push enemies back. Keep firing for 2 seconds and attack speed goes +2 ("Rapid fire") until you pause. Quick attack +3, +4, +7 (blue, green, red), all with a heavy push.
+  - Detective: on red he also rolls aside. New ability Wolf Form: for 10 seconds he turns into a werewolf in his police cap and trench coat, walking upright and very fast, with +5 attack, attack speed, life steal and speed. He claws instead of shooting, and holding attack pounces on the nearest enemy (+2) and stuns it. C again ends it with a howl.
+  - Ranger: on red his next 4 seconds of basic shots are empowered (+4). New ability Vanish: invisible for 3 seconds, +5 attack speed and +3 speed. Holding attack calls an arrow shower (+10) on the aimed area. C again ends it with a last volley.
 - The dev site now has every change listed for 25 November. Their first upload was held back by a build check (the game page embeds this changelog and was built before its last edit); the page is rebuilt and the check passes.
 - Stage 5 (Sporefall Marsh) toxin is much gentler: it builds at 0.5% a second (was 1.25%), spore clouds add 4% (was 8%), and full toxin hurts 1.5% of your life every 2 seconds (was 4% every second) and never takes you below 20% life. Eight clean springs are scattered over the map (shown on the minimap); standing in one clears toxin fast.
 
