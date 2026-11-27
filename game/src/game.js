@@ -501,8 +501,10 @@ function holdStep(st,dt){
     st.aloneT=need;
     for(const z of zs){if(!z.done&&playersNear(z,60)){if(st.guard&&!z.alarm){z.alarm=true;beaconAlarm(z)}z.t=Math.min(need,(z.t||0)+dt)}if((z.t||0)>=need)z.done=true}
     st.have=zs.filter(z=>z.done).length;st.met=st.have>=st.need}}
-/* The escort only moves while somebody stays close. */
-function escortStep(st,dt){const e=G.obj.escort;if(!e)return;if(playersNear(e,220)){const dx=e.tx-e.x,dy=e.ty-e.y,d=Math.hypot(dx,dy)||1;if(d>30){e.x+=dx/d*Math.min(54*dt,d);e.y+=dy/d*Math.min(54*dt,d);e.t+=dt}else e.done=true}st.have=e.done?1:0}
+/* The escort only moves while somebody stays close. ESCORT_SPEED: units a second (was 54 until 2026-11-27; the owner
+   asked for a faster boat on the big maps; still slower than a walking hero, so the party can keep up). */
+const ESCORT_SPEED=90;
+function escortStep(st,dt){const e=G.obj.escort;if(!e)return;if(playersNear(e,220)){const dx=e.tx-e.x,dy=e.ty-e.y,d=Math.hypot(dx,dy)||1;if(d>30){e.x+=dx/d*Math.min(ESCORT_SPEED*dt,d);e.y+=dy/d*Math.min(ESCORT_SPEED*dt,d);e.t+=dt}else e.done=true}st.have=e.done?1:0}
 /* Anything dropped by a player who left, or a stale carrier id, is released. */
 function releaseCarries(){for(const c of (G.obj&&G.obj.items)||[])if(c.by&&!G.players.some(q=>(q.id||0)===c.by&&q.carry===c&&!(q.deadT>0||q.respawnT>0)))c.by=0}
 /* A wipe sends the party back to the last finished step: finished steps stay, the current one starts over. */

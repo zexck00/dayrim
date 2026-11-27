@@ -7,7 +7,7 @@ import {wallFaces} from '../three/geometry.js';
 import {STAGE_THEMES,THEME_KEYS,themeFor} from '../three/stages.js';
 import {TREE_KINDS,EXTRA_KINDS,scatterExtras,buildVegetation} from '../three/vegetation.js';
 import {WEATHER} from '../three/vfx.js';
-import {isoMatrix,isoProject,isoUnproject,isoScale,isoSpan,isoInView,ISO_TURN,ISO_ELEV} from '../three/voxel.js';
+import {isoMatrix,isoProject,isoUnproject,isoScale,isoSpan,isoInView,ISO_TURN,ISO_ELEV,hullVoxels} from '../three/voxel.js';
 let n=0;const ok=(c,m)=>{assert.ok(c,m);n++;console.log('  ok  '+m)};
 
 ok(DAYRIM64.length===64&&new Set(DAYRIM64).size===64,'DAYRIM-64 has 64 different colours');
@@ -41,6 +41,13 @@ ok(worst<1,'ground points land on the same screen pixel as in 2D (within '+worst
  ok(mul(im,cx-30,cy-30,0)[2]>mul(im,cx+30,cy+30,0)[2]&&mul(im,cx,cy,40)[2]<mul(im,cx,cy,0)[2],'in the voxel view, things up the screen are farther and tall things are nearer');
  const span=isoSpan(W,H,s);let cover=true;for(const [px,py] of [[0,0],[W,0],[0,H],[W,H]]){const q=isoUnproject(px,py,cx,cy,W,H,s,0);if(Math.abs(q.x-cx)>span+1e-6||Math.abs(q.y-cy)>span+1e-6)cover=false}
  ok(cover&&isoInView(cx,cy,cx,cy,W,H,s)&&!isoInView(cx+span*2,cy,cx,cy,W,H,s),'the voxel ground layer covers every screen corner, and far things are culled')}
+
+// Chibi art to voxels: a 4×4 square seen from the front (red) and side (green) becomes a 4×4×4 block, front red
+{const w=8,h=8,img=(r,g,b)=>{const d=new Uint8ClampedArray(w*h*4);for(let y=2;y<6;y++)for(let x=2;x<6;x++){const i=(y*w+x)*4;d[i]=r;d[i+1]=g;d[i+2]=b;d[i+3]=255}return d};
+ const v=hullVoxels({w,h,front:img(255,0,0),side:img(0,255,0),back:img(0,0,255),cx:4,sx:4,top:6,k:1}),n=v.list.length/4,cols=new Set();let front=0;
+ for(let i=0;i<n;i++){const x=v.list[i*4],c=v.list[i*4+3];cols.add(c);if(x===1&&c===0xff0000)front++}
+ ok(n===56,'the voxel builder keeps only the outside blocks of a solid shape ('+n+' of 64)');
+ ok(front===16&&cols.has(0x0000ff)&&cols.has(0x00ff00),'front blocks take the front drawing, back and sides their own drawings')}
 
 const map=new Uint8Array([0,1,1,0, 0,1,0,0, 0,0,0,1]);
 const f=wallFaces(map,4,3);ok(f.tops===4&&f.fronts===3,'walls get a top on every tile and a south face only above open ground');

@@ -59,7 +59,7 @@ function w3Begin(cam,sx,sy){
   w3Stage();
   // DAYRIM_GFX.peek={x,y} moves only the picture (for screenshots); the game camera is unchanged
   if(W3.opts.peek)cam=W3.opts.peek;
-  const L=FX3.layer,iso=vxOn(),s=iso?FX3.mod.isoScale(zoom):0,D=iso?2*(FX3.mod.isoSpan(W,H,s)+40):0,vw=iso?D:W/zoom,vh=iso?D:H/zoom,iw=Math.max(16,Math.round(vw/PS)),ih=Math.max(16,Math.round(vh/PS));
+  const L=FX3.layer,iso=vxOn(),s=iso?vxScale():0,D=iso?2*(FX3.mod.isoSpan(W,H,s)+40):0,vw=iso?D:W/zoom,vh=iso?D:H/zoom,iw=Math.max(16,Math.round(vw/PS)),ih=Math.max(16,Math.round(vh/PS));
   W3.f={iw,ih,vw,vh,cx:cam.x+sx,cy:cam.y+sy,iso,s,rw:Math.round(W),rh:Math.round(H)};W3.heroes=[];
   // voxel preview: everything 2D goes on the ground layer; the screen overlay stays empty (the post pass sizes it)
   for(const cv of iso?[L.underCanvas]:[L.underCanvas,L.overCanvas])if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}
@@ -70,7 +70,7 @@ function w3Begin(cam,sx,sy){
 }
 /* blit() hands its sprite here when it would draw on the over layer at full opacity */
 function w3Card(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo){
-  if(W3.skip&&name===W3.skip.char&&!W3.baking)return true;// drawn as a voxel model instead
+  if(W3.skip&&name===W3.skip.char)return true;// drawn as a voxel model instead
   if(!W3.d3||W3.baking||c2!==W3.octx||(alpha!==undefined&&alpha<.99)||c2.globalAlpha<.99||c2.globalCompositeOperation!=='source-over')return false;
   let im=frame(name,dir,anim,f,wpn);if(blitDark)im=darkFrame(im);if(mo&&mo.red)im=redFrame(im);
   const m=W3.baseInv.multiply(c2.getTransform()),foot=m.transformPoint(new DOMPoint(x,y));
@@ -86,6 +86,8 @@ function w3Card(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo){
 const PROP_W=240,PROP_H=260,PROP_FOOT=228;
 function w3Prop(o){
   if(W3.veg&&W3.veg.has(o.t))return;// drawn as real 3D vegetation
+  // voxel view: ruins are part of the block stage; braziers are block posts with a flickering flame
+  if(W3.f&&W3.f.iso){if(o.t==='ruin')return;if(o.t==='lamp'){W3.heroes.push({kind:'prop',key:'prop:brazier',prop:'brazier',x:o.x,y:o.y,face:0,size:1});return}}
   const k=o.t+'|'+(o.v||0)+'|'+(o.k||'');let cv=W3.props.get(k);
   if(!cv){cv=document.createElement('canvas');cv.width=PROP_W;cv.height=PROP_H;const g=cv.getContext('2d'),keep=ctx,b=W3.baking,sh=shadowTo;ctx=g;W3.baking=true;shadowTo=null;g.imageSmoothingEnabled=false;
     try{drawProp(Object.assign({},o,{x:PROP_W/2,y:PROP_FOOT}))}catch(e){}finally{ctx=keep;W3.baking=b;shadowTo=sh}W3.props.set(k,cv)}
@@ -153,12 +155,14 @@ function drawFx3(now){
 /* ---- Voxel preview (proof of concept): Stage 1 with the Detective, two minutes at a time ----
    An isometric camera, block ground, walls and trees, and a block-built Detective. Drawing and camera only:
    aim is still a world point and movement still sends a world direction, so the rules see the same game. */
-const VX={on:false,end:0,prevGfx:null,starting:false},VX_LEN=120,voxBtn=$('voxbtn');
-const vxAllowed=()=>!!(G&&G.mode==='play'&&G.stage===1&&!G.story&&G.p&&G.p.char==='Detective');
+/* Phase 0: open to every hero on every stage, with no time limit, while the voxel heroes are built (VOXEL_PLAN.md) */
+const VX={on:false,end:Infinity,prevGfx:null,starting:false},voxBtn=$('voxbtn');
+const isHero=c=>!!(c&&ROSTER.hero[c]);
+const vxAllowed=()=>!!(G&&G.mode==='play'&&!G.story&&G.p&&isHero(G.p.char));
 function vxOn(){return !!(VX.on&&FX3.enabled&&FX3.layer&&FX3.mod&&w3On())}
 async function vxStart(){
   if(VX.on||VX.starting||!vxAllowed())return;VX.starting=true;VX.prevGfx=store.get('dayrim-gfx');
-  try{if(!FX3.enabled||!FX3.layer)await setFx3(true);if(!FX3.layer||!FX3.mod)return;FX3.layer.setVoxel(true);VX.on=true;VX.end=performance.now()+VX_LEN*1000;moveRot=FX3.mod.ISO_TURN}
+  try{if(!FX3.enabled||!FX3.layer)await setFx3(true);if(!FX3.layer||!FX3.mod)return;FX3.layer.setVoxel(true);VX.on=true;VX.end=Infinity;moveRot=FX3.mod.ISO_TURN}
   finally{VX.starting=false;if(VX.prevGfx!==undefined&&VX.prevGfx!==null)store.set('dayrim-gfx',VX.prevGfx);vxButton()}
 }
 function vxStop(why){
@@ -167,18 +171,26 @@ function vxStop(why){
   if(why&&G&&G.mode==='play')G.banner={t:3,a:'Voxel preview ended',b:why};vxButton();
 }
 function vxButton(){
-  const ok=vxAllowed()||VX.on;voxBtn.hidden=!ok;if(!ok)return;
-  if(VX.on){const left=Math.max(0,Math.ceil((VX.end-performance.now())/1000));voxBtn.textContent='Voxel preview '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0');voxBtn.setAttribute('aria-pressed','true')}
-  else{voxBtn.textContent=VX.starting?'Loading voxel preview':'Voxel preview (2 min)';voxBtn.setAttribute('aria-pressed','false')}
+  // always shown while playing, so players can find it; where it cannot run it says what it needs
+  const play=!!(G&&G.mode==='play'),ok=vxAllowed()||VX.on;voxBtn.hidden=!play;if(!play)return;voxBtn.setAttribute('aria-disabled',String(!ok));
+  if(!ok){voxBtn.textContent='Voxel view: heroes only';voxBtn.title='The voxel view is built for heroes first';voxBtn.setAttribute('aria-pressed','false');return}voxBtn.title='';
+  voxBtn.textContent=VX.on?'Voxel view: on':VX.starting?'Loading voxel view':'Voxel view (beta)';voxBtn.setAttribute('aria-pressed',String(VX.on))
 }
-voxBtn.onclick=()=>VX.on?vxStop('Stopped'):vxStart();
+voxBtn.onclick=()=>{if(VX.on)vxStop('');else if(vxAllowed())vxStart();else if(G)G.banner={t:3,a:'Voxel view',b:G.story?'Not in Story mode':'Heroes only for now'}};
+/* Lineup for screenshot review (DAYRIM_GFX.lineup=true): all 20 heroes in voxel, facing the camera, each with its 2D
+   sprite standing just in front. Drawing only; nothing is added to the game. */
+function vxLineup(){const p=G.p;if(!p)return;const names=Object.keys(ROSTER.hero),down=W3.opts.lineupFace!==undefined?+W3.opts.lineupFace:Math.PI/4;// DAYRIM_GFX.lineupFace turns them (radians)
+  const H2=Math.SQRT1_2,at=(a,b)=>({x:p.x+(a+b)*H2,y:p.y+(b-a)*H2});
+  names.forEach((n,i)=>{const c=at(-405+(i%10)*90,70+Math.floor(i/10)*150),x=c.x,y=c.y,sp=SPECS[n]||{};
+    W3.heroes.push({kind:n==='Detective'?'det':'rig',key:'line:'+n,name:n,spec:sp,art:{head:vxHeadArt(n)},weapon:sp.w,wc:sp.wc,wart:vxWeaponArt(sp.w,sp.wc,sp.s),size:1.55,x,y,face:down,moving:false,atk:false,guard:false,hit:0,dash:-1,dead:false,blink:false,sink:false});
+    const card=at(-405+(i%10)*90+38,70+Math.floor(i/10)*150+8),im=frame(n,dirOf(Math.PI/2),'idle',0),fx=card.x,fy=card.y,x0=fx-32*PS,y0=fy-61*PS;W3.cards.push({canvas:im,q:[x0,y0,x0+FS*PS,y0,x0+FS*PS,y0+FS*PS,x0,y0+FS*PS],footY:fy})})}
 // for checking in the browser console: DAYRIM_GFX.vx and __vx
 window.__vx={FX3,VX,W3};
 Object.defineProperty(W3.opts,'vx',{get:()=>({on:VX.on,starting:VX.starting,allowed:vxAllowed(),fx3:FX3.enabled,layer:!!FX3.layer,mod:!!FX3.mod,failed:FX3.failed,w3:w3On(),heroes:(W3.heroes||[]).length,cards:W3.cards.length}),enumerable:false});
-setInterval(()=>{if(VX.on){if(!vxAllowed())vxStop('It is for Stage 1 with the Detective');else if(performance.now()>=VX.end)vxStop('Two minutes are up');else if(!vxOn()&&!VX.starting)vxStop('3D graphics are off')}vxButton()},250);
+setInterval(()=>{if(VX.on){if(!vxAllowed())vxStop('Heroes only for now');else if(!vxOn()&&!VX.starting)vxStop('3D graphics are off')}vxButton()},250);
 /* view helpers for the voxel camera (CSS pixels on screen) */
-function vxScreen(x,y,z){const f=W3.f||{cx:G.cam.x,cy:G.cam.y,s:FX3.mod.isoScale(zoom)};return FX3.mod.isoProject(x,y,z||0,f.cx,f.cy,W,H,f.s)}
-function vxUnproject(sx,sy){return FX3.mod.isoUnproject(sx,sy,G.cam.x,G.cam.y,W,H,FX3.mod.isoScale(zoom),18)}
+function vxScreen(x,y,z){const f=W3.f||{cx:G.cam.x,cy:G.cam.y,s:vxScale()};return FX3.mod.isoProject(x,y,z||0,f.cx,f.cy,W,H,f.s)}
+function vxUnproject(sx,sy){return FX3.mod.isoUnproject(sx,sy,G.cam.x,G.cam.y,W,H,vxScale(),18)}
 function vxInView(o){const f=W3.f;return FX3.mod.isoInView(o.x,o.y,f.cx,f.cy,W,H,f.s,90)}
 /* HUD markers use the same formula as the classic view, so this keeps their scale */
 function vxHud(x,y,z){const P=vxScreen(x,y,z);return{x:W/2+(P.x-W/2)/hudK,y:H/2+(P.y-H/2)/hudK}}
@@ -188,13 +200,88 @@ function vxAnchor(x,y){let best=null,bd=1e9;
   G.players.forEach(look);G.enemies.forEach(look);(G.npcs||[]).forEach(look);
   return best?{x,y:best.y,z:best.y-y}:{x,y,z:0}}
 /* Voxel stand-in for a player: the Detective in normal form */
-const vxHero=o=>vxOn()&&o.char==='Detective'&&!riding(o)&&!batForm(o)&&!wolfForm(o);
+/* every hero stands as a block body (Phase 1); the Fire Truck stays a card until Phase 5 */
+const vxHero=o=>vxOn()&&isHero(o.char)&&!batForm(o);
+/* the Fire Truck under its driver, drawn by drawTruck and turned into voxels */
+function vxTruckOf(p){const a=rideAng(p);return{kind:'form',key:'truck',art:vxFormArt('truck',p,0,false),size:1,x:p.x,y:p.y,face:a,hit:0,dash:-1,blink:false,sink:false}}
 function vxHeroOf(p){const face=p.dashT>0?Math.atan2(p.dashY,p.dashX):(p.sprint&&p.moving&&p.moveA!==undefined)||(touchMode&&p.moving&&p.moveA!==undefined&&!touchHold.slash)?p.moveA:p.face;
-  return{x:p.x,y:p.y,face,moving:!!p.moving,sprint:!!p.sprint,atk:p.atkT>0||p.chg>0||!!p.beam,guard:!!p.guard,hit:p.hitT>0?p.hitT:0,dash:p.dashT>0?1-p.dashT/.26:-1,dead:p.deadT>0,
+  const wolf=wolfForm(p),det=p.char==='Detective',sp=SPECS[p.char]||{},kind=wolf?'form':det?'det':'rig',wc=p.weapon===sp.w?sp.wc:undefined,ride=riding(p)||!!p.rideWith,tank=p.tankPool>0&&p.abil&&(p.abil.fx==='aegis'||p.abil.fx==='anvil');
+  return{kind,key:wolf?'wolf':kind==='rig'?'hero:'+p.char:kind,name:p.char,spec:sp,art:wolf?vxWolfArt(p):{head:vxHeadArt(p.char)},weapon:wolf?undefined:p.weapon,wc,wart:wolf?undefined:vxWeaponArt(p.weapon,wc,sp.s),
+    size:wolf?1:1.55*(typeof abilSize==='function'?abilSize(p):1),z:ride?18:0,seated:ride,dome:tank?{r:TANK.r,col:p.abil.fx==='aegis'?0xffe178:0xff963c}:null,x:p.x,y:p.y,face,moving:!!p.moving,sprint:!!p.sprint,atk:p.atkT>0||p.chg>0||!!p.beam,guard:!!p.guard,hit:p.hitT>0?p.hitT:0,dash:p.dashT>0?1-p.dashT/.26:-1,dead:p.deadT>0,
     blink:p.inv>0&&p.dashT<=0&&Math.floor(G.t*22)%2===0,sink:typeof inWater==='function'&&inWater(p)}}
 /* Minions and rivals are painted with their bars and markers onto a small picture that stands up as one card */
-function vxActor(e,draw){
-  const cw=200,ch=240,fy=200;let cv=W3.bossCv.get(e);if(!cv||cv.width!==cw){cv=document.createElement('canvas');cv.width=cw;cv.height=ch;W3.bossCv.set(e,cv)}
+/* Pixels per world unit for the voxel camera; DAYRIM_GFX.vxZoom enlarges it for close-up screenshots only */
+const vxScale=()=>FX3.mod.isoScale(zoom)*Math.min(4,Math.max(1,+W3.opts.vxZoom||1));
+/* ---- Chibi art for the voxel builder: the game's own chibi drawings, read as pixels (VOXEL_PLAN.md) ----
+   Heads come from drawHead (front, side, back), weapons from drawWeaponSprite, and the code-drawn forms (Wolf Form,
+   Fire Truck) from their own drawing functions, so the voxel versions show exactly what the 2D game shows. */
+const VXART=new Map(),VXNUL=document.createElement('canvas').getContext('2d');
+function vxPixels(w,h,draw){const cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;draw(g);
+  // the same light top edge and dark bottom edge the chibi frames get, so the colours match the sprites
+  const im=g.getImageData(0,0,w,h),d=im.data,o=new Uint8ClampedArray(d),S=w*4;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;if(d[i+3]<=200)continue;if(y>0&&d[i-S+3]<40){for(let k=0;k<3;k++)o[i+k]=Math.min(255,d[i+k]*1.14+14)}else if(y<h-1&&d[i+S+3]<40){for(let k=0;k<3;k++)o[i+k]=d[i+k]*.76}}
+  return o}
+const vxP=g=>(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h)};
+const vxE=g=>(cx,cy,rx,ry,c)=>{g.fillStyle=c;for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++)if((x*x)/(rx*rx)+(y*y)/(ry*ry)<=1)g.fillRect(Math.round(cx+x),Math.round(cy+y),1,1)};
+/* The chibi head: 64 × 40 pixels, chin on row 31, 0.75 model units a pixel (as big as the sprite's head) */
+function vxHeadArt(name){const key='head|'+name;let a=VXART.get(key);if(a)return a;const sp=SPECS[name]||{};
+  const view=dir=>vxPixels(64,40,g=>drawHead(g,vxP(g),vxE(g),sp,dir,32+(dir===2?1:0),8,false));
+  a={w:64,h:40,front:view(0),side:view(2),back:view(1),cx:32,sx:33,top:31,k:.75};VXART.set(key,a);return a}
+/* The chibi weapon, drawn hanging from the hand (hand at row 10), for the block arm */
+function vxWeaponArt(w,wc,skin){if(!w)return null;const id=w==='fists'?'fist':w,key='wpn|'+id+'|'+(wc||'')+'|'+(skin||'');let a=VXART.get(key);if(a)return a;
+  const front=vxPixels(48,48,g=>drawWeaponSprite(g,id,24,10,Math.PI/2,wc,skin||'#f0c8a0',false));let any=false;for(let i=3;i<front.length;i+=4)if(front[i]>100){any=true;break}
+  a=any?{w:48,h:48,front,ax:24,ay:10,k:.75,z0:-14.3}:null;VXART.set(key,a);return a}
+/* Code-drawn forms: each pose drawn by the game's own function onto a picture (front, side, back) */
+function vxFormArt(kind,p,t,moving){const key=kind+'|'+t.toFixed(3)+'|'+(moving?1:0);let a=VXART.get(key);if(a)return a;
+  const W=kind==='truck'?240:150,H=kind==='truck'?150:140,FY=H-10;
+  const view=ang=>vxPixels(W,H,g=>{const kc=ctx,ks=shadowTo,kt=G.t;ctx=g;shadowTo=VXNUL;G.t=t;
+    try{const q=Object.assign({},p,{x:W/2,y:FY,face:ang,moveA:ang,moving,dashT:0,hitT:0,inv:0});if(kind==='wolf')drawWolf(q);else{drawTruck(q,false);drawTruck(q,true)}}catch(e){}finally{ctx=kc;shadowTo=ks;G.t=kt}});
+  // the werewolf keeps every pixel (its face is small); the truck samples every second pixel
+  a={w:W,h:H,front:view(Math.PI/2),side:view(0),back:view(-Math.PI/2),cx:W/2,sx:W/2,top:FY,k:1,step:kind==='wolf'?1:2};VXART.set(key,a);return a}
+/* Wolf Form flipbook: standing, and four steps of its fast stride (the 2D stride runs at 18 radians a second) */
+function vxWolfArt(p){const mv=!!p.moving;if(!mv)return vxFormArt('wolf',p,0,false);const i=Math.floor(G.t*18/(Math.PI/2))%4;return vxFormArt('wolf',p,i*(Math.PI/2)/18,true)}
+/* NPCs (villagers, scouts, story characters, side-quest givers, lost villagers): the same chibi voxel people, with their
+   labels, bubbles and markers on a card above them */
+function vxPerson(o,name,face,moving,hit){const sp=SPECS[name]||SPECS.Tourist||{};return{kind:'rig',key:'npc:'+name,name,spec:sp,art:{head:vxHeadArt(SPECS[name]?name:'Tourist')},wart:vxWeaponArt(sp.w,sp.wc,sp.s),weapon:sp.w,wc:sp.wc,
+  size:1.55,x:o.x,y:o.y,face,moving:!!moving,atk:false,guard:false,hit:hit||0,dash:-1,dead:false,blink:false,sink:typeof inWater==='function'&&inWater(o)}}
+function vxNpc(c){const name=c.art||c.name,a=(c.dx||c.dy)?Math.atan2(c.dy,c.dx):Math.PI/2;W3.heroes.push(vxPerson(c,name,a,c.dx||c.dy,c.flash>0?.2:0));
+  W3.skip={char:name};try{vxActor(c,drawNpc)}finally{W3.skip=null}}
+/* side-quest people stand as voxels; their "!" and "Help!" stay on a card. Animals keep their drawing. */
+function vxQuestPerson(o){const d=sideDef(o.q)||{};let name=null,moving=false;
+  if(o.k==='sq_giver')name=d.art||'Tourist';else if(o.k==='sq_lost'&&!/sheep|hound|dog/i.test(d.item||'')){name='Tourist';moving=!!o.by}
+  if(!name)return false;W3.heroes.push(vxPerson(o,name,Math.PI/4,moving,0));W3.skip={char:name};try{vxActor(o,drawSideProp)}finally{W3.skip=null}return true}
+/* Quest objects and animals as blocks (side-quest items, totems, the guard shrine, the parcel and its flag, lost sheep
+   and hounds, the lantern boat, canisters, purifiers, generators). Their flat parts (guard rings, progress arcs) stay on
+   the ground layer exactly as in 2D; the standing part becomes the block model. */
+const VXLAST=new WeakMap();
+function vxFaceOf(o,dflt){const l=VXLAST.get(o);let a=l?l.a:dflt;if(l&&Math.hypot(o.x-l.x,o.y-l.y)>.4)a=Math.atan2(o.y-l.y,o.x-l.x);VXLAST.set(o,{x:o.x,y:o.y,a});return{a,moving:!!(l&&Math.hypot(o.x-l.x,o.y-l.y)>.4)}}
+function vxRing(o,col,dash,q,qc){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.setLineDash(dash||[]);ctx.beginPath();ctx.ellipse(o.x,o.y,o.r,o.r*.6,0,0,TAU);ctx.stroke();ctx.setLineDash([]);
+  if(q>0){ctx.strokeStyle=qc;ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(o.x,o.y,o.r,o.r*.6,0,-Math.PI/2,-Math.PI/2+TAU*q);ctx.stroke()}ctx.restore()}
+const vxPropEntry=(o,prop,extra)=>Object.assign({kind:'prop',key:'prop:'+prop,prop,x:o.x,y:o.y,face:-Math.PI/4,size:1.2},extra||{});
+function vxProp(o){const k=o.k,t=G.t,d=k.startsWith('sq_')?sideDef(o.q)||{}:{};
+  if(k==='sq_item'){W3.heroes.push(vxPropEntry(o,'item',{size:1.3}));return true}
+  if(k==='sq_totem'){vxRing(o,o.d?'#5c7a68':'rgba(160,110,230,.7)',[6,6],clamp((o.t||0)/SIDE_CHANNEL,0,1),'#8fe6b8');shadow(o.x,o.y,10);
+    W3.heroes.push(vxPropEntry(o,'totem',{key:'prop:totem'+(o.d?1:0),cols:{rune:o.d?0x8fe6b8:0x9a7ad8}}));return true}
+  if(k==='sq_lost'){const sheep=/sheep/i.test(d.item||'');if(!sheep&&!/hound|dog/i.test(d.item||''))return false;shadow(o.x,o.y,9);const f=vxFaceOf(o,-Math.PI/4);
+    W3.heroes.push(vxPropEntry(o,sheep?'sheep':'hound',{face:f.a,moving:f.moving||!!o.by}));
+    if(!o.by)vxActor(o,e=>{ctx.save();ctx.font='700 12px "Alegreya",serif';ctx.textAlign='center';ctx.fillStyle='#f0e2c4';ctx.strokeStyle='#1a0e04';ctx.lineWidth=3;ctx.strokeText('Help!',e.x,e.y-46);ctx.fillText('Help!',e.x,e.y-46);ctx.restore()});return true}
+  if(k==='sq_parcel'){shadow(o.x,o.y,8);W3.heroes.push(vxPropEntry(o,'parcel',{size:1}));return true}
+  if(k==='sq_drop'){vxRing(o,'rgba(232,200,142,'+(.5+.3*Math.sin(t*3)).toFixed(2)+')',null,0);W3.heroes.push(vxPropEntry(o,'flag',{size:1}));return true}
+  if(k==='sq_shrine'){vxRing(o,'rgba(240,194,60,.55)',[10,8],clamp((o.t||0)/((sideOf(o.q)||{}).need||20),0,1),'#f0c23c');shadow(o.x,o.y,16);W3.heroes.push(vxPropEntry(o,'shrine',{size:1}));return true}
+  if(k==='escort'){ctx.fillStyle='rgba(10,18,26,.4)';ctx.beginPath();ctx.ellipse(o.x,o.y+4,o.r+6,o.r*.5,0,0,TAU);ctx.fill();const f=vxFaceOf(o,-Math.PI/4);
+    W3.heroes.push(vxPropEntry(o,'boat',{key:'prop:boat'+(o.d?1:0),cols:{lamp:o.d?0x5c7a68:0xffe9a8},face:f.a,size:Math.max(.6,(o.r||22)/22)}));return true}
+  if(k==='canister'){if(o.d)return true;shadow(o.x,o.y,o.r||8);W3.heroes.push(vxPropEntry(o,'canister',{z:o.by?4:0,size:1}));return true}
+  if(k==='purifier'){W3.heroes.push(vxPropEntry(o,'purifier',{size:1}));return true}
+  if(k==='generator'){W3.heroes.push(vxPropEntry(o,'generator',{key:'prop:gen'+(o.d?2:o.by?1:0),cols:{gen:o.d?0x72c995:0x8c826c,genlight:o.d?0xb9ffca:o.by?0xffd080:0x5a4940},size:1}));return true}
+  return false}
+/* Minions (weak and strong) stand as block bodies built from their rig record; strong ones are larger, as in 2D */
+const vxMinion=e=>!!(e.mob&&SPECS[e.name]&&!e.scrapDown);
+function vxMinionOf(e){const sp=SPECS[e.name];return{kind:'rig',key:'rig:'+e.name,name:e.name,spec:sp,art:{head:vxHeadArt(e.name)},wart:vxWeaponArt(sp.w,sp.wc,sp.s),weapon:sp.w,wc:sp.wc,size:1.55*(e.mob==='strong'?MINION_SIZE:1),x:e.x,y:e.y,face:e.ang||0,moving:!!e.moving,
+  atk:e.wind>0||e.atkShow>0,hit:e.stunT>0?.2:e.flash>0?Math.min(.2,e.flash):0,dash:-1,dead:false,blink:false,sink:typeof inWater==='function'&&inWater(e)}}
+/* The upright effect layer: whatever a draw function paints around an actor (its sprite is swallowed when it has a block
+   body) lands on one picture that stands up at the actor's feet facing the camera, so arcs, rings and glows stand too. */
+function vxActor(e,draw,cw=200,ch=240,fy=200){
+  let cv=W3.bossCv.get(e);if(!cv||cv.width!==cw||cv.height!==ch){cv=document.createElement('canvas');cv.width=cw;cv.height=ch;W3.bossCv.set(e,cv)}
   const g=cv.getContext('2d'),keep=ctx,b=W3.baking,sh=shadowTo;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cw,ch);g.imageSmoothingEnabled=false;g.setTransform(1,0,0,1,cw/2-e.x,fy-e.y);ctx=g;W3.baking=true;shadowTo=keep;
   try{draw(e)}finally{ctx=keep;W3.baking=b;shadowTo=sh}
   const l=e.x-cw/2,t=e.y-fy;W3.cards.push({canvas:cv,q:[l,t,l+cw,t,l+cw,t+ch,l,t+ch],footY:e.y,dynamic:true});

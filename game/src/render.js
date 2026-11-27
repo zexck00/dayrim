@@ -462,10 +462,10 @@ function drawPlayer(p){
   if(p.castT>0&&Math.random()<.6)G.fx.push({k:'p',x:p.x+rnd(-14,14),y:p.y-rnd(0,56),vx:0,vy:-34,t:.4,m:.4,c:'#e0c8ff',s:2.5});
   if(p.lungeT>0&&!reduced)for(let i=3;i>=1;i--)blit(ctx,p.char,p.x-Math.cos(p.lungeA||0)*i*14,p.y-Math.sin(p.lungeA||0)*i*14,dir,'attack',2,flip,0,.3/i,p.weapon,abilSize(p));
   const kind=attackKind(p),ride=riding(p),bat=batForm(p),me=ride?Object.assign({},p,dirOf(rideAng(p))===2?{x:p.x+(Math.cos(rideAng(p))<0?-12:12),y:p.y-27}:{x:p.x-(seatedWith(p)?SEAT_SIDE:0),y:p.y-(dirOf(rideAng(p))===1?40:32)}):bat?Object.assign({},p,{y:p.y-batLift(p)}):p;
-  if(ride)drawTruck(p,false);if(bat)drawWings(p,false);
+  if(ride&&W3.skip!==p)drawTruck(p,false);if(bat)drawWings(p,false);
   const drawMe=()=>(ride?drawActor0:drawActor)(p.char,me,ride?dirOf(rideAng(p)):dir,ride?'idle':anim,ride?0:f,ride?Math.cos(rideAng(p))<0&&dirOf(rideAng(p))===2:flip,ride?0:rot,blink?.5:abilStealth(p)?.3:undefined,p.weapon,abilSize(p)*(bat?1.12:1),motionOf(p,{anim,walk:p.walk,moveA:p.moveA,face,q:atkQ,kind}));
-  if(ride){blitSink=7;try{drawMe()}finally{blitSink=0}}else if(wolfForm(p))drawWolf(p);else drawMe();
-  if(ride)drawTruck(p,true);if(bat)drawWings(p,true);
+  if(ride){blitSink=7;try{drawMe()}finally{blitSink=0}}else if(wolfForm(p)){if(W3.skip!==p)drawWolf(p)}else drawMe();
+  if(ride&&W3.skip!==p)drawTruck(p,true);if(bat)drawWings(p,true);
   attackFx(p,face,kind);drawChargeFx(p);
   if(p.guard){const on=p.weapon==='shield'?'120,200,255':'150,190,240';ctx.strokeStyle='rgba('+on+',.85)';ctx.lineWidth=p.weapon==='shield'?5:3;ctx.lineCap='round';ctx.beginPath();ctx.arc(p.x,p.y-24,30,p.face-1,p.face+1);ctx.stroke();ctx.fillStyle='rgba('+on+',.1)';ctx.beginPath();ctx.ellipse(p.x,p.y-24,30,36,0,0,TAU);ctx.fill()}
   if(p.swing>0){const q=1-p.swing/.17,st=p.swingA-(p.swingArc||1.1),en=st+2*(p.swingArc||1.1)*q,R=(p.swingR||60)*.9,cy=p.y-24;const SW={axe:'255,120,50',cleaver:'240,70,70',bat:'255,220,130',knife:'200,240,255',sword:'190,110,255',scythe:'110,255,170',hammer:'255,170,70',trident:'110,230,255',spear:'255,240,190',fists:'255,255,255'}[p.weapon]||'230,240,255';ctx.save();ctx.globalCompositeOperation='lighter';ctx.lineCap='round';if(!reduced){const a0=st+Math.max(0,q-.45)*2*(p.swingArc||1.1);ctx.fillStyle='rgba('+SW+','+(.16*(1-q)).toFixed(3)+')';ctx.beginPath();ctx.arc(p.x,cy,R*1.08,a0,en);ctx.arc(p.x,cy,R*.5,en,a0,true);ctx.closePath();ctx.fill();const tx=p.x+Math.cos(en)*R,ty=cy+Math.sin(en)*R,g=ctx.createRadialGradient(tx,ty,1,tx,ty,18);g.addColorStop(0,'rgba(255,255,255,'+(.8*(1-q)).toFixed(2)+')');g.addColorStop(1,'rgba('+SW+',0)');ctx.fillStyle=g;ctx.fillRect(tx-18,ty-18,36,36)}[[14,.28],[8,.55],[3,1]].forEach(([lw,al])=>{ctx.strokeStyle='rgba('+SW+','+(al*(1-q*.55)).toFixed(2)+')';ctx.lineWidth=lw*(1-q*.4);ctx.beginPath();ctx.arc(p.x,cy,R,st+Math.max(0,q-.45)*2*(p.swingArc||1.1),en);ctx.stroke()});ctx.restore();if(Math.random()<.8)glowP(p.x+Math.cos(en)*R,cy+Math.sin(en)*R,SW,2,120,.3,3)}
@@ -789,7 +789,8 @@ function render(){
   G.fx.forEach(f=>{if(f.k==='ko')blit(ctx,f.name,f.x,f.y,2,'ko',0,false,Math.PI/2,clamp(f.t/f.m,0,1))});
   if(D3)ctx=W3.octx;
   const list=[...G.enemies.filter(e=>!concealed(e,G.p)),...G.players.filter(q=>!(q.respawnT>0)),...G.loot,...G.npcs,...G.w.props.filter(inView)].filter(inView).sort((a,b)=>a.y-b.y);
-  list.forEach(o=>{if(o.stats){if(VX&&vxHero(o)){W3.skip=o;try{drawPlayer(o)}finally{W3.skip=null}if(!(o.respawnT>0))W3.heroes.push(vxHeroOf(o))}else if(D3&&(riding(o)||batForm(o)||wolfForm(o)))w3Boss(o,drawPlayer);else drawPlayer(o);if((G.mp||o.ai)&&o!==G.p)drawTag(o);if(o.deadT>0)drawDowned(o)}else if(typeof o.t==='string'){if(D3)w3Prop(o);else drawProp(o)}else if(o.kind==='boss'){if(D3)w3Boss(o,drawBoss);else drawBoss(o);drawCombatMarker(o);drawTargetMark(o)}else if(o.kind==='rival'){if(VX)vxActor(o,e=>{drawRival(e);drawCombatMarker(e);drawTargetMark(e);if(e.title)drawStoryEliteTag(e)});else{drawRival(o);drawCombatMarker(o);drawTargetMark(o);if(o.title)drawStoryEliteTag(o)}}else if(o.name&&o.quip!==undefined)drawNpc(o);else drawLoot(o)});
+  list.forEach(o=>{if(o.stats){if(VX&&vxHero(o)){W3.skip=o;try{vxActor(o,drawPlayer,340,320,250)}finally{W3.skip=null}if(!(o.respawnT>0)){W3.heroes.push(vxHeroOf(o));if(riding(o))W3.heroes.push(vxTruckOf(o))}}else if(D3&&(riding(o)||batForm(o)||wolfForm(o)))w3Boss(o,drawPlayer);else drawPlayer(o);if((G.mp||o.ai)&&o!==G.p)drawTag(o);if(o.deadT>0)drawDowned(o)}else if(typeof o.t==='string'){if(D3)w3Prop(o);else drawProp(o)}else if(o.kind==='boss'){if(D3)w3Boss(o,drawBoss);else drawBoss(o);drawCombatMarker(o);drawTargetMark(o)}else if(o.kind==='rival'){if(VX){const blk=vxMinion(o);if(blk){W3.heroes.push(vxMinionOf(o));W3.skip={char:o.name}}try{vxActor(o,e=>{drawRival(e);drawCombatMarker(e);drawTargetMark(e);if(e.title)drawStoryEliteTag(e)})}finally{if(blk)W3.skip=null}}else{drawRival(o);drawCombatMarker(o);drawTargetMark(o);if(o.title)drawStoryEliteTag(o)}}else if(o.name&&o.quip!==undefined){if(VX)vxNpc(o);else drawNpc(o)}else drawLoot(o)});
+  if(VX&&W3.opts.lineup)vxLineup();
   drawTimeFx();drawSigFx();
   for(const q of G.players)if((q.abil||q.abilCast)&&!(q.deadT>0))drawAbility(q);
   for(const q of G.players)if(q.sing&&inView(q.sing))drawSing(q.sing);
@@ -798,7 +799,7 @@ function render(){
   G.shots.forEach(drawShot);
   drawFxTop();
   /* Single-player props carry kind and done; the network shape is k and d. Draw both the same way. */
-  (G.props||[]).forEach(o=>{if(inView(o))drawProp2(o.k?o:Object.assign({},o,{k:o.kind,d:o.done?1:0}))});
+  (G.props||[]).forEach(o=>{if(!inView(o))return;const q=o.k?o:Object.assign({},o,{k:o.kind,d:o.done?1:0});if(VX&&(((q.k==='sq_giver'||q.k==='sq_lost')&&vxQuestPerson(q))||vxProp(q)))return;drawProp2(q)});
   (G.hazards||[]).forEach(h=>{if(inView(h))drawHazard(h)});
   G.fx.forEach(f=>{if(f.k==='bossdie')drawBossDeath(f);else if(f.k==='kitdie'){const nm=Object.keys(KIT_OF).find(n=>KIT_OF[n]===f.key),q=1-clamp(f.t/f.m,0,1);if(nm)blit(ctx,nm,f.x,f.y,2,'hit',0,!!f.mir,(f.mir?-1:1)*Math.min(1.5,(f.m-f.t)*3),clamp(f.t/1.2,0,1))}});
   G.fx.forEach(f=>{if(f.k==='finalfx')drawFinalFx(f)});
@@ -911,22 +912,28 @@ function drawPartyPanel(x,y,w,rowH=22,scale=1,offY=0){const el=$('party'),me=G.p
     const cls=down?'down':hp>.5?'ok':hp>.25?'mid':'low';if(bar.dataset.s!==cls)bar.dataset.s=cls;const t=stx||(Math.min(Math.ceil(q.hp),Math.round(mx))+'/'+Math.round(mx));if(tx.textContent!==t)tx.textContent=t;row.classList.toggle('isdown',down);
     const b=row.querySelector('.pr-tp');if(b){const ok=canTeleportTo(me,q);if(b.disabled===ok)b.disabled=!ok;const e=b.querySelector('em'),et=cd?String(cd):'';if(e.textContent!==et)e.textContent=et}});
   PARTY_H=el.offsetHeight/scale+6;return PARTY_H}
-function hud(){if(portraitHud())return hudPortrait();if(touchMode&&H<500)return hudLandscape();const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
+function hud(){if(portraitHud())return hudPortrait();if(mobileLand())return hudLandscape();const w0=W,h0=H;W=w0/hudK;H=h0/hudK;try{hudBody()}finally{W=w0;H=h0}}
 /* Bronze-edged panels keep mobile text readable over the world. */
 function mobilePanel(x,y,w,h){ctx.save();ctx.fillStyle='rgba(20,17,14,.9)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='#b88743';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,h-1);ctx.strokeStyle='#5d4025';ctx.strokeRect(x+3.5,y+3.5,w-7,h-7);ctx.restore()}
 /* Draw the player's current gold as a coin and a number inside a HUD panel. */
 function hudGold(right,y,gold){ctx.save();ctx.font='700 12px "Alegreya",serif';const amount=String(Math.max(0,Math.floor(gold||0))),tw=Math.min(70,ctx.measureText(amount).width),x=right-tw-16;ctx.fillStyle='#e8b933';ctx.beginPath();ctx.arc(x+6,y-4,5,0,TAU);ctx.fill();ctx.strokeStyle='#fff0a0';ctx.lineWidth=1;ctx.stroke();ctx.textAlign='right';ctx.fillStyle='#ffe48a';ctx.fillText(amount,right,y,70);ctx.restore();return tw+20}
-/* Short landscape screens keep status in the top corners and combat in the center. */
+/* Phones play sideways. Like a mobile arena game: a small status panel, the minimap and the party in the top left,
+   the joystick in the bottom left, the attack cluster in the bottom right, items along the bottom (page.html). */
 function hudLandscape(){
-  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;const p=G.p,cur=objNow(),S=G.swarm,w=Math.min(180,W*.25),x=10,y=10;
-  mobilePanel(x-6,y-6,w+12,78);ctx.font='600 12px "Alegreya",serif';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';const goldW=hudGold(x+w,y+10,p.gold);ctx.fillText(G.story?storyTitle():'Stage '+G.stage+' · '+STAGES[G.stage-1].n,x,y+10,Math.max(30,w-goldW-4));
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;const p=G.p,cur=objNow(),S=G.swarm,w=Math.min(150,W*.2),x=10,y=9;
+  mobilePanel(x-5,y-5,w+10,62);ctx.font='600 11px "Alegreya",serif';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';const goldW=hudGold(x+w,y+8,p.gold);ctx.fillText(G.story?storyTitle():'Stage '+G.stage+' · '+STAGES[G.stage-1].n,x,y+8,Math.max(30,w-goldW-4));
   const obj=S?(S.over?'Run ended · wave '+S.wave:S.breakT>0?'Wave '+S.wave+' · next in '+Math.ceil(S.breakT)+'s':'Wave '+S.wave+' · '+S.left+' left'):G.boss?'Boss fight':G.gate.open?'Boss gate open':trackedQuest()?sideLine(trackedQuest()):cur?objLine(cur):'Defeat '+foeWord()+' '+Math.min(G.killsStage,quota(G.stage))+'/'+quota(G.stage);
-  ctx.fillStyle='#d0d8e8';ctx.fillText(obj,x,y+25,w);bar(x,y+30,w,15,p.hp/p.s.maxHp,'#c0392f','Life '+Math.ceil(p.hp));bar(x,y+48,w,13,p.mana/p.s.maxMana,'#2d6fc0','Mana '+Math.floor(p.mana));
-  drawPartyPanel(x-6,y+76,w+12,18);
-  if(G.stage===5||G.stage===7){ctx.fillStyle='#f0c23c';ctx.fillText(G.stage===5?'Toxin '+Math.floor(p.toxin||0)+'%':'Rust '+Math.floor((p.rust||0)+(p.fieldRust||0))+'%',x,y+76,w)}
-  if(G.boss){const e=G.boss,bw=Math.min(220,W*.32),bx=(W-bw)/2;ctx.textAlign='center';ctx.fillStyle='#f2ecd8';ctx.fillText(e.name+' · LVL '+enemyLevel(e),W/2,16,bw);bar(bx,20,bw,10,(e.fleshTotal==null?e.hp:e.fleshTotal)/e.maxHp,'#e8463f','');bar(bx,32,bw,5,(e.guard||0)/(e.guardMax||100),'#7db6ff','')}
-  const mw=64,mh=mw*MH/MW,mx=W-mw-10;mobilePanel(mx-3,7,mw+6,mh+6);ctx.drawImage(mini,mx,10,mw,mh);const dot=(o,c,size)=>{ctx.fillStyle=c;ctx.fillRect(mx+o.x/T*mw/MW-size/2,10+o.y/T*mh/MH-size/2,size,size)};for(const e of G.enemies)if(dist(e,p)<620&&!concealed(e,p))dot(e,e.kind==='boss'?'#ff2020':'#ff5040',2);dot(G.safe,'#6fdca0',4);for(const o of G.props||[])if((o.kind||o.k)==='spring')dot(o,'#8fe8ff',3);dot(G.gate,G.gate.open?'#ff8f80':'#6a7080',3);for(const q of G.players)dot(q,q===p?'#fff':'#6fd8ff',3);
+  ctx.font='600 10px "Alegreya",serif';ctx.fillStyle='#d0d8e8';ctx.fillText(obj,x,y+21,w);bar(x,y+25,w,13,p.hp/p.s.maxHp,'#c0392f','Life '+Math.ceil(p.hp));bar(x,y+41,w,10,p.mana/p.s.maxMana,'#2d6fc0','');
+  ctx.font='700 9px "Alegreya",serif';ctx.textAlign='left';ctx.fillStyle='#e8eefc';ctx.fillText('Mana '+Math.floor(p.mana),x+5,y+49);
+  drawPartyPanel(x-5,y+60,w+10,16);
+  // the minimap sits beside the status panel, as in the top left of a mobile arena game
+  const mw=58,mh=mw*MH/MW,mx=x+w+14,my=y-2;mobilePanel(mx-3,my-3,mw+6,mh+6);ctx.drawImage(mini,mx,my,mw,mh);const dot=(o,c,size)=>{ctx.fillStyle=c;ctx.fillRect(mx+o.x/T*mw/MW-size/2,my+o.y/T*mh/MH-size/2,size,size)};for(const e of G.enemies)if(dist(e,p)<620&&!concealed(e,p))dot(e,e.kind==='boss'?'#ff2020':'#ff5040',2);dot(G.safe,'#6fdca0',4);for(const o of G.props||[])if((o.kind||o.k)==='spring')dot(o,'#8fe8ff',3);dot(G.gate,G.gate.open?'#ff8f80':'#6a7080',3);for(const q of G.players)dot(q,q===p?'#fff':'#6fd8ff',3);
+  ctx.font='600 10px "Alegreya",serif';ctx.textAlign='left';ctx.fillStyle='#f2ecd8';ctx.fillText(clock(G.hour),mx,my+mh+13,mw);
+  if(G.stage===5||G.stage===7){ctx.fillStyle='#f0c23c';ctx.fillText(G.stage===5?'Toxin '+Math.floor(p.toxin||0)+'%':'Rust '+Math.floor((p.rust||0)+(p.fieldRust||0))+'%',mx,my+mh+25,mw)}
+  if(G.boss){const e=G.boss,bw=Math.min(220,W*.3),bx=(W-bw)/2;ctx.textAlign='center';ctx.font='600 11px "Alegreya",serif';ctx.fillStyle='#f2ecd8';ctx.fillText(e.name+' · LVL '+enemyLevel(e),W/2,16,bw);bar(bx,20,bw,10,(e.fleshTotal==null?e.hp:e.fleshTotal)/e.maxHp,'#e8463f','');bar(bx,32,bw,5,(e.guard||0)/(e.guardMax||100),'#7db6ff','')}
   if(G.link&&G.link.t>0){ctx.textAlign='center';ctx.fillStyle='#8fe6ff';ctx.fillText((G.link.ids||[]).includes(p.id)?'Linked '+G.link.n:'Link now · tap Ult',W/2,55,180)}if(G.mp)netHud(true,true,true);drawDanger();drawObjPointer();
+  // the joystick always waits at its spot in the bottom left
+  {const el=$('joystick');if(el.hidden)el.hidden=false;joyHome()}
 }
 /* Portrait uses CSS pixels and a single top panel, leaving the middle of the fight clear. */
 function hudPortrait(){

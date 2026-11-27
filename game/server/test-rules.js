@@ -324,6 +324,7 @@ const adv=r=>{G().killsStage=T.quota(G().stage);s.step(r,1/30);r.ev.length=0};
  const x0=e.x,y0=e.y;
  for(let i=0;i<60;i++){p.x=e.x;p.y=e.y+20;s.step(r,1/30);r.ev.length=0}
  ok(Math.hypot(e.x-x0,e.y-y0)>5,'the boat moves while a player stays close');
+ ok(Math.abs(Math.hypot(e.x-x0,e.y-y0)-T.ESCORT_SPEED*2)<4,'the lantern boat moves at its escort speed ('+T.ESCORT_SPEED+' a second)');
  const x1=e.x;p.x=e.x+2000;p.y=e.y;
  for(let i=0;i<30;i++){s.step(r,1/30);r.ev.length=0}
  ok(Math.abs(e.x-x1)<1,'the boat stops when nobody is close')}

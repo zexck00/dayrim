@@ -363,6 +363,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .touch button[data-a="ability"].armed{border-color:#ffcf70;color:#ffe7a8;box-shadow:0 0 0 2px rgba(255,207,112,.45)}
 .touch-extra{position:absolute;bottom:58px;left:0;display:grid;grid-template-columns:repeat(3,52px);gap:6px;padding:6px;border-radius:16px;background:rgba(5,15,22,.9)}
 .screen.touch-playing>.sound{display:none}
+/* the voxel preview button stays on touch screens, where the other corner buttons are hidden */
+.screen.touch-playing>.voxb{display:block;top:auto!important;bottom:calc(max(8px,env(safe-area-inset-bottom,0px)) + 124px);left:max(8px,env(safe-area-inset-left,0px));right:auto;font-size:11px;padding:6px 9px}
 @media(max-height:500px){.touch-primary{grid-template-columns:repeat(4,48px);grid-auto-rows:48px;gap:4px}.touch button{width:48px;height:48px}.touch-primary .big{width:100px}.touch-extra{bottom:52px;grid-template-columns:repeat(3,48px)}}
 @media(orientation:portrait){.touch-tools{flex-direction:column;align-items:start}.touch-extra{bottom:116px;grid-template-columns:repeat(2,52px)}}
 @media(max-width:360px) and (orientation:portrait){.touch-extra{grid-template-columns:52px}}
@@ -481,7 +483,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 /* ---------- Quests panel: the stage goal and side quests, in the medieval plaque style ---------- */
 .questb{top:calc(244px*var(--k,1))!important}
 .unstuckb{top:calc(272px*var(--k,1))!important}
-.voxb{top:calc(300px*var(--k,1))!important;border-color:#c9a26a;color:#f0e2c4}
+.voxb{top:calc(300px*var(--k,1))!important;border-color:#c9a26a;color:#f0e2c4}.voxb[aria-disabled="true"]{opacity:.62;border-color:var(--line);color:var(--mist)}
 .mates{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 10px}.mates>span{font:700 13px 'Cinzel',serif;color:#f0d9a0;margin-right:4px}.mates small{flex-basis:100%;color:#cdbb92;font-size:12px}.mate{font:600 13px 'Alegreya',serif;padding:5px 11px;border-radius:6px;border:1px solid #6a4a22;background:#2a1c10;color:#e9dcc0;cursor:pointer}.mate.on{background:#e8b04a;color:#2a1608;border-color:#f6d27a}
 .hopb{position:absolute;z-index:7;left:50%;bottom:calc(150px*var(--k,1));transform:translateX(-50%);padding:10px 22px;font:700 16px 'Cinzel',serif;color:#2a1608;background:linear-gradient(#ffd27a,#e8932e);border:2px solid #5a2a08;border-radius:8px;box-shadow:0 3px 0 #5a2a08,0 0 18px rgba(255,150,60,.55);cursor:pointer}
 .hopb[hidden]{display:none}
@@ -530,8 +532,59 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .qpanel button[aria-pressed="true"]{color:#1a1006;background:linear-gradient(180deg,#e8c88e,#a8814a)}
 .qpanel button:hover{filter:brightness(1.2)}
 @media(max-width:700px),(max-height:520px){.qpanel{left:8px;right:8px;width:auto;top:8px;bottom:8px;max-height:none}}
+
+/* ---- Phones play sideways (class mland on .screen): a layout like a mobile arena game ----
+   Joystick bottom left, a big attack button in the bottom-right corner with the skills in an arc around it,
+   items in a small row along the bottom, menu buttons small and round in the top right. */
+.screen.mland.touch-playing .touch-primary{position:absolute;inset:0;display:block;pointer-events:none}
+.screen.mland.touch-playing .touch button{position:absolute;width:40px;height:40px;border-radius:50%!important;font-size:7.5px;line-height:1;padding:0}
+.screen.mland.touch-playing .touch .touch-icon{font-size:14px}
+.screen.mland.touch-playing .touch-primary [data-a="slash"]{width:84px!important;height:84px;right:calc(env(safe-area-inset-right,0px) + 20px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);font-size:11px;background:radial-gradient(circle at 40% 25%,rgba(190,90,60,.97),rgba(90,30,20,.96) 72%)}
+.screen.mland.touch-playing .touch-primary [data-a="slash"] .touch-icon{font-size:26px}
+.screen.mland.touch-playing .touch-primary [data-a="dash"]{width:56px;height:56px;right:calc(env(safe-area-inset-right,0px) + 122px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px)}
+.screen.mland.touch-playing .touch-primary [data-a="spell"]{width:56px;height:56px;right:calc(env(safe-area-inset-right,0px) + 116px);bottom:calc(env(safe-area-inset-bottom,0px) + 88px)}
+.screen.mland.touch-playing .touch-primary [data-a="guard"]{width:56px;height:56px;right:calc(env(safe-area-inset-right,0px) + 42px);bottom:calc(env(safe-area-inset-bottom,0px) + 118px)}
+.screen.mland.touch-playing .touch-primary [data-a="ult"]{width:54px;height:54px;right:calc(env(safe-area-inset-right,0px) + 166px);bottom:calc(env(safe-area-inset-bottom,0px) + 140px)}
+.screen.mland.touch-playing .touch-primary [data-a="dash"] .touch-icon,.screen.mland.touch-playing .touch-primary [data-a="spell"] .touch-icon,.screen.mland.touch-playing .touch-primary [data-a="guard"] .touch-icon,.screen.mland.touch-playing .touch-primary [data-a="ult"] .touch-icon{font-size:18px}
+.screen.mland.touch-playing .touch-ability{position:absolute;right:calc(env(safe-area-inset-right,0px) + 186px);bottom:calc(env(safe-area-inset-bottom,0px) + 50px);display:block}
+.screen.mland.touch-playing .touch-ability[hidden]{display:none}
+.screen.mland.touch-playing .touch-ability button{position:static;width:56px;height:56px}
+/* items: a small row along the bottom, a little left of centre to clear the attack cluster */
+.screen.mland.touch-playing .touch-primary [data-a="potion"],.screen.mland.touch-playing .touch-primary [data-a="fast"],.screen.mland.touch-playing .touch-primary [data-a="magic"],.screen.mland.touch-playing .touch-primary [data-a="heal"],.screen.mland.touch-playing .touch-primary [data-a="team"],.screen.mland.touch-playing .touch-primary [data-a="revive"]{bottom:calc(env(safe-area-inset-bottom,0px) + 8px)}
+.screen.mland.touch-playing .touch-primary [data-a="potion"]{left:calc(44% - 136px)}.screen.mland.touch-playing .touch-primary [data-a="fast"]{left:calc(44% - 90px)}.screen.mland.touch-playing .touch-primary [data-a="magic"]{left:calc(44% - 44px)}
+.screen.mland.touch-playing .touch-primary [data-a="heal"]{left:calc(44% + 2px)}.screen.mland.touch-playing .touch-primary [data-a="team"]{left:calc(44% + 48px)}.screen.mland.touch-playing .touch-primary [data-a="revive"]{left:calc(44% + 94px)}
+/* menu buttons: small and round in the top right */
+.screen.mland.touch-playing .touch-tools{left:auto;right:calc(env(safe-area-inset-right,0px) + 8px);top:calc(env(safe-area-inset-top,0px) + 8px);bottom:auto;flex-direction:column;align-items:end;gap:6px}
+.screen.mland.touch-playing .touch-tools>button{position:static;width:36px;height:36px}
+.screen.mland.touch-playing .touch-extra{top:0;right:44px;left:auto;bottom:auto;grid-template-columns:repeat(3,44px)}
+.screen.mland.touch-playing .touch-extra button{position:static;width:44px;height:44px}
+.screen.mland.touch-playing>.voxb{top:calc(env(safe-area-inset-top,0px) + 8px)!important;right:calc(env(safe-area-inset-right,0px) + 52px);left:auto;bottom:auto;font-size:10px;padding:4px 8px}
+/* the joystick rests in the bottom left, bigger, like a mobile arena game */
+.screen.mland.touch-playing .joystick{width:120px;height:120px;margin:-60px 0 0 -60px;background:rgba(50,37,23,.32)}
+.screen.mland.touch-playing .joystick i{width:46px;height:46px;margin:-23px}
+/* status stays small */
+/* party: just enough to read at a glance (name, level, a thin life bar); the teleport button stays a full thumb size */
+.screen.mland .party{padding:2px 4px 3px}
+.screen.mland .pr-head{display:none}
+.screen.mland .pr{gap:4px;padding:1px 0}
+.screen.mland .pr-badge{flex-basis:13px;height:13px;font-size:8px}
+.screen.mland .pr-top{margin-bottom:1px;gap:3px}
+.screen.mland .pr-name{font-size:9px;line-height:11px}
+.screen.mland .pr-lv{font-size:8px;line-height:10px;padding:0 4px}
+.screen.mland .pr-bar{height:5px}.screen.mland .pr-bar span{display:none}
+.screen.mland .pr-tp{flex:0 0 32px;height:26px;font-size:15px;line-height:24px}
+.screen.mland .pr-tp em{font-size:10px}
+/* held upright, a phone shows only this */
+.rotate{display:none}
+@media (pointer:coarse) and (orientation:portrait) and (max-width:600px){
+  .rotate{display:flex;position:fixed;inset:0;z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#140e08;color:#f0e2c4;font:600 18px 'Alegreya',serif;text-align:center;padding:24px}
+  .rotate b{font:700 54px/1 sans-serif;color:#e8c27a;animation:rot 1.6s ease-in-out infinite}
+}
+@keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media (prefers-reduced-motion:reduce){.rotate b{animation:none}}
 </style>
 
+<div class="rotate" id="rotate" role="alert"><b aria-hidden="true">&#x21bb;</b><p>Turn your phone sideways to play</p></div>
 <div class="wrap">
   <section class="stage" aria-label="Playable prototype">
     <div class="screen" id="screen">

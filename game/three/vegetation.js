@@ -76,6 +76,10 @@ const EXTRAS={
   lava:(t,v)=>[0,1,2].map(i=>P(box(22-i*5,.6,2.4),i?'#f0a040':t.glow,(i-1)*5,.7,(i%2)*5-2,{ry:i*.9+v,glow:true,sway:0})),
   spike:(t,v)=>[P(cone(4,20,5),t.canopy[v],0,10,0,{sway:0,rz:(v-1)*.12}),P(cone(2.5,11,5),t.canopy[(v+1)%3],6,5,2,{sway:0})]
 };
+/* The same model as merged geometry (game axes, vertex colours), for the voxel view to turn into blocks.
+   kind: a 2D prop kind (tree uses the stage's tree), an extra, or 'ruin' (a broken column). */
+export function kitGeometry(kind,th,v){const b=kind==='tree'?()=>TREES[th.tree](th,v):kind==='ruin'?()=>EXTRAS.column(th,v):SMALL[kind]?()=>SMALL[kind](th,v):EXTRAS[kind]?()=>EXTRAS[kind](th,v):null;
+  if(!b)return null;const parts=b();return{solid:merge(parts.filter(p=>!p.glow)),glow:merge(parts.filter(p=>p.glow))}}
 /* Which 2D prop kinds become 3D (everything else stays a card) */
 export const VEG_KINDS=['tree','shrub','thicket','grass','fern','flower','mush','rock','reed','lily'];
 export const EXTRA_KINDS=[...Object.keys(EXTRAS),'reed','lily'];

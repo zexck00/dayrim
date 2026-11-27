@@ -176,10 +176,10 @@ function setTouch(on){if(touchMode===on)return;resetTouch();touchMode=on;resize(
 function mouseButtons(ev){if(G.mode!=='play')return;mouse.left=!!(ev.buttons&1);mouse.right=!!(ev.buttons&2)}
 let aimPointer=null;
 const dragsAim=ev=>{const a=G.p&&G.p.abil;return !!a&&(a.aim==='spot'||a.aim==='line'||a.fx==='hurl'||a.fx==='blitz')&&(joy.on||ev.clientX-canvas.getBoundingClientRect().left>W/2)};
-canvas.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch'){setTouch(true);if(G.mode!=='play')return;const r=canvas.getBoundingClientRect();if(dragsAim(ev)){aimPointer=ev.pointerId;touchAim=screenToWorld(ev);try{canvas.setPointerCapture(ev.pointerId)}catch(e){}return}if(!joy.on){joy.on=true;joy.id=ev.pointerId;joy.ox=ev.clientX-r.left;joy.oy=ev.clientY-r.top;joy.dx=0;joy.dy=0;const el=$('joystick');el.style.left=joy.ox+'px';el.style.top=joy.oy+'px';el.firstElementChild.style.transform='';el.hidden=false;canvas.setPointerCapture(ev.pointerId)}return}
+canvas.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch'){setTouch(true);if(G.mode!=='play')return;const r=canvas.getBoundingClientRect();if(dragsAim(ev)){aimPointer=ev.pointerId;touchAim=screenToWorld(ev);try{canvas.setPointerCapture(ev.pointerId)}catch(e){}return}const lx=ev.clientX-r.left,ly=ev.clientY-r.top;if(!joy.on&&(!mobileLand()||(lx<W*.45&&ly>H*.3))){joy.on=true;joy.id=ev.pointerId;joy.ox=lx;joy.oy=ly;joy.dx=0;joy.dy=0;const el=$('joystick');el.style.left=joy.ox+'px';el.style.top=joy.oy+'px';el.firstElementChild.style.transform='';el.hidden=false;canvas.setPointerCapture(ev.pointerId)}return}
   setTouch(false);trackMouse(ev);mouseButtons(ev);if(G.mode==='play')try{canvas.setPointerCapture(ev.pointerId)}catch(e){}});
-canvas.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer){touchAim=screenToWorld(ev);return}if(joy.on&&ev.pointerId===joy.id){const r=canvas.getBoundingClientRect(),dx=ev.clientX-r.left-joy.ox,dy=ev.clientY-r.top-joy.oy,m=Math.max(1,Math.hypot(dx,dy)),k=Math.min(1,m/46);sprintKey=m>SPRINT.drag;$('joystick').classList.toggle('sprint',sprintKey);joy.dx=dx/m*k;joy.dy=dy/m*k;if(moveRot){const c=Math.cos(moveRot),sn=Math.sin(moveRot),jx=joy.dx;joy.dx=jx*c-joy.dy*sn;joy.dy=jx*sn+joy.dy*c}$('joystick').firstElementChild.style.transform='translate('+joy.dx*46+'px,'+joy.dy*46+'px)'}return}trackMouse(ev);mouseButtons(ev)});
-const up=ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer)aimPointer=null;if(ev.pointerId===joy.id){sprintKey=false;$('joystick').classList.remove('sprint');joy.on=false;joy.id=null;joy.dx=0;joy.dy=0;$('joystick').hidden=true}return}mouseButtons(ev)};
+canvas.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer){touchAim=screenToWorld(ev);return}if(joy.on&&ev.pointerId===joy.id){const r=canvas.getBoundingClientRect(),dx=ev.clientX-r.left-joy.ox,dy=ev.clientY-r.top-joy.oy,m=Math.max(1,Math.hypot(dx,dy)),k=Math.min(1,m/46);sprintKey=m>SPRINT.drag;$('joystick').classList.toggle('sprint',sprintKey);joy.dx=dx/m*k;joy.dy=dy/m*k;$('joystick').firstElementChild.style.transform='translate('+joy.dx*46+'px,'+joy.dy*46+'px)';/* the knob follows the thumb; the voxel camera turns only the direction sent to the game */if(moveRot){const c=Math.cos(moveRot),sn=Math.sin(moveRot),jx=joy.dx;joy.dx=jx*c-joy.dy*sn;joy.dy=jx*sn+joy.dy*c}}return}trackMouse(ev);mouseButtons(ev)});
+const up=ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer)aimPointer=null;if(ev.pointerId===joy.id){sprintKey=false;$('joystick').classList.remove('sprint');joy.on=false;joy.id=null;joy.dx=0;joy.dy=0;$('joystick').hidden=!mobileLand();joyHome()}return}mouseButtons(ev)};
 canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('lostpointercapture',up);canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{if(G.mode!=='play')return;e.preventDefault();doAct('cycle',e.deltaY>0?1:-1)},{passive:false});
 const GAME_CODES=new Set(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
 addEventListener('keydown',ev=>{if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
@@ -316,7 +316,9 @@ $('sound').onclick=ev=>{audioOn();toggleSound();ev.currentTarget.blur()};
 const SCREEN=$('screen'),canFullscreen=!!(SCREEN.requestFullscreen||SCREEN.webkitRequestFullscreen);
 function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||null}
 function aimHidden(){return !!fsEl()&&G.mode==='play'&&!touchMode}
-function toggleFullscreen(){if(!canFullscreen)return;try{const r=fsEl()?(document.exitFullscreen||document.webkitExitFullscreen).call(document):(SCREEN.requestFullscreen||SCREEN.webkitRequestFullscreen).call(SCREEN);if(r&&r.catch)r.catch(()=>{})}catch(e){}}
+function toggleFullscreen(){if(!canFullscreen)return;try{const going=!fsEl(),r=fsEl()?(document.exitFullscreen||document.webkitExitFullscreen).call(document):(SCREEN.requestFullscreen||SCREEN.webkitRequestFullscreen).call(SCREEN);if(r&&r.catch)r.catch(()=>{});
+  // phones play sideways only: ask the browser to hold landscape while fullscreen (ignored where unsupported)
+  if(going&&touchMode&&r&&r.then)r.then(()=>{try{const o=screen.orientation;if(o&&o.lock)o.lock('landscape').catch(()=>{})}catch(e){}})}catch(e){}}
 function onFullscreen(){const on=!!fsEl();$('fsbtn').textContent=on?'Exit fullscreen':'Fullscreen';resize();if(G.mode==='menu'&&menuTab==='settings')renderMenu();if(!on&&G&&G.mode==='play'&&!netOn()&&!window.__botOn)setMode('pause')}
 document.addEventListener('fullscreenchange',onFullscreen);document.addEventListener('webkitfullscreenchange',onFullscreen);
 $('fsbtn').hidden=!canFullscreen;$('fsbtn').onclick=ev=>{ev.currentTarget.blur();toggleFullscreen()};
@@ -343,13 +345,20 @@ const PV=[['walk',WALK_N,18,2,'Walking'],['run',WALK_N,26,2,'Sprinting'],['attac
 function drawPreview(now){const cv=$('pv');if(!cv)return;const g=cv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,96,96);
   const seg=Math.floor(now/1400)%PV.length,[anim,nf,fps,dir,label]=PV[seg],f=Math.floor(now/1000*fps)%nf;g.fillStyle='rgba(10,14,28,.5)';g.beginPath();g.ellipse(48,90,20,5,0,0,TAU);g.fill();blit(g,chosen,48,88,dir,anim,f,false,anim==='dodge'?(now/1000*9)%TAU:0);const l=$('pvl');if(l&&l.textContent!==label)l.textContent=label}
 /* Loop */
-function resize(){const r=$('screen').getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);zoom=Math.max(H/560,W/980);portraitMode=touchMode&&W<640&&H>W;hudK=portraitMode?1:clamp(H/640,1,2.5);const cs=getComputedStyle($('screen'));hudTop=parseFloat(cs.paddingTop)||0;hudBottom=parseFloat(cs.paddingBottom)||0;$('screen').style.setProperty('--k',hudK)}
+/* Phones play in landscape only. mobileLand: the phone landscape layout (joystick bottom left, attack cluster bottom
+   right, small status top left). rotateWait: a phone held upright sees the turn-sideways notice and solo play waits. */
+const ROTATE_Q=window.matchMedia?window.matchMedia('(pointer:coarse) and (orientation:portrait) and (max-width:600px)'):null;
+const rotateWait=()=>!!(ROTATE_Q&&ROTATE_Q.matches);
+function mobileLand(){return touchMode&&W>H&&H<=600}
+/* the joystick's resting place in the phone landscape layout */
+function joyHome(){if(!mobileLand()||joy.on)return;const el=$('joystick'),x=Math.max(84,W*.12)+'px',y=(H-84)+'px';if(el.style.left!==x)el.style.left=x;if(el.style.top!==y)el.style.top=y;el.firstElementChild.style.transform=''}
+function resize(){const r=$('screen').getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);zoom=Math.max(H/560,W/980);portraitMode=touchMode&&W<640&&H>W;$('screen').classList.toggle('mland',mobileLand());hudK=portraitMode?1:clamp(H/640,1,2.5);const cs=getComputedStyle($('screen'));hudTop=parseFloat(cs.paddingTop)||0;hudBottom=parseFloat(cs.paddingBottom)||0;$('screen').style.setProperty('--k',hudK)}
 addEventListener('orientationchange',resetTouch);
 if('ResizeObserver'in window)new ResizeObserver(resize).observe($('screen'));else addEventListener('resize',resize);
 let last=performance.now(),statT=0,touchStatusT=0;
 function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   if(netOn()){if(G.mode==='play'&&!touchMode&&mouse.sx!==undefined){const w=scrPt(mouse.sx,mouse.sy);mouse.x=w.x;mouse.y=w.y}netUpdate(dt)}
-  else if(G.mode==='play'){if(!touchMode&&mouse.sx!==undefined){const w=scrPt(mouse.sx,mouse.sy);mouse.x=w.x;mouse.y=w.y}update(G.hitStop>0?(G.hitStop-=dt,dt*.08):dt)}
+  else if(G.mode==='play'&&!rotateWait()){if(!touchMode&&mouse.sx!==undefined){const w=scrPt(mouse.sx,mouse.sy);mouse.x=w.x;mouse.y=w.y}update(G.hitStop>0?(G.hitStop-=dt,dt*.08):dt)}
   else if(G.mode==='title'||G.mode==='menu'){G.t+=dt;if(G.mode==='title')drawPreview(now)}
   else if(G.mode==='talk'){G.t+=dt;dlgTick(dt,now)}
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}
