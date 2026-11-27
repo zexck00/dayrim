@@ -8,7 +8,8 @@ Solo play and local-network multiplayer are playable prototypes. The server has 
 
 | Area | Status |
 |---|---|
-| Latest full suite | `npm test` on `dev` at `d6b2e20` (2026-11-26): 1078 rule checks, 1014 story checks, 21 Pixel 3D checks and 54 networking checks passed |
+| Latest full suite | `npm test` locally on 2026-11-27 (voxel preview, not yet committed): 1078 rule checks, 1014 story checks, 27 Pixel 3D checks and 54 networking checks passed. On `dev` at `d6b2e20` (2026-11-26) the Pixel 3D count was 21 |
+| Voxel preview | Proof of concept (Z-96): Stage 1, the Detective only, two minutes at a time. Agent browser look only (2026-11-27) |
 | Dev deploy | dayrim-dev serves `d6b2e20`; all 144 linked asset files were checked to load (2026-11-26) |
 | Character kits (14 of 40) | Rule tests and short agent browser looks only. Nobody has played them. |
 | AI teammates | Rule tests and a browser look at stage 1. The AI does not do objectives or revive you. Not played through a boss. |
@@ -34,6 +35,7 @@ See [Combat depth review](docs/COMBAT_DEPTH_REVIEW.md) for C-01–C-16 findings 
 
 Nothing here is promised, and the owner sets priorities.
 
+- **Voxel preview (Z-96):** the owner tries it on Stage 1 with the Detective and decides whether to continue [the voxel plan](docs/VOXEL_PLAN.md). Not checked yet: shooting and getting hit in the browser, phones, online.
 - **Human playtest of Quick Game (most urgent):** solo, with AI teammates, and online with 2 to 4 people on dev. Nothing from 2026-11-24 to 11-26 has been played by a person.
 - **Balance pass:** the enemy boost, the 14 new kits and AI teammates all changed difficulty at once; re-run the balance bot and record numbers with a date.
 - **Remaining kits:** 26 characters still use the shared kit.
@@ -109,6 +111,7 @@ So anything belonging to one player goes on the player object (`p.combo`, `p.ult
 
 ## Current prototypes
 
+- Voxel preview (Z-96): `game/three/voxel.js` (isometric camera maths, `buildVoxel` block stage, `createHeroes` block Detective), switched by `world.setVoxel`. `effects3d.js` holds the controller (`VX`, `vxStart`, `vxStop`, the `#voxbtn` button, a 120 s limit) and view helpers (`vxScreen`, `vxUnproject`, `vxInView`, `vxHud`, `vxAnchor`, `vxActor`). In the preview, everything 2D goes on the ground layer, the Detective's sprite is swallowed in `w3Card` (`W3.skip`) and drawn as a block model, minions and rivals become one card each with their bars, and labels float above whoever they belong to. `characters.js` turns cards to face the isometric camera. Movement keys turn with `moveRot` in `moveVec` (always 0 on the server). The isometric projection mirrors face winding, so solid shapes use geometry flipped once (`flipBox`). Debug: `DAYRIM_GFX.vx` and `window.__vx`.
 - `ENEMY_BOOST` (in `partyToughen` and the spawn loop) is a flat 25% on enemy life, damage, count and spawn rate, separate from party scaling. Summoned allies (`summonAlly`, the Inventor's Cyborg) are AI players with `summon:1` and an `owner`; `aiThink` follows the owner, `summonTick` removes them, and `partySize` ignores them.
 - Detective and Ranger (`game.js`, before the tank block): `streakTick`/`streakHaste` give +2 attack speed after 2 s of steady fire; `aimCharge` wraps `chargedShot` with heavier push and the red extras; `wolf` and `shade` are self abilities that keep the attack button (`keepsAttack`) and turn a held attack into `wolfPounce` / `arrowShower` in `chargeStep`. The `mark` (Lock On) ability is unused now.
 - Boss music (`ui.js`, `soundWatch`): `mus_boss` loops for the whole fight; `lateBurst` lays `mus_boss_late` on top when `lateDue` says so (`BOSS_LATE`); on defeat `victoryOn()` keeps `mus_victory` going for `VICTORY_MS` and holds back the ambience and the stage song.

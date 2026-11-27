@@ -1,15 +1,15 @@
 /* Pixel 3D: the world drawn with Three.js (game/three/, bundled as vendor/three-world.js), then reduced to
    the DAYRIM-64 palette with ordered dither and ink outlines. Visual only: rules and hit areas never read it.
    Without WebGL, or when frames run slow, the game falls back to the classic 2D drawing. */
-const FX3={enabled:false,layer:null,loading:false,failed:false};
+const FX3={enabled:false,layer:null,loading:false,failed:false,mod:null};
 const fx3Canvas=$('fx3'),fx3Button=$('fx3btn');
-const W3={seen:new WeakSet(),d3:false,uctx:null,octx:null,base:null,baseInv:null,cards:[],w:null,tide:-1,props:new Map(),bossCv:new Map(),baking:false,slow:0,slowT:0,
+const W3={seen:new WeakSet(),d3:false,uctx:null,octx:null,base:null,baseInv:null,cards:[],w:null,tide:-1,props:new Map(),bossCv:new WeakMap(),baking:false,slow:0,slowT:0,
   opts:{pal:true,ink:true,dither:true}};
 const gfxLabel=()=>FX3.failed?'Graphics: Classic 2D (3D unavailable)':FX3.enabled?'Graphics: Pixel 3D':'Graphics: Classic 2D';
 async function setFx3(on){
   FX3.enabled=on;store.set('dayrim-gfx',on?'pixel3d':'classic');fx3Button.textContent=gfxLabel();fx3Button.setAttribute('aria-pressed',String(on));
   if(!on){fx3Canvas.hidden=true;return}if(FX3.layer||FX3.loading)return;FX3.loading=true;
-  try{const mod=await import(new URL(THREE_WORLD_URL,document.baseURI).href);FX3.layer=mod.createWorld(fx3Canvas);FX3.failed=false;W3.w=null}
+  try{const mod=await import(new URL(THREE_WORLD_URL,document.baseURI).href);FX3.mod=mod;FX3.layer=mod.createWorld(fx3Canvas);FX3.failed=false;W3.w=null}
   catch(e){console.warn('Pixel 3D unavailable',e);FX3.failed=true;FX3.enabled=false;fx3Button.textContent=gfxLabel();fx3Button.setAttribute('aria-pressed','false');fx3Canvas.hidden=true}
   finally{FX3.loading=false}
 }
@@ -50,7 +50,7 @@ function w3Stage(){
   else{W3.chunks=b.chunks;W3.props.clear();W3.veg=new Set(FX3.layer.vegKinds);
     // the stage picks its theme, 3D vegetation, scattered extras and water; the safehouse and gate stay clear
     const avoid=[G.safe&&{x:G.safe.x,y:G.safe.y,r:150},G.gate&&{x:G.gate.x,y:G.gate.y,r:120}].filter(Boolean);
-    W3.theme=FX3.layer.setStage({map:G.w.map,ground:G.w.ground,MW,MH,T,chunks:b.chunks,front:b.front,wallH:WALL_H,edge:(look?BIOMES[STAGES[look-1].biome]:G.w.biome).w[2],stage:look||G.stage,story:!look&&!!G.story,ci:G.story?G.story.ci:0,props:G.w.props,avoid})}
+    W3.theme=FX3.layer.setStage({map:G.w.map,ground:G.w.ground,MW,MH,T,chunks:b.chunks,front:b.front,wallH:WALL_H,edge:(look?BIOMES[STAGES[look-1].biome]:G.w.biome).w[2],stage:look||G.stage,story:!look&&!!G.story,ci:G.story?G.story.ci:0,props:G.w.props,avoid,biome:G.w.biome})}
   W3.w=G.w;W3.tide=tide;W3.look=look;
 }
 
@@ -59,15 +59,18 @@ function w3Begin(cam,sx,sy){
   w3Stage();
   // DAYRIM_GFX.peek={x,y} moves only the picture (for screenshots); the game camera is unchanged
   if(W3.opts.peek)cam=W3.opts.peek;
-  const L=FX3.layer,vw=W/zoom,vh=H/zoom,iw=Math.max(16,Math.round(vw/PS)),ih=Math.max(16,Math.round(vh/PS));
-  W3.f={iw,ih,vw,vh,cx:cam.x+sx,cy:cam.y+sy};
-  for(const cv of [L.underCanvas,L.overCanvas])if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}
+  const L=FX3.layer,iso=vxOn(),s=iso?FX3.mod.isoScale(zoom):0,D=iso?2*(FX3.mod.isoSpan(W,H,s)+40):0,vw=iso?D:W/zoom,vh=iso?D:H/zoom,iw=Math.max(16,Math.round(vw/PS)),ih=Math.max(16,Math.round(vh/PS));
+  W3.f={iw,ih,vw,vh,cx:cam.x+sx,cy:cam.y+sy,iso,s,rw:Math.round(W),rh:Math.round(H)};W3.heroes=[];
+  // voxel preview: everything 2D goes on the ground layer; the screen overlay stays empty (the post pass sizes it)
+  for(const cv of iso?[L.underCanvas]:[L.underCanvas,L.overCanvas])if(cv.width!==iw||cv.height!==ih){cv.width=iw;cv.height=ih}
+  if(iso){L.overCtx.setTransform(1,0,0,1,0,0);L.overCtx.clearRect(0,0,L.overCanvas.width,L.overCanvas.height)}
   W3.base=new DOMMatrix([iw/vw,0,0,ih/vh,iw/2-(cam.x+sx)*iw/vw,ih/2-(cam.y+sy)*ih/vh]);W3.baseInv=W3.base.inverse();
-  for(const c of [L.underCtx,L.overCtx]){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,iw,ih);c.imageSmoothingEnabled=false;c.setTransform(W3.base)}
-  w3Text(L.overCtx);L.overCtx.__txt.length=0;W3.uctx=L.underCtx;W3.octx=L.overCtx;W3.cards.length=0;W3.d3=true;ctx=W3.uctx;shadowTo=W3.uctx;
+  for(const c of iso?[L.underCtx]:[L.underCtx,L.overCtx]){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,iw,ih);c.imageSmoothingEnabled=false;c.setTransform(W3.base)}
+  w3Text(L.overCtx);L.overCtx.__txt.length=0;w3Text(L.underCtx);L.underCtx.__txt.length=0;W3.uctx=L.underCtx;W3.octx=iso?L.underCtx:L.overCtx;W3.cards.length=0;W3.d3=true;ctx=W3.uctx;shadowTo=W3.uctx;
 }
 /* blit() hands its sprite here when it would draw on the over layer at full opacity */
 function w3Card(c2,name,x,y,dir,anim,f,flip,rot,alpha,wpn,size,mo){
+  if(W3.skip&&name===W3.skip.char&&!W3.baking)return true;// drawn as a voxel model instead
   if(!W3.d3||W3.baking||c2!==W3.octx||(alpha!==undefined&&alpha<.99)||c2.globalAlpha<.99||c2.globalCompositeOperation!=='source-over')return false;
   let im=frame(name,dir,anim,f,wpn);if(blitDark)im=darkFrame(im);if(mo&&mo.red)im=redFrame(im);
   const m=W3.baseInv.multiply(c2.getTransform()),foot=m.transformPoint(new DOMPoint(x,y));
@@ -122,10 +125,12 @@ function w3End(lt){
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
   // back to the screen with the usual world transform, for damage numbers and callouts
   ctx.setTransform(zoom*dpr,0,0,zoom*dpr,(W/2-W3.f.cx*zoom)*dpr,(H/2-W3.f.cy*zoom)*dpr);
-  W3.frame=Object.assign({W,H,dpr,cards:W3.cards,opts:W3.opts},W3.f,lt);
+  W3.frame=Object.assign({W,H,dpr,cards:W3.cards,opts:W3.f.iso?{pal:false,ink:false,dither:false}:W3.opts,heroes:W3.heroes},W3.f,lt);
   // text held back from the pixel layer is drawn here at full screen resolution
-  const o=FX3.layer.overCtx,S=ctx.getTransform(),list=o.__txt||[];ctx.save();
-  for(const t of list){ctx.setTransform(S.multiply(W3.baseInv).multiply(t.m));ctx.font=t.font;ctx.fillStyle=t.fill;ctx.strokeStyle=t.stroke;ctx.lineWidth=t.lw;ctx.lineJoin=t.lj;ctx.textAlign=t.al;ctx.textBaseline=t.bl;ctx.globalAlpha=t.ga;
+  const o=FX3.layer.overCtx,S=ctx.getTransform(),list=W3.f.iso?(FX3.layer.underCtx.__txt||[]):(o.__txt||[]);ctx.save();
+  for(const t of list){if(W3.f.iso){const m=W3.baseInv.multiply(t.m),p=m.transformPoint(new DOMPoint(t.x,t.y)),a=vxAnchor(p.x,p.y),P=vxScreen(a.x,a.y,a.z),k=W3.f.s;
+      ctx.setTransform(dpr*k*m.a,dpr*k*m.b,dpr*k*m.c,dpr*k*m.d,dpr*(P.x-k*(m.a*t.x+m.c*t.y)),dpr*(P.y-k*(m.b*t.x+m.d*t.y)))}
+    else ctx.setTransform(S.multiply(W3.baseInv).multiply(t.m));ctx.font=t.font;ctx.fillStyle=t.fill;ctx.strokeStyle=t.stroke;ctx.lineWidth=t.lw;ctx.lineJoin=t.lj;ctx.textAlign=t.al;ctx.textBaseline=t.bl;ctx.globalAlpha=t.ga;
     if(t.mw===undefined)ctx[t.op](t.s,t.x,t.y);else ctx[t.op](t.s,t.x,t.y,t.mw)}
   ctx.restore();list.length=0;
 }
@@ -144,3 +149,53 @@ function drawFx3(now){
   if(W3.slowT>180&&W3.slow>22){store.set('dayrim-gfx','classic');fx3Off('too slow ('+W3.slow.toFixed(1)+' ms)')}
 }
 {const g=store.get('dayrim-gfx');fx3Button.textContent=gfxLabel();if(g!=='classic')setFx3(true)}
+
+/* ---- Voxel preview (proof of concept): Stage 1 with the Detective, two minutes at a time ----
+   An isometric camera, block ground, walls and trees, and a block-built Detective. Drawing and camera only:
+   aim is still a world point and movement still sends a world direction, so the rules see the same game. */
+const VX={on:false,end:0,prevGfx:null,starting:false},VX_LEN=120,voxBtn=$('voxbtn');
+const vxAllowed=()=>!!(G&&G.mode==='play'&&G.stage===1&&!G.story&&G.p&&G.p.char==='Detective');
+function vxOn(){return !!(VX.on&&FX3.enabled&&FX3.layer&&FX3.mod&&w3On())}
+async function vxStart(){
+  if(VX.on||VX.starting||!vxAllowed())return;VX.starting=true;VX.prevGfx=store.get('dayrim-gfx');
+  try{if(!FX3.enabled||!FX3.layer)await setFx3(true);if(!FX3.layer||!FX3.mod)return;FX3.layer.setVoxel(true);VX.on=true;VX.end=performance.now()+VX_LEN*1000;moveRot=FX3.mod.ISO_TURN}
+  finally{VX.starting=false;if(VX.prevGfx!==undefined&&VX.prevGfx!==null)store.set('dayrim-gfx',VX.prevGfx);vxButton()}
+}
+function vxStop(why){
+  if(!VX.on)return;VX.on=false;moveRot=0;if(FX3.layer)FX3.layer.setVoxel(false);
+  if(VX.prevGfx==='classic')setFx3(false);if(VX.prevGfx!==undefined&&VX.prevGfx!==null)store.set('dayrim-gfx',VX.prevGfx);
+  if(why&&G&&G.mode==='play')G.banner={t:3,a:'Voxel preview ended',b:why};vxButton();
+}
+function vxButton(){
+  const ok=vxAllowed()||VX.on;voxBtn.hidden=!ok;if(!ok)return;
+  if(VX.on){const left=Math.max(0,Math.ceil((VX.end-performance.now())/1000));voxBtn.textContent='Voxel preview '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0');voxBtn.setAttribute('aria-pressed','true')}
+  else{voxBtn.textContent=VX.starting?'Loading voxel preview':'Voxel preview (2 min)';voxBtn.setAttribute('aria-pressed','false')}
+}
+voxBtn.onclick=()=>VX.on?vxStop('Stopped'):vxStart();
+// for checking in the browser console: DAYRIM_GFX.vx and __vx
+window.__vx={FX3,VX,W3};
+Object.defineProperty(W3.opts,'vx',{get:()=>({on:VX.on,starting:VX.starting,allowed:vxAllowed(),fx3:FX3.enabled,layer:!!FX3.layer,mod:!!FX3.mod,failed:FX3.failed,w3:w3On(),heroes:(W3.heroes||[]).length,cards:W3.cards.length}),enumerable:false});
+setInterval(()=>{if(VX.on){if(!vxAllowed())vxStop('It is for Stage 1 with the Detective');else if(performance.now()>=VX.end)vxStop('Two minutes are up');else if(!vxOn()&&!VX.starting)vxStop('3D graphics are off')}vxButton()},250);
+/* view helpers for the voxel camera (CSS pixels on screen) */
+function vxScreen(x,y,z){const f=W3.f||{cx:G.cam.x,cy:G.cam.y,s:FX3.mod.isoScale(zoom)};return FX3.mod.isoProject(x,y,z||0,f.cx,f.cy,W,H,f.s)}
+function vxUnproject(sx,sy){return FX3.mod.isoUnproject(sx,sy,G.cam.x,G.cam.y,W,H,FX3.mod.isoScale(zoom),18)}
+function vxInView(o){const f=W3.f;return FX3.mod.isoInView(o.x,o.y,f.cx,f.cy,W,H,f.s,90)}
+/* HUD markers use the same formula as the classic view, so this keeps their scale */
+function vxHud(x,y,z){const P=vxScreen(x,y,z);return{x:W/2+(P.x-W/2)/hudK,y:H/2+(P.y-H/2)/hudK}}
+/* Labels drawn in 2D sit above someone's feet: find whose, so the label floats above them in the 3D view */
+function vxAnchor(x,y){let best=null,bd=1e9;
+  const look=o=>{if(!o||o.dead)return;const dx=Math.abs(o.x-x),up=o.y-y;if(dx<64&&up>=18&&up<230){const d=dx+up*.05;if(d<bd){bd=d;best=o}}};
+  G.players.forEach(look);G.enemies.forEach(look);(G.npcs||[]).forEach(look);
+  return best?{x,y:best.y,z:best.y-y}:{x,y,z:0}}
+/* Voxel stand-in for a player: the Detective in normal form */
+const vxHero=o=>vxOn()&&o.char==='Detective'&&!riding(o)&&!batForm(o)&&!wolfForm(o);
+function vxHeroOf(p){const face=p.dashT>0?Math.atan2(p.dashY,p.dashX):(p.sprint&&p.moving&&p.moveA!==undefined)||(touchMode&&p.moving&&p.moveA!==undefined&&!touchHold.slash)?p.moveA:p.face;
+  return{x:p.x,y:p.y,face,moving:!!p.moving,sprint:!!p.sprint,atk:p.atkT>0||p.chg>0||!!p.beam,guard:!!p.guard,hit:p.hitT>0?p.hitT:0,dash:p.dashT>0?1-p.dashT/.26:-1,dead:p.deadT>0,
+    blink:p.inv>0&&p.dashT<=0&&Math.floor(G.t*22)%2===0,sink:typeof inWater==='function'&&inWater(p)}}
+/* Minions and rivals are painted with their bars and markers onto a small picture that stands up as one card */
+function vxActor(e,draw){
+  const cw=200,ch=240,fy=200;let cv=W3.bossCv.get(e);if(!cv||cv.width!==cw){cv=document.createElement('canvas');cv.width=cw;cv.height=ch;W3.bossCv.set(e,cv)}
+  const g=cv.getContext('2d'),keep=ctx,b=W3.baking,sh=shadowTo;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cw,ch);g.imageSmoothingEnabled=false;g.setTransform(1,0,0,1,cw/2-e.x,fy-e.y);ctx=g;W3.baking=true;shadowTo=keep;
+  try{draw(e)}finally{ctx=keep;W3.baking=b;shadowTo=sh}
+  const l=e.x-cw/2,t=e.y-fy;W3.cards.push({canvas:cv,q:[l,t,l+cw,t,l+cw,t+ch,l,t+ch],footY:e.y,dynamic:true});
+}

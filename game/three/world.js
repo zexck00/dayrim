@@ -13,6 +13,9 @@ import {createVfx} from './vfx.js';
 import {createCombat} from './combat.js';
 import {themeFor,STAGE_THEMES} from './stages.js';
 import {DAYRIM64,hexToRgb,nearest} from './palette.js';
+import {buildVoxel,createHeroes,isoMatrix,isoDepth,BILL_V,ISO_R} from './voxel.js';
+export {isoProject,isoUnproject,isoScale,isoSpan,isoInView,isoDepth,ISO_TURN,ISO_ELEV} from './voxel.js';
+import {Group} from '../vendor/three.module.js';
 export {DAYRIM64,buildLut,nearest,lutLookup} from './palette.js';
 export {STAGE_THEMES,themeFor,THEME_KEYS} from './stages.js';
 export {VEG_KINDS,EXTRA_KINDS,TREE_KINDS,scatterExtras} from './vegetation.js';
@@ -43,13 +46,16 @@ export function createWorld(canvas){
   const underMat=new MeshBasicMaterial({map:underTex,transparent:true,depthWrite:false,blending:CustomBlending,blendEquation:AddEquation,
     blendSrc:SrcAlphaFactor,blendDst:OneMinusSrcAlphaFactor,blendSrcAlpha:ZeroFactor,blendDstAlpha:OneFactor});
   const under=new Mesh(underGeo,underMat);under.frustumCulled=false;under.renderOrder=1;scene.add(under);
-  let terrain=null,veg=null,water=null,theme=STAGE_THEMES[0];const M=new Matrix4(),clear=new Color(),wind={value:0},tc=new Color(),tc2=new Color();
+  let terrain=null,veg=null,water=null,theme=STAGE_THEMES[0],lastSt=null,vox=null,voxOn=false;
+  // voxel preview: block stage built on demand, block heroes
+  const heroRoot=new Group();scene.add(heroRoot);const heroes=createHeroes(heroRoot);
+  const showVox=()=>{if(voxOn&&!vox&&lastSt){vox=buildVoxel(lastSt,theme);scene.add(vox)}if(vox)vox.visible=voxOn;if(terrain)terrain.visible=!voxOn;if(veg)veg.visible=!voxOn;heroRoot.visible=voxOn};const M=new Matrix4(),clear=new Color(),wind={value:0},tc=new Color(),tc2=new Color();
   const mixHex=(a,b,k)=>'#'+tc.set(a).lerp(tc2.set(b),k).getHexString();
   return{
     underCanvas,underCtx:underCanvas.getContext('2d'),overCanvas:post.overCanvas,overCtx:post.overCtx,post,vegKinds:VEG_KINDS,
     /* stage: {map,ground,MW,MH,T,groundCanvas,front,wallH,edge,stage,story,ci,props,avoid} */
     setStage(st){
-      for(const o of [terrain,veg,water])if(o){scene.remove(o);o.userData.dispose()}
+      for(const o of [terrain,veg,water,vox])if(o){scene.remove(o);o.userData.dispose()}vox=null;lastSt=st;
       theme=st.story?STAGE_THEMES[[0,2,5][st.ci||0]||0]:themeFor(st.stage);
       terrain=buildTerrain(st);scene.add(terrain);clear.set(st.edge);
       const baseZ=(x,y)=>{const tx=Math.floor(x/st.T),ty=Math.floor(y/st.T);return tx>=0&&ty>=0&&tx<st.MW&&ty<st.MH&&st.map[ty*st.MW+tx]?st.wallH:0};
@@ -57,18 +63,20 @@ export function createWorld(canvas){
       water=buildWater(st,theme,1.2);if(water)scene.add(water);else water=null;
       vfx.setWeather(theme.weather);
       const u=post.uniforms;u.grade.value.set(...theme.grade);u.lift.value.set(...theme.lift);u.sat.value=theme.sat;u.ink.value.set(...tc.set(theme.ink).toArray());
-      post.setLut(themeWeights(theme));
+      post.setLut(themeWeights(theme));showVox();
       return theme;
     },
     theme:()=>theme,
+    setVoxel(on){voxOn=!!on;showVox();return voxOn},
+    debug:()=>({scene,vox,light,heroRoot,renderer}),
     refreshGround(){if(terrain)terrain.userData.refreshGround()},
     /* f: {W,H,iw,ih,cx,cy,vw,vh,sun,amb,lights,tint,cardLight,cards:[{canvas,q,footY,dynamic}]} */
     frame(f){
       const sw=Math.round(f.W*f.dpr),sh=Math.round(f.H*f.dpr);
       if(canvas.width!==sw||canvas.height!==sh)renderer.setSize(sw,sh,false);
-      post.size(f.iw,f.ih);
+      const iso=!!(f.iso&&voxOn&&vox);post.size(iso?f.rw:f.iw,iso?f.rh:f.ih);
       if(underCanvas.width!==f.iw||underCanvas.height!==f.ih){underCanvas.width=f.iw;underCanvas.height=f.ih;underTex.dispose()}
-      M.set(...obliqueMatrix(f.cx,f.cy,f.vw,f.vh));cam.projectionMatrix.copy(M);cam.projectionMatrixInverse.copy(M).invert();
+      M.set(...(iso?isoMatrix(f.cx,f.cy,f.W,f.H,f.s,DEPTH_R):obliqueMatrix(f.cx,f.cy,f.vw,f.vh)));cam.projectionMatrix.copy(M);cam.projectionMatrixInverse.copy(M).invert();
       // combat glows and weather move first; their flashes join the point lights below
       const dt=lastT===null?0:Math.min(.1,Math.max(0,(f.time||0)-lastT));lastT=f.time||0;
       const fight=combat.update(dt,f);vfx.update(dt,f);
@@ -77,7 +85,8 @@ export function createWorld(canvas){
       light.update({cx:f.cx,cy:f.cy,vw:f.vw,vh:f.vh,sun:{dir:f.sun.dir,col:mixHex(f.sun.col,theme.sun,.35),i:f.sun.i},amb:{sky:mixHex(f.amb.sky,theme.sky,.25),ground:mixHex(f.amb.ground,theme.gnd,.5),i:f.amb.i},lights:f.lights.concat(glows,fight)});
       wind.value=f.time||0;if(water)water.userData.update(f.time||0,f.dayLight===undefined?1:f.dayLight);
       under.position.set(f.cx,f.cy,2);under.scale.set(f.vw,f.vh,1);under.updateMatrix();underTex.needsUpdate=true;
-      cards.begin(f.cy,DEPTH_R,f.cardLight);for(const c of f.cards)cards.add(c.canvas,c.q,c.footY,c.dynamic,c.sink);cards.end();
+      if(iso)heroes.update(f.heroes||[],f.time||0);
+      cards.begin(f.cy,DEPTH_R,f.cardLight,iso?{cx:f.cx,cy:f.cy,R:ISO_R,V:BILL_V,depth:isoDepth}:null);for(const c of f.cards)cards.add(c.canvas,c.q,c.footY,c.dynamic,c.sink);cards.end();
       const u=post.uniforms;u.tint.value.set(f.tint[0],f.tint[1],f.tint[2],f.tint[3]);
       // ink edge: a jump of about 14 world rows in depth
       u.edge.value=14*.5/DEPTH_R;
@@ -86,6 +95,6 @@ export function createWorld(canvas){
       post.render();
     },
     stats:()=>vfx.counts(),
-    dispose(){for(const o of [terrain,veg,water])if(o)o.userData.dispose();vfx.dispose();combat.dispose();post.dispose();light.dispose();cards.dispose();underGeo.dispose();underMat.dispose();underTex.dispose();renderer.dispose()}
+    dispose(){for(const o of [terrain,veg,water,vox])if(o)o.userData.dispose();heroes.dispose();vfx.dispose();combat.dispose();post.dispose();light.dispose();cards.dispose();underGeo.dispose();underMat.dispose();underTex.dispose();renderer.dispose()}
   };
 }

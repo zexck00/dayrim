@@ -4,6 +4,10 @@ Versions follow [Semantic Versioning](https://semver.org). The version lives in 
 
 ## [Unreleased]
 
+### 27 November 2026
+
+- New: a voxel preview of the planned block-style look. Play Stage 1 as the Detective and press "Voxel preview (2 min)". For two minutes the stage is shown from a tilted, turned camera with block ground, walls, trees and flowers, and the Detective is built from blocks, with walk, shoot, dodge roll and a hurt reaction. Movement keys follow the new camera, so W still moves up the screen. Everything else in the game is the same. Press the button again to stop early.
+
 ### 26 November 2026
 
 - New kits for the Vigilante and the Inventor:

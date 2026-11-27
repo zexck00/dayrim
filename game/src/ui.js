@@ -168,7 +168,9 @@ const LOCAL_ACT={quest:v=>sideAccept(v),unstuck:()=>doUnstuck(),ride:()=>doRide(
 /* Name shown in menus: Ability → what using it does. How to use it is the same for everyone. */
 const RIDE_FX=new Set(['truck','bat','aegis','anvil','wolf','shade','lasso','cyborg']),abilityTitle=ab=>ab.n+' → '+ab.use,ABILITY_HOW='Press C to ready it, then click to use it (on touch, tap Ability again). C again cancels; for buffs and grabs it fires the finisher.';
 function doAct(n,v){if(G.p&&(G.p.deadT>0||G.p.respawnT>0))return;if(n==='ability')touchAim=null;if(netOn())netAct(n,v);else LOCAL_ACT[n](v)}
-function screenToWorld(ev){const r=canvas.getBoundingClientRect();return{x:G.cam.x+(ev.clientX-r.left-W/2)/zoom,y:G.cam.y+(ev.clientY-r.top-H/2)/zoom}}
+/* Screen point → world point; the voxel preview's isometric camera has its own mapping */
+function scrPt(cx,cy){const r=canvas.getBoundingClientRect(),x=cx-r.left,y=cy-r.top;if(vxOn())return vxUnproject(x,y);return{x:G.cam.x+(x-W/2)/zoom,y:G.cam.y+(y-H/2)/zoom}}
+function screenToWorld(ev){return scrPt(ev.clientX,ev.clientY)}
 function trackMouse(ev){const w=screenToWorld(ev);mouse.x=w.x;mouse.y=w.y;mouse.sx=ev.clientX;mouse.sy=ev.clientY}
 function setTouch(on){if(touchMode===on)return;resetTouch();touchMode=on;resize();$('touch').hidden=!(on&&G.mode==='play');$('screen').classList.toggle('touch-playing',on&&G.mode==='play')}
 function mouseButtons(ev){if(G.mode!=='play')return;mouse.left=!!(ev.buttons&1);mouse.right=!!(ev.buttons&2)}
@@ -176,7 +178,7 @@ let aimPointer=null;
 const dragsAim=ev=>{const a=G.p&&G.p.abil;return !!a&&(a.aim==='spot'||a.aim==='line'||a.fx==='hurl'||a.fx==='blitz')&&(joy.on||ev.clientX-canvas.getBoundingClientRect().left>W/2)};
 canvas.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch'){setTouch(true);if(G.mode!=='play')return;const r=canvas.getBoundingClientRect();if(dragsAim(ev)){aimPointer=ev.pointerId;touchAim=screenToWorld(ev);try{canvas.setPointerCapture(ev.pointerId)}catch(e){}return}if(!joy.on){joy.on=true;joy.id=ev.pointerId;joy.ox=ev.clientX-r.left;joy.oy=ev.clientY-r.top;joy.dx=0;joy.dy=0;const el=$('joystick');el.style.left=joy.ox+'px';el.style.top=joy.oy+'px';el.firstElementChild.style.transform='';el.hidden=false;canvas.setPointerCapture(ev.pointerId)}return}
   setTouch(false);trackMouse(ev);mouseButtons(ev);if(G.mode==='play')try{canvas.setPointerCapture(ev.pointerId)}catch(e){}});
-canvas.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer){touchAim=screenToWorld(ev);return}if(joy.on&&ev.pointerId===joy.id){const r=canvas.getBoundingClientRect(),dx=ev.clientX-r.left-joy.ox,dy=ev.clientY-r.top-joy.oy,m=Math.max(1,Math.hypot(dx,dy)),k=Math.min(1,m/46);sprintKey=m>SPRINT.drag;$('joystick').classList.toggle('sprint',sprintKey);joy.dx=dx/m*k;joy.dy=dy/m*k;$('joystick').firstElementChild.style.transform='translate('+joy.dx*46+'px,'+joy.dy*46+'px)'}return}trackMouse(ev);mouseButtons(ev)});
+canvas.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer){touchAim=screenToWorld(ev);return}if(joy.on&&ev.pointerId===joy.id){const r=canvas.getBoundingClientRect(),dx=ev.clientX-r.left-joy.ox,dy=ev.clientY-r.top-joy.oy,m=Math.max(1,Math.hypot(dx,dy)),k=Math.min(1,m/46);sprintKey=m>SPRINT.drag;$('joystick').classList.toggle('sprint',sprintKey);joy.dx=dx/m*k;joy.dy=dy/m*k;if(moveRot){const c=Math.cos(moveRot),sn=Math.sin(moveRot),jx=joy.dx;joy.dx=jx*c-joy.dy*sn;joy.dy=jx*sn+joy.dy*c}$('joystick').firstElementChild.style.transform='translate('+joy.dx*46+'px,'+joy.dy*46+'px)'}return}trackMouse(ev);mouseButtons(ev)});
 const up=ev=>{if(ev.pointerType==='touch'){if(ev.pointerId===aimPointer)aimPointer=null;if(ev.pointerId===joy.id){sprintKey=false;$('joystick').classList.remove('sprint');joy.on=false;joy.id=null;joy.dx=0;joy.dy=0;$('joystick').hidden=true}return}mouseButtons(ev)};
 canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('lostpointercapture',up);canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{if(G.mode!=='play')return;e.preventDefault();doAct('cycle',e.deltaY>0?1:-1)},{passive:false});
 const GAME_CODES=new Set(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
@@ -346,8 +348,8 @@ addEventListener('orientationchange',resetTouch);
 if('ResizeObserver'in window)new ResizeObserver(resize).observe($('screen'));else addEventListener('resize',resize);
 let last=performance.now(),statT=0,touchStatusT=0;
 function tick(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
-  if(netOn()){if(G.mode==='play'&&!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}netUpdate(dt)}
-  else if(G.mode==='play'){if(!touchMode&&mouse.sx!==undefined){const r=canvas.getBoundingClientRect();mouse.x=G.cam.x+(mouse.sx-r.left-W/2)/zoom;mouse.y=G.cam.y+(mouse.sy-r.top-H/2)/zoom}update(G.hitStop>0?(G.hitStop-=dt,dt*.08):dt)}
+  if(netOn()){if(G.mode==='play'&&!touchMode&&mouse.sx!==undefined){const w=scrPt(mouse.sx,mouse.sy);mouse.x=w.x;mouse.y=w.y}netUpdate(dt)}
+  else if(G.mode==='play'){if(!touchMode&&mouse.sx!==undefined){const w=scrPt(mouse.sx,mouse.sy);mouse.x=w.x;mouse.y=w.y}update(G.hitStop>0?(G.hitStop-=dt,dt*.08):dt)}
   else if(G.mode==='title'||G.mode==='menu'){G.t+=dt;if(G.mode==='title')drawPreview(now)}
   else if(G.mode==='talk'){G.t+=dt;dlgTick(dt,now)}
   {const hide=aimHidden()?'none':'';if(canvas.style.cursor!==hide)canvas.style.cursor=hide}

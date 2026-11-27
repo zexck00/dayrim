@@ -7,6 +7,7 @@ import {wallFaces} from '../three/geometry.js';
 import {STAGE_THEMES,THEME_KEYS,themeFor} from '../three/stages.js';
 import {TREE_KINDS,EXTRA_KINDS,scatterExtras,buildVegetation} from '../three/vegetation.js';
 import {WEATHER} from '../three/vfx.js';
+import {isoMatrix,isoProject,isoUnproject,isoScale,isoSpan,isoInView,ISO_TURN,ISO_ELEV} from '../three/voxel.js';
 let n=0;const ok=(c,m)=>{assert.ok(c,m);n++;console.log('  ok  '+m)};
 
 ok(DAYRIM64.length===64&&new Set(DAYRIM64).size===64,'DAYRIM-64 has 64 different colours');
@@ -26,6 +27,20 @@ ok(worst<1,'ground points land on the same screen pixel as in 2D (within '+worst
 {const a=mul(m,cx,cy,0),b=mul(m,cx,cy,40);ok(Math.abs((b[1]-a[1])/2*H-40*SHEAR*zoom)<1e-6&&Math.abs(b[0]-a[0])<1e-9,'height rises straight up the screen at full size')}
 {const back=mul(m,cx,cy-40,0)[2],front=mul(m,cx,cy+40,0)[2],high=mul(m,cx,cy,30)[2],low=mul(m,cx,cy,0)[2];
  ok(front<back,'things further south are nearer the camera');ok(high<low&&low-high<(back-front)/50,'height only nudges depth, so tall walls do not cover what stands in front')}
+
+// Voxel preview (Stage 1 proof of concept): the isometric camera, aim and movement must agree with each other
+{const s=isoScale(zoom),im=isoMatrix(cx,cy,W,H,s);let bad=0,back=0;
+ for(const [x,y,z] of [[cx,cy,0],[cx-300,cy+120,0],[cx+250,cy-160,30],[cx+10,cy+170,60]]){const c=mul(im,x,y,z),p=isoProject(x,y,z,cx,cy,W,H,s);bad=Math.max(bad,Math.hypot((c[0]+1)/2*W-p.x,(1-c[1])/2*H-p.y))}
+ ok(bad<1e-6,'the voxel camera draws points where its own screen maths says ('+bad.toExponential(1)+' px)');
+ for(const [x,y,h] of [[cx+90,cy-40,0],[cx-200,cy+150,18],[cx+5,cy+5,40]]){const p=isoProject(x,y,h,cx,cy,W,H,s),q=isoUnproject(p.x,p.y,cx,cy,W,H,s,h);back=Math.max(back,Math.hypot(q.x-x,q.y-y))}
+ ok(back<1e-6,'aiming at a screen point finds the same ground point back ('+back.toExponential(1)+')');
+ const turn=(x,y)=>{const c=Math.cos(ISO_TURN),sn=Math.sin(ISO_TURN);return[x*c-y*sn,x*sn+y*c]},dirOn=(x,y)=>{const a=isoProject(cx,cy,0,cx,cy,W,H,s),b=isoProject(cx+x*50,cy+y*50,0,cx,cy,W,H,s);return Math.atan2(b.y-a.y,b.x-a.x)};
+ const up=dirOn(...turn(0,-1)),right=dirOn(...turn(1,0)),down=dirOn(...turn(0,1)),left=dirOn(...turn(-1,0));
+ ok(Math.abs(up+Math.PI/2)<1e-9&&Math.abs(right)<1e-9&&Math.abs(down-Math.PI/2)<1e-9&&Math.abs(Math.abs(left)-Math.PI)<1e-9,'with the voxel camera, W, D, S and A move up, right, down and left on screen');
+ const area=(W/s)*(H/s)/Math.sin(ISO_ELEV);ok(Math.abs(area-vw*vh)/(vw*vh)<1e-9,'the voxel view shows the same ground area as the classic view');
+ ok(mul(im,cx-30,cy-30,0)[2]>mul(im,cx+30,cy+30,0)[2]&&mul(im,cx,cy,40)[2]<mul(im,cx,cy,0)[2],'in the voxel view, things up the screen are farther and tall things are nearer');
+ const span=isoSpan(W,H,s);let cover=true;for(const [px,py] of [[0,0],[W,0],[0,H],[W,H]]){const q=isoUnproject(px,py,cx,cy,W,H,s,0);if(Math.abs(q.x-cx)>span+1e-6||Math.abs(q.y-cy)>span+1e-6)cover=false}
+ ok(cover&&isoInView(cx,cy,cx,cy,W,H,s)&&!isoInView(cx+span*2,cy,cx,cy,W,H,s),'the voxel ground layer covers every screen corner, and far things are culled')}
 
 const map=new Uint8Array([0,1,1,0, 0,1,0,0, 0,0,0,1]);
 const f=wallFaces(map,4,3);ok(f.tops===4&&f.fronts===3,'walls get a top on every tile and a south face only above open ground');

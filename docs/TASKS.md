@@ -19,6 +19,18 @@ The split below assumes these strengths. I don't know each person's skills, so s
 - Follow the rules in [AGENTS.md](../AGENTS.md). Rules go in `game/src/game.js`, and anything a player does online must be checked on the server.
 - Sizes are rough effort: **S** is up to a day, **M** is 2 to 4 days, **L** is a week or more. Dates depend on how many hours each person has.
 
+## Progress snapshot — 2026-11-27
+
+Local work on `feature/quests-shade-boss-anim` on top of `bcbabde`; not committed or deployed yet.
+
+**Verification (2026-11-27):** `npm test` passed: **1078 rule checks, 1014 story checks, 27 Pixel 3D checks (6 new) and 54 networking checks**. A short browser look by the agent only; **no human has played the voxel preview**.
+
+**Landed:** the voxel preview proof of concept (Z-96), Phase A of the new [voxel style plan](VOXEL_PLAN.md), limited to Stage 1 and the Detective, two minutes at a time.
+
+**Warnings:** in the preview only the Detective is a block model; enemies, other heroes and props are the existing art stood up as cards, and effects, health bars and some labels are drawn flat on the ground. The balance warning from 2026-11-26 still stands.
+
+**Next work:** the owner tries the voxel preview and decides whether to continue the plan (revise `docs/VOXEL_PLAN.md` from that). Still most urgent overall: a human playtest of Quick Game, then the balance pass (C-40).
+
 ## Progress snapshot — 2026-11-26
 
 Checked against the code on `dev` at `d6b2e20` (2026-11-26). `main` is still at `64c0568` (PR #28, 2026-11-13); everything below is on `dev` only and live at dayrim-dev.
@@ -264,6 +276,7 @@ Work that was built before it had a task row. Owners are who built it; Z approve
 | Z-93 | Z | M | **Detective and Ranger kits:** pushing basic shots with a 2 s rapid-fire streak (`STREAK`), ×3/×4/×7 quick attack (`aimCharge`; Detective roll, Ranger empowered shots), Wolf Form (`wolf`, `wolfClaw`, `wolfPounce`) and Vanish with arrow shower (`shade`, `arrowShower`) (2026-11-26) | Prototype: rule tests (1057 rule checks pass, 2026-11-26) and a browser look at the werewolf, pounce and shower. The old Detective Lock On / Execute ability is no longer used by anyone; its tests now cover the Inventor's Stun Gun. Not played by a person yet. | Z-79 |
 | Z-94 | Z | S | **Gun basic attack for all gun heroes:** `gunHero` and `GUN_BASIC` give every hero whose own weapon shoots (Detective, Ranger, Inventor, Falcon EX) +1 damage, push back and the Rapid fire streak (2026-11-26) | Implemented with rule tests (1065 rule checks pass, 2026-11-26). | Z-93 |
 | Z-95 | Z | M | **Vigilante and Inventor kits, enemy boost:** Vigilante wide sweep, reach charge (`vigSweep`) and Lasso (`lasso`, `tie`, `ropeSnare`, `e.tiedT`); Inventor slowing ray (`slowS`), ray beam (`rayBeam`) and Cyborg Ally (`summonAlly`, `summonTick`, summons don't count for party size); `ENEMY_BOOST` makes enemies 25% stronger, 25% more and 25% faster to arrive (2026-11-26) | Prototype: rule tests (1078 rule checks pass, 2026-11-26). The old Inventor Stun Gun and Vigilante Grapple tests now use the Sage and the Soul Stealer. Not played by a person yet; the enemy boost needs a balance check. | Z-94 |
+| Z-96 | Z | M | **Voxel preview (proof of concept, Phase A of [VOXEL_PLAN.md](VOXEL_PLAN.md)):** a "Voxel preview (2 min)" button on Stage 1 for the Detective. `three/voxel.js` adds an isometric camera (`isoMatrix`, `isoProject`, `isoUnproject`; same ground area as the classic view), block ground sampled from the stage's own ground art, block walls about 26 units high, block trees and flowers from the stage's props, and a block-built Detective with walk, shoot, guard, dodge roll, hurt tilt with white flash and downed poses. Other actors stand up as camera-facing cards. Aim uses `scrPt`/`vxUnproject`; movement keys and the touch stick turn with `moveRot` (0 on the server). Drawing only: rules, maps and networking are unchanged. | Prototype: 6 new Pixel 3D checks (camera matches its maths, aim round trip, W/D/S/A map to up/right/down/left on screen, same view area, depth order, ground layer covers the screen). Short agent browser look on 2026-11-27: the scene draws, W moves up the screen and the mouse aims where it points. Shooting, getting hit and phones were not checked in a browser; no human has played it. Remaining Phase A: on-world HUD markers beyond the objective pointer and danger arrows, wall cutaway, auto zoom. | Z-73, D-26 |
 
 ## M2 Middle game
 
